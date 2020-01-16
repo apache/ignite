@@ -218,11 +218,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** Take snapshot operation procedure. */
     private DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
 
-    /** Cluster snapshot operation. */
+    /** Cluster snapshot operation requested by user. */
     private IgniteFuture<Void> clusterSnpFut;
 
-    /** Current cluster-wide snapshot operation. */
-    private volatile SnapshotOperationRequest clusterSnpReq;
+    /** Current snapshot opertaion on local node. */
+    private volatile SnapshotTask clusterSnpTask;
 
     /**
      * @param ctx Kernal context.
@@ -391,7 +391,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         InitMessage msg = (InitMessage)evt0.customMessage();
 
                         if (msg.type() == DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal()) {
-                            assert clusterSnpReq != null : evt;
+                            assert clusterSnpTask != null : evt;
 
                             DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
 
@@ -714,23 +714,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @return Future which will be completed when a snapshot has been started.
      */
     IgniteInternalFuture<SnapshotOperationResponse> takeSnapshot(SnapshotOperationRequest req) {
-        if (clusterSnpReq != null) {
+        // Executed inside discovery notifier thread, prior to firing discovery custom event
+        if (clusterSnpTask != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
-                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
+                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpTask + ']'));
         }
 
-        clusterSnpReq = req;
+        clusterSnpTask = null;
 
         if (cctx.kernalContext().clientNode())
             return new GridFinishedFuture<>();
-
-        try {
-
-        }
-        catch (Exception e) {
-            return new GridFinishedFuture<>(new IgniteException("Snapshot operation has been rejected rejected [nodeId=" +
-                cctx.localNodeId() + ']', e));
-        }
 
         return new GridFinishedFuture<>(new SnapshotOperationResponse());
     }
@@ -767,14 +760,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param fut Partition map exchange future.
      */
     public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-        // No-op.
+        if (clusterSnpTask == null)
+            return;
+
+        // schedule task on checkpoint and wait when it starts
+        clusterSnpTask.awaitStarted();
     }
 
     /**
      * @param snpName Unique snapshot name.
      * @return Future which will be completed when snapshot is done.
      */
-    public IgniteInternalFuture<Boolean> createLocalSnapshot(String snpName, List<Integer> grpIds) {
+    IgniteInternalFuture<Boolean> createLocalSnapshot(String snpName, List<Integer> grpIds) {
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         Map<Integer, GridIntList> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
@@ -1007,6 +1004,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         // Example: snapshotWorkDir/db/IgniteNodeName0
         String dbNodePath = relativeStoragePath(cctx);
 
+        // todo should be fired on executor on task init
         U.ensureDirectory(new File(rootSnpDir, dbNodePath), "local snapshot directory", log);
 
         return new LocalSnapshotFileSender(log,

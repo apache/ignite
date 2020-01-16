@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -74,7 +73,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TIMEOUT;
 
 /**
  *
@@ -190,10 +188,15 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
-     * @throws IgniteInterruptedCheckedException If timeout was reached.
+     * Wait for the task to be started on checkpoint.
      */
-    public void awaitStarted() throws IgniteInterruptedCheckedException {
-        U.await(startedLatch, DFLT_SNAPSHOT_TIMEOUT, TimeUnit.MILLISECONDS);
+    public void awaitStarted() {
+        try {
+            U.await(startedLatch);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            acceptException(e);
+        }
     }
 
     /**
@@ -267,11 +270,20 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
+     *
+     */
+    public void execute(Consumer<DbCheckpointListener> add, Consumer<DbCheckpointListener> remove) {
+        CompletableFuture.runAsync(() -> System.out.println())
+            .thenRun(() -> add.accept(this));
+    }
+
+    /**
      * @param parts Partitions to include to snapshot operation.
      * @return Future which will be completed when snapshot finishes.
      */
     public IgniteInternalFuture<Boolean> submit(Map<Integer, GridIntList> parts) {
         try {
+            // todo can be performed on the given executor
             nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
 
             for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
