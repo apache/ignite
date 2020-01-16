@@ -1045,12 +1045,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
             assert err != null || cancel || stores.isEmpty() : "Not all file storages processed: " + stores;
 
-            boolean changed = super.onDone(res, err, cancel);
+            snpReq.compareAndSet(this, null);
 
-            if (changed)
-                snpReq.compareAndSet(this, null);
-
-            return changed;
+            return super.onDone(res, err, cancel);
         }
 
         /** {@inheritDoc} */
