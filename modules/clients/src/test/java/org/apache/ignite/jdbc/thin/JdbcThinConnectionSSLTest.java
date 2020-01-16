@@ -26,6 +26,7 @@ import java.sql.Statement;
 import java.util.concurrent.Callable;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -69,6 +70,29 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
     /** Supported ciphers. */
     private static String[] supportedCiphers;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        final SSLSocketFactory socketFactory = getTestSslContextFactory().create().getSocketFactory();
+        final SSLServerSocketFactory serverSocketFactory = getTestSslContextFactory().create().getServerSocketFactory();
+
+        StringBuilder sb = new StringBuilder()
+            .append("Client default cipher suites:\n")
+            .append(String.join(", ", socketFactory.getDefaultCipherSuites()))
+            .append("\n")
+            .append("Client supported cipher suites:\n")
+            .append(String.join(", ", socketFactory.getSupportedCipherSuites()))
+            .append("\n").append("\n")
+            .append("Server default cipher suites:\n")
+            .append(String.join(", ", serverSocketFactory.getDefaultCipherSuites()))
+            .append("\n")
+            .append("Server supported cipher suites:\n")
+            .append(String.join(", ", serverSocketFactory.getSupportedCipherSuites()));
+
+        log.info(sb.toString());
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -382,7 +406,8 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     public void testUnsupportedCustomCipher() throws Exception {
         setSslCtxFactoryToCli = true;
-        supportedCiphers = new String[] {"TLS_RSA_WITH_NULL_SHA256" /* Disabled by default */,
+        supportedCiphers = new String[] {
+            "TLS_RSA_WITH_NULL_SHA256" /* Disabled by default */,
             "TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA" /* With disabled protocol*/};
         sslCtxFactory = getTestSslContextFactory();
 
@@ -391,12 +416,12 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             // Enabled ciphers with unsupported algorithm can't be negotiated.
             GridTestUtils.assertThrows(log, () -> {
                 return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                "&sslCipherSuites=TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA" +
-                "&sslTrustAll=true" +
-                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                "&sslClientCertificateKeyStorePassword=123456" +
-                "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
-                "&sslTrustCertificateKeyStorePassword=123456");
+                    "&sslCipherSuites=TLS_ECDH_anon_WITH_3DES_EDE_CBC_SHA" +
+                    "&sslTrustAll=true" +
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
             }, SQLException.class, "Failed to SSL connect to server");
 
             // Supported cipher.
