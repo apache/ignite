@@ -57,7 +57,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
  */
 public class MetricRegistry implements ReadOnlyMetricRegistry {
     /** Registry name. */
-    private String name;
+    private String regName;
 
     /** Logger. */
     private IgniteLogger log;
@@ -72,14 +72,14 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     private final Function<String, long[]> histogramCfgProvider;
 
     /**
-     * @param name Registry name.
+     * @param regName Registry name.
      * @param hitRateCfgProvider HitRate config provider.
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
-    public MetricRegistry(String name, Function<String, Long> hitRateCfgProvider,
+    public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
         Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
-        this.name = name;
+        this.regName = regName;
         this.log = log;
         this.hitRateCfgProvider = hitRateCfgProvider;
         this.histogramCfgProvider = histogramCfgProvider;
@@ -106,7 +106,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link ObjectMetricImpl}
      */
     public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
-        return addMetric(name, new ObjectMetricImpl<>(metricName(this.name, name), desc, type));
+        return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type));
     }
 
     /** {@inheritDoc} */
@@ -140,7 +140,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param desc Description.
      */
     public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
-        addMetric(name, new BooleanGauge(metricName(this.name, name), desc, nonThrowableSupplier(supplier, log)));
+        addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -151,7 +151,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param desc Description.
      */
     public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
-        addMetric(name, new DoubleGauge(metricName(this.name, name), desc, nonThrowableSupplier(supplier, log)));
+        addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -162,7 +162,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param desc Description.
      */
     public void register(String name, IntSupplier supplier, @Nullable String desc) {
-        addMetric(name, new IntGauge(metricName(this.name, name), desc, nonThrowableSupplier(supplier, log)));
+        addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -174,7 +174,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return Metric of type {@link LongGauge}.
      */
     public LongGauge register(String name, LongSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new LongGauge(metricName(this.name, name), desc, nonThrowableSupplier(supplier, log)));
+        return addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -186,7 +186,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param desc Description.
      */
     public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        addMetric(name, new ObjectGauge<>(metricName(this.name, name), desc,
+        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc,
             nonThrowableSupplier(supplier, log), type));
     }
 
@@ -199,7 +199,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link DoubleMetricImpl}.
      */
     public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
-        return addMetric(name, new DoubleMetricImpl(metricName(this.name, name), desc));
+        return addMetric(name, new DoubleMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -211,7 +211,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link IntMetricImpl}.
      */
     public IntMetricImpl intMetric(String name, @Nullable String desc) {
-        return addMetric(name, new IntMetricImpl(metricName(this.name, name), desc));
+        return addMetric(name, new IntMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -223,7 +223,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link AtomicLongMetric}.
      */
     public AtomicLongMetric longMetric(String name, @Nullable String desc) {
-        return addMetric(name, new AtomicLongMetric(metricName(this.name, name), desc));
+        return addMetric(name, new AtomicLongMetric(metricName(regName, name), desc));
     }
 
     /**
@@ -235,7 +235,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link LongAdderMetric}.
      */
     public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
-        return addMetric(name, new LongAdderMetric(metricName(this.name, name), desc));
+        return addMetric(name, new LongAdderMetric(metricName(regName, name), desc));
     }
 
     /**
@@ -248,7 +248,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link LongAdderWithDelegateMetric}.
      */
     public LongAdderMetric longAdderMetric(String name, LongConsumer delegate, @Nullable String desc) {
-        return addMetric(name, new LongAdderWithDelegateMetric(metricName(this.name, name), delegate, desc));
+        return addMetric(name, new LongAdderWithDelegateMetric(metricName(regName, name), delegate, desc));
     }
 
     /**
@@ -263,7 +263,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @see HitRateMetric
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        String fullName = metricName(this.name, name);
+        String fullName = metricName(regName, name);
 
         HitRateMetric metric = addMetric(name, new HitRateMetric(fullName, desc, rateTimeInterval, size));
 
@@ -284,7 +284,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link BooleanMetricImpl}
      */
     public BooleanMetricImpl booleanMetric(String name, @Nullable String desc) {
-        return addMetric(name, new BooleanMetricImpl(metricName(this.name, name), desc));
+        return addMetric(name, new BooleanMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -296,7 +296,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return {@link HistogramMetric}
      */
     public HistogramMetric histogram(String name, long[] bounds, @Nullable String desc) {
-        String fullName = metricName(this.name, name);
+        String fullName = metricName(regName, name);
 
         HistogramMetric metric = addMetric(name, new HistogramMetric(fullName, desc, bounds));
 
@@ -327,6 +327,6 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return name;
+        return regName;
     }
 }
