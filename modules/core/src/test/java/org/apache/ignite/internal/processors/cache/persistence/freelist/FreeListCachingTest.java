@@ -36,11 +36,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.PAGE_LIST_CACHE_LIMIT_THRESHOLD;
 
 /**
  * Test onheap caching of freelists.
@@ -237,6 +234,8 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
         GridCacheOffheapManager offheap = (GridCacheOffheapManager)cctx.group().offheap();
 
+        long limit = offheap.pageListCacheLimit();
+
         try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             // Fill cache to trigger "too many dirty pages" checkpoint.
             for (int i = 0; i < 100_000; i++) {
@@ -261,9 +260,6 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
                                 pageCachesCnt.incrementAndGet();
                         }
                     });
-
-                    int limit = (int)(((PageMemoryEx)cctx.dataRegion().pageMemory()).totalPages()
-                        * PAGE_LIST_CACHE_LIMIT_THRESHOLD);
 
                     assertTrue("Page list caches count is more than expected [count: " + pageCachesCnt.get() +
                         ", limit=" + limit + ']', pageCachesCnt.get() <= limit);

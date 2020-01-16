@@ -131,7 +131,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * static, but depends on PagesCache.MAX_SIZE, so if PagesCache.MAX_SIZE > PagesListNodeIO#getCapacity it can take
      * more than 2 pages). Also some amount of page memory needed to store page list metadata.
      */
-    public static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 0.1;
+    private static final double PAGE_LIST_CACHE_LIMIT_THRESHOLD = 0.1;
 
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
@@ -179,7 +179,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseListRoot.isAllocated(),
             diagnosticMgr.pageLockTracker().createPageLockTracker(reuseListName),
             ctx.kernalContext(),
-            pageListCacheLimit()
+            pageListCacheLimitHolder()
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -659,10 +659,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @return Holder for page list cache limit.
      */
-    private AtomicLong pageListCacheLimit() {
+    private AtomicLong pageListCacheLimitHolder() {
         return pageListCacheLimits.computeIfAbsent(
             grp.dataRegion().config().getName(), name -> new AtomicLong((long)(((PageMemoryEx)grp.dataRegion()
                 .pageMemory()).totalPages() * PAGE_LIST_CACHE_LIMIT_THRESHOLD)));
+    }
+
+    /**
+     * @return Current value of page list cache limit.
+     */
+    public long pageListCacheLimit() {
+        return pageListCacheLimitHolder().get();
     }
 
     /**
@@ -1723,7 +1730,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName),
                         ctx.kernalContext(),
-                        pageListCacheLimit()
+                        pageListCacheLimitHolder()
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
@@ -1748,7 +1755,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         partMetastoreReuseListRoot.isAllocated(),
                         ctx.diagnostic().pageLockTracker().createPageLockTracker(partitionMetaStoreName),
                         ctx.kernalContext(),
-                        pageListCacheLimit()
+                        pageListCacheLimitHolder()
                     ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
