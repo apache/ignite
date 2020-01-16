@@ -571,6 +571,11 @@
 
         <profile>
             <id>spark-2.4</id>
+
+            <activation>
+                <property><name>!scala-2.10</name></property>
+            </activation>
+
             <modules>
                 <module>modules/spark-2.4</module>
                 <module>modules/ml/mleap-model-parser</module>
