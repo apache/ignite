@@ -260,8 +260,6 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
                 (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
                 ". Execution of register: ", v.get1(), Integer.valueOf(v.get2().get())));
-
-            clear();
         }
 
         /** */
