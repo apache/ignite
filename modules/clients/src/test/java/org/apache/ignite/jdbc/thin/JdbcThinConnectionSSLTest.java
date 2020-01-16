@@ -67,29 +67,6 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     private static String[] supportedCiphers;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        final SSLSocketFactory socketFactory = getTestSslContextFactory().create().getSocketFactory();
-        final SSLServerSocketFactory serverSocketFactory = getTestSslContextFactory().create().getServerSocketFactory();
-
-        StringBuilder sb = new StringBuilder()
-            .append("Client default cipher suites:\n")
-            .append(String.join(", ", socketFactory.getDefaultCipherSuites()))
-            .append("\n")
-            .append("Client supported cipher suites:\n")
-            .append(String.join(", ", socketFactory.getSupportedCipherSuites()))
-            .append("\n").append("\n")
-            .append("Server default cipher suites:\n")
-            .append(String.join(", ", serverSocketFactory.getDefaultCipherSuites()))
-            .append("\n")
-            .append("Server supported cipher suites:\n")
-            .append(String.join(", ", serverSocketFactory.getSupportedCipherSuites()));
-
-        log.info(sb.toString());
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         setSslCtxFactoryToCli = false;
         setSslCtxFactoryToIgnite = false;
