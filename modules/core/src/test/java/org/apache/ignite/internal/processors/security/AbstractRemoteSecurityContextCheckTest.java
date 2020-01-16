@@ -130,7 +130,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      */
     protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> ops) {
         ops.forEach(r -> {
-            VERIFIER.clear().initiator(initiator);
+            VERIFIER.initiator(initiator);
 
             setupVerifier(VERIFIER);
 
@@ -160,14 +160,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID expSecSubjId;
 
         /** */
-        public Verifier clear() {
+        private void clear() {
             expInvokes.clear();
 
             errors.clear();
 
             expSecSubjId = null;
-
-            return this;
         }
 
         /**
@@ -268,6 +266,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
         /** */
         public Verifier initiator(IgniteEx initiator) {
+            clear();
+
             expSecSubjId = secSubjectId(initiator);
 
             return this;
