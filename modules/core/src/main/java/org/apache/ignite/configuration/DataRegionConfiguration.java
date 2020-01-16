@@ -21,6 +21,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.mxbean.MetricsMxBean;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -362,7 +363,9 @@ public final class DataRegionConfiguration implements Serializable {
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @return Time interval over which allocation rate is calculated.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public long getMetricsRateTimeInterval() {
         return metricsRateTimeInterval;
     }
@@ -377,7 +380,9 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @param metricsRateTimeInterval Time interval used for allocation and eviction rates calculations.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public DataRegionConfiguration setMetricsRateTimeInterval(long metricsRateTimeInterval) {
         this.metricsRateTimeInterval = metricsRateTimeInterval;
 
@@ -394,7 +399,9 @@ public final class DataRegionConfiguration implements Serializable {
      * calculation overhead.
      *
      * @return number of sub intervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public int getMetricsSubIntervalCount() {
         return metricsSubIntervalCount;
     }
@@ -409,7 +416,9 @@ public final class DataRegionConfiguration implements Serializable {
      *
      * @param metricsSubIntervalCnt A number of sub-intervals.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public DataRegionConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
         this.metricsSubIntervalCount = metricsSubIntervalCnt;
 
