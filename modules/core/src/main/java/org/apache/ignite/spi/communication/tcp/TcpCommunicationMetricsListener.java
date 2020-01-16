@@ -61,7 +61,7 @@ class TcpCommunicationMetricsListener {
     private final GridMetricManager mmgr;
 
     /** Metrics registry. */
-    private final org.apache.ignite.internal.processors.metric.MetricRegistry mreg;
+    private final MetricRegistry mreg;
 
     /** All registered metrics. */
     private final Set<ThreadMetrics> allMetrics = Collections.newSetFromMap(new ConcurrentHashMap<>());
