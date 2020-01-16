@@ -23,9 +23,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -150,9 +150,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private final Map<T2<String, String>, T2<Integer, AtomicInteger>> expInvokes = new ConcurrentHashMap<>();
 
         /**
-         * Checked error.
+         * Checked errors.
          */
-        private final AtomicReference<AssertionError> error = new AtomicReference<>();
+        private final Collection<String> errors = new ArrayBlockingQueue<>(10);
 
         /**
          * Expected security subject id.
@@ -163,7 +163,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         public Verifier clear() {
             expInvokes.clear();
 
-            error.set(null);
+            errors.clear();
 
             expSecSubjId = null;
 
@@ -229,16 +229,20 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param opName Operation name.
          */
         public void register(IgniteEx ignite, String opName) {
-            throwErrorIfExists();
-
-            if (expSecSubjId == null)
+            if (expSecSubjId == null) {
                 error("SubjectId cannot be null.");
+
+                return;
+            }
 
             UUID actualSubjId = secSubjectId(ignite);
 
-            if (!expSecSubjId.equals(actualSubjId))
+            if (!expSecSubjId.equals(actualSubjId)) {
                 error("Actual subjectId does not equal expected subjectId " + "[expected=" + expSecSubjId +
                     ", actual=" + actualSubjId + "].");
+
+                return;
+            }
 
             T2<Integer, AtomicInteger> v = expInvokes.get(new T2<>(ignite.name(), opName));
 
@@ -252,7 +256,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * Checks result of test and clears expected behavior.
          */
         public void checkResult() {
-            throwErrorIfExists();
+            if(!errors.isEmpty())
+                throw new AssertionError(errors.stream().reduce((s1, s2) -> s1 + "\n" + s2).get());
 
             expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
                 (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
@@ -277,15 +282,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param msg Error message.
          */
         private void error(String msg) {
-            throw error.getAndUpdate(v -> v != null ? v : new AssertionError(msg));
-        }
-
-        /** */
-        private void throwErrorIfExists() {
-            AssertionError e = error.get();
-
-            if (e != null)
-                throw e;
+            errors.add(msg);
         }
     }
 
