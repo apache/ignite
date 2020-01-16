@@ -14,4 +14,4 @@
 # limitations under the License.
 
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-org.springframework.boot.autoconfigure.ignite.IgniteNodeAutoConfiguration
+org.springframework.boot.autoconfigure.ignite.IgniteClientAutoConfiguration

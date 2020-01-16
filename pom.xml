@@ -101,6 +101,7 @@
         <module>modules/tensorflow</module>
         <module>modules/opencensus</module>
         <module>modules/spring-boot-autoconfigure</module>
+        <module>modules/spring-boot-client-autoconfigure</module>
     </modules>
 
     <profiles>

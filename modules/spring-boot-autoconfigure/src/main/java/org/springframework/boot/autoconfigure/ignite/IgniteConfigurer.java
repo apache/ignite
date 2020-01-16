@@ -17,29 +17,25 @@
 
 package org.springframework.boot.autoconfigure.ignite;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.springframework.beans.factory.BeanFactory;
 
 /**
- * Spring boot starter configuration properties.
+ * Instance of this interface available in {@link BeanFactory} will be used to customize empty
+ * {@link IgniteConfiguration} during Ignite node start. If you want to set custom SPI instances or
+ * similar hardcoded values you should do it in the implementation of this interface.
+ *
+ * @see IgniteConfiguration
+ * @see IgniteNodeAutoConfiguration
  */
-@ConfigurationProperties(prefix = "spring.data.ignite")
-public class IgniteProperties {
-    /** Addresses to use for thin client connection. */
-    private String[] clientAddresses;
-
+public interface IgniteConfigurer {
     /**
-     * @return Thin client connection address.
-     */
-    public String[] getClientAddresses() {
-        return clientAddresses;
-    }
-
-    /**
-     * Sets thin client connection address.
+     * Method to customize Ignite configuration.
+     * <p><b>NOTE, the results of this method will be overriden with the provided application properties.</b></p>
      *
-     * @param clientAddresses Thin client connection address.
+     * @param cfg Ignite configuration.
      */
-    public void setClientAddresses(String[] clientAddresses) {
-        this.clientAddresses = clientAddresses;
+    default void configure(IgniteConfiguration cfg) {
+        // No-op.
     }
 }

@@ -1,4 +1,4 @@
-Apache Ignite Spring Boot Autoconfigure Module
+Apache Ignite Client Spring Boot Autoconfigure Module
 ---------------------------
 
 Apache Ignite Spring Boot Autoconfigure module provides autoconfigure capabilities for Spring-boot based applications.
@@ -19,7 +19,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>spring-boot-ignite-autoconfigure</artifactId>
+            <artifactId>spring-boot-ignite-client-autoconfigure</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...
