@@ -145,6 +145,28 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
+    public void testSimpleRebalancing() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        LoadParameters<TestValue> params = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite0.cluster().setBaselineTopology(2);
+
+        awaitPartitionMapExchange();
+
+        verifyCache(ignite1, params);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSimpleRebalancingWithLoad() throws Exception {
         boolean checkRemoves = true;
 
