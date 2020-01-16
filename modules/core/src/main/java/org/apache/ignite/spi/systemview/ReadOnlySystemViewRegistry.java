@@ -23,7 +23,7 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
- * Read only system view manager.
+ * Read only system view registry.
  *
  * @see GridSystemViewManager
  * @see SystemView
