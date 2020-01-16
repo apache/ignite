@@ -3456,7 +3456,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             PartitionRequest<R> old = pendingReqs.putIfAbsent(uniquePartId, req);
 
-            assert old == null || grpCtx == null : "Must wait for old destroy request to finish before adding a new one "
+            assert old == null || grpCtx == null : "Must wait for old partition request to finish before adding a new one "
                 + "[grpId=" + (int)(uniquePartId >> 32)
                 + ", grpName=" + grpCtx.cacheOrGroupName()
                 + ", partId=" + (int)uniquePartId + ']';
@@ -3465,11 +3465,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @param destroyId Destroy ID.
-         * @return Destroy request to complete if was not concurrently cancelled.
+         * @param reqId Request ID.
+         * @return Partition request to complete if was not concurrently cancelled.
          */
-        private PartitionRequest<R> beginDestroy(long destroyId) {
-            PartitionRequest<R> rmvd = pendingReqs.remove(destroyId);
+        private PartitionRequest<R> beginRequest(long reqId) {
+            PartitionRequest<R> rmvd = pendingReqs.remove(reqId);
 
             return rmvd == null ? null : rmvd.begin() ? rmvd : null;
         }
@@ -3477,9 +3477,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @param grpId Group ID.
          * @param partId Partition ID.
-         * @return Destroy request to wait for if destroy has begun.
+         * @return Partition request to wait for if destroy has begun.
          */
-        private PartitionRequest<R> cancelDestroy(int grpId, int partId) {
+        private PartitionRequest<R> cancelRequest(int grpId, int partId) {
             long grpAndPart = ((long)grpId << 32) + partId;
 
             PartitionRequest<R> rmvd = pendingReqs.remove(grpAndPart);
@@ -3489,7 +3489,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Partition destroy request.
+     * Partition request.
      */
     private static class PartitionRequest<T> extends GridFutureAdapter<T> {
         /** */
@@ -3539,7 +3539,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * Initiates partition request.
          *
-         * @return {@code True} if destroy request should be executed, {@code false} otherwise.
+         * @return {@code True} if request should be executed, {@code false} otherwise.
          */
         synchronized boolean begin() {
             if (cancelled) {
@@ -4133,14 +4133,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     part.readOnly(false);
 
-                    // Clear all on-heap entries.
-                    if (grp.sharedGroup()) {
-                        for (GridCacheContext ctx : grp.caches())
-                            part.entriesMap(ctx).map.clear();
-                    }
-                    else
-                        part.entriesMap(null).map.clear();
-
                     AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
                     IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
@@ -4197,7 +4189,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             PartitionRequest req;
 
             synchronized (this) {
-                req = scheduledCp.destroyQueue.cancelDestroy(grpId, partId);
+                req = scheduledCp.destroyQueue.cancelRequest(grpId, partId);
             }
 
             if (req != null)
@@ -4209,7 +4201,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cur = curCpProgress;
 
                 if (cur != null)
-                    req = cur.destroyQueue.cancelDestroy(grpId, partId);
+                    req = cur.destroyQueue.cancelRequest(grpId, partId);
             }
 
             if (req != null)

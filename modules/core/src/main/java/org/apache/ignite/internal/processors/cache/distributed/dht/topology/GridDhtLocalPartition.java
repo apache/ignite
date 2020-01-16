@@ -267,7 +267,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMapHolder entriesMap(GridCacheContext cctx) {
+    @Override protected CacheMapHolder entriesMap(GridCacheContext cctx) {
         if (grp.sharedGroup())
             return cacheMapHolder(cctx);
 
@@ -447,12 +447,22 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Change read-only mode for the corresponding local partition storage.
+     *
+     * @param readOnlyMode Read-only mode flag.
      */
-    public void readOnly(boolean readOnly) {
+    public void readOnly(boolean readOnlyMode) {
         if (state() != MOVING)
             throw new IgniteException("Expected MIVING partition, actual state is " + state());
 
-        store.readOnly(readOnly);
+        if (store.readOnly(readOnlyMode) && !readOnlyMode) {
+            // Clear all on-heap entries when switching into normal mode.
+            if (grp.sharedGroup()) {
+                for (GridCacheContext ctx : grp.caches())
+                    entriesMap(ctx).map.clear();
+            }
+            else
+                entriesMap(null).map.clear();
+        }
     }
 
     /**

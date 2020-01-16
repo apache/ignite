@@ -1502,9 +1502,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
-            // todo think - for now release for preloading invokes on full partition update - is this correct
-//            cctx.database().releaseHistoryForPreloading();
-
             // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
             partHistReserved = cctx.database().reserveHistoryForExchange();
         }
@@ -2342,9 +2339,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
             if (localReserved != null) {
-                if (log.isDebugEnabled())
-                    log.debug("local reserved: " + localReserved);
-
                 for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
                     boolean reserved = cctx.database().reserveHistoryForPreloading(
                         e.getKey().get1(), e.getKey().get2(), e.getValue());
@@ -3962,33 +3956,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     return null;
                 }
             );
-
-            if (log.isDebugEnabled()) {
-                StringBuilder buf = new StringBuilder("\n\nHist suppliers\n");
-
-                for (UUID node : F.concat(false, cctx.localNodeId(), msgs.keySet())) {
-                    buf.append("\nReservations for node ").append(node).append("\n");
-
-                    Map<T2<Integer, Integer>, Long> reservations = partHistSuppliers.getReservations(node);
-
-                    if (reservations == null || reservations.isEmpty()) {
-                        buf.append("EMPTY\n");
-
-                        continue;
-                    }
-
-                    for (Map.Entry<T2<Integer, Integer>, Long> e : reservations.entrySet()) {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey().get1());
-
-                        if (grp == null)
-                            continue;
-
-                        buf.append("cache=").append(grp.cacheOrGroupName()).append(" p=").append(e.getKey().get2()).append(" cntr=").append(e.getValue()).append("\n");
-                    }
-                }
-
-                log.debug(buf.toString());
-            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to assign partition states", e);

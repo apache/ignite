@@ -1104,6 +1104,7 @@ public interface IgniteCacheOffheapManager {
          * Change current cache data store mode.
          *
          * @param readOnly Read-only mode flag.
+         * @return {@code True} if partition mode was changed, otherwise partition already in the specified mode.
          */
         public boolean readOnly(boolean readOnly);
 
