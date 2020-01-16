@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio;
+package org.apache.ignite.internal.resources;
 
-import java.util.EventListener;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Metrics listener for NIO communication.
- */
-public interface GridNioMetricsListener extends EventListener {
-    /**
-     * @param bytesCnt Number of sent bytes.
-     */
-    public void onBytesSent(int bytesCnt);
-
-    /**
-     * @param bytesCnt Number of received bytes.
-     */
-    public void onBytesReceived(int bytesCnt);
+/** */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.FIELD})
+public @interface MetricManagerResource {
+    // No-op.
 }

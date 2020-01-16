@@ -107,8 +107,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
@@ -116,6 +116,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -1930,5 +1931,67 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--yes"));
 
         assertContains(log, testOut.toString(), "LOST partitions:");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChange() throws Exception {
+        encriptionEnabled = true;
+
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ignite, 10);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
+
+        Object res = h.getLastOperationResult();
+
+        assertEquals(ignite.encryption().getMasterKeyName(), res);
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
+
+        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
+
+        res = h.getLastOperationResult();
+
+        assertEquals(MASTER_KEY_NAME_2, res);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+            execute("--encryption", "change_master_key", "non-existing-master-key-name"));
+
+        assertContains(log, testOut.toString(),
+            "Master key change was rejected. Unable to get the master key digest.");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChangeOnInactiveCluster() throws Exception {
+        encriptionEnabled = true;
+
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(1);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
+
+        Object res = h.getLastOperationResult();
+
+        assertEquals(ignite.encryption().getMasterKeyName(), res);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
+
+        assertContains(log, testOut.toString(), "Master key change was rejected. The cluster is inactive.");
     }
 }

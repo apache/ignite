@@ -913,27 +913,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
         try {
-            SnapshotTask sctx = new SnapshotTask(cctx,
-                srcNodeId,
-                snpName,
-                snapshotWorkDir(snpName),
-                exec,
-                ioFactory,
-                snpSndr);
+            SnapshotTask snpTask = locSnpTasks.computeIfAbsent(snpName,
+                snpName0 -> new SnapshotTask(cctx,
+                    srcNodeId,
+                    snpName0,
+                    new File(snapshotWorkDir(), snpName0),
+                    exec,
+                    ioFactory,
+                    snpSndr));
 
-            IgniteInternalFuture<Boolean> snpFut = sctx.submit(parts);
-
-            SnapshotTask ctx0 = locSnpTasks.putIfAbsent(snpName, sctx);
-
-            assert ctx0 == null : ctx0;
+            IgniteInternalFuture<Boolean> snpFut = snpTask.submit(parts);
 
             // Schedule snapshot on checkpoint.
-            dbMgr.addCheckpointListener(sctx);
+            dbMgr.addCheckpointListener(snpTask);
 
             snpFut.listen(f -> {
                 locSnpTasks.remove(snpName);
 
-                dbMgr.removeCheckpointListener(sctx);
+                dbMgr.removeCheckpointListener(snpTask);
             });
 
             return snpFut;
@@ -1094,12 +1091,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
             assert err != null || cancel || stores.isEmpty() : "Not all file storages processed: " + stores;
 
-            boolean changed = super.onDone(res, err, cancel);
+            snpReq.compareAndSet(this, null);
 
-            if (changed)
-                snpReq.compareAndSet(this, null);
-
-            return changed;
+            return super.onDone(res, err, cancel);
         }
 
         /** {@inheritDoc} */

@@ -4738,18 +4738,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics(String registry) {
-        assert registry != null;
-
-        MetricRegistry mreg = ctx.metric().registry(registry);
-
-        if (mreg != null)
-            mreg.reset();
-        else if (log.isInfoEnabled())
-            log.info("\"" + registry + "\" not found.");
-    }
-
-    /** {@inheritDoc} */
     @Override public void clusterState(String state) {
         ClusterState newState = ClusterState.valueOf(state);
 

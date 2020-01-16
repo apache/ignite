@@ -117,7 +117,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /** Future of result completion. */
     @GridToStringExclude
-    private final SnapshotFuture snpFut = new SnapshotFuture(() -> {
+    private final SnapshotTaskFuture snpFut = new SnapshotTaskFuture(() -> {
         cancelled = true;
 
         close();
@@ -600,14 +600,14 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /**
      *
      */
-    private static class SnapshotFuture extends GridFutureAdapter<Boolean> {
+    private static class SnapshotTaskFuture extends GridFutureAdapter<Boolean> {
         /** Set cancelling state to snapshot. */
         private final Runnable doCancel;
 
         /**
          * @param doCancel Set cancelling state to snapshot.
          */
-        public SnapshotFuture(Runnable doCancel) {
+        public SnapshotTaskFuture(Runnable doCancel) {
             this.doCancel = doCancel;
         }
 
@@ -620,7 +620,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-            return  super.onDone(res, err, cancel);
+            return super.onDone(res, err, cancel);
         }
     }
 
