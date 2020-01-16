@@ -33,6 +33,7 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
@@ -379,6 +380,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see GridEncryptionManager
          */
-        MASTER_KEY_CHANGE_FINISH
+        MASTER_KEY_CHANGE_FINISH,
+
+        /**
+         * Take snapshot operation procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        TAKE_SNAPSHOT
     }
 }

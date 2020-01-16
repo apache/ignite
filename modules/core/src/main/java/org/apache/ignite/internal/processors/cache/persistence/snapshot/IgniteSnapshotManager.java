@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -204,6 +205,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** Configured data storage page size. */
     private int pageSize;
 
+    /** Take snapshot operation procedure. */
+    private DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
+
     /**
      * @param ctx Kernal context.
      */
@@ -271,6 +275,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         storeFactory = storeMgr::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+
+        takeSnpProc = new DistributedProcess<>(kctx, DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT,
+            this::takeSnapshot, this::takeSnapshotResult);
 
         // Receive remote snapshots requests.
         cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, new GridMessageListener() {
@@ -398,7 +405,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 if (fut.rmtNodeId.equals(nodeId)) {
                     fut.onDone(err);
 
-                    if(snpLsnr != null)
+                    if (snpLsnr != null)
                         snpLsnr.onException(nodeId, err);
                 }
             }
@@ -417,8 +424,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         "[snpName=" + snpName + ", transFut=" + transFut + ']');
                 }
 
-                assert transFut.snpName.equals(snpName) &&  transFut.rmtNodeId.equals(nodeId) :
-                    "Another transmission in progress [fut=" + transFut + ", nodeId=" + snpName + ", nodeId=" + nodeId +']';
+                assert transFut.snpName.equals(snpName) && transFut.rmtNodeId.equals(nodeId) :
+                    "Another transmission in progress [fut=" + transFut + ", nodeId=" + snpName + ", nodeId=" + nodeId + ']';
 
                 try {
                     File cacheDir = U.resolveWorkDirectory(tmpWorkDir.getAbsolutePath(),
@@ -494,8 +501,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         "[snpName=" + snpName + ", grpId=" + grpId + ", partId=" + partId + ", snpTrFut=" + snpTrFut + ']');
                 }
 
-                assert snpTrFut.snpName.equals(snpName) &&  snpTrFut.rmtNodeId.equals(nodeId) :
-                    "Another transmission in progress [snpTrFut=" + snpTrFut + ", nodeId=" + snpName + ", nodeId=" + nodeId +']';
+                assert snpTrFut.snpName.equals(snpName) && snpTrFut.rmtNodeId.equals(nodeId) :
+                    "Another transmission in progress [snpTrFut=" + snpTrFut + ", nodeId=" + snpName + ", nodeId=" + nodeId + ']';
 
                 FilePageStore pageStore = snpTrFut.stores.get(grpPartId);
 
@@ -668,6 +675,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     }
 
     /**
+     * @param req Request on snapshot creation.
+     * @return Future which will be completed when a snapshot has been started.
+     */
+    private IgniteInternalFuture<SnapshotOperationResponse> takeSnapshot(SnapshotOperationRequest req) {
+        return null;
+    }
+
+    /**
+     * Starts master key change process if there are no errors.
+     *
+     * @param id Request id.
+     * @param res Results.
+     * @param err Errors.
+     */
+    private void takeSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+
+    }
+
+    /**
      * @return Node snapshot working directory with given snapshot name.
      */
     public File snapshotWorkDir(String snpName) {
@@ -676,6 +702,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
+        takeSnpProc.start(UUID.randomUUID(), new SnapshotOperationRequest(name));
+
         return null;
     }
 
@@ -916,7 +944,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     }
 
     /**
-     *
      * @param rootSnpDir Absolute snapshot directory.
      * @return Snapshot receiver instance.
      */
@@ -1002,7 +1029,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     ) throws IgniteCheckedException {
         File rmtSnpDir = U.resolveWorkDirectory(rslvr.persistentStoreRootPath().getAbsolutePath(), dirPath, false);
 
-        File target = new File (rmtSnpDir, rslvr.folderName());
+        File target = new File(rmtSnpDir, rslvr.folderName());
 
         U.ensureDirectory(target, errorMsg, log);
 
@@ -1104,13 +1131,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      *
      */
     private static class SerialExecutor implements Executor {
-        /** */
+        /**
+         *
+         */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
-        /** */
+        /**
+         *
+         */
         private final Executor executor;
 
-        /** */
+        /**
+         *
+         */
         private volatile Runnable active;
 
         /**
@@ -1240,7 +1273,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
          * @param pair Cache group id with corresponding partition id.
          * @return Map of params.
          */
-        private Map<String, Serializable> transmissionParams(String snpName, String cacheDirName, GroupPartitionId pair) {
+        private Map<String, Serializable> transmissionParams(String snpName, String cacheDirName,
+            GroupPartitionId pair) {
             Map<String, Serializable> params = new HashMap<>();
 
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
@@ -1482,5 +1516,51 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     written += src.transferTo(written, length - written, dest);
             }
         }
+    }
+
+    /** Snapshot start operation request. */
+    private static class SnapshotOperationRequest implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Snapshot name. */
+        private final String snpName;
+
+        /**
+         * @param snpName Snapshot name.
+         */
+        public SnapshotOperationRequest(String snpName) {
+            this.snpName = snpName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SnapshotOperationRequest request = (SnapshotOperationRequest)o;
+
+            return Objects.equals(snpName, request.snpName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(snpName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SnapshotOperationRequest.class, this);
+        }
+    }
+
+
+    /** */
+    private static class SnapshotOperationResponse implements Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
     }
 }
