@@ -254,7 +254,9 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
                     res.addAll(nodes);
             }
 
-            nodes = Collections.unmodifiableSet(res);
+            res = Collections.unmodifiableSet(res);
+
+            this.nodes = res;
         }
 
         return res;
@@ -274,7 +276,9 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
                     res.add(nodes.get(0));
             }
 
-            primaryPartsNodes = Collections.unmodifiableSet(res);
+            res =  Collections.unmodifiableSet(res);
+
+            primaryPartsNodes = res;
         }
 
         return res;
