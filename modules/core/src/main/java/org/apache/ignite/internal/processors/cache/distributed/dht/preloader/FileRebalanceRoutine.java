@@ -106,7 +106,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
 
     /** Requests to switch a partition from read-only mode to normal mode. */
-    private final Map<Long, IgniteInternalFuture> activationRequests = new ConcurrentHashMap<>();
+    private final Map<Long, IgniteInternalFuture> activatePartRequests = new ConcurrentHashMap<>();
 
     /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
@@ -293,14 +293,21 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
-            IgniteInternalFuture<Long> fut =
-                ((GridCacheDatabaseSharedManager)cctx.database()).schedulePartitionActivation(grpId, partId);
+            IgniteInternalFuture<Long> fut;
 
-            activationRequests.put(uniquePartId(grpId, partId), fut);
+            cctx.database().checkpointReadLock();
+
+            try {
+                fut = ((GridCacheDatabaseSharedManager)cctx.database()).schedulePartitionActivation(grpId, partId);
+            } finally {
+                cctx.database().checkpointReadUnlock();
+            }
+
+            activatePartRequests.put(uniquePartId(grpId, partId), fut);
 
             fut.listen(f -> {
                 try {
-                    activationRequests.remove(uniquePartId(grpId, partId));
+                    activatePartRequests.remove(uniquePartId(grpId, partId));
 
                     onPartitionSnapshotRestored(grpId, partId, f.get());
                 }
@@ -437,7 +444,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         snapFut.cancel();
                     }
 
-                    for (IgniteInternalFuture fut : activationRequests.values()) {
+                    for (IgniteInternalFuture fut : activatePartRequests.values()) {
                         if (!fut.isDone())
                             fut.cancel();
                     }

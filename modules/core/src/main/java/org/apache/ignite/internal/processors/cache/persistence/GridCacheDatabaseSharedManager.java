@@ -4037,55 +4037,58 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return The number of destroyed partition files.
          */
         private int destroyEvictedPartitions() throws IgniteCheckedException {
-            PartitionRequestQueue<Void> destroyQueue = curCpProgress.destroyQueue;
+            return processQueuedRequests(curCpProgress.destroyQueue, req -> {
+                int grpId = req.grpId;
+                int partId = req.partId;
 
-            if (destroyQueue.pendingReqs.isEmpty())
-                return 0;
+                try {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
+                    assert grp != null : "Cache group is not initialized [grpId=" + grpId + "]";
+                    assert grp.offheap() instanceof GridCacheOffheapManager
+                        : "Destroying partition files when persistence is off " + grp.offheap();
+
+                    ((GridCacheOffheapManager)grp.offheap()).destroyPartitionStore(grpId, partId);
+
+                    req.onDone();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Partition file has destroyed [grpId=" + grpId + ", partId=" + partId + "]");
+                }
+                catch (Exception e) {
+                    req.onDone(new IgniteCheckedException(
+                        "Partition file destroy has failed [grpId=" + grpId + ", partId=" + partId + "]", e));
+                }
+            });
+        }
+
+        /**
+         * @param queue Request queue.
+         * @param clo Request handler.
+         */
+        private <T> int processQueuedRequests(
+            PartitionRequestQueue<T> queue,
+            IgniteInClosure<PartitionRequest<T>> clo
+        ) throws IgniteCheckedException {
             List<PartitionRequest> reqs = null;
 
-            for (final PartitionRequest req : destroyQueue.pendingReqs.values()) {
+            for (final PartitionRequest req : queue.pendingReqs.values()) {
                 if (!req.begin())
                     continue;
 
-                final int grpId = req.grpId;
-                final int partId = req.partId;
-
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                assert grp != null
-                    : "Cache group is not initialized [grpId=" + grpId + "]";
-                assert grp.offheap() instanceof GridCacheOffheapManager
-                    : "Destroying partition files when persistence is off " + grp.offheap();
-
-                final GridCacheOffheapManager offheap = (GridCacheOffheapManager) grp.offheap();
-
-                Runnable destroyPartTask = () -> {
-                    try {
-                        offheap.destroyPartitionStore(grpId, partId);
-
-                        req.onDone(null);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Partition file has destroyed [grpId=" + grpId + ", partId=" + partId + "]");
-                    }
-                    catch (Exception e) {
-                        req.onDone(new IgniteCheckedException(
-                            "Partition file destroy has failed [grpId=" + grpId + ", partId=" + partId + "]", e));
-                    }
-                };
+                Runnable partTask = () -> clo.apply(req);
 
                 if (asyncRunner != null) {
                     try {
-                        asyncRunner.execute(destroyPartTask);
+                        asyncRunner.execute(partTask);
                     }
                     catch (RejectedExecutionException ignore) {
                         // Run the task synchronously.
-                        destroyPartTask.run();
+                        partTask.run();
                     }
                 }
                 else
-                    destroyPartTask.run();
+                    partTask.run();
 
                 if (reqs == null)
                     reqs = new ArrayList<>();
@@ -4097,103 +4100,68 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (PartitionRequest req : reqs)
                     req.waitCompleted();
 
-            destroyQueue.pendingReqs.clear();
+            queue.pendingReqs.clear();
 
             return reqs != null ? reqs.size() : 0;
         }
 
-        private int activateReadonlyPartitions() throws IgniteCheckedException {
-            PartitionRequestQueue<Long> activateQueue = curCpProgress.activateQueue;
+        /**
+         * Processes all evicted partitions scheduled for destroy.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        private void activateReadonlyPartitions() throws IgniteCheckedException {
+            processQueuedRequests(curCpProgress.activateQueue, req -> {
+                int grpId = req.grpId;
+                int partId = req.partId;
 
-            if (activateQueue.pendingReqs.isEmpty())
-                return 0;
+                try {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-            List<PartitionRequest> reqs = null;
+                    assert grp != null : "Cache group is not initialized [grpId=" + grpId + "]";
 
-            for (final PartitionRequest req : activateQueue.pendingReqs.values()) {
-                if (!req.begin())
-                    continue;
+                    GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-                final int grpId = req.grpId;
-                final int partId = req.partId;
+                    assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
 
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                    // Save current counter.
+                    PartitionUpdateCounter readCntr =
+                        ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
 
-                assert grp != null
-                    : "Cache group is not initialized [grpId=" + grpId + "]";
-                assert grp.offheap() instanceof GridCacheOffheapManager
-                    : "Activating partition files when persistence is off " + grp.offheap();
+                    // Save current update counter.
+                    PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
 
-                Runnable activatePartTask = () -> {
-                    try {
-                        GridDhtLocalPartition part = grp.topology().localPartition(partId);
+                    part.readOnly(false);
 
-                        assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
+                    // Clear all on-heap entries.
+                    if (grp.sharedGroup()) {
+                        for (GridCacheContext ctx : grp.caches())
+                            part.entriesMap(ctx).map.clear();
+                    }
+                    else
+                        part.entriesMap(null).map.clear();
 
-                        // Save current counter.
-                        PartitionUpdateCounter readCntr =
-                            ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
+                    AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
-                        // Save current update counter.
-                        PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
+                    IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
 
-                        part.readOnly(false);
+                    // Operations that are in progress now will be lost and should be included in historical rebalancing.
+                    // These operations can update the old update counter or the new update counter, so the maximum applied
+                    // counter is used after all updates are completed.
+                    partReleaseFut.listen(c -> {
+                            long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
 
-                        // Clear all on-heap entries.
-                        if (grp.sharedGroup()) {
-                            for (GridCacheContext ctx : grp.caches())
-                                part.entriesMap(ctx).map.clear();
+                            cctx.kernalContext().getSystemExecutorService().submit(() -> req.onDone(hwm));
                         }
-                        else
-                            part.entriesMap(null).map.clear();
+                    );
 
-                        AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
-
-                        IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
-
-                        // Operations that are in progress now will be lost and should be included in historical rebalancing.
-                        // These operations can update the old update counter or the new update counter, so the maximum applied
-                        // counter is used after all updates are completed.
-                        partReleaseFut.listen(c -> {
-                                long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
-
-                                cctx.kernalContext().getSystemExecutorService().submit(() -> req.onDone(hwm));
-                            }
-                        );
-
-                        req.markComplete();
-                    }
-                    catch (Exception e) {
-                        req.onDone(new IgniteCheckedException(
-                            "Partition file destroy has failed [grpId=" + grpId + ", partId=" + partId + "]", e));
-                    }
-                };
-
-                if (asyncRunner != null) {
-                    try {
-                        asyncRunner.execute(activatePartTask);
-                    }
-                    catch (RejectedExecutionException ignore) {
-                        // Run the task synchronously.
-                        activatePartTask.run();
-                    }
+                    req.markComplete();
                 }
-                else
-                    activatePartTask.run();
-
-                if (reqs == null)
-                    reqs = new ArrayList<>();
-
-                reqs.add(req);
-            }
-
-            if (reqs != null)
-                for (PartitionRequest req : reqs)
-                    req.waitCompleted();
-
-            activateQueue.pendingReqs.clear();
-
-            return reqs != null ? reqs.size() : 0;
+                catch (Exception e) {
+                    req.onDone(new IgniteCheckedException(
+                        "Partition file destroy has failed [grpId=" + grpId + ", partId=" + partId + "]", e));
+                }
+            });
         }
 
         /**
