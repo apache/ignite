@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
@@ -63,9 +63,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED
  * File rebalance routine.
  */
 public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
-    /** Cancel callback invoked when routine is aborted. */
-    private final IgniteRunnable abortCb;
-
     /** Rebalance topology version. */
     private final AffinityTopologyVersion topVer;
 
@@ -108,12 +105,15 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     @GridToStringInclude
     private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
 
+    /** Requests to switch a partition from read-only mode to normal mode. */
+    private final Map<Long, IgniteInternalFuture> activationRequests = new ConcurrentHashMap<>();
+
     /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
 
     /** */
     public FileRebalanceRoutine() {
-        this(null, null, null, null, 0, null);
+        this(null, null, null, null, 0);
 
         onDone(true);
     }
@@ -123,21 +123,18 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param startVer Topology version on which the rebalance started.
      * @param cctx Cache shared context.
      * @param exchId Exchange ID.
-     * @param rebalanceId Rebalance ID.
-     * @param abortCb Abort callback to handle the abortion process from the outside.
+     * @param rebalanceId Rebalance ID
      */
     public FileRebalanceRoutine(
         Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
-        long rebalanceId,
-        IgniteRunnable abortCb
+        long rebalanceId
     ) {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
-        this.abortCb = abortCb;
 
         orderedAssgnments = assigns;
         topVer = startVer;
@@ -231,7 +228,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                             assert grp.topology().localPartition(partId).dataStore().readOnly() :
                                 "cache=" + grp.cacheOrGroupName() + " p=" + partId;
 
-                            long grpAndPart = ((long)grpId << 32) + partId;
+                            long grpAndPart = uniquePartId(grpId, partId);
 
                             regionParts.add(grpAndPart);
 
@@ -296,10 +293,18 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
-            cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone).listen(f -> {
+            IgniteInternalFuture<Long> fut =
+                ((GridCacheDatabaseSharedManager)cctx.database()).schedulePartitionActivation(grpId, partId);
+
+            activationRequests.put(uniquePartId(grpId, partId), fut);
+
+            fut.listen(f -> {
                 try {
+                    activationRequests.remove(uniquePartId(grpId, partId));
+
                     onPartitionSnapshotRestored(grpId, partId, f.get());
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
 
                     onDone(e);
@@ -359,9 +364,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             assert maxCntr >= initCntr : "from=" + initCntr + ", to=" + maxCntr;
 
             if (initCntr != maxCntr) {
-                long uniquePartId = ((long)grpId << 32) + partId;
-
-                UUID nodeId = partsToNodes.get(uniquePartId);
+                UUID nodeId = partsToNodes.get(uniquePartId(grpId, partId));
 
                 histAssignments.computeIfAbsent(nodeId, v -> new TreeMap<>()).put(partId, new T2<>(initCntr, maxCntr));
 
@@ -415,7 +418,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
         boolean nodeIsStopping = X.hasCause(err, NodeStoppingException.class);
 
-        if (cancel || err != null) {
+        boolean done = super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
+
+        if (cancel || err != null && done) {
             lock.lock();
 
             try {
@@ -432,7 +437,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         snapFut.cancel();
                     }
 
-                    abortCb.run();
+                    for (IgniteInternalFuture fut : activationRequests.values()) {
+                        if (!fut.isDone())
+                            fut.cancel();
+                    }
 
                     if (err == null) {
                         // Should await until off-heap cleanup is finished.
@@ -467,7 +475,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
         }
 
-        return super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
+        return done;
     }
 
     /**
@@ -532,6 +540,15 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
     }
 
+    /**
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @return Unique compound partition identifier.
+     */
+    private static long uniquePartId(int grpId, int partId) {
+        return ((long)grpId << 32) + partId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(FileRebalanceRoutine.class, this);
@@ -574,7 +591,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 log.debug("Off-heap clear task started [region=" + region.config().getName() + "]");
 
             memEx.clearAsync(
-                (grp, pageId) -> parts.contains(((long)grp << 32) + PageIdUtils.partId(pageId)), true)
+                (grp, pageId) -> parts.contains(uniquePartId(grp, PageIdUtils.partId(pageId))), true)
                 .listen(c1 -> {
                     cctx.database().checkpointReadLock();
 
