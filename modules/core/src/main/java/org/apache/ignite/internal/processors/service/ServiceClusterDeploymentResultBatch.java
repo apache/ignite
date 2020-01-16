@@ -107,11 +107,6 @@ public class ServiceClusterDeploymentResultBatch implements DiscoveryCustomMessa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         // No-op.
