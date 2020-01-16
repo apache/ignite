@@ -329,7 +329,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         }
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
-
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
 
                         SnapshotRequestFuture fut0 = snpReq.get();
