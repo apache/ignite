@@ -2033,6 +2033,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void reinit() {
+            assert readOnly() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
+
             try {
                 close();
 

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -55,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -73,6 +77,7 @@ import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
@@ -916,6 +921,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 throw new IgniteException("Failed to await partition destroy " + this, e);
             }
         }
+    }
+
+    /**
+     * Re-initialize partition with a new file.
+     *
+     * @param snapshot Partition snapshot file.
+     * @throws IOException If was not able to move partition file.
+     * @throws IgniteCheckedException If cache or partition with the given ID does not exists.
+     */
+    public void initialize(File snapshot) throws IgniteCheckedException, IOException {
+        assert state() == MOVING : "grp=" + group().cacheOrGroupName() + ", p=" + id + ", state=" + state();
+
+        FilePageStore pageStore =
+            ((FilePageStore)((FilePageStoreManager)ctx.pageStore()).getStore(group().groupId(), id));
+
+        File dest = new File(pageStore.getFileAbsolutePath());
+
+        if (log.isDebugEnabled())
+            log.debug("Moving snapshot [from=" + snapshot + " , to=" + dest + " , size=" + snapshot.length() + "]");
+
+        Files.move(snapshot.toPath(), dest.toPath(), REPLACE_EXISTING);
+
+        store.reinit();
     }
 
     /**

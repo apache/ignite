@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -286,7 +284,17 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             if (isDone())
                 return;
 
-            initializePartition(grpId, partId, file);
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            if (grp == null) {
+                log.warning("Snapshot initialization skipped, cache group not found [grp=" + grpId + "]");
+
+                return;
+            }
+
+            grp.topology().localPartition(partId).initialize(file);
+
+            grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
             cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone).listen(f -> {
                 try {
@@ -486,35 +494,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         Runnable task = grp.preloader().addAssignments(grpAssigns, true, rebalanceId, null, histFut);
 
         cctx.kernalContext().getSystemExecutorService().submit(task);
-    }
-
-    /**
-     * Re-initialize partition with a new file.
-     *
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     * @param src Partition snapshot file.
-     * @throws IOException If was not able to move partition file.
-     * @throws IgniteCheckedException If cache or partition with the given ID does not exists.
-     */
-    private void initializePartition(int grpId, int partId, File src) throws IOException, IgniteCheckedException {
-        FilePageStore pageStore = ((FilePageStore)((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId));
-
-        File dest = new File(pageStore.getFileAbsolutePath());
-
-        if (log.isDebugEnabled())
-            log.debug("Moving partition file [from=" + src + " , to=" + dest + " , size=" + src.length() + "]");
-
-        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-        assert !cctx.pageStore().exists(grpId, partId) :
-            "Partition file exists [cache=" + grp.cacheOrGroupName() + ", p=" + partId + "]";
-
-        Files.move(src.toPath(), dest.toPath());
-
-        grp.topology().localPartition(partId).dataStore().reinit();
-
-        grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
     }
 
     /**
