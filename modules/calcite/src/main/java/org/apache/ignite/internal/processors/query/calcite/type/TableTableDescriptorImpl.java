@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 /**
  *
  */
-public class TableTypeDescriptorImpl implements TypeDescriptor {
+public class TableTableDescriptorImpl implements TableDescriptor {
     /** */
     private final GridQueryTypeDescriptor queryTypeDesc;
 
@@ -58,7 +58,7 @@ public class TableTypeDescriptorImpl implements TypeDescriptor {
     /** */
     private final int cacheId;
 
-    public TableTypeDescriptorImpl(String cacheName, GridQueryTypeDescriptor queryTypeDesc, Object affinityIdentity) {
+    public TableTableDescriptorImpl(String cacheName, GridQueryTypeDescriptor queryTypeDesc, Object affinityIdentity) {
         cacheId = CU.cacheId(cacheName);
 
         this.queryTypeDesc = queryTypeDesc;
@@ -84,7 +84,7 @@ public class TableTypeDescriptorImpl implements TypeDescriptor {
         }
     }
 
-    private TableTypeDescriptorImpl(int cacheId, int affinityFieldIdx, Object affinityIdentity, GridQueryTypeDescriptor queryTypeDesc, List<RelDataTypeField> extend) {
+    private TableTableDescriptorImpl(int cacheId, int affinityFieldIdx, Object affinityIdentity, GridQueryTypeDescriptor queryTypeDesc, List<RelDataTypeField> extend) {
         this.queryTypeDesc = queryTypeDesc;
         this.extend = extend;
         this.affinityIdentity = affinityIdentity;
@@ -141,12 +141,12 @@ public class TableTypeDescriptorImpl implements TypeDescriptor {
         return extend;
     }
 
-    @Override public TypeDescriptor extend(List<RelDataTypeField> fields) {
+    @Override public TableDescriptor extend(List<RelDataTypeField> fields) {
         List<RelDataTypeField> extend = RelOptUtil.deduplicateColumns(this.extend, fields);
 
         checkExtended(fields);
 
-        return new TableTypeDescriptorImpl(cacheId, affinityFieldIdx, affinityIdentity, queryTypeDesc, extend);
+        return new TableTableDescriptorImpl(cacheId, affinityFieldIdx, affinityIdentity, queryTypeDesc, extend);
     }
 
 

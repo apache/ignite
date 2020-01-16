@@ -42,9 +42,6 @@ import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
  */
 public class Fragment implements RelSource {
     /** */
-    public static final long UNDEFINED_ID = -1;
-
-    /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */

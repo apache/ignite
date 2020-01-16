@@ -20,24 +20,16 @@ import java.util.List;
 import java.util.Map;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 
 /**
  *
  */
-public interface TypeDescriptor extends RelProtoDataType, DistributionAware, CollationAware {
+public interface TableDescriptor extends RelProtoDataType, DistributionAware, CollationAware, RowHandler {
     int cacheId();
 
     Map<String, Class<?>> fields();
 
     List<RelDataTypeField> extended();
 
-    boolean matchType(CacheDataRow row);
-
-    <T> T toRow(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow row) throws IgniteCheckedException;
-
-    TypeDescriptor extend(List<RelDataTypeField> fields);
+    TableDescriptor extend(List<RelDataTypeField> fields);
 }

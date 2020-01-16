@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.type.TestTypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.type.TestTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -115,7 +115,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         developer = new TestIgniteTable(
             ImmutableList.of("PUBLIC", "Developer"),
-            new TestTypeDescriptor()
+            new TestTableDescriptor()
                 .cacheName("Developer")
                 .identityKey("hash")
                 .field("id", Integer.class, true)
@@ -129,7 +129,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         project = new TestIgniteTable(
             ImmutableList.of("PUBLIC", "Project"),
-            new TestTypeDescriptor()
+            new TestTableDescriptor()
                 .cacheName("Project")
                 .identityKey("hash")
                 .field("id", Integer.class, true)
@@ -142,7 +142,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         country = new TestIgniteTable(
             ImmutableList.of("PUBLIC", "Country"),
-            new TestTypeDescriptor()
+            new TestTableDescriptor()
                 .cacheName("Country")
                 .field("id", Integer.class, true)
                 .field("name", String.class)
@@ -153,7 +153,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         city = new TestIgniteTable(
             ImmutableList.of("PUBLIC", "City"),
-            new TestTypeDescriptor()
+            new TestTableDescriptor()
                 .cacheName("City")
                 .field("id", Integer.class, true)
                 .field("name", String.class)
@@ -1294,12 +1294,12 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private static class TestIgniteTable extends IgniteTable {
-        private final TestTypeDescriptor desc;
+        private final TestTableDescriptor desc;
         /** */
         private final List<Object[]> data;
 
         /** */
-        private TestIgniteTable(List<String> fullName, TestTypeDescriptor desc, List<Object[]> data) {
+        private TestIgniteTable(List<String> fullName, TestTableDescriptor desc, List<Object[]> data) {
             super(fullName, desc);
             this.desc = desc;
             this.data = data;

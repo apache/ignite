@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.type.TypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.type.TableDescriptor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,9 +47,9 @@ public class TableScan implements Iterable<Object[]> {
     private final ExecutionContext ectx;
 
     /** */
-    private final TypeDescriptor desc;
+    private final TableDescriptor desc;
 
-    public TableScan(ExecutionContext ectx, TypeDescriptor desc) {
+    public TableScan(ExecutionContext ectx, TableDescriptor desc) {
         this.ectx = ectx;
         this.desc = desc;
     }
@@ -71,7 +71,7 @@ public class TableScan implements Iterable<Object[]> {
         private final ExecutionContext ectx;
 
         /** */
-        private final TypeDescriptor desc;
+        private final TableDescriptor desc;
 
         /** */
         private int cacheId = UNDEFINED_CACHE_ID;
@@ -91,7 +91,7 @@ public class TableScan implements Iterable<Object[]> {
         /** */
         private Object[] next;
 
-        public IteratorImpl(ExecutionContext ectx, TypeDescriptor desc) {
+        public IteratorImpl(ExecutionContext ectx, TableDescriptor desc) {
             this.ectx = ectx;
             this.desc = desc;
         }

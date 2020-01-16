@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.type.TypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.type.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.TableScan;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -56,20 +56,12 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     private final List<String> fullName;
 
     /** */
-    private final TypeDescriptor desc;
-
-    /**
-     * @param parent Parent schema full name.
-     * @param name Table name.
-     */
-    public IgniteTable(List<String> parent, String name, TypeDescriptor desc) {
-        this(ImmutableList.<String>builder().addAll(parent).add(name).build(), desc);
-    }
+    private final TableDescriptor desc;
 
     /**
      * @param fullName Table full name.
      */
-    public IgniteTable(List<String> fullName, TypeDescriptor desc) {
+    public IgniteTable(List<String> fullName, TableDescriptor desc) {
         assert !F.isEmpty(fullName);
         this.fullName = ImmutableList.copyOf(fullName);
         this.desc = desc;

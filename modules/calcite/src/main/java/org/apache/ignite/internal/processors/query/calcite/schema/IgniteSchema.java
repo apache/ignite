@@ -26,7 +26,7 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.type.TableTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.calcite.type.TableTableDescriptorImpl;
 
 /**
  * Ignite schema.
@@ -69,7 +69,7 @@ public class IgniteSchema extends AbstractSchema {
         Object identityKey = cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
             cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
 
-        TableTypeDescriptorImpl desc = new TableTypeDescriptorImpl(cacheInfo.name(), typeDesc, identityKey);
+        TableTableDescriptorImpl desc = new TableTableDescriptorImpl(cacheInfo.name(), typeDesc, identityKey);
 
         addTable(new IgniteTable(ImmutableList.of(schemaName, typeDesc.tableName()), desc));
     }

@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 /**
  *
  */
-public class TestTypeDescriptor implements TypeDescriptor {
+public class TestTableDescriptor implements TableDescriptor {
     /** */
     private static RelDataTypeFactory factory = new IgniteTypeFactory();
 
@@ -52,23 +52,23 @@ public class TestTypeDescriptor implements TypeDescriptor {
     private Object identityKey;
     private String cacheName;
 
-    public TestTypeDescriptor cacheName(String cacheName) {
+    public TestTableDescriptor cacheName(String cacheName) {
         this.cacheName = cacheName;
         return this;
     }
 
-    public TestTypeDescriptor identityKey(Object identityKey) {
+    public TestTableDescriptor identityKey(Object identityKey) {
         this.identityKey = identityKey;
         return this;
     }
 
-    public TestTypeDescriptor field(String name, Class<?> type, boolean affinityKey){
+    public TestTableDescriptor field(String name, Class<?> type, boolean affinityKey){
         affinityKeyIdx = fields.size();
         fields.add(new RelDataTypeFieldImpl(name, fields.size(), factory.createJavaType(type)));
         return this;
     }
 
-    public TestTypeDescriptor field(String name, Class<?> type){
+    public TestTableDescriptor field(String name, Class<?> type){
         fields.add(new RelDataTypeFieldImpl(name, fields.size(), factory.createJavaType(type)));
         return this;
     }
@@ -90,8 +90,8 @@ public class TestTypeDescriptor implements TypeDescriptor {
         return extend;
     }
 
-    @Override public TypeDescriptor extend(List<RelDataTypeField> fields) {
-        TestTypeDescriptor res = new TestTypeDescriptor();
+    @Override public TableDescriptor extend(List<RelDataTypeField> fields) {
+        TestTableDescriptor res = new TestTableDescriptor();
 
         res.affinityKeyIdx = affinityKeyIdx;
         res.identityKey = identityKey;
