@@ -261,8 +261,10 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
                         }
                     });
 
+                    // There can be a race and actual page list caches count can exceed the limit in very rare cases.
                     assertTrue("Page list caches count is more than expected [count: " + pageCachesCnt.get() +
-                        ", limit=" + limit + ']', pageCachesCnt.get() <= limit);
+                        ", limit=" + limit + ']', pageCachesCnt.get() <= limit + ignite.configuration()
+                        .getDataStreamerThreadPoolSize() - 1);
                 }
             }
         }

@@ -2079,6 +2079,7 @@ public abstract class PagesList extends DataStructure {
         public boolean add(long pageId) {
             assert pageId != 0L;
 
+            // Ok with race here.
             if (size == 0 && pagesCacheLimit != null && pagesCacheLimit.get() <= 0)
                 return false; // Pages cache limit exceeded.
 
