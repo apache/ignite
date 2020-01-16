@@ -145,6 +145,8 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.InitializationProtector;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -4156,6 +4158,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node) {
+        if (msg instanceof InitMessage &&
+            ((InitMessage)msg).type() == DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal())
+            return true;
+
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
             ctx.query().onDiscovery((SchemaAbstractDiscoveryMessage)msg);
 

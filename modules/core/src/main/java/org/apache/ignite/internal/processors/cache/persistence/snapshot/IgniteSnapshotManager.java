@@ -26,6 +26,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,17 +61,23 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.TransmissionCancelledException;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -90,6 +97,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -97,6 +105,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -106,6 +115,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.addPlatformMappings;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
@@ -207,6 +217,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** Take snapshot operation procedure. */
     private DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
+
+    /** Cluster snapshot operation. */
+    private IgniteFuture<Void> clusterSnpFut;
+
+    /** Current cluster-wide snapshot operation. */
+    private volatile SnapshotOperationRequest clusterSnpReq;
 
     /**
      * @param ctx Kernal context.
@@ -338,7 +354,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         }
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
-
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
 
                         SnapshotRequestFuture fut0 = snpReq.get();
@@ -369,29 +384,52 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 return;
 
             try {
-                for (SnapshotTask sctx : locSnpTasks.values()) {
-                    if (sctx.sourceNodeId().equals(evt.eventNode().id())) {
-                        sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
-                            "creation has left the grid"));
+                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                    DiscoveryCustomEvent evt0 = (DiscoveryCustomEvent)evt;
 
-                        sctx.closeAsync();
+                    if (evt0.customMessage() instanceof InitMessage) {
+                        InitMessage msg = (InitMessage)evt0.customMessage();
+
+                        if (msg.type() == DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal()) {
+                            assert clusterSnpReq != null : evt;
+
+                            DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
+
+                            customEvt.node(evt0.node());
+                            customEvt.eventNode(evt0.eventNode());
+                            customEvt.affinityTopologyVersion(evt0.affinityTopologyVersion());
+                            customEvt.customMessage(new SnapshotStartDiscoveryMessage(discoCache, msg.processId()));
+
+                            // Handle new event inside discovery thread, so no guarantees will be violated.
+                            cctx.exchange().onDiscoveryEvent(customEvt, discoCache);
+                        }
                     }
                 }
+                else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
+                    for (SnapshotTask sctx : locSnpTasks.values()) {
+                        if (sctx.sourceNodeId().equals(evt.eventNode().id())) {
+                            sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
+                                "creation has left the grid"));
 
-                SnapshotRequestFuture snpTrFut = snpReq.get();
+                            sctx.closeAsync();
+                        }
+                    }
 
-                if (snpTrFut == null)
-                    return;
+                    SnapshotRequestFuture snpTrFut = snpReq.get();
 
-                if (snpTrFut.rmtNodeId.equals(evt.eventNode().id())) {
-                    snpTrFut.onDone(new ClusterTopologyCheckedException("The node from which a snapshot has been " +
-                        "requested left the grid"));
+                    if (snpTrFut == null)
+                        return;
+
+                    if (snpTrFut.rmtNodeId.equals(evt.eventNode().id())) {
+                        snpTrFut.onDone(new ClusterTopologyCheckedException("The node from which a snapshot has been " +
+                            "requested left the grid"));
+                    }
                 }
             }
             finally {
                 busyLock.leaveBusy();
             }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_DISCOVERY_CUSTOM_EVT);
 
         // Remote snapshot handler.
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
@@ -678,18 +716,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> takeSnapshot(SnapshotOperationRequest req) {
-        return null;
+    IgniteInternalFuture<SnapshotOperationResponse> takeSnapshot(SnapshotOperationRequest req) {
+        if (clusterSnpReq != null) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
+                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
+        }
+
+        clusterSnpReq = req;
+
+        if (cctx.kernalContext().clientNode())
+            return new GridFinishedFuture<>();
+
+        try {
+
+        }
+        catch (Exception e) {
+            return new GridFinishedFuture<>(new IgniteException("Snapshot operation has been rejected rejected [nodeId=" +
+                cctx.localNodeId() + ']', e));
+        }
+
+        return new GridFinishedFuture<>(new SnapshotOperationResponse());
     }
 
     /**
-     * Starts master key change process if there are no errors.
-     *
      * @param id Request id.
      * @param res Results.
      * @param err Errors.
      */
-    private void takeSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+    void takeSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
 
     }
 
@@ -702,7 +756,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        takeSnpProc.start(UUID.randomUUID(), new SnapshotOperationRequest(name));
+        takeSnpProc.start(UUID.randomUUID(), new SnapshotOperationRequest(name, Collections.emptyList()));
 
         return null;
     }
@@ -710,6 +764,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> restoreSnapshot(String name) {
         return null;
+    }
+
+    /**
+     * @param fut Partition map exchange future.
+     */
+    public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        // No-op.
     }
 
     /**
@@ -1046,12 +1107,47 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /**
      *
      */
-    private class SnapshotRequestFuture extends GridFutureAdapter<Boolean> {
+    private static class SnapshotFuture extends GridFutureAdapter<Boolean> {
+        /** Snapshot name to create. */
+        protected final String snpName;
+
+        /**
+         * @param snpName Snapshot name to create.
+         */
+        public SnapshotFuture(String snpName) {
+            this.snpName = snpName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SnapshotFuture future = (SnapshotFuture)o;
+
+            return Objects.equals(snpName, future.snpName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(snpName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SnapshotFuture.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private class SnapshotRequestFuture extends SnapshotFuture {
         /** Remote node id to request snapshot from. */
         private final UUID rmtNodeId;
-
-        /** Snapshot name to create on remote. */
-        private final String snpName;
 
         /** Collection of partition to be received. */
         private final Map<GroupPartitionId, FilePageStore> stores = new ConcurrentHashMap<>();
@@ -1063,8 +1159,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
          * @param cnt Partitions to receive.
          */
         public SnapshotRequestFuture(UUID rmtNodeId, String snpName, int cnt) {
+            super(snpName);
+
             this.rmtNodeId = rmtNodeId;
-            this.snpName = snpName;
             partsLeft = new AtomicInteger(cnt);
         }
 
@@ -1097,27 +1194,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         }
 
         /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SnapshotRequestFuture future = (SnapshotRequestFuture)o;
-
-            return rmtNodeId.equals(future.rmtNodeId) &&
-                snpName.equals(future.snpName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(rmtNodeId, snpName);
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SnapshotRequestFuture.class, this);
+            return S.toString(SnapshotRequestFuture.class, this, super.toString());
         }
     }
 
@@ -1520,11 +1598,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         /** Snapshot name. */
         private final String snpName;
 
+        /** The list of cache groups to include into snapshot. */
+        private final List<Integer> grpIds;
+
         /**
          * @param snpName Snapshot name.
+         * @param grpIds Cache groups to include into snapshot.
          */
-        public SnapshotOperationRequest(String snpName) {
+        public SnapshotOperationRequest(String snpName, List<Integer> grpIds) {
             this.snpName = snpName;
+            this.grpIds = grpIds;
+        }
+
+        /**
+         * @return Snapshot name.
+         */
+        public String snapshotName() {
+            return snpName;
+        }
+
+        /**
+         * @return Cache groups included into snapshot.
+         */
+        public List<Integer> cacheGroups() {
+            return grpIds;
         }
 
         /** {@inheritDoc} */
@@ -1556,5 +1653,84 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     private static class SnapshotOperationResponse implements Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
+    }
+
+    /**
+     * Snapshot operation start message.
+     */
+    private static class SnapshotStartDiscoveryMessage implements SnapshotDiscoveryMessage {
+        /** Discovery cache. */
+        private final DiscoCache discoCache;
+
+        /** Snapshot request id */
+        private final IgniteUuid id;
+
+        /**
+         * @param discoCache Discovery cache.
+         * @param id Snapshot request id.
+         */
+        public SnapshotStartDiscoveryMessage(DiscoCache discoCache, UUID id) {
+            this.discoCache = discoCache;
+            this.id = new IgniteUuid(id, 0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needExchange() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needAssignPartitions() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isMutable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean stopProcess() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
+            DiscoCache discoCache) {
+            return this.discoCache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SnapshotStartDiscoveryMessage message = (SnapshotStartDiscoveryMessage)o;
+
+            return id.equals(message.id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SnapshotStartDiscoveryMessage.class, this);
+        }
     }
 }
