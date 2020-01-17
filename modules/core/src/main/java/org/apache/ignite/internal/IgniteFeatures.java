@@ -82,11 +82,14 @@ public enum IgniteFeatures {
     /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
     MASTER_KEY_CHANGE(20),
 
+    /** ContinuousQuery with security subject id support. */
+    CONT_QRY_SECURITY_AWARE(21),
+
     /** Persistence caches can be snapshotted.  */
-    PERSISTENCE_CACHE_SNAPSHOT(21),
+    PERSISTENCE_CACHE_SNAPSHOT(22),
 
     /** */
-    CACHE_PARTITION_FILE_REBALANCE(22);
+    CACHE_PARTITION_FILE_REBALANCE(23);
 
     /**
      * Unique feature identifier.
