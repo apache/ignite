@@ -201,7 +201,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         try {
             startGridWithPmeFreeSwithDisabled(0);
-            startGridsMultiThreaded(1,9);
+            startGridsMultiThreaded(1, 9);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -221,7 +221,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         try {
             startGridsMultiThreaded(4, false);
             startGridWithPmeFreeSwithDisabled(4);
-            startGridsMultiThreaded(5,5);
+            startGridsMultiThreaded(5, 5);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -257,7 +257,11 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         try {
             System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
 
-            return startGrid(idx);
+            Ignite ignite = startGrid(idx);
+
+            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
+
+            return ignite;
         }
         finally {
             System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
