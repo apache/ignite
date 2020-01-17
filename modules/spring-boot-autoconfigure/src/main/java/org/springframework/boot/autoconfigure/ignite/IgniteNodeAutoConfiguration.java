@@ -24,6 +24,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -55,6 +56,7 @@ import org.springframework.context.annotation.Configuration;
  * @see Ignite
  */
 @Configuration
+@EnableConfigurationProperties
 public class IgniteNodeAutoConfiguration {
     /** Ignite configuration properties prefix. */
     public static final String IGNITE_PROPS_PREFIX = "ignite";
@@ -65,7 +67,12 @@ public class IgniteNodeAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     public IgniteConfigurer nodeConfigurer() {
-        return new IgniteConfigurer() {};
+        return new IgniteConfigurer() {
+            /** {@inheritDoc} */
+            @Override public void configure(IgniteConfiguration cfg) {
+                // No-op.
+            }
+        };
     }
 
     /**

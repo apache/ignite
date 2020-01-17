@@ -28,6 +28,7 @@ import org.springframework.beans.factory.BeanFactory;
  * @see IgniteConfiguration
  * @see IgniteNodeAutoConfiguration
  */
+@FunctionalInterface
 public interface IgniteConfigurer {
     /**
      * Method to customize Ignite configuration.
@@ -35,7 +36,5 @@ public interface IgniteConfigurer {
      *
      * @param cfg Ignite configuration.
      */
-    default void configure(IgniteConfiguration cfg) {
-        // No-op.
-    }
+    void configure(IgniteConfiguration cfg);
 }

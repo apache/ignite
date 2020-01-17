@@ -28,6 +28,7 @@ import org.springframework.beans.factory.BeanFactory;
  * @see ClientConfiguration
  * @see IgniteClientAutoConfiguration
  */
+@FunctionalInterface
 public interface IgniteClientConfigurer {
     /**
      * Method to customize Client configuration.
@@ -35,7 +36,5 @@ public interface IgniteClientConfigurer {
      *
      * @param cfg Client configuration.
      */
-    default void configure(ClientConfiguration cfg) {
-        // No-op.
-    }
+    void configure(ClientConfiguration cfg);
 }

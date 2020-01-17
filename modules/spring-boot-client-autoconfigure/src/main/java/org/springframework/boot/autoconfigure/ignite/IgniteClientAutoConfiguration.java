@@ -24,6 +24,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -54,6 +55,7 @@ import org.springframework.context.annotation.Configuration;
  * @see ClientConfiguration
  */
 @Configuration
+@EnableConfigurationProperties
 public class IgniteClientAutoConfiguration {
     /** Ignite client configuration properties prefix. */
     public static final String IGNITE_CLIENT_PROPS_PREFIX = "ignite-client";
@@ -64,7 +66,11 @@ public class IgniteClientAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     public IgniteClientConfigurer clientConfigurer() {
-        return new IgniteClientConfigurer() {};
+        return new IgniteClientConfigurer() {
+            @Override public void configure(ClientConfiguration cfg) {
+                // No-op.
+            }
+        };
     }
 
     /**
