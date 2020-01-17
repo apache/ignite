@@ -66,7 +66,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -845,19 +844,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         if (locSnpTasks.containsKey(snpName))
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-        for (Integer grpId : parts.keySet()) {
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-            if (gctx == null)
-                return new GridFinishedFuture<>(new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId));
-
-            if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
-                return new GridFinishedFuture<>(new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId));
-
-            if (gctx.config().isEncryptionEnabled())
-                return new GridFinishedFuture<>(new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId));
-        }
-
         if (!busyLock.enterBusy())
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
@@ -869,18 +855,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     new File(snapshotWorkDir(), snpName0),
                     exec,
                     ioFactory,
-                    snpSndr));
+                    snpSndr,
+                    parts));
 
-            IgniteInternalFuture<Boolean> snpFut = snpTask.submit(parts);
+            IgniteInternalFuture<Boolean> snpFut = snpTask.execute(dbMgr::addCheckpointListener,
+                dbMgr::removeCheckpointListener);
 
-            // Schedule snapshot on checkpoint.
-            dbMgr.addCheckpointListener(snpTask);
-
-            snpFut.listen(f -> {
-                locSnpTasks.remove(snpName);
-
-                dbMgr.removeCheckpointListener(snpTask);
-            });
+            snpFut.listen(f -> locSnpTasks.remove(snpName));
 
             return snpFut;
         }
