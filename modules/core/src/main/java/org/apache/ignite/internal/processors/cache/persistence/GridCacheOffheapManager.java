@@ -2903,7 +2903,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (readOnlyMode.compareAndSet(!readOnly, readOnly)) {
                 if (log.isInfoEnabled()) {
                     log.info("Partition mode changed [grp=" + grp.cacheOrGroupName() +
-                        ", p=" + partId() + ", mode=" + (readOnly ? "READ-ONLY" : "FULL") + "]");
+                        ", p=" + partId() + ", cntr=" + updateCounter() +
+                        ", mode=" + (readOnly ? "READ-ONLY" : "FULL") + "]");
                 }
 
                 if (readOnly)

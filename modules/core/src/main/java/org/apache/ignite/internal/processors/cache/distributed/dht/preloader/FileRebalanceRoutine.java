@@ -445,8 +445,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     }
 
                     for (IgniteInternalFuture fut : activatePartRequests.values()) {
-                        if (!fut.isDone())
-                            fut.cancel();
+                        if (!fut.isDone() && !fut.cancel())
+                            fut.get();
                     }
 
                     if (err == null) {

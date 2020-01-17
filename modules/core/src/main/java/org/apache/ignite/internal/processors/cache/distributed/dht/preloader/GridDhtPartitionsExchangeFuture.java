@@ -3279,6 +3279,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             long maxCntr = maxCntrObj != null ? maxCntrObj.cnt : 0;
 
+            if (maxCntr == 0)
+                continue;
+
             // todo historical rebalancing and file rebalancing could not start on same group at the same time.
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);

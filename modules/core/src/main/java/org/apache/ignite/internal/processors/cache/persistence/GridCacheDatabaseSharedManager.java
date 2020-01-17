@@ -1852,11 +1852,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
         T2<Long, WALPointer> saved = reservedForPreloading.get(new T2<>(grpId, partId));
 
-        if (saved != null) {
-            assert saved.get1() <= cntr : "reserved=" + saved.get1() + ", required=" + cntr;
-
+        if (saved != null && saved.get1() <= cntr)
             return true;
-        }
 
         if (log.isDebugEnabled()) {
             log.debug("Reserve history for preloading [grp=" +
@@ -1883,8 +1880,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean reserved = cctx.wal().reserve(ptr);
 
-        if (reserved)
+        if (reserved) {
+            try {
+                if (saved != null)
+                    cctx.wal().release(saved.get2());
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Could not release WAL reservation", e);
+
+                throw new IgniteException(e);
+            }
+
             reservedForPreloading.put(new T2<>(grpId, partId), new T2<>(cntr, ptr));
+        }
 
         return reserved;
     }
