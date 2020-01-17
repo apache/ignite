@@ -27,53 +27,59 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
-/** */
+/**
+ * Implementation of contract for managing transactional and concurrent access to cached entity data.
+ */
 public class IgniteEntityDataAccess extends IgniteCachedDomainDataAccess implements EntityDataAccess {
-    /** */
+    /** Strategy access type. */
     private final AccessType accessType;
 
     /** */
-    public IgniteEntityDataAccess(HibernateAccessStrategyAdapter stgy, AccessType accessType,
+    public IgniteEntityDataAccess(
+        HibernateAccessStrategyAdapter stgy,
+        AccessType accessType,
         RegionFactory regionFactory,
-        DomainDataRegion domainDataRegion, Ignite ignite,
-        HibernateCacheProxy cache) {
+        DomainDataRegion domainDataRegion,
+        Ignite ignite,
+        HibernateCacheProxy cache
+    ) {
         super(stgy, regionFactory, domainDataRegion, ignite, cache);
 
         this.accessType = accessType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Object generateCacheKey(Object id, EntityPersister persister, SessionFactoryImplementor factory,
         String tenantIdentifier) {
         return HibernateKeyWrapper.staticCreateEntityKey(id, persister, tenantIdentifier);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Object getCacheKeyId(Object cacheKey) {
         return ((HibernateKeyWrapper) cacheKey).id();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean insert(SharedSessionContractImplementor ses, Object key, Object val, Object ver) {
         return stgy.insert(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean afterInsert(SharedSessionContractImplementor ses, Object key, Object val, Object ver) {
         return stgy.afterInsert(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean update(SharedSessionContractImplementor ses, Object key, Object val, Object curVer, Object prevVer) {
         return stgy.update(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, Object curVer, Object prevVer, SoftLock lock) {
         return stgy.afterUpdate(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public AccessType getAccessType() {
         return accessType;
     }
