@@ -126,7 +126,6 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
     /** */
     private void checkCancel(IgniteEx initator, IgniteEx rmt, Consumer<IgniteFuture> consumer) throws Exception {
         VERIFIER
-            .clear()
             .initiator(initator)
             .expect(rmt.name(), 1);
 
