@@ -29,9 +29,19 @@ import org.junit.Test;
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
  */
-public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexingMigrationAbstractionTest {
+public class IgnitePKIndexesMigrationToAlternativeKeyTest extends IndexingMigrationAbstractionTest {
     /** */
     private static String TABLE_NAME = "TEST_IDX_TABLE";
+
+    /**
+     * Tests opportunity to read data from previous Ignite DB version.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSecondaryIndexesMigration_2_7() throws Exception {
+        doTestStartupWithOldVersion("2.7.0");
+    }
 
     /**
      * Tests opportunity to read data from previous Ignite DB version.
@@ -86,10 +96,14 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexingMigrationAbs
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
 
-        /** */
+        /**
+         *
+         */
         boolean createTable;
 
         /**
@@ -122,10 +136,10 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexingMigrationAbs
         executeSql(igniteEx, "CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"affinity_key=name\"");
 
-        executeSql(igniteEx, "CREATE INDEX ON " + tblName + "(city, age)");
+        executeSql(igniteEx, "CREATE INDEX ON " + tblName + "(city, id)");
 
         for (int i = 0; i < 1000; i++)
-            executeSql(igniteEx, "INSERT INTO " + tblName + " (id, name, age, company, city) VALUES(?,'name',2,'company', 'city')", i);
+            executeSql(igniteEx, "INSERT INTO " + tblName + " (id, name, age, company, city) VALUES(0,'name"+ i + "',2,'company', 'city"+ i + "')", i);
     }
 
     /**
@@ -147,19 +161,12 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexingMigrationAbs
      * @param tblName name of table which should be checked to using PK indexes.
      */
     private static void checkUsingIndexes(IgniteEx ignite, String tblName) {
-        String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
-        List<List<?>> results = executeSql(ignite, explainSQL + "id=1");
+        for (int i = 0; i < 1000; i++) {
+            String s = "SELECT name FROM " + tblName + " WHERE city="+ i + " AND id=0 AND name='name"+ i + "'";
+            System.out.println(executeSql(ignite, s));
+        }
 
-        assertUsingPkIndex(results);
-
-        results = executeSql(ignite, explainSQL + "id=1 and name='name'");
-
-        assertUsingPkIndex(results);
-
-        results = executeSql(ignite, explainSQL + "id=1 and name='name' and city='city' and age=2");
-
-        assertUsingPkIndex(results);
     }
 
     /**
@@ -188,8 +195,11 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexingMigrationAbs
 
         String explainPlan = (String)results.get(0).get(0);
 
+        System.out.println(explainPlan);
+
         assertFalse(explainPlan, explainPlan.contains("\"_key_PK\""));
 
         assertTrue(explainPlan, explainPlan.contains("_SCAN_"));
     }
+
 }
