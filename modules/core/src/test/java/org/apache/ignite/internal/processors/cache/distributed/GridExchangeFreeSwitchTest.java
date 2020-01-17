@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -172,7 +171,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testNodeLeftOnFullyRebalancedCluster(10);
+        testNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
@@ -184,7 +183,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            testNodeLeftOnFullyRebalancedCluster(10);
+            testNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -192,39 +191,18 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when some nodes starts with option
-     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this nodes is stoped.
+     * Checks Partition Exchange is regular in case of fixed baseline, when the first node is started with option
+     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
      */
     @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledSomeNodes5() throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
         persistence = true;
 
         try {
-            testNodeLeftOnFullyRebalancedCluster(10, 5);
-        }
-        finally {
-            persistence = false;
-        }
-    }
+            startGridWithPmeFreeSwithDisabled(0);
+            startGridsMultiThreaded(1,9);
 
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledSomeNodes0() throws Exception {
-        persistence = true;
-
-        try {
-            testNodeLeftOnFullyRebalancedCluster(10, 0);
-        }
-        finally {
-            persistence = false;
-        }
-    }
-
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledSomeNodes10() throws Exception {
-        persistence = true;
-
-        try {
-            testNodeLeftOnFullyRebalancedCluster(10, 10);
+            checkNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -232,72 +210,94 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param topSize Topology size.
-     * @param idxNode Index node.
+     * Checks Partition Exchange is regular in case of fixed baseline, when the fifth node is started with option
+     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
      */
-    private Ignite startTopology(int topSize, int idxNode) throws Exception {
-        assert topSize > 0;
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFifthNode() throws Exception {
+        persistence = true;
 
-        if (idxNode < 0 || idxNode <= topSize )
-            return startGridsMultiThreaded(topSize, false);
+        try {
+            startGridsMultiThreaded(4, false);
+            startGridWithPmeFreeSwithDisabled(4);
+            startGridsMultiThreaded(5,5);
 
-        if (idxNode == 0){
-            startGridWithPmeFreeSwithDisabled(idxNode);
-            return startGridsMultiThreaded(1,topSize - 1);
+            checkNodeLeftOnFullyRebalancedCluster();
         }
-
-        if (idxNode == topSize - 1){
-            startGridsMultiThreaded(idxNode,false);
-            return startGridWithPmeFreeSwithDisabled(idxNode);
+        finally {
+            persistence = false;
         }
-
-        startGridsMultiThreaded(idxNode, false);
-        startGridWithPmeFreeSwithDisabled(idxNode);
-        return startGridsMultiThreaded(idxNode+1, topSize - 1 - idxNode);
     }
 
-    @WithSystemProperty(key = IGNITE_PME_FREE_SWITCH_DISABLED, value = "true")
+    /**
+     * Checks Partition Exchange is regular in case of fixed baseline, when the last node is started with option
+     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
+        persistence = true;
+
+        try {
+            startGridsMultiThreaded(9, false);
+            startGridWithPmeFreeSwithDisabled(9);
+
+            checkNodeLeftOnFullyRebalancedCluster();
+        }
+        finally {
+            persistence = false;
+        }
+    }
+
+    /**
+     * @param idx Index.
+     * @return Started grid
+     */
     private Ignite startGridWithPmeFreeSwithDisabled(int idx) throws Exception {
-        return startGrid(idx);
+        try {
+            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+
+            return startGrid(idx);
+        }
+        finally {
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
+    }
+
+    /**
+     * Start the nodes and Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
+     */
+    private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
+        int nodes = 10;
+
+        startGridsMultiThreaded(nodes);
+
+        checkNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
-     *
-     * @param nodesCnt Number of nodes needed to run.
      */
-    private void testNodeLeftOnFullyRebalancedCluster(int nodesCnt) throws Exception {
-        testNodeLeftOnFullyRebalancedCluster(nodesCnt, -1);
-    }
+    private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
+        List<Ignite> ignites = G.allGrids();
 
-    /**
-     * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
-     *
-     * @param idxNode node starting with option.
-     * @param topSize expected topology size.
-     */
-    private void testNodeLeftOnFullyRebalancedCluster(int topSize, int idxNode) throws Exception {
-        Ignite ignite = startTopology(topSize,idxNode);
-
-        checkTopology(topSize);
-
-        ignite.cluster().active(true);
-
-        assertEquals(ignite.cluster().currentBaselineTopology().size(), topSize);
+        ignites.get(0).cluster().active(true);
 
         awaitPartitionMapExchange();
+
+        int nodes = ignites.size();
 
         AtomicLong cntSingle = new AtomicLong();
         AtomicLong cntFull = new AtomicLong();
 
-        Collection<ClusterNode> nodes = ignite.cluster().nodes();
+        Collection<ClusterNode> clusterNodes = ignites.get(0).cluster().nodes();
 
         AtomicInteger cntNodesNotSupportingPmeFreeSwitch = new AtomicInteger();
 
-        boolean pmeExpected = !persistence || !allNodesSupports(nodes, PME_FREE_SWITCH);
+        boolean allNodesSupported = allNodesSupports(clusterNodes, PME_FREE_SWITCH);
+        boolean pmeExpected = !persistence || (persistence && !allNodesSupported);
 
-        if (persistence && pmeExpected) {
-            for (ClusterNode cn : nodes) {
+        if (persistence && !allNodesSupported) {
+            for (ClusterNode cn : clusterNodes) {
                 if (nodeSupports(cn, PME_FREE_SWITCH))
                     continue;
 
@@ -305,12 +305,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
         }
 
-        initCountPmeMessages(topSize, cntSingle, cntFull);
+        initCountPmeMessages(nodes, cntSingle, cntFull);
 
         Random r = new Random();
 
-        while (topSize > 1) {
-            Ignite failed = G.allGrids().get(r.nextInt(topSize--));
+        while (nodes > 1) {
+            Ignite failed = G.allGrids().get(r.nextInt(nodes--));
 
             if (persistence && pmeExpected &&
                 !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH) &&
@@ -321,7 +321,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(pmeExpected ? (topSize - 1) : 0, cntSingle.get());
+            assertEquals(pmeExpected ? (nodes - 1) : 0, cntSingle.get());
             assertEquals(cntSingle.get(), cntFull.get());
 
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
@@ -384,7 +384,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             int nodes = 4;
 
-            startGridsMultiThreaded(nodes, true);
+            startGridsMultiThreaded(nodes);
 
             AtomicLong cntSingle = new AtomicLong();
             AtomicLong cntFull = new AtomicLong();
