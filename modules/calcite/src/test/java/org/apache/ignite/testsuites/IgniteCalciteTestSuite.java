@@ -34,4 +34,5 @@ import org.junit.runners.Suite;
     ExecutionTest.class,
     ContinuousExecutionTest.class
 })
-public class IgniteCalciteTestSuite { }
+public class IgniteCalciteTestSuite {
+}

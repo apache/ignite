@@ -56,6 +56,7 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private T next;
 
+    /** */
     public TableScanIterator(int cacheId, Iterator<GridDhtLocalPartition> parts, Function<CacheDataRow, T> typeWrapper,
         Predicate<CacheDataRow> typeFilter) {
         this.cacheId = cacheId;
@@ -91,7 +92,6 @@ public class TableScanIterator<T> extends GridCloseableIteratorAdapter<T> {
 
                     IgniteCacheOffheapManager.CacheDataStore ds = part.dataStore();
 
-                    // TODO introduce MvccSnapshot to the table iterator.
                     cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId, null);
                 } else
                     break;
