@@ -298,7 +298,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      * @param adder Register current task on.
      * @param remover Deregister current taks on.
      */
-    public void execute(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
+    public void submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
             nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
 
