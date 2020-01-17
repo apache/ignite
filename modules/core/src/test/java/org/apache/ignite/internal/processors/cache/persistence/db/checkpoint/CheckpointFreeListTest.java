@@ -33,6 +33,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
@@ -337,21 +338,21 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         AtomicBoolean done = new AtomicBoolean();
         AtomicReference<Throwable> error = new AtomicReference<>();
 
-        GridCacheOffheapManager offheap = (GridCacheOffheapManager)ignite.context().cache().cache(DEFAULT_CACHE_NAME)
-            .context().group().offheap();
-
-        long initPageListCacheLimit = offheap.pageListCacheLimit();
-
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+
+        AtomicLong pageListCacheLimitHolder = db.pageListCacheLimitHolder(ignite.context().cache()
+            .cache(DEFAULT_CACHE_NAME).context().dataRegion());
+
+        long initPageListCacheLimit = pageListCacheLimitHolder.get();
 
         // Add listener after cache is started, so this listener will be triggered after listener for cache.
         db.addCheckpointListener(new DbCheckpointListener() {
             @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
                 // Check under checkpoint write lock that page list cache limit is correctly restored.
                 // Need to wait for condition here, since checkpointer can store free-list metadata asynchronously.
-                if (!waitForCondition(() -> initPageListCacheLimit == offheap.pageListCacheLimit(), 1_000L)) {
+                if (!waitForCondition(() -> initPageListCacheLimit == pageListCacheLimitHolder.get(), 1_000L)) {
                     IgniteCheckedException e = new IgniteCheckedException("Page list cache limit doesn't restored " +
-                        "correctly [init=" + initPageListCacheLimit + ", cur=" + offheap.pageListCacheLimit() + ']');
+                        "correctly [init=" + initPageListCacheLimit + ", cur=" + pageListCacheLimitHolder.get() + ']');
 
                     error.set(e);
 
