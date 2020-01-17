@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -200,8 +199,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            startGridWithPmeFreeSwithDisabled(0);
-            startGridsMultiThreaded(1, 9);
+            startTopologyWithPmeFreeDisabledOneNode(0);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -219,9 +217,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            startGridsMultiThreaded(4, false);
-            startGridWithPmeFreeSwithDisabled(4);
-            startGridsMultiThreaded(5, 5);
+            startTopologyWithPmeFreeDisabledOneNode(4);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -239,8 +235,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            startGridsMultiThreaded(9, false);
-            startGridWithPmeFreeSwithDisabled(9);
+            startTopologyWithPmeFreeDisabledOneNode(9);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -716,6 +711,40 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             res.add(p0);
 
             return res;
+        }
+    }
+
+    /**
+     * Starts the topology where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
+     *
+     * @param idxNode Index node.
+     */
+    private Ignite startTopologyWithPmeFreeDisabledOneNode(int idxNode) throws Exception {
+        int topSize = 10;
+
+        assert 0 <= idxNode && idxNode <= topSize - 1;
+
+        try {
+            if (idxNode == 0) {
+                startGridWithPmeFreeSwithDisabled(idxNode);
+
+                return startGridsMultiThreaded(1, topSize - 1);
+            }
+
+            if (idxNode == topSize - 1) {
+                startGridsMultiThreaded(idxNode, false);
+
+                return startGridWithPmeFreeSwithDisabled(idxNode);
+            }
+
+            startGridsMultiThreaded(idxNode, false);
+
+            startGridWithPmeFreeSwithDisabled(idxNode++);
+
+            return startGridsMultiThreaded(idxNode, topSize - idxNode);
+        }
+        finally {
+            checkTopology(topSize);
         }
     }
 }
