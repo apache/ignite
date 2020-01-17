@@ -48,6 +48,8 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
@@ -58,9 +60,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** */
-    private final boolean fileRebalanceEnabled =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED, true) &&
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true);
+    private final boolean fileRebalanceEnabled = IgniteSystemProperties.getBoolean(IGNITE_FILE_REBALANCE_ENABLED, true);
 
     /** */
     private final long fileRebalanceThreshold = IgniteSystemProperties.getLong(IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
@@ -289,6 +289,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      */
     public boolean supports(CacheGroupContext grp) {
         if (!fileRebalanceEnabled || !grp.persistenceEnabled() || grp.isLocal())
+            return false;
+
+        if (!IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
             return false;
 
         if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() == CacheRebalanceMode.NONE)
