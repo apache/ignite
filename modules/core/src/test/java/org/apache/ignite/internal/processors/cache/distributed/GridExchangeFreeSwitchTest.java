@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
@@ -202,7 +203,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             startGridWithPmeFreeSwithDisabled(0);
             startGridsMultiThreaded(1,9);
 
-            checkNodeLeftOnFullyRebalancedCluster();
+            checksNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -222,7 +223,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             startGridWithPmeFreeSwithDisabled(4);
             startGridsMultiThreaded(5,5);
 
-            checkNodeLeftOnFullyRebalancedCluster();
+            checksNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -241,7 +242,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             startGridsMultiThreaded(9, false);
             startGridWithPmeFreeSwithDisabled(9);
 
-            checkNodeLeftOnFullyRebalancedCluster();
+            checksNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -271,13 +272,13 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(nodes);
 
-        checkNodeLeftOnFullyRebalancedCluster();
+        checksNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
-    private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
+    private void checksNodeLeftOnFullyRebalancedCluster() throws Exception {
         List<Ignite> ignites = G.allGrids();
 
         ignites.get(0).cluster().active(true);
@@ -312,7 +313,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         while (nodes > 1) {
             Ignite failed = G.allGrids().get(r.nextInt(nodes--));
 
-            if (persistence && pmeExpected &&
+            if (persistence && !allNodesSupported &&
                 !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH) &&
                 (cntNodesNotSupportingPmeFreeSwitch.decrementAndGet() == 0))
                 pmeExpected = false;
