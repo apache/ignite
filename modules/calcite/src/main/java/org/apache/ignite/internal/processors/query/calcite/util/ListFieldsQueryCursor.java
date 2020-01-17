@@ -26,7 +26,6 @@ import java.util.stream.StreamSupport;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -77,8 +76,7 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (it instanceof AutoCloseable)
-            U.closeQuiet((AutoCloseable)it);
+        Commons.close(it);
     }
 
     /** {@inheritDoc} */

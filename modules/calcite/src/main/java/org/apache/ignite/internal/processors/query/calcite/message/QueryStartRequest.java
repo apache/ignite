@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,6 +60,7 @@ public class QueryStartRequest implements MarshalableMessage {
     /** */
     private byte[] paramsBytes;
 
+    /** */
     public QueryStartRequest(UUID queryId, long fragmentId, String schema, RelGraph plan, AffinityTopologyVersion version, int[] partitions, Object[] params) {
         this.schema = schema;
         this.queryId = queryId;
@@ -69,34 +71,56 @@ public class QueryStartRequest implements MarshalableMessage {
         this.params = params;
     }
 
+    /** */
     QueryStartRequest() {
 
     }
 
+    /**
+     * @return Schema name.
+     */
     public String schema() {
         return schema;
     }
 
+    /**
+     * @return Query ID.
+     */
     public UUID queryId() {
         return queryId;
     }
 
+    /**
+     * @return Fragment ID.
+     */
     public long fragmentId() {
         return fragmentId;
     }
 
+    /**
+     * @return Partitions.
+     */
     public int[] partitions() {
         return partitions;
     }
 
+    /**
+     * @return Topology version.
+     */
     public AffinityTopologyVersion topologyVersion() {
         return version;
     }
 
+    /**
+     * @return Fragment plan.
+     */
     public RelGraph plan() {
         return plan;
     }
 
+    /**
+     * @return Query parameters.
+     */
     public Object[] parameters() {
         return params;
     }

@@ -354,6 +354,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return remotes.get(new QueryKey(queryId, exchangeId));
     }
 
+    /**
+     * Starts query fragment execution routine.
+     *
+     * @param nodeId Client node ID.
+     * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
+     * @param schemaName Schema name.
+     * @param topVer Topology version.
+     * @param plan Query fragment plan.
+     * @param parts Involved partitions.
+     * @param params Query parameters.
+     */
     public void executeFragment(UUID nodeId, UUID queryId, long fragmentId, String schemaName, AffinityTopologyVersion topVer,
         RelGraph plan, int[] parts, Object[] params) {
 
@@ -376,8 +388,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 Commons.parametersMap(params));
 
             Node<Object[]> node = new Implementor(execCtx).go(igniteRel(root));
-
-            // TODO check topology
 
             assert node instanceof Outbox : node;
 

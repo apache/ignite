@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -49,13 +51,10 @@ public class TableScan implements Iterable<Object[]> {
     /** */
     private final TableDescriptor desc;
 
+    /** */
     public TableScan(ExecutionContext ectx, TableDescriptor desc) {
         this.ectx = ectx;
         this.desc = desc;
-    }
-
-    private ExecutionContext executionContext() {
-        return ectx;
     }
 
     /** {@inheritDoc} */
@@ -91,6 +90,7 @@ public class TableScan implements Iterable<Object[]> {
         /** */
         private Object[] next;
 
+        /** */
         public IteratorImpl(ExecutionContext ectx, TableDescriptor desc) {
             this.ectx = ectx;
             this.desc = desc;
@@ -177,32 +177,10 @@ public class TableScan implements Iterable<Object[]> {
                 if (!fut.isDone() || fut.topologyVersion().compareTo(topVer) != 0)
                     throw new ClusterTopologyException("Failed to execute query. Retry on stable topology.");
 
-                int[] partitions = ectx.partitions();
-
-                if (partitions == null) {
-                    List<GridDhtLocalPartition> localParts = top.localPartitions();
-
-                    parts = new ArrayDeque<>(localParts);
-
-                    for (GridDhtLocalPartition local : localParts) {
-                        if (!local.reserve())
-                            throw new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
-
-                        parts.offer(local);
-                    }
-                }
-                else {
-                    parts = new ArrayDeque<>(partitions.length);
-
-                    for (int p : partitions) {
-                        GridDhtLocalPartition local = top.localPartition(p, topVer, false);
-
-                        if (local == null || !local.reserve())
-                            throw new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
-
-                        parts.offer(local);
-                    }
-                }
+                if (cctx.isPartitioned())
+                    reservePartitioned(top);
+                else
+                    reserveReplicated(top);
             }
             catch (Throwable e) {
                 U.closeQuiet(this);
@@ -214,6 +192,54 @@ public class TableScan implements Iterable<Object[]> {
             }
 
             return this;
+        }
+
+        /** */
+        private void reserveReplicated(GridDhtPartitionTopology top) {
+            List<GridDhtLocalPartition> localParts = top.localPartitions();
+
+            parts = new ArrayDeque<>(localParts);
+
+            for (GridDhtLocalPartition local : localParts) {
+                if (!local.reserve())
+                    throw reservationException();
+                else if (local.state() != GridDhtPartitionState.OWNING) {
+                    local.release();
+
+                    throw reservationException();
+                }
+
+                parts.offer(local);
+            }
+        }
+
+        /** */
+        private void reservePartitioned(GridDhtPartitionTopology top) {
+            AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
+            int[] partitions = ectx.partitions();
+
+            assert topVer != null && !F.isEmpty(partitions);
+
+            parts = new ArrayDeque<>(partitions.length);
+
+            for (int p : partitions) {
+                GridDhtLocalPartition local = top.localPartition(p, topVer, false);
+
+                if (local == null || !local.reserve())
+                    throw reservationException();
+                else if (local.state() != GridDhtPartitionState.OWNING) {
+                    local.release();
+
+                    throw reservationException();
+                }
+
+                parts.offer(local);
+            }
+        }
+
+        /** */
+        private IgniteSQLException reservationException() {
+            return new IgniteSQLException("Failed to reserve partition for query execution. Retry on stable topology.");
         }
     }
 }

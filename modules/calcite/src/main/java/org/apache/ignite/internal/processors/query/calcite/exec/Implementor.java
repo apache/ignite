@@ -66,6 +66,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         DestinationFunction function = distribution.function().toDestination(ctx.parent(), target.mapping(), distribution.getKeys());
         MailboxRegistry registry = ctx.mailboxRegistry();
 
+        // Outbox fragment ID is used as exchange ID as well.
         Outbox<Object[]> outbox = new Outbox<>(ctx, targetFragmentId, ctx.fragmentId(), visit(rel.getInput()), function);
 
         registry.register(outbox);
@@ -101,6 +102,8 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
         RelSource source = rel.source();
         MailboxRegistry registry = ctx.mailboxRegistry();
+
+        // Corresponding outbox fragment ID is used as exchange ID as well.
         Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(new Inbox<>(ctx, source.fragmentId(), source.fragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox

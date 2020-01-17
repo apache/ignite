@@ -47,6 +47,12 @@
             <artifactId>ignite-indexing</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-calcite</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -44,8 +44,9 @@ public interface ExchangeService {
     void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows);
 
     /**
-     * Callback method;
-     *  @param caller Caller.
+     * Callback method.
+     *
+     * @param caller Caller.
      * @param nodeId
      * @param queryId Query ID.
      * @param fragmentId Target fragment ID.
@@ -57,6 +58,7 @@ public interface ExchangeService {
 
     /**
      * Acknowledges a batch with given ID is processed.
+     *
      * @param caller Caller.
      * @param nodeId Node ID to notify.
      * @param queryId Query ID.
@@ -67,8 +69,9 @@ public interface ExchangeService {
     void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
 
     /**
-     * Callback method;
-     *  @param caller Caller.
+     * Callback method.
+     *
+     * @param caller Caller.
      * @param nodeId
      * @param queryId Query ID.
      * @param fragmentId Target fragment ID.
@@ -90,7 +93,8 @@ public interface ExchangeService {
     void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
 
     /**
-     * Callback method;
+     * Callback method.
+     *
      *  @param caller Caller.
      * @param nodeId
      * @param queryId Query ID.

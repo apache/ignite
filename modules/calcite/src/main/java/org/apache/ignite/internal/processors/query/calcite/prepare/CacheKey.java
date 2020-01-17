@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,21 +23,36 @@ import java.util.Objects;
  *
  */
 public class CacheKey {
+    /** */
     private final String schemaName;
+
+    /** */
     private final String query;
+
+    /** */
     private final Object contextKey;
 
-
+    /**
+     * @param schemaName Schema name.
+     * @param query Query string.
+     * @param contextKey Optional context key to differ queries with and without/different flags, having an impact
+     *                   on result plan (like LOCAL flag)
+     */
     public CacheKey(String schemaName, String query, Object contextKey) {
         this.schemaName = schemaName;
         this.query = query;
         this.contextKey = contextKey;
     }
 
+    /**
+     * @param schemaName Schema name.
+     * @param query Query string.
+     */
     public CacheKey(String schemaName, String query) {
         this(schemaName, query, null);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -52,6 +68,7 @@ public class CacheKey {
         return Objects.equals(contextKey, cacheKey.contextKey);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = schemaName != null ? schemaName.hashCode() : 0;
         result = 31 * result + query.hashCode();

@@ -38,16 +38,19 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware 
     /** */
     private IgniteStripedThreadPoolExecutor srvc;
 
+    /** */
     public QueryTaskExecutorImpl(GridKernalContext ctx) {
         log = ctx.log(MessageServiceImpl.class);
     }
 
+    /** {@inheritDoc} */
     @Override public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
         FutureTask<Void> res = new FutureTask<>(queryTask, null);
         srvc.execute(queryTask, U.safeAbs(Objects.hash(queryId, fragmentId)));
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         srvc = new IgniteStripedThreadPoolExecutor(
             8,
@@ -59,6 +62,7 @@ public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware 
         );
     }
 
+    /** {@inheritDoc} */
     @Override public void onStop() {
         U.shutdownNow(getClass(), srvc, log);
         srvc = null;

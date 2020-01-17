@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,8 +33,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]>, Iterator<Object[]>, AutoCloseable {
     /** */
+    public static final Consumer<ConsumerNode> NO_OP = c -> {};
+
+    /** */
     private static final int DEFAULT_BUFFER_SIZE = 1000;
-    
+
     /** */
     private enum State {
         RUNNING, CANCELLED, END
@@ -52,7 +56,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
     private final ArrayDeque<Object> buff;
 
     /** */
-    private final CloseListener<ConsumerNode> lsnr;
+    private final Consumer<ConsumerNode> onClose;
 
     /** */
     private Object cur;
@@ -70,8 +74,8 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
     /**
      * @param ctx Execution context.
      */
-    public ConsumerNode(ExecutionContext ctx, Node<Object[]> input, CloseListener<ConsumerNode> lsnr) {
-        this(ctx, input, DEFAULT_BUFFER_SIZE, lsnr);
+    public ConsumerNode(ExecutionContext ctx, Node<Object[]> input, Consumer<ConsumerNode> onClose) {
+        this(ctx, input, DEFAULT_BUFFER_SIZE, onClose);
     }
 
     /**
@@ -80,17 +84,17 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
      * @param bufferSize Buffer size.
      */
     public ConsumerNode(ExecutionContext ctx, Node<Object[]> input, int bufferSize) {
-        this(ctx, input, bufferSize, null);
+        this(ctx, input, bufferSize, NO_OP);
     }
 
     /**
      * @param ctx Execution context.
      */
-    public ConsumerNode(ExecutionContext ctx, Node<Object[]> input, int bufferSize, CloseListener<ConsumerNode> lsnr) {
+    public ConsumerNode(ExecutionContext ctx, Node<Object[]> input, int bufferSize, Consumer<ConsumerNode> onClose) {
         super(ctx, input);
 
         this.bufferSize = bufferSize;
-        this.lsnr = lsnr;
+        this.onClose = onClose;
 
         // extra space for possible END marker
         buff = new ArrayDeque<>(bufferSize + 1);
@@ -145,9 +149,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
         
         context().setCancelled();
         context().execute(input()::cancel);
-
-        if (lsnr != null)
-            lsnr.onClose(this);
+        onClose.accept(this);
     }
     
     public boolean canceled() {
@@ -257,8 +259,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
 
         assert state == State.END;
 
-        if (lsnr != null)
-            lsnr.onClose(this);
+        onClose.accept(this);
         
         return null;
     }

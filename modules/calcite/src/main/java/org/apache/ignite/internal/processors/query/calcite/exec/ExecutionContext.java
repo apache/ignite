@@ -91,10 +91,16 @@ public class ExecutionContext implements DataContext {
         return ctx;
     }
 
+    /**
+     * @return Cancelled flag.
+     */
     public boolean cancelled() {
         return cancelled;
     }
 
+    /**
+     * Sets cancelled flag.
+     */
     public void setCancelled() {
         cancelled = true;
     }
@@ -132,7 +138,7 @@ public class ExecutionContext implements DataContext {
     }
 
     /**
-     * @return Exchange processor.
+     * @return Exchange service.
      */
     public ExchangeService exchange() {
         return ctx.exchangeService();

@@ -43,7 +43,7 @@ public abstract class RelGraphNode implements Serializable {
 
         for (RelTrait trait : traits) {
             if (trait != IgniteConvention.INSTANCE)
-                list.add(toMessage(trait));
+                list.add(toSerializable(trait));
         }
 
         this.traits = list;
@@ -59,13 +59,13 @@ public abstract class RelGraphNode implements Serializable {
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
 
         for (Serializable trait : this.traits)
-            traits = traits.replace(fromMessage(trait));
+            traits = traits.replace(fromSerializable(trait));
 
         return traits.simplify();
     }
 
     /** Converts a trait to its serializable representation. */
-    private Serializable toMessage(RelTrait trait) {
+    private Serializable toSerializable(RelTrait trait) {
         if (trait instanceof Serializable)
             return (Serializable) trait;
 
@@ -73,7 +73,7 @@ public abstract class RelGraphNode implements Serializable {
     }
 
     /** Converts a serializable representation of a trait to a trait itself. */
-    private RelTrait fromMessage(Serializable trait) {
+    private RelTrait fromSerializable(Serializable trait) {
         if (trait instanceof RelTrait)
             return (RelTrait) trait;
 

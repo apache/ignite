@@ -18,14 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
@@ -55,9 +51,6 @@ public class OutboxTest extends GridCommonAbstractTest {
     private TestExchangeService exch;
 
     /** */
-    private TestTaskExecutor exec;
-
-    /** */
     @BeforeClass
     public static void setupClass() {
         nodeId = UUID.randomUUID();
@@ -67,14 +60,12 @@ public class OutboxTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() {
-        exec = new TestTaskExecutor();
         exch = new TestExchangeService();
 
         IgniteCalciteContext ctx = IgniteCalciteContext.builder()
             .mailboxRegistry(new TestRegistry())
             .localNodeId(nodeId)
             .exchangeService(exch)
-            .taskExecutor(exec)
             .build();
 
         ExecutionContext ectx = new ExecutionContext(ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
@@ -89,10 +80,6 @@ public class OutboxTest extends GridCommonAbstractTest {
     @Test
     public void testBasicOps() throws Exception {
         outbox.request();
-
-        assertFalse(exec.taskQueue.isEmpty());
-
-        exec.execute();
 
         assertTrue(input.signal);
 
@@ -115,23 +102,15 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         assertFalse(input.push(new Object[]{new Object()}));
 
-        assertTrue(exec.taskQueue.isEmpty());
-
         assertFalse(input.signal);
 
         outbox.onAcknowledge(nodeId, exch.ids.remove(0));
-
-        assertFalse(exec.taskQueue.isEmpty());
-
-        exec.execute();
 
         assertTrue(input.signal);
 
         input.signal = false;
 
         outbox.onAcknowledge(nodeId, exch.ids.remove(0));
-
-        assertTrue(exec.taskQueue.isEmpty());
 
         assertFalse(input.signal);
 
@@ -167,14 +146,17 @@ public class OutboxTest extends GridCommonAbstractTest {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public void onCancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public void onAcknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public void onBatchReceived(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
             throw new AssertionError();
         }
@@ -212,52 +194,33 @@ public class OutboxTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestTaskExecutor implements QueryTaskExecutor {
-        /** */
-        private Queue<Runnable> taskQueue = new ArrayDeque<>();
-
-        /** {@inheritDoc} */
-        @Override public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
-            FutureTask<Void> res = new FutureTask<>(queryTask, null);
-
-            taskQueue.offer(res);
-
-            return res;
-        }
-
-        /** */
-        private void execute() {
-            Runnable task = taskQueue.poll();
-
-            while (task != null) {
-                task.run();
-
-                task = taskQueue.poll();
-            }
-        }
-    }
-
     private static class TestRegistry implements MailboxRegistry {
+        /** {@inheritDoc} */
         @Override public Inbox<?> register(Inbox<?> inbox) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public void unregister(Inbox<?> inbox) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public void register(Outbox<?> outbox) {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void unregister(Outbox<?> outbox) {
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public Outbox<?> outbox(UUID queryId, long exchangeId) {
             throw new AssertionError();
         }
 
+        /** {@inheritDoc} */
         @Override public Inbox<?> inbox(UUID queryId, long exchangeId) {
             throw new AssertionError();
         }

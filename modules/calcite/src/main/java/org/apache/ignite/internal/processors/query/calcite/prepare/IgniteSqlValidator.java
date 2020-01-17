@@ -60,6 +60,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return ((JavaTypeFactory) typeFactory).toSql(superType);
     }
 
+    /** {@inheritDoc} */
     @Override public SqlValidatorNamespace getNamespace(SqlNode node) {
         switch (node.getKind()) {
             case AS:

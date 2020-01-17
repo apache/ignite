@@ -160,6 +160,13 @@ public final class Commons {
         return dst;
     }
 
+    /**
+     * Lookups a specific component in registered components list.
+     *
+     * @param ctx Kernal context.
+     * @param componentType Component type.
+     * @return Component instance or {@code null} if not found.
+     */
     public static <T extends GridComponent> T lookupComponent(GridKernalContext ctx, Class<T> componentType) {
         return ctx.components().stream()
             .filter(componentType::isInstance)

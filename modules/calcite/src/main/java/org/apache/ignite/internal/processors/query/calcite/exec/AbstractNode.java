@@ -100,6 +100,7 @@ public abstract class AbstractNode<T> implements Node<T> {
         inputs().forEach(Node::request);
     }
 
+    /** {@inheritDoc} */
     @Override public void cancel() {
         checkThread();
 
@@ -107,6 +108,7 @@ public abstract class AbstractNode<T> implements Node<T> {
         inputs().forEach(Node::cancel);
     }
 
+    /** {@inheritDoc} */
     @Override public void reset() {
         checkThread();
 

@@ -57,8 +57,15 @@ public class Fragment implements RelSource {
      * @param root Root node of the fragment.
      */
     public Fragment(RelNode root) {
-        id = ID_GEN.getAndIncrement();
+        this(ID_GEN.getAndIncrement(), root);
+    }
 
+    /**
+     * @param id Fragment id.
+     * @param root Root node of the fragment.
+     */
+    public Fragment(long id, RelNode root){
+        this.id = id;
         this.root = root;
     }
 

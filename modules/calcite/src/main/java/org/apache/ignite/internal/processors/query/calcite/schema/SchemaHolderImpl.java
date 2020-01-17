@@ -36,6 +36,9 @@ public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener {
     /** */
     private volatile SchemaPlus schema;
 
+    /**
+     * @param ctx Kernal context.
+     */
     public SchemaHolderImpl(GridKernalContext ctx) {
         ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
     }
@@ -48,9 +51,7 @@ public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener {
         this.schema = schema;
     }
 
-    /**
-     * @return Actual schema.
-     */
+    /** {@inheritDoc} */
     @Override public SchemaPlus schema() {
         return schema;
     }

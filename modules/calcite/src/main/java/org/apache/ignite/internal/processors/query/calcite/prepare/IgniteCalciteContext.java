@@ -332,6 +332,9 @@ public final class IgniteCalciteContext implements Context {
         return taskExecutor.execute(queryId, fragmentId, queryTask);
     }
 
+    /**
+     * @return New cluster based on a planner and its configuration.
+     */
     public RelOptCluster createCluster() {
         return planner().createCluster();
     }
@@ -340,7 +343,7 @@ public final class IgniteCalciteContext implements Context {
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return false; // TODO
+        return false; // TODO extract from QueryContext
     }
 
     /** {@inheritDoc} */

@@ -41,7 +41,7 @@ public class CallExpression implements Expression {
 
     /**
      * @param op Sql operation.
-     * @param type type;
+     * @param type Result type.
      * @param operands Operands.
      */
     public CallExpression(SqlOperator op, RelDataType type, List<Expression> operands) {

@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,32 +35,45 @@ public class QueryStartResponse implements MarshalableMessage {
     /** */
     private long fragmentId;
 
+    /** */
     @GridDirectTransient
     private Throwable error;
 
     /** */
     private byte[] errBytes;
 
+    /** */
     public QueryStartResponse() {};
 
+    /** */
     public QueryStartResponse(UUID queryId, long fragmentId) {
         this(queryId, fragmentId, null);
     }
 
+    /** */
     public QueryStartResponse(UUID queryId, long fragmentId, Throwable error) {
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.error = error;
     }
 
+    /**
+     * @return Query ID.
+     */
     public UUID queryId() {
         return queryId;
     }
 
+    /**
+     * @return Fragment ID.
+     */
     public long fragmentId() {
         return fragmentId;
     }
 
+    /**
+     * @return Error.
+     */
     public Throwable error() {
         return error;
     }

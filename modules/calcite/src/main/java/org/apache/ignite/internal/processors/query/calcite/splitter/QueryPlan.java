@@ -27,8 +27,15 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -105,23 +112,109 @@ public class QueryPlan {
     }
 
     /**
+     * Creates a template from the plan.
+     *
+     * @return Template.
+     */
+    public QueryPlan template() {
+        return clone(Commons.EMPTY_CLUSTER);
+    }
+
+    /**
+     * @param template Template.
+     * @param ctx Context.
+     * @return New plan, linked to the given context.
+     */
+    public static QueryPlan fromTemplate(QueryPlan template, IgniteCalciteContext ctx) {
+        return template.clone(ctx.createCluster());
+    }
+
+    /**
      * Clones this plan with a new cluster.
      */
-    public QueryPlan clone(RelOptCluster cluster) {
+    private QueryPlan clone(RelOptCluster cluster) {
         RelOptPlanner cur = cluster.getPlanner();
         RelOptPlanner other = F.first(fragments).root().getCluster().getPlanner();
 
         if (cur == other)
             return this;
 
-        Cloner cloner = new Cloner(cluster);
+        VisitorImpl visitor = new VisitorImpl(cluster);
+        visitor.visit(F.first(fragments));
 
-        List<Fragment> fragments0 = new ArrayList<>(fragments.size());
+        return new QueryPlan(visitor.fragments);
+    }
 
-        for (Fragment fragment : fragments) {
-            fragments0.add(new Fragment(cloner.go(Commons.igniteRel(fragment.root()))));
+    /** */
+    private class VisitorImpl implements IgniteRelVisitor<IgniteRel> {
+        /** */
+        private final RelOptCluster cluster;
+
+        /** */
+        private final List<Fragment> fragments;
+
+        private VisitorImpl(RelOptCluster cluster) {
+            this.cluster = cluster;
+
+            fragments = new ArrayList<>(QueryPlan.this.fragments.size());
         }
 
-        return new QueryPlan(fragments0);
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteSender rel) {
+            return new IgniteSender(cluster, rel.getTraitSet(), visit(Commons.igniteRel(rel.getInput())));
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteFilter rel) {
+            RelNode input = visit(Commons.igniteRel(rel.getInput()));
+
+            return new IgniteFilter(cluster, rel.getTraitSet(), input, rel.getCondition());
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteProject rel) {
+            RelNode input = visit(Commons.igniteRel(rel.getInput()));
+
+            return new IgniteProject(cluster, rel.getTraitSet(), input, rel.getProjects(), rel.getRowType());
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteJoin rel) {
+            RelNode left = visit(Commons.igniteRel(rel.getLeft()));
+            RelNode right = visit(Commons.igniteRel(rel.getRight()));
+
+            return new IgniteJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteTableScan rel) {
+            return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable());
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteReceiver rel) {
+            return new IgniteReceiver(cluster, rel.getTraitSet(), rel.getRowType(), visit((Fragment) rel.source()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteExchange rel) {
+            RelNode input = visit(Commons.igniteRel(rel.getInput()));
+
+            return new IgniteExchange(cluster, rel.getTraitSet(), input, rel.getDistribution());
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteRel rel) {
+            return rel.accept(this);
+        }
+
+        /** */
+        private Fragment visit(Fragment src) {
+            Fragment res = new Fragment(src.fragmentId(), visit(Commons.igniteRel(src.root())));
+
+            fragments.add(0, res);
+
+            return res;
+        }
     }
 }

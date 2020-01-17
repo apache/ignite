@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,10 +23,52 @@ import java.util.UUID;
  *
  */
 public interface MailboxRegistry {
+    /**
+     * Tries to register and inbox node and returns it if success or returns previously registered inbox otherwise.
+     *
+     * @param inbox Inbox.
+     * @return Registered inbox.
+     */
     Inbox<?> register(Inbox<?> inbox);
+
+    /**
+     * Unregisters an inbox.
+     *
+     * @param inbox Inbox to unregister.
+     */
     void unregister(Inbox<?> inbox);
+
+    /**
+     * Registers an outbox.
+     *
+     * @param outbox Outbox to register.
+     */
     void register(Outbox<?> outbox);
+
+    /**
+     * Unregisters an outbox.
+     *
+     * @param outbox Outbox to unregister.
+     */
     void unregister(Outbox<?> outbox);
+
+    /**
+     * Returns a registered outbox by provided query ID, exchange ID pair.
+     *
+     * @param queryId Query ID.
+     * @param exchangeId Exchange ID.
+     *
+     * @return Registered outbox. May be {@code null} if execution was cancelled.
+     */
     Outbox<?> outbox(UUID queryId, long exchangeId);
+
+    /**
+     * Returns a registered inbox by provided query ID, exchange ID pair.
+     *
+     * @param queryId Query ID.
+     * @param exchangeId Exchange ID.
+     *
+     * @return Registered inbox. May be {@code null} if execution was cancelled.
+     */
     Inbox<?> inbox(UUID queryId, long exchangeId);
 }

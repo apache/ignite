@@ -73,26 +73,35 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEqualsCollections(Arrays.asList("Roman", "Ignite"), F.first(all));
     }
 
+    /** */
     public static class Developer {
+        /** */
         @QuerySqlField
         public String name;
+
+        /** */
         @QuerySqlField
         public Integer projectId;
 
+        /** */
         public Developer(String name, Integer projectId) {
             this.name = name;
             this.projectId = projectId;
         }
 
+        /** */
         public Developer(String name) {
             this.name = name;
         }
     }
 
+    /** */
     public static class Project {
+        /** */
         @QuerySqlField
         public String name;
 
+        /** */
         public Project(String name) {
             this.name = name;
         }

@@ -130,6 +130,9 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return desc.fields().size();
     }
 
+    /**
+     * @return Table extended columns list.
+     */
     public List<RelDataTypeField> extendedColumns() {
         return desc.extended();
     }

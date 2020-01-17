@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.GridIntList;
 public class RelGraph implements Serializable {
     /** */
     private final List<RelGraphNode> nodes = new ArrayList<>();
+
     /** */
     private final List<GridIntList> edges = new ArrayList<>();
 

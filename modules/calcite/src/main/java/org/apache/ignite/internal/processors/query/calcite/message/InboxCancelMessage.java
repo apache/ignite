@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,13 +26,22 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  *
  */
 public class InboxCancelMessage implements ExecutionContextAware {
+    /** */
     private UUID queryId;
+
+    /** */
     private long fragmentId;
+
+    /** */
     private long exchangeId;
+
+    /** */
     private int batchId;
 
+    /** */
     public InboxCancelMessage(){}
 
+    /** */
     public InboxCancelMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
         this.queryId = queryId;
         this.fragmentId = fragmentId;
@@ -49,10 +59,16 @@ public class InboxCancelMessage implements ExecutionContextAware {
         return fragmentId;
     }
 
+    /**
+     * @return Exchange ID.
+     */
     public long exchangeId() {
         return exchangeId;
     }
 
+    /**
+     * @return Batch ID.
+     */
     public int batchId() {
         return batchId;
     }
