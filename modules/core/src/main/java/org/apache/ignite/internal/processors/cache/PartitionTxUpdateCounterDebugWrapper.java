@@ -198,4 +198,21 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
 
         return updated;
     }
+
+    @Override public synchronized void reset() {
+        SB sb = new SB();
+
+        sb.a("[op=reset" +
+            ", grpId=" + grp.groupId() +
+            ", partId=" + partId +
+            ", before=" + toString());
+
+        try {
+            super.reset();
+        }
+        finally {
+            log.debug(sb.a(", after=" + toString() +
+                ']').toString());
+        }
+    }
 }
