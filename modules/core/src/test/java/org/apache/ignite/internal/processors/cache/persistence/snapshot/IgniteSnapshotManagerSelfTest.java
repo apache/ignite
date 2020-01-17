@@ -267,9 +267,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File cpDir = dbMgr.checkpointDirectory();
         File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
 
-        // listener will be executed inside checkpoint thread
-        dbMgr.waitForCheckpoint("fix all data", f -> dbMgr.enableCheckpoints(false));
-
         // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
@@ -277,7 +274,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File snapshotDir0 = mgr.localSnapshotDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
-            .scheduleSnapshot(SNAPSHOT_NAME,
+            .runLocalSnapshotTask(SNAPSHOT_NAME,
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
@@ -295,8 +292,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                         }
                     }
                 });
-
-        dbMgr.enableCheckpoints(true);
 
         dbMgr.forceCheckpoint("snapshot is ready to be created")
             .beginFuture()
@@ -401,7 +396,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         File snpDir0 = new File(mgr.localSnapshotWorkDir(), SNAPSHOT_NAME);
 
-        IgniteInternalFuture<?> fut = mgr.scheduleSnapshot(SNAPSHOT_NAME,
+        IgniteInternalFuture<?> fut = mgr.runLocalSnapshotTask(SNAPSHOT_NAME,
             ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
@@ -689,7 +684,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         File snapshotDir0 = mgr.localSnapshotDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
-            .scheduleSnapshot(SNAPSHOT_NAME,
+            .runLocalSnapshotTask(SNAPSHOT_NAME,
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),

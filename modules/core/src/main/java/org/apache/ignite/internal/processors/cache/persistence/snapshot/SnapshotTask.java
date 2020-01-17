@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -76,7 +75,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.getPartionDeltaFile;
 
 /**
@@ -194,6 +192,13 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
+     * @return Type of snapshot operation.
+     */
+    public Class<? extends SnapshotFileSender> type() {
+        return snpSndr.getClass();
+    }
+
+    /**
      * @return List of partitions to be processed.
      */
     public List<GroupPartitionId> partitions() {
@@ -201,10 +206,22 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
-     * @throws IgniteInterruptedCheckedException If timeout was reached.
+     * @return Future which will be completed when snapshot operation ends.
      */
-    public void awaitStarted() throws IgniteInterruptedCheckedException {
-        U.await(startedLatch, DFLT_SNAPSHOT_TIMEOUT, TimeUnit.MILLISECONDS);
+    public IgniteInternalFuture<Boolean> snapshotFuture() {
+        return snpFut;
+    }
+
+    /**
+     * Wait for the snapshot operation task started on checkpoint.
+     */
+    public void awaitStarted() {
+        try {
+            U.await(startedLatch);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            acceptException(e);
+        }
     }
 
     /**
@@ -281,10 +298,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      * @param adder Register current task on.
      * @param remover Deregister current taks on.
      */
-    public IgniteInternalFuture<Boolean> execute(
-        Consumer<DbCheckpointListener> adder,
-        Consumer<DbCheckpointListener> remover
-    ) {
+    public void execute(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
             nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
 
@@ -349,8 +363,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         catch (IgniteCheckedException e) {
             close(e);
         }
-
-        return snpFut;
     }
 
     /** {@inheritDoc} */
