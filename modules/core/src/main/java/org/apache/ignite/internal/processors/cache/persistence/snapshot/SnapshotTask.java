@@ -185,6 +185,13 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
+     * @return Snapshot name.
+     */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /**
      * @return Node id which triggers this operation..
      */
     public UUID sourceNodeId() {

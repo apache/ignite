@@ -26,7 +26,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -100,6 +98,8 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -216,7 +216,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     private DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
 
     /** Cluster snapshot operation requested by user. */
-    private IgniteFuture<Void> clusterSnpFut;
+    private ClusterSnapshotFuture clusterSnpFut;
 
     /** Current snapshot opertaion on local node. */
     private volatile SnapshotTask clusterSnpTask;
@@ -713,12 +713,45 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpTask + ']'));
         }
 
-        clusterSnpTask = null;
+        // Collection of pairs group and appropratate cache partition to be snapshotted.
+        Map<Integer, GridIntList> parts = req.grpIds.stream()
+            .collect(Collectors.toMap(grpId -> grpId,
+                grpId -> {
+                    GridIntList grps = new GridIntList();
+
+                    cctx.cache()
+                        .cacheGroup(grpId)
+                        .topology()
+                        .currentLocalPartitions()
+                        .forEach(p -> grps.add(p.id()));
+
+                    grps.add(INDEX_PARTITION);
+
+                    return grps;
+                }));
+
+        File rootSnpDir0 = localSnapshotDir(req.snpName);
+
+        SnapshotTask task0;
+
+        try {
+            task0 = putSnapshotTask(req.snpName,
+                cctx.localNodeId(),
+                parts,
+                snpRunner,
+                localSnapshotSender(rootSnpDir0));
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
+
+        clusterSnpTask = task0;
 
         if (cctx.kernalContext().clientNode())
             return new GridFinishedFuture<>();
 
-        return new GridFinishedFuture<>(new SnapshotOperationResponse());
+        return task0.snapshotFuture()
+            .chain(f -> new SnapshotOperationResponse());
     }
 
     /**
@@ -730,18 +763,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     }
 
-    /**
-     * @return Node snapshot working directory with given snapshot name.
-     */
-    public File snapshotWorkDir(String snpName) {
-        return new File(snapshotWorkDir(), snpName);
-    }
-
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> createSnapshot(String name) {
-        takeSnpProc.start(UUID.randomUUID(), new SnapshotOperationRequest(name, Collections.emptyList()));
+    @Override public IgniteFuture<Void> createSnapshot(String name, List<Integer> grps) {
+        if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
+                "The previous snapshot operation was not completed."));
+        }
 
-        return null;
+        ClusterSnapshotFuture clsFut = new ClusterSnapshotFuture(UUID.randomUUID());
+
+        clusterSnpFut = clsFut;
+
+        takeSnpProc.start(clsFut.id, new SnapshotOperationRequest(name, grps));
+
+        return new IgniteFutureImpl<>(clsFut);
     }
 
     /** {@inheritDoc} */
@@ -753,11 +788,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param fut Partition map exchange future.
      */
     public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-        if (clusterSnpTask == null)
+        if (clusterSnpTask == null || cctx.kernalContext().clientNode())
             return;
 
+        SnapshotTask snpTask = clusterSnpTask;
+
+        snpTask.execute(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
+
+        dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpTask.snapshotName()));
+
         // schedule task on checkpoint and wait when it starts
-        clusterSnpTask.awaitStarted();
+        snpTask.awaitStarted();
     }
 
     /**
@@ -1722,6 +1763,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SnapshotStartDiscoveryMessage.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
+        /** Initial request id. */
+        private final UUID id;
+
+        /**
+         * @param id Initial request id.
+         */
+        public ClusterSnapshotFuture(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof ClusterSnapshotFuture))
+                return false;
+
+            ClusterSnapshotFuture future = (ClusterSnapshotFuture)o;
+
+            return Objects.equals(id, future.id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "ClusterSnapshotFuture{" +
+                "id=" + id +
+                '}';
         }
     }
 }

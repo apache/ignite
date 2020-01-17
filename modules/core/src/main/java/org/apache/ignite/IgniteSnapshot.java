@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.util.List;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -27,7 +28,7 @@ public interface IgniteSnapshot {
      * @param name Snapshot name.
      * @return Future which will be completed when a process ends.
      */
-    public IgniteFuture<Void> createSnapshot(String name);
+    public IgniteFuture<Void> createSnapshot(String name, List<Integer> gprs);
 
     /**
      * @param name Snapshot name to restore state from.
