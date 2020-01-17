@@ -355,7 +355,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      */
     private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
         String grpName = grp.cacheOrGroupName();
 
         assert !grp.localWalEnabled() : "grp=" + grpName;
@@ -498,8 +497,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(rebalanceId, topVer, grp.groupId());
 
-            for (Map.Entry<Integer, T2<Long, Long>> e : nodeAssigns.entrySet())
-                msg.partitions().addHistorical(e.getKey(), e.getValue().get1(), e.getValue().get2(), nodeAssigns.size());
+            for (Map.Entry<Integer, T2<Long, Long>> e : nodeAssigns.entrySet()) {
+                int p = e.getKey();
+                long from = e.getValue().get1();
+                long to = e.getValue().get2();
+
+                assert from != 0 && from <= to :
+                    "grp=" + grp.cacheOrGroupName() + "p=" + p + ", from=" + from + ", to=" + to;
+
+                msg.partitions().addHistorical(p, from, to, nodeAssigns.size());
+            }
 
             grpAssigns.put(node, msg);
         }

@@ -1924,12 +1924,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param initCntr Initial update counter.
      * @return Reserved WAL pointer for preloading.
      */
-    public FileWALPointer reservedWALPointer(int grpId, int partId, long initCntr) {
+    public FileWALPointer searchWALPointer(int grpId, int partId, long initCntr) {
         assert reservedForPreloading != null;
 
         T2<Long, WALPointer> reserved = reservedForPreloading.get(new T2<>(grpId, partId));
 
-        assert reserved != null : "History should be reserved [grp=" + cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", node=" + cctx.localNodeId() + "]";
+        if (reserved == null)
+            return (FileWALPointer)checkpointHistory().searchPartitionCounter(grpId, partId, initCntr);
 
         long cntr = reserved.get1();
 

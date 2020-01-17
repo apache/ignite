@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
@@ -59,12 +58,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** */
-    private static final boolean FILE_REBALANCE_ENABLED = IgniteSystemProperties.getBoolean(
-        IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED, true);
+    private final boolean fileRebalanceEnabled =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED, true) &&
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true);
 
     /** */
-    private static final long FILE_REBALANCE_THRESHOLD = IgniteSystemProperties.getLong(
-        IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
+    private final long fileRebalanceThreshold = IgniteSystemProperties.getLong(IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
 
     /** Lock. */
     private final Lock lock = new ReentrantLock();
@@ -105,7 +104,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
         assert exchFut != null;
 
-        if (!FILE_REBALANCE_ENABLED)
+        if (!fileRebalanceEnabled)
             return;
 
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
@@ -156,7 +155,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         // At this point, cache updates are queued, and we can safely
         // switch partitions to read-only mode and vice versa.
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (!supports(grp) || grp.localWalEnabled())
+            if (!supports(grp))
                 continue;
 
             if (!locJoinBaselineChange && !required(grp)) {
@@ -269,13 +268,13 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         for (int p = 0; p < grp.affinity().partitions(); p++) {
             Long size = globalSizes.get(p);
 
-            if (size != null && size > FILE_REBALANCE_THRESHOLD)
+            if (size != null && size > fileRebalanceThreshold)
                 return true;
         }
 
         // Also should check the sizes of the local partitions.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.fullSize() > FILE_REBALANCE_THRESHOLD)
+            if (part.fullSize() > fileRebalanceThreshold)
                 return true;
         }
 
@@ -289,7 +288,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @return {@code True} if file rebalancing is applicable for specified cache group.
      */
     public boolean supports(CacheGroupContext grp) {
-        if (!FILE_REBALANCE_ENABLED || !grp.persistenceEnabled() || grp.isLocal())
+        if (!fileRebalanceEnabled || !grp.persistenceEnabled() || grp.isLocal())
             return false;
 
         if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() == CacheRebalanceMode.NONE)
@@ -345,9 +344,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param exchFut Exchange future.
      */
     private boolean fileRebalanceApplicable(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
-        if (grp.localWalEnabled())
-            return false;
-
         AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
 
         assert aff != null;
@@ -375,7 +371,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!hasHugePart) {
                 Long partSize = globalSizes.get(p);
 
-                if (partSize != null && partSize >= FILE_REBALANCE_THRESHOLD)
+                if (partSize != null && partSize >= fileRebalanceThreshold)
                     hasHugePart = true;
             }
 

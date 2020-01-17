@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -92,7 +93,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     private final Function<Integer, TestValue> testValProducer = n -> new TestValue(n, n, n);
 
     /** */
-    private volatile boolean snapshotRequested;
+    private final Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
@@ -106,7 +107,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertTrue("File rebalance hasn't been triggered.", snapshotRequested);
+        //assertTrue("File rebalance hasn't been triggered.", !requestedGroups.isEmpty());
 
         super.afterTest();
     }
@@ -118,8 +119,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, Message msg,
                 IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-                if (((GridIoMessage)msg).message() instanceof SnapshotRequestMessage)
-                    snapshotRequested = true;
+                if (((GridIoMessage)msg).message() instanceof SnapshotRequestMessage) {
+                    SnapshotRequestMessage msg0 =  ((SnapshotRequestMessage)((GridIoMessage)msg).message());
+
+                    requestedGroups.addAll(msg0.parts().keySet());
+                }
 
                 super.sendMessage(node, msg, ackC);
             }
@@ -169,6 +173,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         awaitPartitionMapExchange();
 
+        assertTrue(requestedGroups.contains(CU.cacheId(INDEXED_CACHE)));
+        assertTrue(requestedGroups.contains(CU.cacheId(CACHE)));
+
         verifyCache(ignite1, idxCache);
         verifyCache(ignite1, replicatedCache);
     }
@@ -209,6 +216,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         idxLdr.stop();
         cacheLdr.stop();
+
+        assertTrue(requestedGroups.contains(CU.cacheId(INDEXED_CACHE)));
+        assertTrue(requestedGroups.contains(CU.cacheId(CACHE)));
 
         verifyCache(ignite1, idxLdr);
         verifyCache(ignite1, cacheLdr);
@@ -260,6 +270,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         idxLdr.stop();
         sharedLdr1.stop();
         sharedLdr2.stop();
+
+        assertTrue(requestedGroups.contains(CU.cacheId(INDEXED_CACHE)));
+        assertTrue(requestedGroups.contains(CU.cacheId(SHARED_GROUP)));
 
         verifyCache(ignite1, idxLdr);
         verifyCache(ignite1, sharedLdr1);
