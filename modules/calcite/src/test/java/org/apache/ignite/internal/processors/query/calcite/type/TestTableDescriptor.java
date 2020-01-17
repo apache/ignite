@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -46,38 +47,52 @@ public class TestTableDescriptor implements TableDescriptor {
     /** */
     private static RelDataTypeFactory factory = new IgniteTypeFactory();
 
+    /** */
     private List<RelDataTypeField> fields = new ArrayList<>();
+
+    /** */
     private List<RelDataTypeField> extend = new ArrayList<>();
 
+    /** */
     private int affinityKeyIdx;
+
+    /** */
     private Object identityKey;
+
+    /** */
     private String cacheName;
 
+    /** */
     public TestTableDescriptor cacheName(String cacheName) {
         this.cacheName = cacheName;
         return this;
     }
 
+    /** */
     public TestTableDescriptor identityKey(Object identityKey) {
         this.identityKey = identityKey;
         return this;
     }
 
+    /** */
     public TestTableDescriptor field(String name, Class<?> type, boolean affinityKey){
         affinityKeyIdx = fields.size();
         fields.add(new RelDataTypeFieldImpl(name, fields.size(), factory.createJavaType(type)));
         return this;
     }
 
+    /** */
     public TestTableDescriptor field(String name, Class<?> type){
         fields.add(new RelDataTypeFieldImpl(name, fields.size(), factory.createJavaType(type)));
         return this;
     }
 
+    /** {@inheritDoc} */
     @Override public int cacheId() {
         return CU.cacheId(cacheName);
     }
 
+    /** {@inheritDoc} */
     @Override public Map<String, Class<?>> fields() {
         LinkedHashMap<String, Class<?>> res = new LinkedHashMap<>();
 
@@ -87,10 +102,12 @@ public class TestTableDescriptor implements TableDescriptor {
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public List<RelDataTypeField> extended() {
         return extend;
     }
 
+    /** {@inheritDoc} */
     @Override public TableDescriptor extend(List<RelDataTypeField> fields) {
         TestTableDescriptor res = new TestTableDescriptor();
 
@@ -105,6 +122,7 @@ public class TestTableDescriptor implements TableDescriptor {
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public RelDataType apply(RelDataTypeFactory factory) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
@@ -117,10 +135,12 @@ public class TestTableDescriptor implements TableDescriptor {
         return b.build();
     }
 
+    /** {@inheritDoc} */
     @Override public List<RelCollation> collations() {
         return ImmutableList.of();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {
         if (identityKey == null)
             return IgniteDistributions.broadcast();
@@ -132,10 +152,12 @@ public class TestTableDescriptor implements TableDescriptor {
 
     }
 
+    /** {@inheritDoc} */
     @Override public boolean matchType(CacheDataRow row) {
         throw new AssertionError();
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T toRow(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow row) throws IgniteCheckedException {
         throw new AssertionError();
     }

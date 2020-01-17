@@ -177,7 +177,7 @@ public abstract class AbstractNode<T> implements Node<T> {
                 target.end();
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void delegate(Sink<T> delegate){
             boolean isEnd;
 

@@ -43,7 +43,7 @@ public class QueryStartResponse implements MarshalableMessage {
     private byte[] errBytes;
 
     /** */
-    public QueryStartResponse() {};
+    public QueryStartResponse() {}
 
     /** */
     public QueryStartResponse(UUID queryId, long fragmentId) {

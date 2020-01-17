@@ -15,17 +15,56 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  *
  */
-public interface RowHandler {
+public interface TableDescriptor extends RelProtoDataType {
+    /**
+     * @return Underlying cache ID.
+     */
+    int cacheId();
+
+    /**
+     * @return Query type rows.
+     */
+    Map<String, Class<?>> fields();
+
+    /**
+     * @return Extended fields list. Used to expose hidden fields for query.
+     */
+    List<RelDataTypeField> extended();
+
+    /**
+     * Extends a table with provided fields list. Used to expose hidden fields for query.
+     *
+     * @param fields Fields to expose.
+     * @return Extended table descriptor.
+     */
+    TableDescriptor extend(List<RelDataTypeField> fields);
+
+    /**
+     * @return Distribution.
+     */
+    IgniteDistribution distribution();
+
+    /**
+     * @return Collations.
+     */
+    List<RelCollation> collations();
+
     /**
      * Checks whether a provided cache row matches a defined query type.
      *

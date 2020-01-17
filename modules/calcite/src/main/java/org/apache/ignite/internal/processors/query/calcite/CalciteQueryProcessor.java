@@ -579,14 +579,19 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private static class QueryKey {
+        /** */
         private final UUID id;
+
+        /** */
         private final long cntr;
 
+        /** */
         private QueryKey(UUID id, long cntr) {
             this.id = id;
             this.cntr = cntr;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -600,6 +605,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             return id.equals(that.id);
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             int result = id.hashCode();
             result = 31 * result + (int) (cntr ^ (cntr >>> 32));
@@ -762,7 +768,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     else
                         this.error = error;
                 }
-
 
                 boolean empty = waiting.isEmpty();
 

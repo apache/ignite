@@ -1303,7 +1303,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
     /** */
     private static class TestIgniteTable extends IgniteTable {
+        /** */
         private final TestTableDescriptor desc;
+
         /** */
         private final List<Object[]> data;
 

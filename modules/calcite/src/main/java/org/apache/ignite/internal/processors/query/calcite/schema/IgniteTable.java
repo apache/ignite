@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.type.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.TableScan;
 import org.apache.ignite.internal.util.typedef.F;
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -59,6 +59,7 @@ public class TableDescriptorImpl implements TableDescriptor {
     /** */
     private final int cacheId;
 
+    /** */
     public TableDescriptorImpl(String cacheName, GridQueryTypeDescriptor queryTypeDesc, Object affinityIdentity) {
         cacheId = CU.cacheId(cacheName);
 
@@ -85,6 +86,7 @@ public class TableDescriptorImpl implements TableDescriptor {
         }
     }
 
+    /** */
     private TableDescriptorImpl(int cacheId, int affinityFieldIdx, Object affinityIdentity, GridQueryTypeDescriptor queryTypeDesc, List<RelDataTypeField> extend) {
         this.queryTypeDesc = queryTypeDesc;
         this.extend = extend;
@@ -104,6 +106,7 @@ public class TableDescriptorImpl implements TableDescriptor {
         this.affinityFieldIdx = affinityFieldIdx;
     }
 
+    /** {@inheritDoc} */
     @Override public RelDataType apply(RelDataTypeFactory factory) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
@@ -116,6 +119,7 @@ public class TableDescriptorImpl implements TableDescriptor {
         return b.build();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {
         if (affinityIdentity == null)
             return IgniteDistributions.broadcast();
@@ -126,22 +130,27 @@ public class TableDescriptorImpl implements TableDescriptor {
         return IgniteDistributions.hash(ImmutableIntList.of(affinityFieldIdx), new DistributionFunction.AffinityDistribution(cacheId, affinityIdentity));
     }
 
+    /** {@inheritDoc} */
     @Override public List<RelCollation> collations() {
         return ImmutableList.of();
     }
 
+    /** {@inheritDoc} */
     @Override public int cacheId() {
         return cacheId;
     }
 
+    /** {@inheritDoc} */
     @Override public Map<String, Class<?>> fields() {
         return queryTypeDesc.fields();
     }
 
+    /** {@inheritDoc} */
     @Override public List<RelDataTypeField> extended() {
         return extend;
     }
 
+    /** {@inheritDoc} */
     @Override public TableDescriptor extend(List<RelDataTypeField> fields) {
         List<RelDataTypeField> extend = RelOptUtil.deduplicateColumns(this.extend, fields);
 
@@ -150,11 +159,12 @@ public class TableDescriptorImpl implements TableDescriptor {
         return new TableDescriptorImpl(cacheId, affinityFieldIdx, affinityIdentity, queryTypeDesc, extend);
     }
 
-
+    /** {@inheritDoc} */
     @Override public boolean matchType(CacheDataRow row) {
         return queryTypeDesc.matchType(row.value());
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T toRow(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow row) throws IgniteCheckedException {
         Object[] res = new Object[queryTypeDesc.fields().size() + extend.size()];
 
