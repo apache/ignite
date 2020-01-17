@@ -67,12 +67,7 @@ public class IgniteNodeAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     public IgniteConfigurer nodeConfigurer() {
-        return new IgniteConfigurer() {
-            /** {@inheritDoc} */
-            @Override public void configure(IgniteConfiguration cfg) {
-                // No-op.
-            }
-        };
+        return cfg -> { /* No-op. */ };
     }
 
     /**
@@ -87,7 +82,7 @@ public class IgniteNodeAutoConfiguration {
     public IgniteConfiguration igniteConfiguration(IgniteConfigurer configurer) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        configurer.configure(cfg);
+        configurer.accept(cfg);
 
         return cfg;
     }

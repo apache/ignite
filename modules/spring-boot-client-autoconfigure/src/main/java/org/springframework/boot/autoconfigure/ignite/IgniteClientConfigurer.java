@@ -17,6 +17,7 @@
 
 package org.springframework.boot.autoconfigure.ignite;
 
+import java.util.function.Consumer;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.springframework.beans.factory.BeanFactory;
 
@@ -28,13 +29,4 @@ import org.springframework.beans.factory.BeanFactory;
  * @see ClientConfiguration
  * @see IgniteClientAutoConfiguration
  */
-@FunctionalInterface
-public interface IgniteClientConfigurer {
-    /**
-     * Method to customize Client configuration.
-     * <p><b>NOTE, the results of this method will be overriden with the provided application properties.</b></p>
-     *
-     * @param cfg Client configuration.
-     */
-    void configure(ClientConfiguration cfg);
-}
+public interface IgniteClientConfigurer extends Consumer<ClientConfiguration> { /* No-op. */ }

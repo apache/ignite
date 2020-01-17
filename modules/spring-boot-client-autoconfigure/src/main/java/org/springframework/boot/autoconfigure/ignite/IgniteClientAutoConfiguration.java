@@ -66,11 +66,7 @@ public class IgniteClientAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     public IgniteClientConfigurer clientConfigurer() {
-        return new IgniteClientConfigurer() {
-            @Override public void configure(ClientConfiguration cfg) {
-                // No-op.
-            }
-        };
+        return cfg -> { /* No-op. */ };
     }
 
     /**
@@ -85,7 +81,7 @@ public class IgniteClientAutoConfiguration {
     public ClientConfiguration clientConfiguration(IgniteClientConfigurer configurer) {
         ClientConfiguration cfg = new ClientConfiguration();
 
-        configurer.configure(cfg);
+        configurer.accept(cfg);
 
         return cfg;
     }

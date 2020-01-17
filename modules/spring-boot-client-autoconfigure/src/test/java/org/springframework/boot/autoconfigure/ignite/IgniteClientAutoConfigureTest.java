@@ -48,10 +48,10 @@ public class IgniteClientAutoConfigureTest {
     /** Cache names. */
     public static final Set<String> CACHES = Collections.singleton("my-cache");
 
-    /** */
+    /** Spring test application context. */
     private ApplicationContextRunner contextRunner;
 
-    /** */
+    /** Server node. */
     private static Ignite node;
 
     /** */

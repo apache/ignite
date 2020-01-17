@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /** Tests {@link IgniteNodeAutoConfiguration} feature. */
 @ExtendWith(SpringExtension.class)
 public class IgniteNodeAutoconfigureTest {
-    /** */
+    /** Spring test application context. */
     private ApplicationContextRunner contextRunner;
 
     /** */
