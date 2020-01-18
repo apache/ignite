@@ -59,10 +59,16 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
         link();
     }
 
+    /**
+     * @return Query ID.
+     */
     public UUID queryId() {
         return context().queryId();
     }
 
+    /**
+     * @return Exchange ID.
+     */
     public long exchangeId() {
         return exchangeId;
     }
