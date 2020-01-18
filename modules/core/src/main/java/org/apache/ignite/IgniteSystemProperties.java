@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -701,7 +702,9 @@ public final class IgniteSystemProperties {
 
     /**
      * Time interval for calculating rebalance rate statistics, in milliseconds. Defaults to 60000.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public static final String IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL = "IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL";
 
     /**

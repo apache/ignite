@@ -34,7 +34,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -148,6 +147,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** Query context registry. */
     private final QueryContextRegistry qryCtxRegistry;
 
+    /** IO statistics holder. */
+    private final IoStatisticsHolderIndex stats;
+
     /**
      * @param cctx Cache context.
      * @param rowCache Row cache.
@@ -215,7 +217,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-        IoStatisticsHolder stats = new IoStatisticsHolderIndex(
+        stats = new IoStatisticsHolderIndex(
             SORTED_INDEX,
             cctx.name(),
             idxName,
@@ -517,6 +519,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
                     dropMetaPage(i);
                 }
+
+                ctx.metric().remove(stats.metricRegistryName());
             }
         }
         catch (IgniteCheckedException e) {

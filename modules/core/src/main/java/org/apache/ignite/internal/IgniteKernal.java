@@ -158,7 +158,6 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -4598,18 +4597,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public void clearNodeLocalMap() {
         ctx.cluster().get().clearNodeMap();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics(String registry) {
-        assert registry != null;
-
-        MetricRegistry mreg = ctx.metric().registry(registry);
-
-        if (mreg != null)
-            mreg.reset();
-        else if (log.isInfoEnabled())
-            log.info("\"" + registry + "\" not found.");
     }
 
     /** {@inheritDoc} */

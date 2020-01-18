@@ -111,7 +111,7 @@ public class GridMetricsJolBenchmark {
      * Calculates and prints the size of metric registry of {@code TOTAL} size;
      */
     private static void measureMetricRegistry() {
-        MetricRegistry mreg = new MetricRegistry("test", null);
+        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
 
         for(int i=0; i<BOOLEAN_CNT; i++)
             mreg.booleanMetric(BOOLEAN_METRIC + i, null);
