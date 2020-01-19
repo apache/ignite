@@ -25,7 +25,7 @@ variable "instance_type" {
 
 variable "autoscalling_group_elb_name" {
   type = string
-  default = "ignite_elb_based_autoscalling_group"
+  default = "igniteelbbasedautoscallinggroup"
 }
 
 variable "elb_security_group_name" {
@@ -41,6 +41,11 @@ variable "ec2_security_group" {
 variable "instances_role" {
   type = string
   default = "ignite_elb_node_role"
+}
+
+variable "ec2_elb_policy" {
+  type = string
+  default = "ignite_ec2_elb_policy"
 }
 
 variable "ec2_elb_profile" {

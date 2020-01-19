@@ -99,8 +99,8 @@ resource "aws_iam_role" "instances_role" {
 EOF
 }
 
-resource "aws_iam_role_policy" "ignite_ec2_elb_policy" {
-  name = "ignite_ec2_elb_policy"
+resource "aws_iam_role_policy" "ec2_elb_policy" {
+  name = var.ec2_elb_policy
   role = aws_iam_role.instances_role.id
 
   policy = <<EOF
@@ -131,7 +131,7 @@ resource "template_file" "load_balancer_ignite_config" {
   template = file("./elbconfiguration.xml")
 }
 
-resource"aws_launch_configuration" "ignite-launch-configuration" {
+resource"aws_launch_configuration" "launch_configuration" {
   name = var.launch_configuration_name
   image_id = var.image_id
   instance_type = var.instance_type
@@ -151,7 +151,7 @@ resource"aws_launch_configuration" "ignite-launch-configuration" {
               EOF
 }
 
-resource "aws_autoscaling_group" "ignite_autoscalling_test_1" {
+resource "aws_autoscaling_group" "elb_based_autoscallin_group" {
   name = var.auto_scalling_group_name
   max_size = 3
   min_size = 1
@@ -161,7 +161,7 @@ resource "aws_autoscaling_group" "ignite_autoscalling_test_1" {
   force_delete = true
   vpc_zone_identifier = [for s in data.aws_subnet.subnet_values: s.id]
   load_balancers = [aws_elb.autoscalling_group_elb.name]
-  launch_configuration = aws_launch_configuration.ignite-launch-configuration.name
+  launch_configuration = aws_launch_configuration.launch_configuration.name
 
   lifecycle {
     create_before_destroy = true
