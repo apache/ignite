@@ -189,47 +189,44 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when the first node is started with option
-     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
+     *
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-           NodeStartOrderWithPmeFreeSwitchDisabled.FIRST);
+           NodeIndexChoice.FIRST);
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when the middle node is started with option
-     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
+     *
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
         testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-            NodeStartOrderWithPmeFreeSwitchDisabled.MIDDLE);
+            NodeIndexChoice.MIDDLE);
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when the last node is started with option
-     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
+     *
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
         testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-            NodeStartOrderWithPmeFreeSwitchDisabled.LAST);
+            NodeIndexChoice.LAST);
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when the one node is started with option
-     * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
+     * Checks if Partition Exchange is regular in case of fixed baseline, when one of the nodes is started
+     * with IGNITE_PME_FREE_SWITCH_DISABLED set to true, and Partition Exchange is absent when this node is stopped.
      */
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-        NodeStartOrderWithPmeFreeSwitchDisabled order) throws Exception {
+        NodeIndexChoice order) throws Exception {
         persistence = true;
 
         try {
             startClusterWithPmeFreeDisabledNode(order);
 
-            checksNodeLeftOnFullyRebalancedCluster();
+            checkNodeLeftOnFullyRebalancedCluster();
         }
         finally {
             persistence = false;
@@ -263,13 +260,13 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(nodes);
 
-        checksNodeLeftOnFullyRebalancedCluster();
+        checkNodeLeftOnFullyRebalancedCluster();
     }
 
     /**
      * Checks if PME absents/presents on node left for fully rebalanced topology (Latest PME == LAA).
      */
-    private void checksNodeLeftOnFullyRebalancedCluster() throws Exception {
+    private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
         List<Ignite> ignites = G.allGrids();
 
         ignites.get(0).cluster().active(true);
@@ -699,7 +696,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      *
      * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
-    private void startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled order) throws Exception {
+    private void startClusterWithPmeFreeDisabledNode(NodeIndexChoice order) throws Exception {
         int topSize = 10;
         int id = 0;
 
@@ -733,7 +730,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      * Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
-    enum NodeStartOrderWithPmeFreeSwitchDisabled {
+    enum NodeIndexChoice {
         /** First. */
         FIRST,
 
