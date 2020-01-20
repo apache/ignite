@@ -199,7 +199,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            startTopologyWithPmeFreeDisabledOneNode(0);
+            startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled.FIRST);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -209,15 +209,15 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is regular in case of fixed baseline, when the fifth node is started with option
+     * Checks Partition Exchange is regular in case of fixed baseline, when the middle node is started with option
      * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
      */
     @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFifthNode() throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
         persistence = true;
 
         try {
-            startTopologyWithPmeFreeDisabledOneNode(4);
+            startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled.MIDDLE);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -235,7 +235,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         persistence = true;
 
         try {
-            startTopologyWithPmeFreeDisabledOneNode(9);
+            startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled.LAST);
 
             checksNodeLeftOnFullyRebalancedCluster();
         }
@@ -291,19 +291,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         Collection<ClusterNode> clusterNodes = ignites.get(0).cluster().nodes();
 
-        AtomicInteger cntNodesNotSupportingPmeFreeSwitch = new AtomicInteger();
-
         boolean allNodesSupported = allNodesSupports(clusterNodes, PME_FREE_SWITCH);
         boolean pmeExpected = !persistence || (persistence && !allNodesSupported);
-
-        if (persistence && !allNodesSupported) {
-            for (ClusterNode cn : clusterNodes) {
-                if (nodeSupports(cn, PME_FREE_SWITCH))
-                    continue;
-
-                cntNodesNotSupportingPmeFreeSwitch.incrementAndGet();
-            }
-        }
 
         initCountPmeMessages(nodes, cntSingle, cntFull);
 
@@ -313,8 +302,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             Ignite failed = G.allGrids().get(r.nextInt(nodes--));
 
             if (persistence && !allNodesSupported &&
-                !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH) &&
-                (cntNodesNotSupportingPmeFreeSwitch.decrementAndGet() == 0))
+                !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH))
                 pmeExpected = false;
 
             failed.close(); // Stopping random node.
@@ -719,32 +707,48 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      *
      * @param idxNode Index node.
      */
-    private Ignite startTopologyWithPmeFreeDisabledOneNode(int idxNode) throws Exception {
+    private Ignite startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled idxNode) throws Exception {
         int topSize = 10;
-
-        assert 0 <= idxNode && idxNode <= topSize - 1;
-
+        int id;
         try {
-            if (idxNode == 0) {
-                startGridWithPmeFreeSwithDisabled(idxNode);
+            if (idxNode == NodeStartOrderWithPmeFreeSwitchDisabled.FIRST) {
+                id = 0;
 
-                return startGridsMultiThreaded(1, topSize - 1);
+                startGridWithPmeFreeSwithDisabled(id++);
+
+                return startGridsMultiThreaded(id, topSize - id);
             }
 
-            if (idxNode == topSize - 1) {
-                startGridsMultiThreaded(idxNode, false);
+            if (idxNode == NodeStartOrderWithPmeFreeSwitchDisabled.LAST) {
+                startGridsMultiThreaded(topSize - 1, false);
 
-                return startGridWithPmeFreeSwithDisabled(idxNode);
+                return startGridWithPmeFreeSwithDisabled(topSize - 1);
             }
 
-            startGridsMultiThreaded(idxNode, false);
+            id = 4;
 
-            startGridWithPmeFreeSwithDisabled(idxNode++);
+            startGridsMultiThreaded(id, false);
 
-            return startGridsMultiThreaded(idxNode, topSize - idxNode);
+            startGridWithPmeFreeSwithDisabled(id++);
+
+            return startGridsMultiThreaded(id, topSize - id);
         }
         finally {
             checkTopology(topSize);
         }
+    }
+
+    /**
+     * Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
+     */
+    enum NodeStartOrderWithPmeFreeSwitchDisabled {
+        /** First. */
+        FIRST,
+
+        /** Middle. */
+        MIDDLE,
+
+        /** Last. */
+        LAST
     }
 }
