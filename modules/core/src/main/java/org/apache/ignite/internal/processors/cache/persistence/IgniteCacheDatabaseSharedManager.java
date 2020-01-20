@@ -926,7 +926,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param reason Reason.
      */
-    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+    @Nullable public CheckpointProgress forceCheckpoint(String reason) {
         return null;
     }
 
