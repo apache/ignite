@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors;
 
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -78,12 +77,12 @@ public class DeadLockOnNodeLeftExchangeTest extends GridCommonAbstractTest {
     /** */
     @Test
     @WithSystemProperty(key = ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1, value = "true")
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void test() throws Exception {
         startGrids(4);
 
         IgniteClusterEx cluster = grid(0).cluster();
 
+        cluster.baselineAutoAdjustEnabled(false);
         cluster.active(true);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
