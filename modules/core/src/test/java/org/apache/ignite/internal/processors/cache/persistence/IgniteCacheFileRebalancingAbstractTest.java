@@ -107,7 +107,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        //assertTrue("File rebalance hasn't been triggered.", !requestedGroups.isEmpty());
+        assertFalse("File rebalance hasn't been triggered.", requestedGroups.isEmpty());
 
         super.afterTest();
     }
@@ -521,7 +521,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(80));
+        U.sleep(ThreadLocalRandom.current().nextLong(2000));
 
         IgniteEx ignite2 = startGrid(2);
 
@@ -529,7 +529,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(80));
+        U.sleep(ThreadLocalRandom.current().nextLong(2000));
 
         IgniteEx ignite3 = startGrid(3);
 
@@ -539,7 +539,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(50));
+        U.sleep(ThreadLocalRandom.current().nextLong(2000));
 
         stopGrid(3);
 
@@ -547,7 +547,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(100));
+        U.sleep(ThreadLocalRandom.current().nextLong(2000));
 
         ignite3 = startGrid(3);
 
@@ -559,6 +559,8 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ldr.stop();
 
+        verifyCache(ignite1, ldr);
+        verifyCache(ignite2, ldr);
         verifyCache(ignite3, ldr);
     }
 
@@ -589,8 +591,8 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         boolean removes = cfg.checkRemoves();
         Function<Integer, V> valProducer = cfg.valueProducer();
 
-        log.info("Verifying cache contents [node=" +
-            node.cluster().localNode().id() + " cache=" + name + ", size=" + cnt + "]");
+        log.info("Verifying cache contents [node=" + node.cluster().localNode().id() +
+            " cache=" + name + ", size=" + cnt + "]");
 
         IgniteCache<Integer, V> cache = node.cache(name);
 

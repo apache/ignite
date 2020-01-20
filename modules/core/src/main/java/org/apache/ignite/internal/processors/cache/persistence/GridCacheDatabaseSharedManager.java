@@ -3566,44 +3566,37 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         * @param err Error.
          * @return {@code True} if request finished, {@code false} if it was completed earlier.
          */
-        synchronized boolean markComplete() {
+        synchronized boolean markComplete(@Nullable Throwable err) {
             assert cpReqFut != null;
             assert !cancelled;
 
-            return cpReqFut.onDone();
+            return cpReqFut.onDone(err);
         }
 
         /** {@inheritDoc} */
         @Override public synchronized boolean onDone(@Nullable T res, @Nullable Throwable err, boolean cancel) {
-            if (super.onDone(res, err, cancel)) {
-                if (cancel) {
-                    if (cpReqFut != null) {
-                        assert !cancelled;
+            if (cancel) {
+                if (cpReqFut != null) {
+                    assert !cancelled;
 
-                        return false;
-                    }
-
-                    cancelled = true;
-
-                    return true;
+                    return false;
                 }
 
-                assert cpReqFut != null;
+                cancelled = true;
 
-                if (err != null) {
-                    cpReqFut.onDone(err);
-
-                    return true;
-                }
-
-                markComplete();
+                super.onDone(res, err, cancel);
 
                 return true;
             }
 
-            return false;
+            assert cpReqFut != null;
+
+            markComplete(err);
+
+            return super.onDone(res, err, cancel);
         }
 
         /**
@@ -4156,7 +4149,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     );
 
-                    req.markComplete();
+                    req.markComplete(null);
                 }
                 catch (Exception e) {
                     req.onDone(new IgniteCheckedException(

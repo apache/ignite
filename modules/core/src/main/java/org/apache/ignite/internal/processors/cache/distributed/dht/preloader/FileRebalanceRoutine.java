@@ -193,9 +193,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         // No-op.
                     }
                     catch (IgniteCheckedException e) {
-                        log.error(e.getMessage(), e);
+                        if (!isDone()) {
+                            log.error(e.getMessage(), e);
 
-                        onDone(e);
+                            onDone(e);
+
+                            return;
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug("Stale error (ignore) " + e.getMessage());
                     }
                 }
             }
@@ -284,7 +291,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             if (grp == null) {
-                log.warning("Snapshot initialization skipped, cache group not found [grp=" + grpId + "]");
+                log.warning("Snapshot initialization skipped, cache group not found [grpId=" + grpId + "]");
 
                 return;
             }
@@ -311,6 +318,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                     onPartitionSnapshotRestored(grpId, partId, f.get());
                 }
+                catch (IgniteFutureCancelledCheckedException ignored) {
+                    // No-op.
+                }
                 catch (IgniteCheckedException e) {
                     log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
 
@@ -321,6 +331,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             if (receivedCnt.incrementAndGet() == partsToNodes.size()) {
                 // All partition files are received and it is necessary to force checkpoint
                 // to complete file rebalancing process.
+                U.log(log, "All partition files are received - triggering checkpoint to complete rebalancing.");
+
                 cctx.database().wakeupForCheckpoint("Partition files preload complete.");
             }
         }
@@ -430,44 +442,43 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             lock.lock();
 
             try {
-                synchronized (this) {
-                    if (isDone())
-                        return true;
+                U.log(log, "Cancelling file rebalancing [topVer=" + topVer + "]");
 
-                    U.log(log, "Cancelling file rebalancing [topVer=" + topVer + "]");
+                if (snapFut != null && !snapFut.isDone()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
 
-                    if (snapFut != null && !snapFut.isDone()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Cancelling snapshot creation [fut=" + snapFut + "]");
+                    snapFut.cancel();
+                }
 
-                        snapFut.cancel();
-                    }
+                for (IgniteInternalFuture fut : activatePartRequests.values()) {
+                    // todo should wait cpReqFut here but not whole request (deadlock possible)
+                    if (!fut.cancel())
+                        log.warning("Partition request cannot be cancelled [req=" + fut + "]");
 
-                    for (IgniteInternalFuture fut : activatePartRequests.values()) {
-                        if (!fut.isDone() && !fut.cancel())
+//                    if (!fut.isDone() && !fut.cancel())
+//                        fut.get();
+                }
+
+                if (err == null) {
+                    // Should await until off-heap cleanup is finished.
+                    for (IgniteInternalFuture fut : offheapClearTasks.values()) {
+                        if (!fut.isDone())
                             fut.get();
                     }
+                }
 
-                    if (err == null) {
-                        // Should await until off-heap cleanup is finished.
-                        for (IgniteInternalFuture fut : offheapClearTasks.values()) {
-                            if (!fut.isDone())
-                                fut.get();
-                        }
-                    }
+                if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
+                    log.debug("Index rebuild is still in progress, cancelling.");
 
-                    if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
-                        log.debug("Index rebuild is still in progress, cancelling.");
+                    idxRebuildFut.cancel();
+                }
 
-                        idxRebuildFut.cancel();
-                    }
+                for (Integer grpId : remaining.keySet()) {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                    for (Integer grpId : remaining.keySet()) {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                        if (grp != null)
-                            grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
-                    }
+                    if (grp != null)
+                        grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
                 }
             }
             catch (IgniteCheckedException e) {
@@ -504,6 +515,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                 assert from != 0 && from <= to :
                     "grp=" + grp.cacheOrGroupName() + "p=" + p + ", from=" + from + ", to=" + to;
+
+                if (log.isDebugEnabled())
+                    log.debug("Requesting hstorical rebalancing [grp=" + grp.cacheOrGroupName() + ", p=" + p + ", from=" + from + ", to=" + to);
 
                 msg.partitions().addHistorical(p, from, to, nodeAssigns.size());
             }
