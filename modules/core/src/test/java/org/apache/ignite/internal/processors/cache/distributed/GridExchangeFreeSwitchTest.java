@@ -222,7 +222,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * Checks Partition Exchange is regular in case of fixed baseline, when the one node is started with option
      * IGNITE_PME_FREE_SWITCH_DISABLED is true, and Partition Exchange is absent when this node is stoped.
      */
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeStartOrderWithPmeFreeSwitchDisabled order) throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
+        NodeStartOrderWithPmeFreeSwitchDisabled order) throws Exception {
         persistence = true;
 
         try {
