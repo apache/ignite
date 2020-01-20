@@ -17,9 +17,6 @@
 
 package org.apache.ignite.util;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -44,6 +41,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -642,7 +642,33 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "set", "invalidConsistentId"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "set", "invalidConsistentId"));
+    }
+
+    /**
+     * Test baseline set nodes with baseline offline node works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineSetWithOfflineNode() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        //It is important to set consistent id to null for force autogeneration.
+        Ignite ignite1 = startGrid(optimize(getConfiguration(getTestIgniteInstanceName(1)).setConsistentId(null)));
+
+        assertFalse(ignite0.cluster().active());
+
+        ignite0.cluster().active(true);
+
+        Ignite other = startGrid(2);
+
+        String consistentIds = consistentIds(ignite0, ignite1, other);
+
+        ignite1.close();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "set", consistentIds));
+
+        assertEquals(3, ignite0.cluster().currentBaselineTopology().size());
     }
 
     /**
@@ -1901,7 +1927,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
             (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
             execute("--baseline", "set", "non-existing-node-id ," + consistentIds(ignite)));
     }
 
