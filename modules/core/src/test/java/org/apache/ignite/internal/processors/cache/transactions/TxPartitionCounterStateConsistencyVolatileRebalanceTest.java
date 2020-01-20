@@ -22,8 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.junit.Ignore;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  * Test partitions consistency in various scenarios when all rebalance is in-memory.
  */
@@ -34,17 +32,8 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    @Override protected void configureBaselineAutoAdjust() {
+        // No-op, keep the baseline auto-adjust enabled.
     }
 
     /** {@inheritDoc} */

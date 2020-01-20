@@ -155,18 +155,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         return PARTS_CNT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-    }
-
     /** */
     protected boolean persistenceEnabled() {
         return true;
@@ -204,6 +192,12 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     }
 
     /**
+     */
+    protected void configureBaselineAutoAdjust() {
+        ignite(0).cluster().baselineAutoAdjustEnabled(false);
+    }
+
+    /**
      * Runs a scenario.
      *
      * @param partId Partition id.
@@ -224,6 +218,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         IgniteEx crd = startGrids(nodesCnt);
 
         crd.cluster().active(true);
+
+        configureBaselineAutoAdjust();
 
         assertEquals(0, crd.cache(DEFAULT_CACHE_NAME).size());
 
