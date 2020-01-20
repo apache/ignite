@@ -707,31 +707,33 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      *
      * @param idxNode Index node.
      */
-    private Ignite startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled idxNode) throws Exception {
+    private void startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled idxNode) throws Exception {
         int topSize = 10;
-        int id;
+        int id = 0;
         try {
-            if (idxNode == NodeStartOrderWithPmeFreeSwitchDisabled.FIRST) {
-                id = 0;
+            switch (idxNode) {
+                case FIRST:
+                    break;
 
-                startGridWithPmeFreeSwithDisabled(id++);
+                case MIDDLE:
+                    id = topSize/2 - 1;
+                    break;
 
-                return startGridsMultiThreaded(id, topSize - id);
+                case LAST:
+                    id = topSize - 1;
+                    break;
+
+                default:
+                    throw new IllegalStateException("Unexpected value: " + idxNode);
             }
 
-            if (idxNode == NodeStartOrderWithPmeFreeSwitchDisabled.LAST) {
-                startGridsMultiThreaded(topSize - 1, false);
-
-                return startGridWithPmeFreeSwithDisabled(topSize - 1);
-            }
-
-            id = 4;
-
-            startGridsMultiThreaded(id, false);
+            if (id > 0)
+                startGridsMultiThreaded(id, false);
 
             startGridWithPmeFreeSwithDisabled(id++);
 
-            return startGridsMultiThreaded(id, topSize - id);
+            if (id < topSize)
+                startGridsMultiThreaded(id, topSize - id);
         }
         finally {
             checkTopology(topSize);
