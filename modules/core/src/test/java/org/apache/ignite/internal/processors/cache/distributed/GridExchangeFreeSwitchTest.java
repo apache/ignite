@@ -703,7 +703,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts the topology where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
+     * Starts the cluster where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
      *
      * @param idxNode Index node.
      */
