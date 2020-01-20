@@ -31,11 +31,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.schema.ExtensibleTable;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -50,7 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.TableScan;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
-public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable, ExtensibleTable {
+public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable {
     /** */
     private final List<String> fullName;
 
@@ -87,7 +84,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
-        return new TableStatistics();
+        return new StatisticsImpl();
     }
 
     /** {@inheritDoc} */
@@ -119,25 +116,8 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return Linq4j.asEnumerable(new TableScan((ExecutionContext) root, desc));
     }
 
-    /** {@inheritDoc} */
-    @Override public Table extend(List<RelDataTypeField> fields) {
-        return new IgniteTable(fullName, desc.extend(fields));
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getExtendedColumnOffset() {
-        return desc.fields().size();
-    }
-
-    /**
-     * @return Table extended columns list.
-     */
-    public List<RelDataTypeField> extendedColumns() {
-        return desc.extended();
-    }
-
     /** */
-    private class TableStatistics implements Statistic {
+    private class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */
         @Override public Double getRowCount() {
             return null;

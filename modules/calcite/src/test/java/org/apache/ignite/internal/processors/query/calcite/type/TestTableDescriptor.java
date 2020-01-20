@@ -19,14 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeFieldImpl;
 import org.apache.calcite.util.ImmutableIntList;
@@ -49,9 +45,6 @@ public class TestTableDescriptor implements TableDescriptor {
 
     /** */
     private List<RelDataTypeField> fields = new ArrayList<>();
-
-    /** */
-    private List<RelDataTypeField> extend = new ArrayList<>();
 
     /** */
     private int affinityKeyIdx;
@@ -77,13 +70,13 @@ public class TestTableDescriptor implements TableDescriptor {
     /** */
     public TestTableDescriptor field(String name, Class<?> type, boolean affinityKey){
         affinityKeyIdx = fields.size();
-        fields.add(new RelDataTypeFieldImpl(name, fields.size(), factory.createJavaType(type)));
+        fields.add(new RelDataTypeFieldImpl(name.toUpperCase(), fields.size(), factory.createJavaType(type)));
         return this;
     }
 
     /** */
     public TestTableDescriptor field(String name, Class<?> type){
-        fields.add(new RelDataTypeFieldImpl(name, fields.size(), factory.createJavaType(type)));
+        fields.add(new RelDataTypeFieldImpl(name.toUpperCase(), fields.size(), factory.createJavaType(type)));
         return this;
     }
 
@@ -93,43 +86,10 @@ public class TestTableDescriptor implements TableDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
-        LinkedHashMap<String, Class<?>> res = new LinkedHashMap<>();
-
-        for (RelDataTypeField field : fields)
-            res.put(field.getName(), ((RelDataTypeFactoryImpl.JavaType)field.getType()).getJavaClass());
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RelDataTypeField> extended() {
-        return extend;
-    }
-
-    /** {@inheritDoc} */
-    @Override public TableDescriptor extend(List<RelDataTypeField> fields) {
-        TestTableDescriptor res = new TestTableDescriptor();
-
-        res.affinityKeyIdx = affinityKeyIdx;
-        res.identityKey = identityKey;
-        res.cacheName = cacheName;
-
-        res.fields = fields;
-
-        res.extend = RelOptUtil.deduplicateColumns(extend, fields);
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
     @Override public RelDataType apply(RelDataTypeFactory factory) {
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         for (RelDataTypeField field : fields)
-            b.add(field);
-
-        for (RelDataTypeField field : extend)
             b.add(field);
 
         return b.build();

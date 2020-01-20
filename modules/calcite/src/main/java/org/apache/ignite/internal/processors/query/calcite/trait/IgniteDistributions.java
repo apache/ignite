@@ -193,7 +193,7 @@ public class IgniteDistributions {
 
         IgniteDistribution out, left, right;
 
-        if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.keys()))) {
+        if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
             HashSet<DistributionFunction> factories = U.newHashSet(3);
 
             if (leftIn.getKeys().equals(joinInfo.leftKeys))

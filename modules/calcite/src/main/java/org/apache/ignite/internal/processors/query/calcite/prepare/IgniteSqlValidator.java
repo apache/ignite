@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
-import org.apache.calcite.sql.validate.SqlValidatorNamespace;
+import org.apache.ignite.internal.processors.query.calcite.type.SystemType;
 
 /** Validator. */
 public class IgniteSqlValidator extends SqlValidatorImpl {
@@ -47,39 +51,34 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override protected RelDataType getLogicalSourceRowType(
         RelDataType sourceRowType, SqlInsert insert) {
-        final RelDataType superType =
-            super.getLogicalSourceRowType(sourceRowType, insert);
-        return ((JavaTypeFactory) typeFactory).toSql(superType);
+        return typeFactory().toSql(super.getLogicalSourceRowType(sourceRowType, insert));
     }
 
     /** {@inheritDoc} */
     @Override protected RelDataType getLogicalTargetRowType(
         RelDataType targetRowType, SqlInsert insert) {
-        final RelDataType superType =
-            super.getLogicalTargetRowType(targetRowType, insert);
-        return ((JavaTypeFactory) typeFactory).toSql(superType);
+        return typeFactory().toSql(super.getLogicalTargetRowType(targetRowType, insert));
     }
 
     /** {@inheritDoc} */
-    @Override public SqlValidatorNamespace getNamespace(SqlNode node) {
-        switch (node.getKind()) {
-            case AS:
+    @Override protected void addToSelectList(List<SqlNode> list, Set<String> aliases,
+        List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
+        if (includeSystemVars || !isSystemType(deriveType(scope, exp)))
+            super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
+    }
 
-                // AS has a namespace if it has a column list 'AS t (c1, c2, ...)'
-                final SqlValidatorNamespace ns = namespaces.get(node);
-                if (ns != null) {
-                    return ns;
-                }
-                // fall through
-            case SNAPSHOT:
-            case OVER:
-            case COLLECTION_TABLE:
-            case ORDER_BY:
-            case TABLESAMPLE:
-            case EXTEND:
-                return getNamespace(((SqlCall) node).operand(0));
-            default:
-                return namespaces.get(node);
-        }
+    /** {@inheritDoc} */
+    @Override public boolean isSystemField(RelDataTypeField field) {
+        return isSystemType(field.getType());
+    }
+
+    /** */
+    private boolean isSystemType(RelDataType type) {
+        return type instanceof SystemType;
+    }
+
+    /** */
+    private JavaTypeFactory typeFactory() {
+        return (JavaTypeFactory) typeFactory;
     }
 }

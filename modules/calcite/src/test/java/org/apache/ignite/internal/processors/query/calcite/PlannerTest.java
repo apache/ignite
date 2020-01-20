@@ -121,7 +121,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         developer = new TestIgniteTable(
-            ImmutableList.of("PUBLIC", "Developer"),
+            ImmutableList.of("PUBLIC", "DEVELOPER"),
             new TestTableDescriptor()
                 .cacheName("Developer")
                 .identityKey("hash")
@@ -135,7 +135,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         ));
 
         project = new TestIgniteTable(
-            ImmutableList.of("PUBLIC", "Project"),
+            ImmutableList.of("PUBLIC", "PROJECT"),
             new TestTableDescriptor()
                 .cacheName("Project")
                 .identityKey("hash")
@@ -148,7 +148,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         ));
 
         country = new TestIgniteTable(
-            ImmutableList.of("PUBLIC", "Country"),
+            ImmutableList.of("PUBLIC", "COUNTRY"),
             new TestTableDescriptor()
                 .cacheName("Country")
                 .field("id", Integer.class, true)
@@ -159,7 +159,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         ));
 
         city = new TestIgniteTable(
-            ImmutableList.of("PUBLIC", "City"),
+            ImmutableList.of("PUBLIC", "CITY"),
             new TestTableDescriptor()
                 .cacheName("City")
                 .field("id", Integer.class, true)

@@ -20,24 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -45,10 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  */
 public class TableDescriptorImpl implements TableDescriptor {
     /** */
-    private final GridQueryTypeDescriptor queryTypeDesc;
-
-    /** */
-    private final List<RelDataTypeField> extend;
+    private final GridQueryTypeDescriptor typeDesc;
 
     /** */
     private final Object affinityIdentity;
@@ -60,61 +53,26 @@ public class TableDescriptorImpl implements TableDescriptor {
     private final int cacheId;
 
     /** */
-    public TableDescriptorImpl(String cacheName, GridQueryTypeDescriptor queryTypeDesc, Object affinityIdentity) {
+    public TableDescriptorImpl(String cacheName, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
         cacheId = CU.cacheId(cacheName);
 
-        this.queryTypeDesc = queryTypeDesc;
+        this.typeDesc = typeDesc;
         this.affinityIdentity = affinityIdentity;
 
-        extend = ImmutableList.of();
-
-        String affinityField = queryTypeDesc.affinityKey();
-
-        if (affinityField == null)
-            affinityFieldIdx = -1;
-        else {
-            int idx = 0;
-
-            for (String s : queryTypeDesc.fields().keySet()) {
-                if (affinityField.equals(s))
-                    break;
-
-                idx++;
-            }
-
-            affinityFieldIdx = idx;
-        }
-    }
-
-    /** */
-    private TableDescriptorImpl(int cacheId, int affinityFieldIdx, Object affinityIdentity, GridQueryTypeDescriptor queryTypeDesc, List<RelDataTypeField> extend) {
-        this.queryTypeDesc = queryTypeDesc;
-        this.extend = extend;
-        this.affinityIdentity = affinityIdentity;
-
-        this.cacheId = cacheId;
-
-        if (affinityFieldIdx == -1 && !F.isEmpty(extend)) {
-            for (int i = 0; i < extend.size(); i++) {
-                if (QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(extend.get(i).getName())) {
-                    affinityFieldIdx = queryTypeDesc.fields().size() + i;
-                    break;
-                }
-            }
-        }
-
-        this.affinityFieldIdx = affinityFieldIdx;
+        affinityFieldIdx = lookupAffinityIndex(typeDesc);
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType apply(RelDataTypeFactory factory) {
-        RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
+        IgniteTypeFactory f = (IgniteTypeFactory) factory;
 
-        for (Map.Entry<String, Class<?>> field : queryTypeDesc.fields().entrySet())
-            b.add(field.getKey(), factory.createJavaType(field.getValue()));
+        RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(f);
 
-        for (RelDataTypeField field : extend)
-            b.add(field);
+        b.add(QueryUtils.KEY_FIELD_NAME, f.createSystemType(typeDesc.keyClass()));
+        b.add(QueryUtils.VAL_FIELD_NAME, f.createSystemType(typeDesc.valueClass()));
+
+        for (Map.Entry<String, Class<?>> field : typeDesc.fields().entrySet())
+            b.add(field.getKey(), f.createJavaType(field.getValue()));
 
         return b.build();
     }
@@ -124,10 +82,9 @@ public class TableDescriptorImpl implements TableDescriptor {
         if (affinityIdentity == null)
             return IgniteDistributions.broadcast();
 
-        if (affinityFieldIdx == -1)
-            return IgniteDistributions.random();
-
-        return IgniteDistributions.hash(ImmutableIntList.of(affinityFieldIdx), new DistributionFunction.AffinityDistribution(cacheId, affinityIdentity));
+        return IgniteDistributions.hash(
+            ImmutableIntList.of(affinityFieldIdx),
+            new DistributionFunction.AffinityDistribution(cacheId, affinityIdentity));
     }
 
     /** {@inheritDoc} */
@@ -141,58 +98,40 @@ public class TableDescriptorImpl implements TableDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
-        return queryTypeDesc.fields();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RelDataTypeField> extended() {
-        return extend;
-    }
-
-    /** {@inheritDoc} */
-    @Override public TableDescriptor extend(List<RelDataTypeField> fields) {
-        List<RelDataTypeField> extend = RelOptUtil.deduplicateColumns(this.extend, fields);
-
-        checkExtended(fields);
-
-        return new TableDescriptorImpl(cacheId, affinityFieldIdx, affinityIdentity, queryTypeDesc, extend);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean matchType(CacheDataRow row) {
-        return queryTypeDesc.matchType(row.value());
+        return typeDesc.matchType(row.value());
     }
 
     /** {@inheritDoc} */
     @Override public <T> T toRow(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow row) throws IgniteCheckedException {
-        Object[] res = new Object[queryTypeDesc.fields().size() + extend.size()];
+        Object[] res = new Object[typeDesc.fields().size() + 2];
 
         int i = 0;
 
-        for (String field : queryTypeDesc.fields().keySet())
-            res[i++] = cctx.unwrapBinaryIfNeeded(queryTypeDesc.value(field, row.key(), row.value()), ectx.keepBinary());
+        res[i++] = cctx.unwrapBinaryIfNeeded(row.key(), ectx.keepBinary());
+        res[i++] = cctx.unwrapBinaryIfNeeded(row.value(), ectx.keepBinary());
 
-        for (RelDataTypeField field : extend) {
-            if (QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(field.getName()))
-                res[i++] = cctx.unwrapBinaryIfNeeded(row.key(), ectx.keepBinary());
-            else if (QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(field.getName()))
-                res[i++] = cctx.unwrapBinaryIfNeeded(row.value(), ectx.keepBinary());
-            else
-                throw new AssertionError();
-        }
+        for (String field : typeDesc.fields().keySet())
+            res[i++] = cctx.unwrapBinaryIfNeeded(typeDesc.value(field, row.key(), row.value()), ectx.keepBinary());
 
         return (T) res;
     }
 
     /** */
-    private void checkExtended(List<RelDataTypeField> fields) {
-        for (RelDataTypeField field : fields) {
-            String name = field.getName();
+    private int lookupAffinityIndex(GridQueryTypeDescriptor queryTypeDesc) {
+        if (queryTypeDesc.affinityKey() != null) {
+            int idx = 2;
 
-            if (!QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(name)
-                && !QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(name))
-                throw new IgniteSQLException("Cannot extend a field. [fieldName=" + name + "]", IgniteQueryErrorCode.PARSING);
+            String affField = queryTypeDesc.affinityKey();
+
+            for (String s : queryTypeDesc.fields().keySet()) {
+                if (affField.equals(s))
+                    return idx;
+
+                idx++;
+            }
         }
+
+        return 0;
     }
 }

@@ -114,7 +114,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .parserConfig(SqlParser.configBuilder()
                 // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower
                 // case when they are read, and whether identifiers are matched case-sensitively.
-                .setLex(Lex.MYSQL)
+                .setLex(Lex.ORACLE)
                 .build())
             // Dialects support.
             .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE

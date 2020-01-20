@@ -81,13 +81,13 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select d.NAME, p.NAME PROJECT_NAME from DEVELOPER(_key INTEGER) d, PROJECT(_key INTEGER) p where d.projectId = p._key and d._key = ?", 1);
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 1);
 
         List<List<?>> all = F.first(query).getAll();
 
         assertTrue(!F.isEmpty(all));
         assertEquals(1, all.size());
-        assertEqualsCollections(Arrays.asList("Roman", "Ignite"), F.first(all));
+        assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(all));
     }
 
     /** */
