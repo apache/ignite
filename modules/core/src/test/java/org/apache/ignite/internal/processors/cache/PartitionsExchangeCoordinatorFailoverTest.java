@@ -418,7 +418,7 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
         IgniteEx crd = startGrid(CRD_NONE);
 
         // Start several clients.
-        IgniteEx clientNode = (IgniteEx) startClientGridsMultiThreaded(2, 2);
+        IgniteEx clientNode = (IgniteEx)startClientGridsMultiThreaded(2, 2);
 
         awaitPartitionMapExchange();
 

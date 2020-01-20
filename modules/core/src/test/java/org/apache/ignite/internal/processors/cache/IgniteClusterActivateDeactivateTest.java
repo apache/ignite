@@ -1746,7 +1746,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (cacheConfigs != null)
             this.ccfgs = cacheConfigs;
 
-        if(client)
+        if (client)
             startClientGrid(nodeNumber);
         else
             startGrid(nodeNumber);
@@ -1756,7 +1756,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private IgniteInternalFuture<?> startNodeAsync(int nodeNumber, boolean client) {
         return runAsync(() -> {
             try {
-                if(client)
+                if (client)
                     startClientGrid(nodeNumber);
                 else
                     startGrid(nodeNumber);

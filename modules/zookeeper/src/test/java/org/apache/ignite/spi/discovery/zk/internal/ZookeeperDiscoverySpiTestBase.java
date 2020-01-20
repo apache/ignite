@@ -117,7 +117,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     /** */
     protected ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
 
-    /* */
+    /** */
     protected Map<String, Object> userAttrs;
 
     /**

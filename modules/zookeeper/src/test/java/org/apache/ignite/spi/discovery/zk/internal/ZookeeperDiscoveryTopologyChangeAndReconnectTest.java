@@ -427,7 +427,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
             else
                 userAttrs = null;
 
-            if(i > 5)
+            if (i > 5)
                 startClientGrid(i);
             else
                 startGrid(i);

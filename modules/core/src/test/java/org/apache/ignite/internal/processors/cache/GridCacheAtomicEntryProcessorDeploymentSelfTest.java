@@ -61,6 +61,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         cfg = super.optimize(cfg);
 

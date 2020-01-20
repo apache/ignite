@@ -57,7 +57,7 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
                 @Override public Void call() throws Exception {
                     int threadIdx = idx.getAndIncrement();
 
-                    if(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean())
+                    if (threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean())
                         startClientGrid(threadIdx);
                     else
                         startGrid(threadIdx);
