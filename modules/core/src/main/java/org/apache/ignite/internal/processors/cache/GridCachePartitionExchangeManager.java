@@ -95,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -270,6 +271,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
+
+    /** List of exchange aware components. */
+    private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
 
     /** Histogram of PME durations. */
     private volatile HistogramMetricImpl durationHistogram;
@@ -1176,6 +1180,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (pendingResend.compareAndSet(timeout, update))
                 cctx.time().addTimeoutObject(update);
         }
+    }
+
+    /**
+     * Registers component that will be notified on every partition map exchange.
+     *
+     * @param comp Component to be registered.
+     */
+    public void registerExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.add(comp);
+    }
+
+    /**
+     * Removes exchange aware component from list of listeners.
+     *
+     * @param comp Component to be registered.
+     */
+    public void unregisterExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.remove(comp);
+    }
+
+    /**
+     * @return List of registered exchange listeners.
+     */
+    public List<PartitionsExchangeAware> exchangeAwareComponents() {
+        return U.sealList(exchangeAwareComps);
     }
 
     /**

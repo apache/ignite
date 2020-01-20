@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStal
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
@@ -98,6 +99,9 @@ public class IgniteCacheMvccTestSuite6 {
         // Add mvcc versions for skipped tests.
         suite.add(PartitionedMvccTxPessimisticCacheGetsDistributionTest.class);
         suite.add(ReplicatedMvccTxPessimisticCacheGetsDistributionTest.class);
+
+        // This exchange test is irrelevant to MVCC.
+        suite.add(PartitionsExchangeAwareTest.class);
 
         return suite;
     }
