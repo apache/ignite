@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * PageMemory tracker plugin provider.
  */
-public class PageMemoryTrackerPluginProvider extends AbstractTestPluginProvider<PageMemoryTrackerConfiguration>
+public class PageMemoryTrackerPluginProvider extends AbstractTestPluginProvider
     implements IgniteChangeGlobalStateSupport, DatabaseLifecycleListener {
     /** System property name to implicitly enable page memory tracker . */
     public static final String IGNITE_ENABLE_PAGE_MEMORY_TRACKER = "IGNITE_ENABLE_PAGE_MEMORY_TRACKER";
@@ -57,11 +57,6 @@ public class PageMemoryTrackerPluginProvider extends AbstractTestPluginProvider<
     /** {@inheritDoc} */
     @Override public String name() {
         return PLUGIN_NAME;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
     }
 
     /** {@inheritDoc} */

@@ -34,11 +34,6 @@ public abstract class AbstractTestSecurityPluginProvider extends AbstractTestPlu
     }
 
     /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
-    }
-
-    /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
         return new IgnitePlugin() {
         };

@@ -26,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * No-op test implementation of {@link PluginProvider} which allows to avoid redundant boilerplate code.
  */
-public abstract class AbstractTestPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
+public abstract class AbstractTestPluginProvider implements PluginProvider<PluginConfiguration> {
     /** {@inheritDoc} */
     @Override public String version() {
-        return null;
+        return "1.0";
     }
 
     /** {@inheritDoc} */
@@ -38,7 +38,7 @@ public abstract class AbstractTestPluginProvider<C extends PluginConfiguration> 
     }
 
     /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         // No-op.
     }
 
@@ -63,7 +63,7 @@ public abstract class AbstractTestPluginProvider<C extends PluginConfiguration> 
     }
 
     /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
+    @Override public void onIgniteStart() {
         // No-op.
     }
 

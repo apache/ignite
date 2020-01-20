@@ -53,11 +53,6 @@ public class TestDistibutedConfigurationPlugin extends AbstractTestPluginProvide
     }
 
     /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
-    }
-
-    /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         igniteCtx = ((IgniteKernal)ctx.grid()).context();
     }

@@ -426,11 +426,6 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String version() {
-            return "1.0";
-        }
-
-        /** {@inheritDoc} */
         @Override public IgnitePlugin plugin() {
             return this;
         }

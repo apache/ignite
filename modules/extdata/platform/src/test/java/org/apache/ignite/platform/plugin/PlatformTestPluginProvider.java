@@ -25,15 +25,10 @@ import org.apache.ignite.plugin.*;
 /**
  * Plugin provider for platform tests.
  */
-public class PlatformTestPluginProvider extends AbstractTestPluginProvider<PlatformTestPluginConfiguration> {
+public class PlatformTestPluginProvider extends AbstractTestPluginProvider {
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestPlatformPlugin";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
     }
 
     /** {@inheritDoc} */
