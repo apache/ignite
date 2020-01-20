@@ -301,7 +301,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         while (nodes > 1) {
             Ignite failed = G.allGrids().get(r.nextInt(nodes--));
 
-            if (persistence && !allNodesSupported &&
+            if (persistence && pmeExpected &&
                 !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH))
                 pmeExpected = false;
 
@@ -722,9 +722,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 case LAST:
                     id = topSize - 1;
                     break;
-
-                default:
-                    throw new IllegalStateException("Unexpected value: " + idxNode);
             }
 
             if (id > 0)
