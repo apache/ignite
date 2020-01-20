@@ -73,7 +73,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     @Test
     public void test() throws Exception {
         grid(SRV_INITIATOR).cache(CACHE_NAME)
-            .put(prmKey(grid(SRV_CHECK)), 1);
+            .put(primaryKey(grid(SRV_CHECK)), 1);
 
         awaitPartitionMapExchange();
 
