@@ -127,10 +127,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.cluster.ClusterState.active;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -3175,6 +3177,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
+        CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
+
+        boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
+            cctx.filePreloader().supports(grp, cctx.discovery().aliveServerNodes());
+
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
         Map<Integer, Long> minCntrs = new HashMap<>();
 
@@ -3184,34 +3191,47 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             assert nodeCntrs != null;
 
-            for (int i = 0; i < nodeCntrs.size(); i++) {
-                int p = nodeCntrs.partitionAt(i);
+            if (nodeCntrs.isEmpty() && fileRebalanceApplicable) {
+                // We should search the supplier for file rebalancing even if the counter was not sent.
+                for (int p = 0; p < top.partitions(); p++) {
+                    GridDhtPartitionState state = top.partitionState(e.getKey(), p);
 
-                UUID uuid = e.getKey();
+                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
+                        continue;
 
-                GridDhtPartitionState state = top.partitionState(uuid, p);
+                    minCntrs.put(p, 0L);
+                }
+            }
+            else {
+                for (int i = 0; i < nodeCntrs.size(); i++) {
+                    int p = nodeCntrs.partitionAt(i);
 
-                if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
-                    continue;
+                    UUID uuid = e.getKey();
 
-                long cntr = state == GridDhtPartitionState.MOVING ?
-                    nodeCntrs.initialUpdateCounterAt(i) :
-                    nodeCntrs.updateCounterAt(i);
+                    GridDhtPartitionState state = top.partitionState(uuid, p);
 
-                Long minCntr = minCntrs.get(p);
+                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
+                        continue;
 
-                if (minCntr == null || minCntr > cntr)
-                    minCntrs.put(p, cntr);
+                    long cntr = state == GridDhtPartitionState.MOVING ?
+                        nodeCntrs.initialUpdateCounterAt(i) :
+                        nodeCntrs.updateCounterAt(i);
 
-                if (state != GridDhtPartitionState.OWNING)
-                    continue;
+                    Long minCntr = minCntrs.get(p);
 
-                CounterWithNodes maxCntr = maxCntrs.get(p);
+                    if (minCntr == null || minCntr > cntr)
+                        minCntrs.put(p, cntr);
 
-                if (maxCntr == null || cntr > maxCntr.cnt)
-                    maxCntrs.put(p, new CounterWithNodes(cntr, e.getValue().partitionSizes(top.groupId()).get(p), uuid));
-                else if (cntr == maxCntr.cnt)
-                    maxCntr.nodes.add(uuid);
+                    if (state != GridDhtPartitionState.OWNING)
+                        continue;
+
+                    CounterWithNodes maxCntr = maxCntrs.get(p);
+
+                    if (maxCntr == null || cntr > maxCntr.cnt)
+                        maxCntrs.put(p, new CounterWithNodes(cntr, e.getValue().partitionSizes(top.groupId()).get(p), uuid));
+                    else if (cntr == maxCntr.cnt)
+                        maxCntr.nodes.add(uuid);
+                }
             }
         }
 
@@ -3266,10 +3286,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Set<Integer> haveHistory = new HashSet<>();
 
-        CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
-
-        boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
-            cctx.filePreloader().supports(grp, cctx.discovery().aliveServerNodes());
+        long walRebalanceThreshold = getLong(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3287,7 +3304,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long localHistCntr = localReserved.get(p);
 
                 if (localHistCntr != null) {
-                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    if (minCntr != 0 && partSizes.get(p) > walRebalanceThreshold && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                         haveHistory.add(p);
@@ -3309,7 +3326,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
                 if (histCntr != null) {
-                    if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (minCntr != 0 && partSizes.get(p) > walRebalanceThreshold && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
                         haveHistory.add(p);

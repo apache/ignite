@@ -174,7 +174,7 @@ public class IgniteConfiguration {
     public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default WAL rebalance threshold (value is 500 000 cache entries). */
-    public static final long DFLT_IGNITE_PDS_WAL_REBALANCE_THRESHOLD = 500_000;
+    public static final long DFLT_PDS_WAL_REBALANCE_THRESHOLD = 500_000;
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;

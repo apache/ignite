@@ -496,10 +496,12 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
-    public void test3nodesRestartLastNodeWithLoad() throws Exception {
+    public void test4nodesRestartLastNodeWithLoad() throws Exception {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
         List<ClusterNode> blt = new ArrayList<>();
 
-        boolean checkRemoves = false;
+        boolean checkRemoves = true;
 
         IgniteEx ignite0 = startGrid(0);
 
@@ -521,7 +523,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(2000));
+        U.sleep(rnd.nextLong(2000));
 
         IgniteEx ignite2 = startGrid(2);
 
@@ -529,7 +531,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(2000));
+        U.sleep(rnd.nextLong(2000));
 
         IgniteEx ignite3 = startGrid(3);
 
@@ -539,7 +541,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(2000));
+        U.sleep(rnd.nextLong(2000));
 
         stopGrid(3);
 
@@ -547,7 +549,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(ThreadLocalRandom.current().nextLong(2000));
+        U.sleep(rnd.nextLong(2000));
 
         ignite3 = startGrid(3);
 
@@ -559,8 +561,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ldr.stop();
 
-        verifyCache(ignite1, ldr);
-        verifyCache(ignite2, ldr);
         verifyCache(ignite3, ldr);
     }
 
