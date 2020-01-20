@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,9 +32,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -64,11 +68,15 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        int pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
+
+        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(300L * 1024 * 1024)
-            ));
+                .setMaxSize(pageSize * 40_000L));
+
+        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
@@ -214,5 +222,68 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
             assertTrue("Some buckets should be cached [partId=" + cacheData.partId() + ']', totalCacheSize > 0);
         });
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testPageListCacheLimit() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        ignite.getOrCreateCache("cache1");
+        ignite.getOrCreateCache("cache2");
+
+        GridCacheContext<?, ?> cctx1 = ignite.context().cache().cache("cache1").context();
+        GridCacheContext<?, ?> cctx2 = ignite.context().cache().cache("cache2").context();
+
+        GridCacheOffheapManager offheap1 = (GridCacheOffheapManager)cctx1.offheap();
+        GridCacheOffheapManager offheap2 = (GridCacheOffheapManager)cctx2.offheap();
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+
+        assertEquals(db.pageListCacheLimitHolder(cctx1.dataRegion()), db.pageListCacheLimitHolder(cctx2.dataRegion()));
+
+        long limit = db.pageListCacheLimitHolder(cctx1.dataRegion()).get();
+
+        try (IgniteDataStreamer<Object, Object> streamer1 = ignite.dataStreamer("cache1");
+            IgniteDataStreamer<Object, Object> streamer2 = ignite.dataStreamer("cache2")) {
+            // Fill caches to trigger "too many dirty pages" checkpoint.
+            for (int i = 0; i < 50_000; i++) {
+                streamer1.addData(i, new byte[i % 2048]);
+                streamer2.addData(i, new byte[i % 2048]);
+
+                // Calculates page list caches count and validate this value periodically.
+                if (i % 5_000 == 0) {
+                    streamer1.flush();
+                    streamer2.flush();
+
+                    AtomicInteger pageCachesCnt = new AtomicInteger();
+
+                    for (GridCacheOffheapManager offheap : F.asList(offheap1, offheap2)) {
+                        offheap.cacheDataStores().forEach(cacheData -> {
+                            if (cacheData.rowStore() == null)
+                                return;
+
+                            PagesList list = (PagesList)cacheData.rowStore().freeList();
+
+                            for (int b = 0; b < list.bucketsSize.length(); b++) {
+                                PagesList.PagesCache pagesCache = list.getBucketCache(b, false);
+
+                                if (pagesCache != null && pagesCache.size() > 0)
+                                    pageCachesCnt.incrementAndGet();
+                            }
+                        });
+                    }
+
+                    // There can be a race and actual page list caches count can exceed the limit in very rare cases.
+                    assertTrue("Page list caches count is more than expected [count: " + pageCachesCnt.get() +
+                        ", limit=" + limit + ']', pageCachesCnt.get() <= limit + ignite.configuration()
+                        .getDataStreamerThreadPoolSize() - 1);
+                }
+            }
+        }
     }
 }
