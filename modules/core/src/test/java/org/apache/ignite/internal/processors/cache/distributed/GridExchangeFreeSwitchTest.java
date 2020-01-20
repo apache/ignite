@@ -705,13 +705,14 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      * Starts the cluster where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
      *
-     * @param idxNode Index node.
+     * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
-    private void startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled idxNode) throws Exception {
+    private void startClusterWithPmeFreeDisabledNode(NodeStartOrderWithPmeFreeSwitchDisabled order) throws Exception {
         int topSize = 10;
         int id = 0;
+
         try {
-            switch (idxNode) {
+            switch (order) {
                 case FIRST:
                     break;
 
