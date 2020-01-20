@@ -155,20 +155,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         return PARTS_CNT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
-
     /** */
     protected boolean persistenceEnabled() {
         return true;
