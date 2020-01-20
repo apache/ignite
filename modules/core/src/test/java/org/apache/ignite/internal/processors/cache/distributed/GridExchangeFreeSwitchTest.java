@@ -141,8 +141,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param nodes Nodes.
-     * @param cntSingle Count GridDhtPartitionsSingleMessage.
-     * @param cntFull Count GridDhtPartitionsFullMessage.
+     * @param cntSingle Counter for GridDhtPartitionsSingleMessage.
+     * @param cntFull Counter for GridDhtPartitionsFullMessage.
      */
     private void initCountPmeMessages(int nodes, AtomicLong cntSingle, AtomicLong cntFull) {
         for (int i = 0; i < nodes; i++) {
@@ -193,8 +193,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
-       testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-           NodeIndexChoice.FIRST);
+       testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.FIRST);
     }
 
     /**
@@ -202,8 +201,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-            NodeIndexChoice.MIDDLE);
+        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.MIDDLE);
     }
 
     /**
@@ -211,8 +209,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-            NodeIndexChoice.LAST);
+        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.LAST);
     }
 
     /**
@@ -235,7 +232,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param idx Index.
-     * @return Started grid
+     * @return Started grid.
      */
     private Ignite startGridWithPmeFreeSwitchDisabled(int idx) throws Exception {
         try {
