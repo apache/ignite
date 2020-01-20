@@ -179,29 +179,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--activate"));
 
         assertTrue(ignite.cluster().active());
-        assertFalse(ignite.cluster().readOnly());
-    }
-
-    /**
-     * Test enabling/disabling read-only mode works via control.sh
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReadOnlyEnableDisable() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        ignite.cluster().active(true);
-
-        assertFalse(ignite.cluster().readOnly());
-
-        assertEquals(EXIT_CODE_OK, execute("--read-only-on"));
-
-        assertTrue(ignite.cluster().readOnly());
-
-        assertEquals(EXIT_CODE_OK, execute("--read-only-off"));
-
-        assertFalse(ignite.cluster().readOnly());
     }
 
     /**

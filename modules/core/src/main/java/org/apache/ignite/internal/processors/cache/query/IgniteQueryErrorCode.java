@@ -115,9 +115,6 @@ public final class IgniteQueryErrorCode {
     /** Attempt to INSERT, UPDATE or MERGE value which scale exceed maximum DECIMAL column scale. */
     public static final int KEY_SCALE_OUT_OF_RANGE = 4010;
 
-    /** Attempt to INSERT, UPDATE or DELETE value on read-only cluster. */
-    public static final int CLUSTER_READ_ONLY_MODE_ENABLED = 4011;
-
     /* 5xxx - transactions related runtime errors. */
 
     /** Transaction is already open. */
@@ -201,9 +198,6 @@ public final class IgniteQueryErrorCode {
 
             case QUERY_CANCELED:
                 return SqlStateCode.QUERY_CANCELLED;
-
-            case CLUSTER_READ_ONLY_MODE_ENABLED:
-                return SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

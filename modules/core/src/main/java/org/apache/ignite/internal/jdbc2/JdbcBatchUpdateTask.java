@@ -30,9 +30,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -149,12 +147,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
             }
         }
         catch (Exception ex) {
-            IgniteSQLException sqlEx = X.cause(ex, IgniteSQLException.class);
-
-            if (sqlEx != null)
-                throw new BatchUpdateException(sqlEx.getMessage(), sqlEx.sqlState(), Arrays.copyOf(updCntrs, idx), ex);
-            else
-                throw new BatchUpdateException(Arrays.copyOf(updCntrs, idx), ex);
+            throw new BatchUpdateException(Arrays.copyOf(updCntrs, idx), ex);
         }
 
         return updCntrs;
