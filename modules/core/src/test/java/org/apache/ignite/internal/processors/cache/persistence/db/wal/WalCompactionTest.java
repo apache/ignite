@@ -48,8 +48,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  *
  */
@@ -106,16 +104,12 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -162,6 +156,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      */
     private void testApplyingUpdatesFromCompactedWal(boolean switchOffCompressor) throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
+
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
