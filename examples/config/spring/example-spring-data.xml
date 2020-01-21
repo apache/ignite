@@ -41,7 +41,6 @@
 
     <bean parent="ignite.cfg">
         <property name="igniteInstanceName" value="springDataNode" />
-        <property name="peerClassLoadingEnabled" value="true" />
 
         <property name="cacheConfiguration">
             <list>
