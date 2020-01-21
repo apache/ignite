@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Checkpoint futures.
+ *
  */
-public interface CheckpointFuture {
+public class SqlIndexConsistencyAfterInterruptTxCacheOperationTest
+    extends SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest {
     /**
-     * @return Begin future.
      */
-    public GridFutureAdapter beginFuture();
-
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
+    protected CacheAtomicityMode atomicity() {
+        return CacheAtomicityMode.TRANSACTIONAL;
+    }
 }

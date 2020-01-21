@@ -416,10 +416,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             try {
                 boolean success = part.tryClear(grpEvictionCtx);
 
-                if (success) {
-                    if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
-                        part.destroy();
-                }
+                if (success && part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
+                    part.destroy();
 
                 // Complete eviction future before schedule new to prevent deadlock with
                 // simultaneous eviction stopping and scheduling new eviction.
