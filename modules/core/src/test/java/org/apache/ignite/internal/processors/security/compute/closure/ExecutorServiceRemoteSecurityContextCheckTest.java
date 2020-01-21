@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils.IgniteRunnableX;
@@ -37,6 +38,9 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Executor service operation. */
+    private static final String OPERATION_EXECUTOR_SERVICE = "executor_service";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -55,25 +59,25 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(CLNT_CHECK, 2)
-            .expect(SRV_ENDPOINT, 4)
-            .expect(CLNT_ENDPOINT, 4);
+            .expect(SRV_RUN, OPERATION_EXECUTOR_SERVICE, 1)
+            .expect(CLNT_RUN, OPERATION_EXECUTOR_SERVICE, 1)
+            .expectCheck(SRV_CHECK, 2)
+            .expectCheck(CLNT_CHECK, 2)
+            .expectEndpoint(SRV_ENDPOINT, 4)
+            .expectEndpoint(CLNT_ENDPOINT, 4);
     }
 
     /** */
     @Test
     public void test() {
         IgniteRunnableX operation = () -> {
-            VERIFIER.register();
+            VERIFIER.register(OPERATION_EXECUTOR_SERVICE);
 
             Ignite loc = Ignition.localIgnite();
 

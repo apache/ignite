@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -39,6 +40,9 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
+    /** Data streamer operation. */
+    private static final String OPERATION_DATA_STREAMER = "data_streamer";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -53,23 +57,23 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(SRV_CHECK, 1)
-            .expect(SRV_ENDPOINT, 1)
-            .expect(CLNT_ENDPOINT, 1);
+            .expect(SRV_RUN, OPERATION_DATA_STREAMER, 1)
+            .expectCheck(SRV_CHECK, 1)
+            .expectEndpoint(SRV_ENDPOINT, 1)
+            .expectEndpoint(CLNT_ENDPOINT, 1);
     }
 
     /** */
     @Test
     public void testDataStreamer() {
         IgniteRunnable op = () -> {
-            VERIFIER.register();
+            VERIFIER.register(OPERATION_DATA_STREAMER);
 
             try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
                 strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpoints())));

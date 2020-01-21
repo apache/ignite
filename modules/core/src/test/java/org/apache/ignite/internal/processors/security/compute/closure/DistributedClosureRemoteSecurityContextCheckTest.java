@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -36,6 +37,9 @@ import static org.apache.ignite.Ignition.localIgnite;
  * security context is the initiator context.
  */
 public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
+    /** Closure operation. */
+    private static final String OPERATION_CLOSURE = "closure";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -54,18 +58,18 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(CLNT_CHECK, 2)
-            .expect(SRV_ENDPOINT, 4)
-            .expect(CLNT_ENDPOINT, 4);
+            .expect(SRV_RUN, OPERATION_CLOSURE, 1)
+            .expect(CLNT_RUN, OPERATION_CLOSURE, 1)
+            .expectCheck(SRV_CHECK, 2)
+            .expectCheck(CLNT_CHECK, 2)
+            .expectEndpoint(SRV_ENDPOINT, 4)
+            .expectEndpoint(CLNT_ENDPOINT, 4);
     }
 
     /** */
@@ -113,6 +117,6 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
                 for (UUID id : nodesToCheck())
                     compute(id).applyAsync(createRunner(), new Object()).get();
             }
-        ).map(RegisterExecAndForward::new);
+        ).map(r -> new RegisterExecAndForward<>(OPERATION_CLOSURE, r, endpoints()));
     }
 }

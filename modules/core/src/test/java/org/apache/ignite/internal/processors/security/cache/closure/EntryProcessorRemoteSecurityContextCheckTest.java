@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -40,6 +41,9 @@ import static org.apache.ignite.Ignition.localIgnite;
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
+    /** Entry processor operation. */
+    private static final String OPERATION_ENTRY_PROC = "entry_proc";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -54,16 +58,16 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(SRV_CHECK, 1)
-            .expect(SRV_ENDPOINT, 1)
-            .expect(CLNT_ENDPOINT, 1);
+            .expect(SRV_RUN, OPERATION_ENTRY_PROC,  1)
+            .expectCheck(SRV_CHECK, 1)
+            .expectEndpoint(SRV_ENDPOINT, 1)
+            .expectEndpoint(CLNT_ENDPOINT, 1);
     }
 
     /** */
@@ -98,6 +102,6 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
             () -> localIgnite().<Integer, Integer>cache(CACHE_NAME)
                 .invokeAllAsync(singleton(key), createRunner()).get()
-        ).map(RegisterExecAndForward::new);
+        ).map(r -> new RegisterExecAndForward<>(OPERATION_ENTRY_PROC, r, endpoints()));
     }
 }

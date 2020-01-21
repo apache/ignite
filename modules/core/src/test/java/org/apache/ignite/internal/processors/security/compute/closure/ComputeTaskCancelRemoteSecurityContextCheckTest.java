@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -59,6 +60,9 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
 
     /** */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(2);
+
+    /** Cancel operation. */
+    private static final String OPERATION_CANCEL = "cancel";
 
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
@@ -109,7 +113,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
 
             IgniteEx rmt = isClientRmt ? startClientAllowAll("clnt_rmt") : startGridAllowAll("srv_rmt");
 
-            srv.cluster().active(true);
+            srv.cluster().state(ClusterState.ACTIVE);
 
             //Checks the case when IgniteFuture#cancel is called.
             checkCancel(initator, rmt, IgniteFuture::cancel);
@@ -127,7 +131,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
     private void checkCancel(IgniteEx initator, IgniteEx rmt, Consumer<IgniteFuture> consumer) throws Exception {
         VERIFIER
             .initiator(initator)
-            .expect(rmt.name(), 1);
+            .expect(rmt.name(), OPERATION_CANCEL, 1);
 
         BARRIER.reset();
         CANCELED.set(false);
@@ -157,7 +161,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
                     private Ignite loc;
 
                     @Override public void cancel() {
-                        VERIFIER.register((IgniteEx)loc);
+                        VERIFIER.register((IgniteEx)loc, OPERATION_CANCEL);
 
                         CANCELED.set(true);
                     }

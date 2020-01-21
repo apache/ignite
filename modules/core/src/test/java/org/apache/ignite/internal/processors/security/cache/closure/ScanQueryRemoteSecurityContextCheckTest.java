@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -40,6 +41,9 @@ import static org.apache.ignite.Ignition.localIgnite;
  */
 @RunWith(JUnit4.class)
 public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
+    /** Scan query operation. */
+    private static final String OPERATION_SCAN_QUERY = "scan_query";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -56,17 +60,17 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(SRV_ENDPOINT, 2)
-            .expect(CLNT_ENDPOINT, 2);
+            .expect(SRV_RUN, OPERATION_SCAN_QUERY, 1)
+            .expect(CLNT_RUN, OPERATION_SCAN_QUERY, 1)
+            .expectCheck(SRV_CHECK, 2)
+            .expectEndpoint(SRV_ENDPOINT, 2)
+            .expectEndpoint(CLNT_ENDPOINT, 2);
     }
 
     /** */
@@ -92,12 +96,12 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> {
-                VERIFIER.register();
+                VERIFIER.register(OPERATION_SCAN_QUERY);
 
                 localIgnite().cache(CACHE_NAME).query(new ScanQuery<>(createRunner(SRV_CHECK))).getAll();
             },
             () -> {
-                VERIFIER.register();
+                VERIFIER.register(OPERATION_SCAN_QUERY);
 
                 localIgnite().cache(CACHE_NAME).query(
                     new ScanQuery<>((k, v) -> true),

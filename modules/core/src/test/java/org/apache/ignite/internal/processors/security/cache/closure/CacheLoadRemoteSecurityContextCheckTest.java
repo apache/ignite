@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
@@ -43,6 +44,9 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** Transition load cache. */
     private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
 
+    /** Load cache operation. */
+    private static final String OPERATION_LOAD_CACHE = "load_cache";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -57,7 +61,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -77,17 +81,17 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         verifier
-            .expect(SRV_RUN, 1)
-            .expect(SRV_CHECK, 1)
-            .expect(SRV_ENDPOINT, 1)
-            .expect(CLNT_ENDPOINT, 1);
+            .expect(SRV_RUN, OPERATION_LOAD_CACHE, 1)
+            .expectCheck(SRV_CHECK, 1)
+            .expectEndpoint(SRV_ENDPOINT, 1)
+            .expectEndpoint(CLNT_ENDPOINT, 1);
     }
 
     /** */
     @Test
     public void test() {
         IgniteRunnable operation = () -> {
-            VERIFIER.register();
+            VERIFIER.register(OPERATION_LOAD_CACHE);
 
             localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(
                 new RegisterExecAndForward<>(SRV_CHECK, endpoints())
