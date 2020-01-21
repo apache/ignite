@@ -361,8 +361,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private RegisterExecAndForward(String node, String opName, IgniteRunnable runnable, Collection<UUID> endpoints) {
             this.node = node;
             this.opName = opName;
-            this.endpoints = endpoints;
             this.runnable = runnable;
+            this.endpoints = endpoints;
         }
 
         /** {@inheritDoc} */
