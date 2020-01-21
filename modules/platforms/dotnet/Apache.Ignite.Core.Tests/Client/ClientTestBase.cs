@@ -265,7 +265,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets loggers from all server nodes.
         /// </summary>
-        private static IEnumerable<ListLogger> GetLoggers()
+        protected static IEnumerable<ListLogger> GetLoggers()
         {
             return Ignition.GetAll()
                 .OrderBy(i => i.Name)

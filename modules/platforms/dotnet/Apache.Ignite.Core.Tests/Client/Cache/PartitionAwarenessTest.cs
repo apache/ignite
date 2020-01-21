@@ -288,11 +288,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Get(2);
             cache.Get(3);
 
-            var reqs = _loggers
-                .Select(l => new {Logger = l, Requests = GetCacheRequestNames(l).ToArray()})
-                .Where(r => r.Requests.Length > 0)
+            var reqs = GetLoggers()
+                .Select(l => GetServerRequestNames(l, RequestNamePrefixCache).ToArray())
                 .ToArray();
-
+            
             // All requests should go to a single (default) node, because partition awareness is not applicable.
             Assert.AreEqual(1, reqs.Length);
 
@@ -305,7 +304,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 "Get"
             };
 
-            Assert.AreEqual(expectedRequests, reqs[0].Requests);
+            Assert.AreEqual(expectedRequests, reqs[0]);
         }
 
         [Test]
