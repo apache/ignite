@@ -99,7 +99,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
 
-        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistry mreg = gridKernalCtx.metric().getOrCreate(TX_METRICS);
 
         txCommits = mreg.intMetric("txCommits", "Number of transaction commits.");
         txRollbacks = mreg.intMetric("txRollbacks", "Number of transaction rollbacks.");
@@ -123,7 +123,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
     /** Callback invoked when {@link IgniteTxManager} started. */
     public void onTxManagerStarted() {
-        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistry mreg = gridKernalCtx.metric().getOrCreate(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,

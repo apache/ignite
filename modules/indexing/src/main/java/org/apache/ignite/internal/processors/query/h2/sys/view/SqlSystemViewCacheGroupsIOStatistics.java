@@ -63,10 +63,10 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
 
-            MetricRegistry mreg = ctx.metric().registry(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
+            MetricRegistry mreg = ctx.metric().getOrCreate(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
 
-            IntMetric grpId = mreg.findMetric("grpId");
-            ObjectMetric<String> grpName = mreg.findMetric("name");
+            IntMetric grpId = mreg.metric("grpId");
+            ObjectMetric<String> grpName = mreg.metric("name");
 
             if (grpId == null)
                 emptyIterator();
@@ -88,7 +88,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
                 grpCtx -> toRow(ses,
                     grpCtx.groupId(),
                     grpCtx.cacheOrGroupName(),
-                    mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
+                    mmgr.getOrCreate(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
                 true,
                 grpCtx -> !grpCtx.systemCache());
         }
@@ -98,7 +98,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
 
     /** */
     private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mreg) {
-        IntMetric grpIdMetric = mreg.findMetric("grpId");
+        IntMetric grpIdMetric = mreg.metric("grpId");
 
         if (grpIdMetric == null)
             return createRow(ses, grpId, grpName, 0, 0);
@@ -107,8 +107,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
             ses,
             grpId,
             grpName,
-            mreg.<LongMetric>findMetric(PHYSICAL_READS).value(),
-            mreg.<LongMetric>findMetric(LOGICAL_READS).value()
+            mreg.<LongMetric>metric(PHYSICAL_READS).value(),
+            mreg.<LongMetric>metric(LOGICAL_READS).value()
         );
     }
 

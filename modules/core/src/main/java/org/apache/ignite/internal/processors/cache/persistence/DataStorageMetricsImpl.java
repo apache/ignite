@@ -120,7 +120,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
 
-        MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
+        MetricRegistry mreg = mmgr.getOrCreate(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mreg.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",

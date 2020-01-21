@@ -730,4 +730,11 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of {@link IgniteEncryption} interface.
      */
     public IgniteEncryption encryption();
+
+    /**
+     * Gets an instance of {@link IgniteMetric} interface.
+     *
+     * @return Instance of {@link IgniteMetric} interface.
+     */
+    public IgniteMetric metrics();
 }

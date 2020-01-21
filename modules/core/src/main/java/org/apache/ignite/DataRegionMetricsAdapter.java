@@ -18,12 +18,11 @@ package org.apache.ignite;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Converter class from {@link DataRegionMetrics} to legacy {@link MemoryMetrics}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 public class DataRegionMetricsAdapter implements MemoryMetrics {

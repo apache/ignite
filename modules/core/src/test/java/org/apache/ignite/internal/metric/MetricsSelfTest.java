@@ -128,7 +128,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         mreg.register(l);
 
-        assertEquals(l, mreg.findMetric("rtest"));
+        assertEquals(l, mreg.metric("rtest"));
 
         l.reset();
 
@@ -142,7 +142,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         mreg.register("bmtest", () -> v[0], "test");
 
-        BooleanMetric m = mreg.findMetric("bmtest");
+        BooleanMetric m = mreg.metric("bmtest");
 
         assertEquals(v[0], m.value());
 
@@ -158,7 +158,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         mreg.register("dmtest", () -> v[0], "test");
 
-        DoubleMetric m = mreg.findMetric("dmtest");
+        DoubleMetric m = mreg.metric("dmtest");
 
         assertEquals(v[0], m.value(), 0);
 
@@ -174,7 +174,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         mreg.register("imtest", () -> v[0], "test");
 
-        IntMetric m = mreg.findMetric("imtest");
+        IntMetric m = mreg.metric("imtest");
 
         assertEquals(v[0], m.value());
 
@@ -190,7 +190,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         mreg.register("lmtest", () -> v[0], "test");
 
-        LongMetric m = mreg.findMetric("lmtest");
+        LongMetric m = mreg.metric("lmtest");
 
         assertEquals(v[0], m.value());
 
@@ -206,7 +206,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         mreg.register("omtest", () -> v[0], String.class, "test");
 
-        ObjectMetric<String> m = mreg.findMetric("omtest");
+        ObjectMetric<String> m = mreg.metric("omtest");
 
         assertEquals(v[0], m.value());
 
@@ -301,17 +301,17 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertNotNull(cntr);
         assertNotNull(cntr2);
 
-        assertNotNull(mreg.findMetric("my.name"));
-        assertNotNull(mreg.findMetric("my.name.x"));
+        assertNotNull(mreg.metric("my.name"));
+        assertNotNull(mreg.metric("my.name.x"));
 
         mreg.remove("my.name");
 
-        assertNull(mreg.findMetric("my.name"));
-        assertNotNull(mreg.findMetric("my.name.x"));
+        assertNull(mreg.metric("my.name"));
+        assertNotNull(mreg.metric("my.name.x"));
 
         cntr = mreg.longMetric("my.name", null);
 
-        assertNotNull(mreg.findMetric("my.name"));
+        assertNotNull(mreg.metric("my.name"));
     }
 
     /** */

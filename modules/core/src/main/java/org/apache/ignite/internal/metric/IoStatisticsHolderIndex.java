@@ -84,7 +84,7 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         this.grpName = grpName;
         this.idxName = idxName;
 
-        MetricRegistry mreg = mmgr.registry(metricRegistryName());
+        MetricRegistry mreg = mmgr.getOrCreate(metricRegistryName());
 
         mreg.longMetric("startTime", null).value(U.currentTimeMillis());
         mreg.objectMetric("name", String.class, null).value(grpName);

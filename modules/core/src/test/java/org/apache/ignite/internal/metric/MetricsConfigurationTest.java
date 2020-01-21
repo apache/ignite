@@ -105,8 +105,8 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             bean.configureHitRateMetric("io.dataregion.default.AllocationRate", 5000);
 
-            HitRateMetric allocationRate = g.context().metric().registry(metricName("io.dataregion.default"))
-                .findMetric("AllocationRate");
+            HitRateMetric allocationRate = g.metrics().registry(metricName("io.dataregion.default"))
+                .metric("AllocationRate");
 
             assertEquals(5000, allocationRate.rateTimeInterval());
         }
@@ -132,8 +132,8 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), BOUNDS);
 
-            HistogramMetric systemTime = g.context().metric().registry(TX_METRICS)
-                .findMetric(METRIC_SYSTEM_TIME_HISTOGRAM);
+            HistogramMetric systemTime = g.metrics().registry(TX_METRICS)
+                .metric(METRIC_SYSTEM_TIME_HISTOGRAM);
 
             assertArrayEquals(BOUNDS, systemTime.bounds());
         }
@@ -143,19 +143,19 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testConfigurationSeveralNodes() throws Exception {
         try (IgniteEx g0 = startGrid(0); IgniteEx g1 = startGrid(1)) {
-            assertNotEquals(BOUNDS.length, g0.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
+            assertNotEquals(BOUNDS.length, g0.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
 
-            assertNotEquals(BOUNDS.length, g1.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
+            assertNotEquals(BOUNDS.length, g1.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
 
             metricsBean(g0).configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), BOUNDS);
 
-            assertArrayEquals(BOUNDS, g0.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+            assertArrayEquals(BOUNDS, g0.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
 
-            assertArrayEquals(BOUNDS, g1.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+            assertArrayEquals(BOUNDS, g1.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
         }
     }
 
@@ -163,25 +163,25 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testNodeRestart() throws Exception {
         checkOnStartAndRestart((g0, g1) -> {
-            assertNotEquals(BOUNDS.length, g0.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
+            assertNotEquals(BOUNDS.length, g0.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
 
-            assertNotEquals(BOUNDS.length, g1.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
+            assertNotEquals(BOUNDS.length, g1.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds().length);
 
             metricsBean(g0).configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), BOUNDS);
 
-            assertArrayEquals(BOUNDS, g0.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+            assertArrayEquals(BOUNDS, g0.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
 
-            assertArrayEquals(BOUNDS, g1.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+            assertArrayEquals(BOUNDS, g1.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
         }, (g0, g1) -> {
-            assertArrayEquals(BOUNDS, g0.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+            assertArrayEquals(BOUNDS, g0.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
 
-            assertArrayEquals(BOUNDS, g1.context().metric().registry(TX_METRICS)
-                .<HistogramMetric>findMetric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
+            assertArrayEquals(BOUNDS, g1.metrics().registry(TX_METRICS)
+                .<HistogramMetric>metric(METRIC_SYSTEM_TIME_HISTOGRAM).bounds());
         });
     }
 
@@ -189,7 +189,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testConfigRemovedOnRegistryRemove() throws Exception {
         checkOnStartAndRestart((g0, g1) -> {
-            MetricRegistry mreg = g0.context().metric().registry(TEST_REG);
+            MetricRegistry mreg = g0.context().metric().getOrCreate(TEST_REG);
 
             mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
             mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
@@ -197,10 +197,10 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             metricsBean(g0).configureHistogramMetric(metricName(TEST_REG, HISTOGRAM_NAME), BOUNDS);
             metricsBean(g0).configureHitRateMetric(metricName(TEST_REG, HITRATE_NAME), 1000);
         }, (g0, g1) -> {
-            MetricRegistry mreg = g0.context().metric().registry(TEST_REG);
+            MetricRegistry mreg = g0.context().metric().getOrCreate(TEST_REG);
 
             HitRateMetric hitRate = mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
-            HistogramMetricImpl histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
+            HistogramMetric histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
 
             assertEquals(1000, hitRate.rateTimeInterval());
             assertArrayEquals(BOUNDS, histogram.bounds());
@@ -241,23 +241,23 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            HistogramMetricImpl getTime = g0.context().metric().registry(cacheRegName).findMetric("GetTime");
+            HistogramMetric getTime = g0.metrics().registry(cacheRegName).metric("GetTime");
 
             assertNotEquals(BOUNDS.length, getTime.bounds().length);
 
             metricsBean(g0).configureHistogramMetric(metricName(cacheRegName, "GetTime"), BOUNDS);
 
             assertArrayEquals(BOUNDS,
-                g0.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g0.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             assertArrayEquals(BOUNDS,
-                g1.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g1.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
         }, (g0, g1) -> {
             assertArrayEquals(BOUNDS,
-                g0.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g0.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             assertArrayEquals(BOUNDS,
-                g1.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g1.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             g0.destroyCache("test");
 
@@ -283,23 +283,23 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            HistogramMetricImpl getTime = g0.context().metric().registry(cacheRegName).findMetric("GetTime");
+            HistogramMetricImpl getTime = g0.context().metric().getOrCreate(cacheRegName).metric("GetTime");
 
             assertNotEquals(BOUNDS.length, getTime.bounds().length);
 
             metricsBean(g0).configureHistogramMetric(mname, BOUNDS);
 
             assertArrayEquals(BOUNDS,
-                g0.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g0.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             assertArrayEquals(BOUNDS,
-                g1.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g1.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
         }, (g0, g1) -> {
             assertArrayEquals(BOUNDS,
-                g0.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g0.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             assertArrayEquals(BOUNDS,
-                g1.context().metric().registry(cacheRegName).<HistogramMetric>findMetric("GetTime").bounds());
+                g1.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             g0.destroyCache("test");
 

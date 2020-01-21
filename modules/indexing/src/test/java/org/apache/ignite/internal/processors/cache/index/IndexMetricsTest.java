@@ -28,10 +28,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.KeyClass;
@@ -146,8 +146,8 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
     /** @return Gets {@code IsIndexRebuildInProgress} metric for given cache. */
     private BooleanMetric isIndexRebuildInProgressMetric(IgniteEx ignite, String cacheName) {
-        MetricRegistry mreg = ignite.context().metric().registry(cacheMetricsRegistryName(cacheName, false));
+        ReadOnlyMetricRegistry mreg = ignite.metrics().registry(cacheMetricsRegistryName(cacheName, false));
 
-        return mreg.findMetric("IsIndexRebuildInProgress");
+        return mreg.metric("IsIndexRebuildInProgress");
     }
 }

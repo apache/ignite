@@ -501,7 +501,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
+        MetricRegistry mreg = cctx.kernalContext().metric().getOrCreate(PME_METRICS);
 
         mreg.register(PME_DURATION,
             () -> currentPMEDuration(false),
@@ -511,8 +511,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             () -> currentPMEDuration(true),
             "Current PME cache operations blocked duration in milliseconds.");
 
-        durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
-        blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+        durationHistogram = mreg.metric(PME_DURATION_HISTOGRAM);
+        blockingDurationHistogram = mreg.metric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
     }
 
     /**

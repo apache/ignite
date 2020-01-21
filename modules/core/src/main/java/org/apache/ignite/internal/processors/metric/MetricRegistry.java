@@ -86,7 +86,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <M extends Metric> M findMetric(String name) {
+    @Nullable @Override public <M extends Metric> M metric(String name) {
         return (M)metrics.get(name);
     }
 

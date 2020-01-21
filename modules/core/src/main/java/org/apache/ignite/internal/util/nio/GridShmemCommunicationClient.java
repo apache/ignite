@@ -86,7 +86,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
         this.formatter = formatter;
 
-        sentBytesCntMetric = mreg.findMetric(SENT_BYTES_METRIC_NAME);
+        sentBytesCntMetric = mreg.metric(SENT_BYTES_METRIC_NAME);
     }
 
     /** {@inheritDoc} */

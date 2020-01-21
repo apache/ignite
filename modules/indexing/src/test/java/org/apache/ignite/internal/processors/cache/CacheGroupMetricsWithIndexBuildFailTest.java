@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -38,6 +37,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
@@ -130,9 +130,9 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         ignite.cluster().active(true);
 
-        MetricRegistry grpMreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
+        ReadOnlyMetricRegistry grpMreg = ignite.metrics().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric indexBuildCountPartitionsLeft = grpMreg.metric("IndexBuildCountPartitionsLeft");
 
         assertEquals(parts1 + parts2, indexBuildCountPartitionsLeft.value());
 

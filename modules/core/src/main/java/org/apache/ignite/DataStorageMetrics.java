@@ -17,12 +17,11 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 public interface DataStorageMetrics {

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.IgniteMetric;
 
 /**
  * MBean that provides access to information about executor service.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @MXBeanDescription("MBean that provides access to information about executor service.")
 @Deprecated

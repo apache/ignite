@@ -2589,7 +2589,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     IgniteEx igniteEx = (IgniteEx)ignite;
 
                     builder.workerListener(igniteEx.context().workersRegistry())
-                        .metricRegistry(igniteEx.context().metric().registry(COMMUNICATION_METRICS_GROUP_NAME));
+                        .metricRegistry(igniteEx.context().metric().getOrCreate(COMMUNICATION_METRICS_GROUP_NAME));
                 }
 
                 GridNioServer<Message> srvr = builder.build();

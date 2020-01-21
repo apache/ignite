@@ -18,14 +18,14 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 /**
  * Transactions MXBean implementation.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {

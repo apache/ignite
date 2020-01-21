@@ -40,11 +40,11 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -219,10 +219,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
      * @return {@code totalThrottlingTime} metric for the default region.
      */
     private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
-        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+        ReadOnlyMetricRegistry mreg = ignite.metrics().registry(metricName(DATAREGION_METRICS_PREFIX,
             ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
 
-        LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
+        LongAdderMetric totalThrottlingTime = mreg.metric("TotalThrottlingTime");
 
         assertNotNull(totalThrottlingTime);
 

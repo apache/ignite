@@ -22,14 +22,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {

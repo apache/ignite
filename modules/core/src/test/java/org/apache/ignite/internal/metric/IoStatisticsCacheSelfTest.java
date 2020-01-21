@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -31,8 +32,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -190,7 +189,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     public void testForThreeCaches() throws Exception {
         prepareData(RECORD_COUNT, ATOMIC_CACHE_NAME, TRANSACTIONAL_CACHE_NAME, MVCC_CACHE_NAME);
 
-        GridMetricManager mmgr = ignite.context().metric();
+        IgniteMetric mmgr = ignite.metrics();
 
         Set<String> statisticCacheNames = deriveStatisticNames(CACHE_GROUP);
 
@@ -210,13 +209,11 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     public void testCacheGroupCaches() throws Exception {
         prepareData(RECORD_COUNT, CACHE1_IN_GROUP_NAME, CACHE2_IN_GROUP_NAME);
 
-        GridMetricManager mmgr = ignite.context().metric();
-
         Set<String> statisticCacheNames = deriveStatisticNames(CACHE_GROUP);
 
         assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
-        long logicalReads = logicalReads(mmgr, CACHE_GROUP, CACHE_GROUP_NAME);
+        long logicalReads = logicalReads(ignite.metrics(), CACHE_GROUP, CACHE_GROUP_NAME);
 
         assertEquals(RECORD_COUNT * 4, logicalReads);
     }
@@ -230,19 +227,17 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     protected void cacheTest(String cacheName, int rowCnt, int dataPageReads, int idxPageReadsCnt) throws Exception {
         prepareData(rowCnt, cacheName);
 
-        GridMetricManager mmgr = ignite.context().metric();
-
         Set<String> statisticCacheNames = deriveStatisticNames(CACHE_GROUP);
 
         assertEquals(ALL_CACHE_GROUP_NAMES, statisticCacheNames);
 
         assertTrue(statisticCacheNames.contains(cacheName));
 
-        long logicalReadsCache = logicalReads(mmgr, CACHE_GROUP, cacheName);
+        long logicalReadsCache = logicalReads(ignite.metrics(), CACHE_GROUP, cacheName);
 
         assertEquals(dataPageReads, logicalReadsCache);
 
-        long logicalReadsIdx = logicalReads(mmgr, HASH_INDEX, metricName(cacheName, HASH_PK_IDX_NAME));
+        long logicalReadsIdx = logicalReads(ignite.metrics(), HASH_INDEX, metricName(cacheName, HASH_PK_IDX_NAME));
 
         assertEquals(idxPageReadsCnt, logicalReadsIdx);
 
@@ -257,7 +252,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     public Set<String> deriveStatisticNames(IoStatisticsType statType) {
         assert statType != null;
 
-        GridMetricManager mmgr = ignite.context().metric();
+        IgniteMetric mmgr = ignite.metrics();
 
         Stream<ReadOnlyMetricRegistry> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
                 .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
@@ -303,14 +298,14 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @param id Metric registry id.
      * @return Logical reads count.
      */
-    public static long logicalReads(GridMetricManager mmgr, IoStatisticsType type, String id) {
-        MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
+    public static long logicalReads(IgniteMetric mmgr, IoStatisticsType type, String id) {
+        ReadOnlyMetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
 
         if (type == CACHE_GROUP)
-            return mreg.<LongMetric>findMetric(LOGICAL_READS).value();
+            return mreg.<LongMetric>metric(LOGICAL_READS).value();
         else {
-            long leaf = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
-            long inner = mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value();
+            long leaf = mreg.<LongMetric>metric(LOGICAL_READS_LEAF).value();
+            long inner = mreg.<LongMetric>metric(LOGICAL_READS_INNER).value();
 
             return leaf + inner;
         }

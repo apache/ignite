@@ -151,7 +151,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
             "test_registry_test_histogram_100_inf.* 3"};
 
         HistogramMetricImpl histogramMetric =
-            ignite.context().metric().registry(registryName).histogram(histogramName, bounds, histogramDesc);
+            ignite.context().metric().getOrCreate(registryName).histogram(histogramName, bounds, histogramDesc);
 
         for (long value : testValues)
             histogramMetric.value(value);

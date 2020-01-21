@@ -302,9 +302,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
 
-        cpuLoadMetric = ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
+        cpuLoadMetric = ctx.metric().getOrCreate(SYS_METRICS).metric(CPU_LOAD);
 
-        MetricRegistry mreg = ctx.metric().registry(JOBS_METRICS);
+        MetricRegistry mreg = ctx.metric().getOrCreate(JOBS_METRICS);
 
         startedJobsMetric = mreg.longMetric(STARTED, "Number of started jobs.");
 

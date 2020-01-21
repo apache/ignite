@@ -109,7 +109,7 @@ class TcpCommunicationMetricsListener {
     public TcpCommunicationMetricsListener(GridMetricManager mmgr) {
         this.mmgr = mmgr;
 
-        mreg = mmgr.registry(COMMUNICATION_METRICS_GROUP_NAME);
+        mreg = mmgr.getOrCreate(COMMUNICATION_METRICS_GROUP_NAME);
 
         sentMsgsCntByTypeMetricFactory = directType -> mreg.longAdderMetric(
             sentMessagesByTypeMetricName(directType),
@@ -121,12 +121,12 @@ class TcpCommunicationMetricsListener {
         );
 
         sentMsgsCntByNodeIdMetricFactory = nodeId ->
-            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
-                .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+            mmgr.getOrCreate(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+                .metric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
         rcvdMsgsCntByNodeIdMetricFactory = nodeId ->
-            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
-                .findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
+            mmgr.getOrCreate(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+                .metric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
         sentBytesMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
         rcvdBytesMetric = mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
@@ -304,7 +304,7 @@ class TcpCommunicationMetricsListener {
 
                 UUID nodeId = UUID.fromString(nodeIdStr);
 
-                res.put(nodeId, mreg.<LongMetric>findMetric(metricName).value());
+                res.put(nodeId, mreg.<LongMetric>metric(metricName).value());
             }
         }
 
@@ -330,9 +330,9 @@ class TcpCommunicationMetricsListener {
 
         for (ReadOnlyMetricRegistry mreg : mmgr) {
             if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)) {
-                mreg.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
+                mreg.metric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
 
-                mreg.findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
+                mreg.metric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
             }
         }
     }

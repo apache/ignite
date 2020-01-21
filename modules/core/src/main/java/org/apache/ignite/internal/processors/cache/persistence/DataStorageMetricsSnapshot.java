@@ -17,11 +17,11 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 public class DataStorageMetricsSnapshot implements DataStorageMetrics {

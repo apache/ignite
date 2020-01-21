@@ -151,7 +151,7 @@ public class GridDhtPartitionDemander {
 
         String metricGroupName = metricName(CACHE_GROUP_METRICS_PREFIX, grp.cacheOrGroupName());
 
-        MetricRegistry mreg = grp.shared().kernalContext().metric().registry(metricGroupName);
+        MetricRegistry mreg = grp.shared().kernalContext().metric().getOrCreate(metricGroupName);
 
         mreg.register("RebalancingPartitionsLeft", () -> rebalanceFut.partitionsLeft.get(),
             "The number of cache group partitions left to be rebalanced.");

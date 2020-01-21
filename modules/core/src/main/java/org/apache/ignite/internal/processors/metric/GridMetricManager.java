@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -76,7 +77,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricExporterSpi
  * @see MetricRegistry
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi>
+    implements ReadOnlyMetricManager, IgniteMetric {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -242,7 +244,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricRegistry sysreg = registry(SYS_METRICS);
+        MetricRegistry sysreg = getOrCreate(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
@@ -256,7 +258,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
 
-        MetricRegistry pmeReg = registry(PME_METRICS);
+        MetricRegistry pmeReg = getOrCreate(PME_METRICS);
 
         long[] pmeBounds = new long[] {500, 1000, 5000, 30000};
 
@@ -326,7 +328,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param name Group name.
      * @return Group of metrics.
      */
-    public MetricRegistry registry(String name) {
+    public MetricRegistry getOrCreate(String name) {
         return (MetricRegistry)registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name,
                 mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
@@ -337,6 +339,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             return mreg;
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable ReadOnlyMetricRegistry registry(String name) {
+        return registries.get(name);
     }
 
     /**
@@ -499,7 +506,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        Metric m = mreg.findMetric(splitted.get2());
+        Metric m = mreg.metric(splitted.get2());
 
         if (m == null) {
             if (log.isInfoEnabled())
@@ -600,7 +607,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param execSvc Executor to register a bean for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
+        MetricRegistry mreg = getOrCreate(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
@@ -653,7 +660,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param svc Executor.
      */
     private void monitorStripedPool(String name, StripedExecutor svc) {
-        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
+        MetricRegistry mreg = getOrCreate(metricName(THREAD_POOLS, name));
 
         mreg.register("DetectStarvation",
             svc::detectStarvation,
@@ -848,7 +855,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricRegistry mreg = registry(group);
+            MetricRegistry mreg = getOrCreate(group);
 
             this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
             this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);

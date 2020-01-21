@@ -90,7 +90,7 @@ public class CacheGroupMetricsImpl {
 
         boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg);
 
-        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
+        MetricRegistry mreg = ctx.shared().kernalContext().metric().getOrCreate(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
@@ -120,7 +120,7 @@ public class CacheGroupMetricsImpl {
 
     /** Callback for initializing metrics after topology was initialized. */
     public void onTopologyInitialized() {
-        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
+        MetricRegistry mreg = ctx.shared().kernalContext().metric().getOrCreate(metricGroupName());
 
         mreg.register("MinimumNumberOfPartitionCopies",
             this::getMinimumNumberOfPartitionCopies,

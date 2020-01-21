@@ -385,7 +385,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
 
-        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+        MetricRegistry ioMetric = ctx.metric().getOrCreate(COMM_METRICS);
 
         CommunicationSpi spi = ctx.config().getCommunicationSpi();
 

@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -81,22 +80,22 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         populateCache(cnt);
 
-        MetricRegistry mreg = ignite.context().metric()
+        ReadOnlyMetricRegistry mreg = ignite.metrics()
             .registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
-        long idxLeafLogicalCnt = mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value();
+        long idxLeafLogicalCnt = mreg.<LongMetric>metric(LOGICAL_READS_LEAF).value();
 
         assertEquals(cnt, idxLeafLogicalCnt);
 
-        long idxLeafPhysicalCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value();
+        long idxLeafPhysicalCnt = mreg.<LongMetric>metric(PHYSICAL_READS_LEAF).value();
 
         assertEquals(0, idxLeafPhysicalCnt);
 
-        long idxInnerLogicalCnt = mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value();
+        long idxInnerLogicalCnt = mreg.<LongMetric>metric(LOGICAL_READS_INNER).value();
 
         assertEquals(0, idxInnerLogicalCnt);
 
-        long idxInnerPhysicalCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value();
+        long idxInnerPhysicalCnt = mreg.<LongMetric>metric(PHYSICAL_READS_INNER).value();
 
         assertEquals(0, idxInnerPhysicalCnt);
     }
@@ -118,14 +117,14 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         populateCache(cnt);
 
-        MetricRegistry mreg = ignite.context().metric()
+        ReadOnlyMetricRegistry mreg = ignite.metrics()
             .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
 
-        long cacheLogicalReadsCnt = mreg.<LongMetric>findMetric(LOGICAL_READS).value();
+        long cacheLogicalReadsCnt = mreg.<LongMetric>metric(LOGICAL_READS).value();
 
         assertEquals(cnt, cacheLogicalReadsCnt);
 
-        long cachePhysicalReadsCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
+        long cachePhysicalReadsCnt = mreg.<LongMetric>metric(PHYSICAL_READS).value();
 
         assertEquals(0, cachePhysicalReadsCnt);
     }

@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Job metrics snapshot.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 public class GridJobMetricsSnapshot {

@@ -20,13 +20,13 @@ package org.apache.ignite.mxbean;
 import javax.cache.management.CacheMXBean;
 import javax.cache.management.CacheStatisticsMXBean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * This interface defines JMX view on {@link IgniteCache}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 @MXBeanDescription("MBean that provides access to cache descriptor.")

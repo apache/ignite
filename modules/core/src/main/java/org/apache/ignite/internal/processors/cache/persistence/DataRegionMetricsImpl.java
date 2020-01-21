@@ -133,7 +133,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         subInts = memPlcCfg.getMetricsSubIntervalCount();
 
-        MetricRegistry mreg = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
+        MetricRegistry mreg = mmgr.getOrCreate(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
 
         allocRate = mreg.hitRateMetric("AllocationRate",
             "Allocation rate (pages per second) averaged across rateTimeInternal.",
@@ -434,7 +434,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public LongAdderMetric getOrAllocateGroupPageAllocationTracker(String grpName) {
         return grpAllocationTrackers.computeIfAbsent(grpName,
-            id -> mmgr.registry(metricName(CACHE_GROUP_METRICS_PREFIX, grpName)).longAdderMetric(
+            id -> mmgr.getOrCreate(metricName(CACHE_GROUP_METRICS_PREFIX, grpName)).longAdderMetric(
                 "TotalAllocatedPages",
                 totalAllocatedPages::add,
                 "Cache group total allocated pages."));
@@ -491,7 +491,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     public void pageMemory(PageMemory pageMem) {
         this.pageMem = pageMem;
 
-        MetricRegistry mreg = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
+        MetricRegistry mreg = mmgr.getOrCreate(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
 
         mreg.register("PagesFillFactor",
             this::getPagesFillFactor,

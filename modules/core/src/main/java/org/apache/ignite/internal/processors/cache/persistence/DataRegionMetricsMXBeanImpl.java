@@ -17,14 +17,14 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {

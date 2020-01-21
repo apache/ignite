@@ -37,10 +37,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest.BlockingIndexing;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -171,9 +171,9 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
-        MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME_2).get2();
+        ReadOnlyMetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME_2).get2();
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric indexBuildCountPartitionsLeft = grpMreg.metric("IndexBuildCountPartitionsLeft");
 
         assertEquals(parts2 + parts3, indexBuildCountPartitionsLeft.value());
 
@@ -219,7 +219,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME).get2();
+        ReadOnlyMetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME).get2();
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -233,7 +233,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             Assert.assertEquals("Index not found", 1, all.size());
         });
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric indexBuildCountPartitionsLeft = grpMreg.metric("IndexBuildCountPartitionsLeft");
 
         Assert.assertTrue("Timeout wait start rebuild index",
             waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));

@@ -33,6 +33,7 @@ import java.util.stream.StreamSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -42,7 +43,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
@@ -191,22 +191,22 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         execute(grid(), "CREATE INDEX MY_IDX ON t(name)");
 
-        MetricRegistry mreg =
-            grid().context().metric().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
+        ReadOnlyMetricRegistry mreg =
+            grid().metrics().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
 
         assertTrue(mreg.iterator().hasNext());
-        assertNotNull(mreg.findMetric("name"));
+        assertNotNull(mreg.metric("name"));
 
         execute(grid(), "DROP INDEX MY_IDX");
 
-        mreg = grid().context().metric().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
+        mreg = grid().metrics().registry(metricName(SORTED_INDEX.metricGroupName(), "SQL_PUBLIC_T", "MY_IDX"));
 
         assertFalse(mreg.iterator().hasNext());
     }
 
     /** */
     private void checkStat() throws Exception {
-        GridMetricManager mmgr = grid().context().metric();
+        IgniteMetric mmgr = grid().metrics();
 
         Set<String> hashIndexes = deriveStatisticNames(grid(), HASH_INDEX);
 
@@ -403,11 +403,11 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         return ioStats(ignite, statType).map(m -> {
             if (m.name().startsWith(CACHE_GROUP.metricGroupName()))
-                return m.findMetric("grpId").getAsString();
+                return m.metric("grpId").getAsString();
 
             if (m.name().startsWith(HASH_INDEX.metricGroupName()) ||
                 m.name().startsWith(SORTED_INDEX.metricGroupName()))
-                return m.findMetric("indexName").getAsString();
+                return m.metric("indexName").getAsString();
 
             throw new IgniteException("Wrong metric registry " + m.name());
         }).collect(Collectors.toSet());
@@ -433,7 +433,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
     /** @return Stream of MetricGroup for specified {@link statType}. */
     private Stream<ReadOnlyMetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
-        GridMetricManager mmgr = ignite.context().metric();
+        IgniteMetric mmgr = ignite.metrics();
 
         return StreamSupport.stream(mmgr.spliterator(), false)
             .filter(grp -> grp.name().startsWith(statType.metricGroupName()));

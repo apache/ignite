@@ -543,7 +543,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramExport() throws Exception {
-        MetricRegistry mreg = ignite.context().metric().registry("histogramTest");
+        MetricRegistry mreg = ignite.context().metric().getOrCreate("histogramTest");
 
         createTestHistogram(mreg);
 

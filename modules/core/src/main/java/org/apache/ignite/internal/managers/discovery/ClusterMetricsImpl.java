@@ -204,43 +204,43 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         this.ctx = ctx;
         this.nodeStartTime = nodeStartTime;
 
-        MetricRegistry mreg = ctx.metric().registry(SYS_METRICS);
+        MetricRegistry mreg = ctx.metric().getOrCreate(SYS_METRICS);
 
-        gcCpuLoad = mreg.findMetric(GC_CPU_LOAD);
-        cpuLoad = mreg.findMetric(CPU_LOAD);
-        upTime = mreg.findMetric(UP_TIME);
+        gcCpuLoad = mreg.metric(GC_CPU_LOAD);
+        cpuLoad = mreg.metric(CPU_LOAD);
+        upTime = mreg.metric(UP_TIME);
 
-        threadCnt = mreg.findMetric(THREAD_CNT);
-        peakThreadCnt = mreg.findMetric(PEAK_THREAD_CNT);
-        totalStartedThreadCnt = mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
-        daemonThreadCnt = mreg.findMetric(DAEMON_THREAD_CNT);
-        execTasks = mreg.findMetric(TOTAL_EXEC_TASKS);
+        threadCnt = mreg.metric(THREAD_CNT);
+        peakThreadCnt = mreg.metric(PEAK_THREAD_CNT);
+        totalStartedThreadCnt = mreg.metric(TOTAL_STARTED_THREAD_CNT);
+        daemonThreadCnt = mreg.metric(DAEMON_THREAD_CNT);
+        execTasks = mreg.metric(TOTAL_EXEC_TASKS);
 
         availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
-        heapInit = mreg.findMetric(metricName("memory", "heap", "init"));
-        heapUsed = mreg.findMetric(metricName("memory", "heap", "used"));
-        heapCommitted = mreg.findMetric(metricName("memory", "heap", "committed"));
-        heapMax = mreg.findMetric(metricName("memory", "heap", "max"));
+        heapInit = mreg.metric(metricName("memory", "heap", "init"));
+        heapUsed = mreg.metric(metricName("memory", "heap", "used"));
+        heapCommitted = mreg.metric(metricName("memory", "heap", "committed"));
+        heapMax = mreg.metric(metricName("memory", "heap", "max"));
 
-        nonHeapInit = mreg.findMetric(metricName("memory", "nonheap", "init"));
-        nonHeapUsed = mreg.findMetric(metricName("memory", "nonheap", "used"));
-        nonHeapCommitted = mreg.findMetric(metricName("memory", "nonheap", "committed"));
-        nonHeapMax = mreg.findMetric(metricName("memory", "nonheap", "max"));
+        nonHeapInit = mreg.metric(metricName("memory", "nonheap", "init"));
+        nonHeapUsed = mreg.metric(metricName("memory", "nonheap", "used"));
+        nonHeapCommitted = mreg.metric(metricName("memory", "nonheap", "committed"));
+        nonHeapMax = mreg.metric(metricName("memory", "nonheap", "max"));
 
-        MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
+        MetricRegistry pmeReg = ctx.metric().getOrCreate(PME_METRICS);
 
-        pmeDuration = pmeReg.findMetric(PME_DURATION);
+        pmeDuration = pmeReg.metric(PME_DURATION);
 
-        lastDataVer = ctx.metric().registry(CACHE_METRICS).findMetric(LAST_DATA_VER);
+        lastDataVer = ctx.metric().getOrCreate(CACHE_METRICS).metric(LAST_DATA_VER);
 
-        MetricRegistry ioReg = ctx.metric().registry(COMM_METRICS);
+        MetricRegistry ioReg = ctx.metric().getOrCreate(COMM_METRICS);
 
-        sentMsgsCnt = ioReg.findMetric(SENT_MSG_CNT);
-        sentBytesCnt = ioReg.findMetric(SENT_BYTES_CNT);
-        rcvdMsgsCnt = ioReg.findMetric(RCVD_MSGS_CNT);
-        rcvdBytesCnt = ioReg.findMetric(RCVD_BYTES_CNT);
-        outboundMsgCnt = ioReg.findMetric(OUTBOUND_MSG_QUEUE_CNT);
+        sentMsgsCnt = ioReg.metric(SENT_MSG_CNT);
+        sentBytesCnt = ioReg.metric(SENT_BYTES_CNT);
+        rcvdMsgsCnt = ioReg.metric(RCVD_MSGS_CNT);
+        rcvdBytesCnt = ioReg.metric(RCVD_BYTES_CNT);
+        outboundMsgCnt = ioReg.metric(OUTBOUND_MSG_QUEUE_CNT);
     }
 
     /** {@inheritDoc} */

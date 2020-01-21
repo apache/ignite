@@ -231,7 +231,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
+        MetricRegistry mreg = cctx.kernalContext().metric().getOrCreate(cacheMetricsRegistryName(cctx.name(), isNear));
 
         reads = mreg.longMetric("CacheGets",
             "The total number of gets to the cache.");

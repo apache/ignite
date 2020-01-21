@@ -79,6 +79,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
@@ -4019,6 +4020,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return ctx.encryption();
     }
 
+    @Override public IgniteMetric metrics() {
+        return ctx.metric();
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
@@ -4594,7 +4599,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!ctx.metric().enabled())
             return;
 
-        MetricRegistry reg = ctx.metric().registry(GridMetricManager.IGNITE_METRICS);
+        MetricRegistry reg = ctx.metric().getOrCreate(GridMetricManager.IGNITE_METRICS);
 
         reg.register("fullVersion", this::getFullVersion, String.class, FULL_VER_DESC);
         reg.register("copyright", this::getCopyright, String.class, COPYRIGHT_DESC);

@@ -57,7 +57,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
      * @param isNear Is near flag.
      */
     public GridCacheQueryMetricsAdapter(GridMetricManager mmgr, String cacheName, boolean isNear) {
-        MetricRegistry mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
+        MetricRegistry mreg = mmgr.getOrCreate(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
 
         minTime = mreg.longMetric("QueryMinimalTime", null);
         minTime.value(Long.MAX_VALUE);

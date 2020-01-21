@@ -30,5 +30,5 @@ public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
      * @param name Name of the metric.
      * @return Metric with specified name if exists. Null otherwise.
      */
-    @Nullable public <M extends Metric> M findMetric(String name);
+    @Nullable public <M extends Metric> M metric(String name);
 }

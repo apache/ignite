@@ -63,7 +63,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         if (attribute.equals("MBeanInfo"))
             return getMBeanInfo();
 
-        Metric metric = mreg.findMetric(attribute);
+        Metric metric = mreg.metric(attribute);
 
         if (metric == null)
             return searchHistogram(attribute, mreg);
@@ -160,7 +160,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         if (!sc.hasNext())
             return null;
 
-        Metric m = mreg.findMetric(sc.next());
+        Metric m = mreg.metric(sc.next());
 
         if (!(m instanceof HistogramMetric))
             return null;

@@ -317,6 +317,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteMetric metrics() {
+        checkIgnite();
+
+        return g.metrics();
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }

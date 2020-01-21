@@ -20,15 +20,15 @@ package org.apache.ignite.internal.metric;
 
 import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -77,7 +77,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public void testEmptyIOStat() throws Exception {
         IgniteEx ign = prepareIgnite(true);
 
-        GridMetricManager mmgr = ign.context().metric();
+        IgniteMetric mmgr = ign.metrics();
 
         checkEmptyStat(mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
 
@@ -88,26 +88,26 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     /**
      * @param mreg Metric registry.
      */
-    private void checkEmptyStat(MetricRegistry mreg, IoStatisticsType type) {
+    private void checkEmptyStat(ReadOnlyMetricRegistry mreg, IoStatisticsType type) {
         assertNotNull(mreg);
 
         if (type == CACHE_GROUP) {
             assertEquals(5, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS).value());
+            assertEquals(0, mreg.<LongMetric>metric(LOGICAL_READS).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS).value());
+            assertEquals(0, mreg.<LongMetric>metric(PHYSICAL_READS).value());
         }
         else {
             assertEquals(7, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_LEAF).value());
+            assertEquals(0, mreg.<LongMetric>metric(LOGICAL_READS_LEAF).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(LOGICAL_READS_INNER).value());
+            assertEquals(0, mreg.<LongMetric>metric(LOGICAL_READS_INNER).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value());
+            assertEquals(0, mreg.<LongMetric>metric(PHYSICAL_READS_LEAF).value());
 
-            assertEquals(0, mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value());
+            assertEquals(0, mreg.<LongMetric>metric(PHYSICAL_READS_INNER).value());
         }
     }
 
@@ -140,16 +140,14 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         IgniteEx grid = prepareData(isPersistent);
 
-        GridMetricManager mmgr = grid.context().metric();
-
-        long physicalReadsCnt = physicalReads(mmgr, CACHE_GROUP, DEFAULT_CACHE_NAME, null);
+        long physicalReadsCnt = physicalReads(grid.metrics(), CACHE_GROUP, DEFAULT_CACHE_NAME, null);
 
         if (isPersistent)
             Assert.assertTrue(physicalReadsCnt > 0);
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = logicalReads(mmgr, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        Long logicalReads = logicalReads(grid.metrics(), HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         Assert.assertNotNull(logicalReads);
 
@@ -223,22 +221,22 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @param subName subName of statistics which need to take, e.g. index name.
      * @return Number of physical reads since last reset statistics.
      */
-    public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
+    public Long physicalReads(IgniteMetric mmgr, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricRegistry mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
+        ReadOnlyMetricRegistry mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
 
         if (mreg == null)
             return null;
 
         switch (statType) {
             case CACHE_GROUP:
-                return mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
+                return mreg.<LongMetric>metric(PHYSICAL_READS).value();
 
             case HASH_INDEX:
             case SORTED_INDEX:
-                long leaf = mreg.<LongMetric>findMetric(PHYSICAL_READS_LEAF).value();
-                long inner = mreg.<LongMetric>findMetric(PHYSICAL_READS_INNER).value();
+                long leaf = mreg.<LongMetric>metric(PHYSICAL_READS_LEAF).value();
+                long inner = mreg.<LongMetric>metric(PHYSICAL_READS_INNER).value();
 
                 return leaf + inner;
 

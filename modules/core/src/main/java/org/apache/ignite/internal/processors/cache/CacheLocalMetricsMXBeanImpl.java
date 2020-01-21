@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Use {@link IgniteMetric} instead.
  */
 @Deprecated
 class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
