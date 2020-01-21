@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,15 +42,21 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
@@ -70,6 +80,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** Lock. */
     private final Lock lock = new ReentrantLock();
 
+    /** Checkpoint listener. */
+    private final CheckpointListener cpLsnr = new CheckpointListener();
+
     /** File rebalance routine. */
     private volatile FileRebalanceRoutine fileRebalanceRoutine = new FileRebalanceRoutine();
 
@@ -82,6 +95,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(cpLsnr);
+
         cctx.snapshotMgr().addSnapshotListener(new PartitionSnapshotListener());
     }
 
@@ -90,6 +105,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         lock.lock();
 
         try {
+            ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(cpLsnr);
+
             fileRebalanceRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
         finally {
@@ -219,7 +236,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             // Start new rebalance session.
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
-                exchFut.exchangeId(), rebalanceId);
+                exchFut.exchangeId(), rebalanceId, cpLsnr::cancelAll);
 
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
@@ -321,6 +338,60 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
 
         return false;
+    }
+
+    /**
+     * Schedule partition mode switch to enable updates.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param cancelPred Cancel predicate.
+     * @return Future that will be done when partition mode changed.
+     */
+    public IgniteInternalFuture<Long> changePartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> cancelPred) {
+        GridFutureAdapter<Long> endFut = new GridFutureAdapter<>();
+
+        cpLsnr.schedule(() -> {
+            if (cancelPred.apply()) {
+                endFut.onDone(-1L);
+
+                return;
+            }
+
+            final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            // Cache was concurrently destroyed.
+            if (grp == null)
+                return;
+
+            GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+            assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
+
+            // Save current counter.
+            PartitionUpdateCounter readCntr = ((GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
+
+            // Save current update counter.
+            PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
+
+            part.readOnly(false);
+
+            AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
+
+            IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
+
+            // Operations that are in progress now will be lost and should be included in historical rebalancing.
+            // These operations can update the old update counter or the new update counter, so the maximum applied
+            // counter is used after all updates are completed.
+            partReleaseFut.listen(c -> {
+                    long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
+
+                    cctx.kernalContext().getSystemExecutorService().submit(() -> endFut.onDone(hwm));
+                }
+            );
+        });
+
+        return endFut;
     }
 
     /**
@@ -427,6 +498,79 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
 
         return ordered.values();
+    }
+
+    /** */
+    private static class CheckpointListener implements DbCheckpointListener {
+        /** Queue. */
+        private final ConcurrentLinkedQueue<CheckpointTask> queue = new ConcurrentLinkedQueue<>();
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            Runnable r;
+
+            while ((r = queue.poll()) != null)
+                r.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            // No-op.
+        }
+
+        /** */
+        public void cancelAll() {
+            List<CheckpointTask> tasks = new ArrayList<>(queue);
+
+            queue.clear();
+
+            for (CheckpointTask task : tasks)
+                task.fut.onDone();
+        }
+
+        /**
+         * @param task Task to execute.
+         */
+        public IgniteInternalFuture<Void> schedule(final Runnable task) {
+            CheckpointTask<Void> cpTask = new CheckpointTask<>(() -> {
+                task.run();
+
+                return null;
+            });
+
+            queue.offer(cpTask);
+
+            return cpTask.fut;
+        }
+
+        /** */
+        private static class CheckpointTask<R> implements Runnable {
+            /** */
+            final GridFutureAdapter<R> fut = new GridFutureAdapter<>();
+
+            /** */
+            final Callable<R> task;
+
+            /** */
+            CheckpointTask(Callable<R> task) {
+                this.task = task;
+            }
+
+            /** {@inheritDoc} */
+            @Override public void run() {
+                try {
+                    fut.onDone(task.call());
+                }
+                catch (Exception e) {
+                    fut.onDone(e);
+                }
+            }
+        }
     }
 
     /**

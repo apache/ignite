@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
@@ -108,12 +108,15 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Requests to switch a partition from read-only mode to normal mode. */
     private final Map<Long, IgniteInternalFuture> activatePartRequests = new ConcurrentHashMap<>();
 
+    /** Cancel callback invoked when routine is aborted. */
+    private final IgniteRunnable abortCb;
+
     /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
 
     /** */
     public FileRebalanceRoutine() {
-        this(null, null, null, null, 0);
+        this(null, null, null, null, 0, null);
 
         onDone(true);
     }
@@ -124,17 +127,20 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cctx Cache shared context.
      * @param exchId Exchange ID.
      * @param rebalanceId Rebalance ID
+     * @param abortCb Abort callback to handle the abortion process from the outside.
      */
     public FileRebalanceRoutine(
         Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
-        long rebalanceId
+        long rebalanceId,
+        IgniteRunnable abortCb
     ) {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
+        this.abortCb = abortCb;
 
         orderedAssgnments = assigns;
         topVer = startVer;
@@ -300,15 +306,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
-            IgniteInternalFuture<Long> fut;
-
-            cctx.database().checkpointReadLock();
-
-            try {
-                fut = ((GridCacheDatabaseSharedManager)cctx.database()).schedulePartitionActivation(grpId, partId);
-            } finally {
-                cctx.database().checkpointReadUnlock();
-            }
+            IgniteInternalFuture<Long> fut = cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone);
 
             activatePartRequests.put(uniquePartId(grpId, partId), fut);
 
@@ -451,14 +449,17 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                     snapFut.cancel();
                 }
 
-                for (IgniteInternalFuture fut : activatePartRequests.values()) {
-                    // todo should wait cpReqFut here but not whole request (deadlock possible)
-                    if (!fut.cancel())
-                        log.warning("Partition request cannot be cancelled [req=" + fut + "]");
+                // todo cancel should be synchronous
+                abortCb.run();
 
-//                    if (!fut.isDone() && !fut.cancel())
-//                        fut.get();
-                }
+//                for (IgniteInternalFuture fut : activatePartRequests.values()) {
+//                    // todo should wait cpReqFut here but not whole request (deadlock possible)
+//                    if (!fut.cancel())
+//                        log.warning("Partition request cannot be cancelled [req=" + fut + "]");
+//
+////                    if (!fut.isDone() && !fut.cancel())
+////                        fut.get();
+//                }
 
                 if (err == null) {
                     // Should await until off-heap cleanup is finished.
