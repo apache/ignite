@@ -149,8 +149,8 @@ import static org.apache.ignite.internal.util.IgniteTree.OperationType.PUT;
  *
  */
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** The maximum number of entries that can be preloaded under checkpoint read lock. */
-    public static final int PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK = 100;
+    /** The maximum number of entries that can be processed under checkpoint read lock. */
+    public static final int BATCH_SIZE_UNDER_CHECKPOINT_LOCK = 100;
 
     /** */
     private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
@@ -1218,7 +1218,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(partId);
 
-        List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
+        List<DataRowCacheAware> batch = new ArrayList<>(BATCH_SIZE_UNDER_CHECKPOINT_LOCK);
 
         while (infos.hasNext()) {
             GridCacheEntryInfo info = infos.next();
@@ -1233,7 +1233,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 info.cacheId(),
                 grp.storeCacheIdInDataPage()));
 
-            if (batch.size() == PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK || !infos.hasNext()) {
+            if (batch.size() == BATCH_SIZE_UNDER_CHECKPOINT_LOCK || !infos.hasNext()) {
                 ctx.database().checkpointReadLock();
 
                 try {
@@ -2954,28 +2954,47 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCursor<? extends CacheDataRow> cur =
                 cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-            while (cur.next()) {
-                CacheDataRow row = cur.get();
+            while (true) {
+                int rows = 0;
 
-                assert row.link() != 0 : row;
+                boolean hasNext;
+
+                ctx.database().checkpointReadLock();
 
                 try {
-                    boolean res = dataTree.removex(row);
+                    while (hasNext = cur.next()) {
+                        CacheDataRow row = cur.get();
 
-                    assert res : row;
+                        assert row.link() != 0 : row;
 
-                    rowStore.removeRow(row.link(), grp.statisticsHolderData());
+                        try {
+                            boolean res = dataTree.removex(row);
 
-                    decrementSize(cacheId);
+                            assert res : row;
+
+                            rowStore.removeRow(row.link(), grp.statisticsHolderData());
+
+                            decrementSize(cacheId);
+
+                            if (++rows >= BATCH_SIZE_UNDER_CHECKPOINT_LOCK)
+                                break;
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Fail remove row [link=" + row.link() + "]");
+
+                            if (ex == null)
+                                ex = e;
+                            else
+                                ex.addSuppressed(e);
+                        }
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Fail remove row [link=" + row.link() + "]");
-
-                    if (ex == null)
-                        ex = e;
-                    else
-                        ex.addSuppressed(e);
+                finally {
+                    ctx.database().checkpointReadUnlock();
                 }
+
+                if (!hasNext)
+                    break;
             }
 
             if (ex != null)

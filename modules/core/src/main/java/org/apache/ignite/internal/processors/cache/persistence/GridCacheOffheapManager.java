@@ -2607,12 +2607,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         assert res;
                     }
                 }
-
-                delegate0.clear(cacheId);
             }
             finally {
                 ctx.database().checkpointReadUnlock();
             }
+
+            delegate0.clear(cacheId);
         }
 
         /**

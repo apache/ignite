@@ -2603,8 +2603,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Stopped cache context.
      */
     public GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy, boolean clearDbObjects) {
-        assert sharedCtx.database().checkpointLockIsHeldByThread();
-
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
 
         if (cache != null) {
@@ -2790,14 +2788,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 if (cache != null)
                                     cache.context().ttl().unregister();
 
-                                sharedCtx.database().checkpointReadLock();
-
-                                try {
-                                    prepareCacheStop(action.request().cacheName(), action.request().destroy());
-                                }
-                                finally {
-                                    sharedCtx.database().checkpointReadUnlock();
-                                }
+                                prepareCacheStop(action.request().cacheName(), action.request().destroy());
                             }
                         }
                         finally {
