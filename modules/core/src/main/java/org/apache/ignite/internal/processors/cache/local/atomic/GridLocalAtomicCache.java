@@ -563,7 +563,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All");
+        checkKeysOrdered(keys, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -652,7 +652,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All");
+        checkKeysOrdered(keys, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -686,7 +686,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkMapType(map, "Invoke All");
+        checkKeysOrdered(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -723,7 +723,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkMapType(map, "Invoke All");
+        checkKeysOrdered(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 

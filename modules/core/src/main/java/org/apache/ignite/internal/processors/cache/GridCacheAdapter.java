@@ -2727,7 +2727,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All");
+        checkKeysOrdered(keys, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2818,7 +2818,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All Async");
+        checkKeysOrdered(keys, "Invoke All Async");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2870,7 +2870,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkMapType(map, "Invoke All Async");
+        checkKeysOrdered(map, "Invoke All Async");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2917,7 +2917,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkMapType(map, "Invoke All");
+        checkKeysOrdered(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -3064,7 +3064,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkMapType(m, "Put All");
+        checkKeysOrdered(m, "Put All");
 
         putAll0(m);
 
@@ -3097,7 +3097,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkMapType(m, "Put All");
+        checkKeysOrdered(m, "Put All");
 
         return putAllAsync0(m);
     }
@@ -3256,7 +3256,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Remove All");
+        checkKeysOrdered(keys, "Remove All");
 
         removeAll0(keys);
 
@@ -3298,7 +3298,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Remove All Async");
+        checkKeysOrdered(keys, "Remove All Async");
 
         IgniteInternalFuture<Object> fut = removeAllAsync0(keys);
 
@@ -5197,21 +5197,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Checks that given map is sorted or otherwise constant order.
+     * Checks that given map is sorted or otherwise constant order, or processed inside deadlock-detecting transaction.
      *
      * Issues developer warning otherwise.
      *
      * @param m Map to examine.
      */
-    protected void checkMapType(Map m, String op) {
+    protected void checkKeysOrdered(Map m, String op) {
         if (m == null || m.size() <= 1)
             return;
 
         if (m instanceof SortedMap || m instanceof GridSerializableMap)
             return;
 
-        Transaction tx = ctx.kernalContext().cache().transactions().tx();
-        if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
+        if (curTxDeadlockDetecting())
             return;
 
         LT.warn(log, "Unordered map " + m.getClass().getSimpleName() +
@@ -5219,15 +5218,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
     }
 
-
     /**
-     * Checks that given collection is not a set, or that it is sorted or otherwise constant order.
+     * Checks that given collection is sorted set, or processed inside deadlock-detecting transaction.
      *
      * Issues developer warning otherwise.
      *
      * @param coll Collection to examine.
      */
-    protected void checkSetType(Collection coll, String op) {
+    protected void checkKeysOrdered(Collection coll, String op) {
         if (coll == null || coll.size() <= 1)
             return;
 
@@ -5238,13 +5236,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.lastRemoveAllJobFut().get() != null && op.startsWith("Remove All"))
             return;
 
-        Transaction tx = ctx.kernalContext().cache().transactions().tx();
-        if (tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC)
+        if (curTxDeadlockDetecting())
             return;
 
         LT.warn(log, "Unordered collection " + coll.getClass().getSimpleName() +
             " is used for " + op + " operation on cache " + name() + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
+    }
+
+    /** */
+    private boolean curTxDeadlockDetecting() {
+        Transaction tx = ctx.kernalContext().cache().transactions().tx();
+
+        return tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC &&
+            (tx.isolation() == SERIALIZABLE || ctx.tm().deadlockDetectionEnabled());
     }
 
     /**

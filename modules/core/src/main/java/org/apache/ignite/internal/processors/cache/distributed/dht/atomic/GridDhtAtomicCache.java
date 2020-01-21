@@ -699,7 +699,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(conflictMap.keySet());
 
-        checkMapType(conflictMap, "Put All DR");
+        checkKeysOrdered(conflictMap, "Put All DR");
 
         return updateAll0(null,
             null,
@@ -814,7 +814,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All");
+        checkKeysOrdered(keys, "Invoke All");
 
         return invokeAll0(false, keys, entryProcessor, args).get();
     }
@@ -897,7 +897,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(keys);
 
-        checkSetType(keys, "Invoke All Async");
+        checkKeysOrdered(keys, "Invoke All Async");
 
         return invokeAll0(true, keys, entryProcessor, args);
     }
@@ -964,7 +964,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkMapType(map, "Invoke All");
+        checkKeysOrdered(map, "Invoke All");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -996,7 +996,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkMapType(map, "Invoke All Async");
+        checkKeysOrdered(map, "Invoke All Async");
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
