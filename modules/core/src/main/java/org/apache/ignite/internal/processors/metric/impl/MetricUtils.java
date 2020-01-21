@@ -39,26 +39,6 @@ public class MetricUtils {
     public static final String INF = "inf";
 
     /**
-     * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
-     * root = io - JMX tree root.
-     * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     *
-     * @param regName Metric registry name.
-     * @return Parsed names parts.
-     */
-    public static MetricName parse(String regName) {
-        int firstDot = regName.indexOf('.');
-
-        if (firstDot == -1)
-            return new MetricName(null, regName);
-
-        String grp = regName.substring(0, firstDot);
-        String beanName = regName.substring(firstDot + 1);
-
-        return new MetricName(grp, beanName);
-    }
-
-    /**
      * Builds metric name. Each parameter will separated by '.' char.
      *
      * @param names Metric name parts.
@@ -188,40 +168,5 @@ public class MetricUtils {
         cache.put(name, new T2<>(bounds, names));
 
         return names;
-    }
-
-    /**
-     * Parsed metric registry name parts.
-     *
-     * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
-     * root = io - JMX tree root.
-     * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     */
-    public static class MetricName {
-        /** JMX group name. */
-        private String root;
-
-        /** JMX bean name. */
-        private String subName;
-
-        /** */
-        MetricName(String root, String subName) {
-            this.root = root;
-            this.subName = subName;
-        }
-
-        /**
-         * @return JMX group name.
-         */
-        public String root() {
-            return root;
-        }
-
-        /**
-         * @return JMX bean name.
-         */
-        public String subName() {
-            return subName;
-        }
     }
 }
