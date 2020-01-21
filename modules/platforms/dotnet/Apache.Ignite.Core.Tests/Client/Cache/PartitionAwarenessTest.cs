@@ -290,6 +290,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             var reqs = GetLoggers()
                 .Select(l => GetServerRequestNames(l, RequestNamePrefixCache).ToArray())
+                .Where(x => x.Length > 0)
                 .ToArray();
             
             // All requests should go to a single (default) node, because partition awareness is not applicable.
