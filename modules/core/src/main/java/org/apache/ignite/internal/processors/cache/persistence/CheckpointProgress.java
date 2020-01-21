@@ -20,16 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
- * Checkpoint futures.
+ * Represents information of a progress of a given checkpoint and
+ * allows to obtain future to wait for a particular checkpoint state.
  */
-public interface CheckpointFuture {
-    /**
-     * @return Begin future.
-     */
-    public GridFutureAdapter beginFuture();
+public interface CheckpointProgress {
+    /** */
+    public boolean inProgress();
 
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
+    /** */
+    public GridFutureAdapter futureFor(CheckpointState state);
 }

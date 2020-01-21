@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.configuration.distributed;
-
-import java.io.Serializable;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
- * Dispatcher of distributed properties.
- *
- * Hold of all register properties of distributed configuration.
+ * Possible checkpoint states. Ordinal is important. Every next state follows the previous one.
  */
-public interface DistributedPropertyDispatcher {
-    /**
-     * Attach already created property.
-     *
-     * @param props Properties to attach to processor.
-     * @param <T> Type of property value.
-     */
-    <T extends DistributedChangeableProperty> void registerProperties(T... props);
-
-    /**
-     * Attach already created property.
-     *
-     * @param prop Property to attach to processor.
-     */
-    <T extends Serializable> DistributedProperty<T> registerProperty(DistributedChangeableProperty<T> prop);
+public enum CheckpointState {
+    /** Checkpoint is waiting to execution. **/
+    SCHEDULED,
+    /** Checkpoint was awakened and it is preparing to start. **/
+    LOCK_TAKEN,
+    /** Checkpoint counted the pages and write lock was released. **/
+    LOCK_RELEASED,
+    /** Checkpoint marker was stored to disk. **/
+    MARKER_STORED_TO_DISK,
+    /** Checkpoint was finished. **/
+    FINISHED
 }

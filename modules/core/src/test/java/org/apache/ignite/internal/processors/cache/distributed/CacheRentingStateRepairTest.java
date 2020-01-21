@@ -40,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -90,16 +89,12 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -115,6 +110,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         try {
             IgniteEx g0 = startGrid(0);
 
+            g0.cluster().baselineAutoAdjustEnabled(false);
             startGrid(1);
 
             g0.cluster().active(true);
@@ -244,6 +240,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         try {
             IgniteEx g0 = startGrids(2);
 
+            g0.cluster().baselineAutoAdjustEnabled(false);
             g0.cluster().active(true);
 
             awaitPartitionMapExchange();

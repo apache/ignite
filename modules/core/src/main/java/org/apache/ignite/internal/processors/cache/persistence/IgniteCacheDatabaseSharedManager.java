@@ -303,7 +303,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 0L,
                 true,
                 lsnr,
-                cctx.kernalContext()
+                cctx.kernalContext(),
+                null
             );
 
             freeListMap.put(memPlcCfg.getName(), freeList);
@@ -926,7 +927,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param reason Reason.
      */
-    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+    @Nullable public CheckpointProgress forceCheckpoint(String reason) {
         return null;
     }
 

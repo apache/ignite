@@ -269,7 +269,8 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated(),
                 diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName),
-                cctx.kernalContext()
+                cctx.kernalContext(),
+                null
             ) {
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                     return pageMem.allocatePage(grpId, partId, FLAG_DATA);
