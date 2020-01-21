@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -275,11 +274,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         AtomicLong cntSingle = new AtomicLong();
         AtomicLong cntFull = new AtomicLong();
 
-        Collection<ClusterNode> clusterNodes = ignites.get(0).cluster().nodes();
-
-        boolean allNodesSupported = allNodesSupports(clusterNodes, PME_FREE_SWITCH);
-        boolean pmeExpected = !persistence || (persistence && !allNodesSupported);
-
         initCountPmeMessages(nodes, cntSingle, cntFull);
 
         Random r = new Random();
@@ -287,20 +281,19 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         while (nodes > 1) {
             Ignite failed = G.allGrids().get(r.nextInt(nodes--));
 
-            if (persistence && pmeExpected &&
-                !nodeSupports(failed.cluster().localNode(), PME_FREE_SWITCH))
-                pmeExpected = false;
-
             failed.close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(pmeExpected ? (nodes - 1) : 0, cntSingle.get());
-            assertEquals(cntSingle.get(), cntFull.get());
-
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
             assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
+
+            boolean pmeExpected = !persistence ||
+                (persistence && !allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH));
+
+            assertEquals(pmeExpected ? (nodes - 1) : 0, cntSingle.get());
+            assertEquals(pmeExpected ? (nodes - 1) : 0, cntFull.get());
 
             cntSingle.set(0);
             cntFull.set(0);
@@ -694,8 +687,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
     private void startClusterWithPmeFreeDisabledNode(NodeIndexChoice order) throws Exception {
-        int topSize = 10;
-        int id = 0;
+        int nodes = 10;
+        int idx = 0;
 
         try {
             switch (order) {
@@ -703,31 +696,31 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     break;
 
                 case MIDDLE:
-                    id = topSize/2 - 1;
+                    idx = nodes/2 - 1;
                     break;
 
                 case LAST:
-                    id = topSize - 1;
+                    idx = nodes - 1;
                     break;
             }
 
-            if (id > 0)
-                startGridsMultiThreaded(id, false);
+            if (idx > 0)
+                startGridsMultiThreaded(idx, false);
 
-            startGridWithPmeFreeSwitchDisabled(id++);
+            startGridWithPmeFreeSwitchDisabled(idx++);
 
-            if (id < topSize)
-                startGridsMultiThreaded(id, topSize - id);
+            if (idx < nodes)
+                startGridsMultiThreaded(idx, nodes - idx);
         }
         finally {
-            checkTopology(topSize);
+            checkTopology(nodes);
         }
     }
 
     /**
      * Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
-    enum NodeIndexChoice {
+    private enum NodeIndexChoice {
         /** First. */
         FIRST,
 
