@@ -253,6 +253,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
+    private final transient ThreadLocal<Boolean> clientMode = ThreadLocal.withInitial(() -> false);
+
     /** */
     static {
         System.setProperty(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
@@ -974,13 +976,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
+        clientMode.set(true);
 
-        cfg.setClientMode(true);
-
-        cfg = optimize(cfg);
-
-        return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
+        try {
+            return (IgniteEx)startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)));
+        }
+        finally {
+            clientMode.set(false);
+        }
     }
 
     /**
@@ -1806,6 +1809,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
+        cfg.setClientMode(clientMode.get());
 
         cfg.setConnectorConfiguration(null);
 

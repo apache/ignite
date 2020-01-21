@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,7 +31,6 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -52,21 +50,12 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDeploymentMode(depMode);
-
-        cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setConnectorConfiguration(null);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        cfg = super.optimize(cfg);
-
-        if (cfg.isClientMode() == TRUE)
+        if (cfg.isClientMode())
             cfg.setClassLoader(getExternalClassLoader());
+
+        cfg.setDeploymentMode(depMode);
+        cfg.setCacheConfiguration(cacheConfiguration());
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }

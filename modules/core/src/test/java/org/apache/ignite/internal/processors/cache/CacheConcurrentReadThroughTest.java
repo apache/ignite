@@ -24,7 +24,6 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -37,8 +36,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
 import org.junit.Test;
-
-import static java.lang.Boolean.TRUE;
 
 /**
  * Test was added to check fix for IGNITE-4465.
@@ -54,10 +51,10 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        cfg = super.optimize(cfg);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cfg.isClientMode() != TRUE) {
+        if (!cfg.isClientMode()) {
             cfg.setPublicThreadPoolSize(SYS_THREADS);
             cfg.setSystemThreadPoolSize(SYS_THREADS);
         }

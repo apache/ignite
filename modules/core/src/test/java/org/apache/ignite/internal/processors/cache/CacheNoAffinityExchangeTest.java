@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -58,8 +57,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
-import static java.lang.Boolean.TRUE;
 
 /**
  *
@@ -98,14 +95,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024)));
 
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        cfg = super.optimize(cfg);
-
-        if (cfg.isClientMode() == TRUE) {
+        if (cfg.isClientMode()) {
             // It is necessary to ensure that client always connects to grid(0).
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
 
