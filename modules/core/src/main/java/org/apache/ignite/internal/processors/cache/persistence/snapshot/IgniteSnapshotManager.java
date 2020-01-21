@@ -793,7 +793,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         SnapshotTask snpTask = clusterSnpTask;
 
-        snpTask.execute(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
+        snpTask.submit(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
 
         dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpTask.snapshotName()));
 
