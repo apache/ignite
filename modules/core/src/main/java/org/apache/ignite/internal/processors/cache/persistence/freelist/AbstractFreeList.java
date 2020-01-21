@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -93,6 +94,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Page list cache limit. */
+    private final AtomicLong pageListCacheLimit;
 
     /**
      *
@@ -433,7 +437,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long metaPageId,
         boolean initNew,
         PageLockListener lockLsnr,
-        GridKernalContext ctx
+        GridKernalContext ctx,
+        AtomicLong pageListCacheLimit
     ) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr, ctx);
 
@@ -462,6 +467,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.memMetrics = memMetrics;
 
+        this.pageListCacheLimit = pageListCacheLimit;
+
         init(metaPageId, initNew);
     }
 
@@ -476,7 +483,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         for (int b = BUCKETS - 2; b > 0; b--) {
             long perPageFreeSpace = b << shift;
 
-            long pages = bucketsSize[b].longValue();
+            long pages = bucketsSize.get(b);
 
             freeSpace += pages * perPageFreeSpace;
         }
@@ -491,7 +498,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         final boolean dumpBucketsInfo = false;
 
         for (int b = 0; b < BUCKETS; b++) {
-            long size = bucketsSize[b].longValue();
+            long size = bucketsSize.get(b);
 
             if (!isReuseBucket(b))
                 dataPages += size;
@@ -524,7 +531,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 log.info("FreeList [name=" + name +
                     ", buckets=" + BUCKETS +
                     ", dataPages=" + dataPages +
-                    ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
+                    ", reusePages=" + bucketsSize.get(REUSE_BUCKET) + "]");
         }
     }
 
@@ -860,7 +867,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override protected PagesCache getBucketCache(int bucket, boolean create) {
         PagesCache pagesCache = bucketCaches.get(bucket);
 
-        if (pagesCache == null && create && !bucketCaches.compareAndSet(bucket, null, pagesCache = new PagesCache()))
+        if (pagesCache == null && create &&
+            !bucketCaches.compareAndSet(bucket, null, pagesCache = new PagesCache(pageListCacheLimit)))
             pagesCache = bucketCaches.get(bucket);
 
         return pagesCache;
@@ -870,7 +878,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @return Number of empty data pages in free list.
      */
     public int emptyDataPages() {
-        return bucketsSize[REUSE_BUCKET].intValue();
+        return (int)bucketsSize.get(REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */
