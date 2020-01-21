@@ -11406,6 +11406,9 @@ public abstract class IgniteUtils {
         /** */
         private IgniteLogger log;
 
+        /** Delegate. */
+        private final ReentrantReadWriteLock delegate;
+
         /**
          * @param delegate RWLock delegate.
          * @param kctx Kernal context.
@@ -11414,6 +11417,8 @@ public abstract class IgniteUtils {
          */
         public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, GridKernalContext kctx, long readLockThreshold) {
             log = kctx.cache().context().logger(getClass());
+
+            this.delegate = delegate;
 
             readLock = new ReadLockTracer(delegate, log, readLockThreshold);
 
@@ -11428,6 +11433,41 @@ public abstract class IgniteUtils {
         }
 
         /** {@inheritDoc} */
+        @Override public int getReadLockCount() {
+            return delegate.getReadLockCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isWriteLocked() {
+            return delegate.isWriteLocked();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isWriteLockedByCurrentThread() {
+            return delegate.isWriteLockedByCurrentThread();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWriteHoldCount() {
+            return delegate.getWriteHoldCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReadHoldCount() {
+            return delegate.getReadHoldCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasWaiters(Condition condition) {
+            return delegate.hasWaiters(condition);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWaitQueueLength(Condition condition) {
+            return delegate.getWaitQueueLength(condition);
+        }
+
+        /** {@inheritDoc} */
         @Override public WriteLock writeLock() {
             return writeLock;
         }
@@ -11439,7 +11479,7 @@ public abstract class IgniteUtils {
     }
 
     /** */
-    private static class ReadLockTracer extends ReentrantReadWriteLock.ReadLock {
+    public static class ReadLockTracer extends ReentrantReadWriteLock.ReadLock {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -11455,6 +11495,9 @@ public abstract class IgniteUtils {
 
         /** */
         private long readLockThreshold;
+
+        /** Holders. */
+        private Map<String, Long> holders = new ConcurrentHashMap<>();
 
         /** */
         public ReadLockTracer(ReentrantReadWriteLock lock, IgniteLogger log, long readLockThreshold) {
@@ -11479,6 +11522,8 @@ public abstract class IgniteUtils {
             val.set1(++cntr);
 
             READ_LOCK_HOLDER_TS.set(val);
+
+            holders.putIfAbsent(Thread.currentThread().getName(), U.currentTimeMillis());
         }
 
         /** */
@@ -11499,11 +11544,21 @@ public abstract class IgniteUtils {
 
                     U.warn(log, sb.toString());
                 }
+
+                holders.remove(Thread.currentThread().getName());
             }
 
             val.set1(cntr);
 
             READ_LOCK_HOLDER_TS.set(val);
+        }
+
+        /**
+         *
+         */
+        public void dump() {
+            for (Map.Entry<String, Long> e : holders.entrySet())
+                log.info("Read lock holder: " + e.getKey() + " time: " + (U.currentTimeMillis() - e.getValue()));
         }
 
         /** {@inheritDoc} */

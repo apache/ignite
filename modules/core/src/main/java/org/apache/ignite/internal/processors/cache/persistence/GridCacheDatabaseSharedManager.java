@@ -4111,6 +4111,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             tracker.onLockWaitStart();
 
+            log.info("Before checkpoint start");
+
+            if (logReadLockHolders)
+                ((IgniteUtils.ReadLockTracer)checkpointLock.readLock()).dump();
+
             checkpointLock.writeLock().lock();
 
             try {
