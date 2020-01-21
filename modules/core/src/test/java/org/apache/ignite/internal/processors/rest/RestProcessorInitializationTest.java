@@ -21,7 +21,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
@@ -77,13 +76,6 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
                 return new TestGridRestProcessorImpl(((IgniteEx)ctx.grid()).context());
 
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgnitePlugin plugin() {
-            return new IgnitePlugin() {
-                // No-op.
-            };
         }
     }
 

@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 
@@ -60,11 +59,5 @@ public class TestDistibutedConfigurationPlugin extends AbstractTestPluginProvide
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
         supplier.accept(igniteCtx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePlugin plugin() {
-        return new IgnitePlugin() {
-        };
     }
 }

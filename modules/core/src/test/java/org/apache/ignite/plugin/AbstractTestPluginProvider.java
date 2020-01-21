@@ -33,6 +33,13 @@ public abstract class AbstractTestPluginProvider implements PluginProvider<Plugi
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends IgnitePlugin> T plugin() {
+        return (T) new IgnitePlugin() {
+            // No-op.
+        };
+    }
+
+    /** {@inheritDoc} */
     @Override public String copyright() {
         return null;
     }
