@@ -31,7 +31,8 @@ import org.jetbrains.annotations.Nullable;
  * Ignite plugins can be loaded using JDK {@link ServiceLoader} or set up explicitly via
  * {@link IgniteConfiguration#setPluginProviders(PluginProvider[])}.
  * First method called to initialize plugin is {@link PluginProvider#initExtensions(PluginContext, ExtensionRegistry)}.
- * If {@link ServiceLoader} approach of plugin loading is chosen, configuration required for plugin can be set via
+ * If {@link ServiceLoader} approach of plugin loading is chosen, fully-qualified {@link PluginProvider} class name is
+ * used as the service's type. And required for plugin configuration in this case can be set up via
  * {@link IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)}.
  *
  * @see IgniteConfiguration#setPluginProviders(PluginProvider[])
