@@ -3421,14 +3421,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @return Future for partition mode change operation, with the result as the HWM value of the update counter.
      */
     public IgniteInternalFuture<Long> schedulePartitionActivation(int grpId, int partId) {
         Checkpointer cp = checkpointer;
 
-        if (cp != null)
-            return cp.schedulePartitionActivation(cctx.cache().cacheGroup(grpId), grpId, partId);
+        assert cp != null : "grp=" + grpId + ", p=" + partId;
 
-        return null;
+        return cp.schedulePartitionActivation(cctx.cache().cacheGroup(grpId), grpId, partId);
     }
 
     /**
@@ -4108,7 +4108,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * Processes all evicted partitions scheduled for destroy.
+         * Processes all partitions scheduled to switch from read-only mode to normal mode.
          *
          * @throws IgniteCheckedException If failed.
          */
@@ -4177,6 +4177,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 wakeupForCheckpoint(PARTITION_DESTROY_CHECKPOINT_TIMEOUT, "partition destroy");
         }
 
+        /**
+         * Schedule partition switch from read-only to normal mode.
+         *
+         * @param grpCtx Group context. Can be {@code null} in case of crash recovery.
+         * @param grpId Group ID.
+         * @param partId Partition ID.
+         * @return Future for partition mode change operation, with the result as the HWM value of the update counter.
+         */
         private synchronized IgniteInternalFuture<Long> schedulePartitionActivation(CacheGroupContext grpCtx, int grpId, int partId) {
             PartitionRequest req = new PartitionRequest(grpId, partId);
 

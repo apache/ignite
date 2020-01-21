@@ -127,12 +127,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.cluster.ClusterState.active;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -532,17 +530,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (cntrSince == 0)
             return null;
 
-        return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
-    }
-
-    /**
-     * Retreives the node which reserved history for file rebalancing.
-     *
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     * @return ID of history supplier node or null if it doesn't exist.
-     */
-    public @Nullable UUID partitionFileSupplier(int grpId, int partId, long cntrSince) {
         return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
@@ -3179,9 +3166,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void assignPartitionStates(GridDhtPartitionTopology top) {
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
-        boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
-            cctx.filePreloader().supports(grp, cctx.discovery().aliveServerNodes());
-
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
         Map<Integer, Long> minCntrs = new HashMap<>();
 
@@ -3191,7 +3175,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             assert nodeCntrs != null;
 
-            if (nodeCntrs.isEmpty() && fileRebalanceApplicable) {
+            if (nodeCntrs.isEmpty()) {
                 // We should search the supplier for file rebalancing even if the counter was not sent.
                 for (int p = 0; p < top.partitions(); p++) {
                     GridDhtPartitionState state = top.partitionState(e.getKey(), p);
@@ -3280,13 +3264,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
+        boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
+            cctx.filePreloader().supports(grp, cctx.discovery().aliveServerNodes());
+
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.groupId()) : null;
 
         Set<Integer> haveHistory = new HashSet<>();
-
-        long walRebalanceThreshold = getLong(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -3304,7 +3289,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long localHistCntr = localReserved.get(p);
 
                 if (localHistCntr != null) {
-                    if (minCntr != 0 && partSizes.get(p) > walRebalanceThreshold && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                         partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                         haveHistory.add(p);
@@ -3326,7 +3311,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
                 if (histCntr != null) {
-                    if (minCntr != 0 && partSizes.get(p) > walRebalanceThreshold && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
+                    if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                         partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
                         haveHistory.add(p);

@@ -2173,6 +2173,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        /**
+         * @return Update counter for read-only mode.
+         */
         public PartitionUpdateCounter readOnlyPartUpdateCounter() {
             return readModeCntr;
         }

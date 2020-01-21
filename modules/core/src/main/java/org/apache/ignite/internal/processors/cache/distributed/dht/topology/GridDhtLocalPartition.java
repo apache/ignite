@@ -466,7 +466,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return The curretly active storage mode.
+     * @return The currently active storage mode.
      */
     public boolean readOnly() {
         return store.readOnly();

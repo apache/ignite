@@ -384,7 +384,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 return false;
 
             // Should have partition file supplier to start file rebalancing.
-            if (exchFut.partitionFileSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
+            if (exchFut.partitionHistorySupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
                 return false;
         }
 

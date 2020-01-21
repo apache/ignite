@@ -299,7 +299,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                         // file rebalance
                         if (exchFut != null) {
-                            UUID nodeId = exchFut.partitionFileSupplier(grp.groupId(), p, countersMap.updateCounter(p));
+                            UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, countersMap.updateCounter(p));
 
                             if (nodeId != null) {
                                 if (log.isDebugEnabled()) {
