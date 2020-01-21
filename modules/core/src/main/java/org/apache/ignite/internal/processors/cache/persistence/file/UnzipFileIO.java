@@ -50,6 +50,13 @@ public class UnzipFileIO extends AbstractFileIO {
         zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
 
         ZipEntry entry = zis.getNextEntry();
+
+        if (entry == null) {
+            close();
+
+            throw new IOException("Failed to read entry from compressed file: " + zip.getCanonicalPath());
+        }
+
         size = entry.getSize();
     }
 

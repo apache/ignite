@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.stream.StreamTransformer;
@@ -1191,6 +1192,12 @@ public final class IgniteSystemProperties {
      * {see {@link TcpCommunicationMetricsListener}}
      */
     public static final String IGNITE_COMM_SPI_TIME_HIST_BOUNDS = "IGNITE_COMM_SPI_TIME_HIST_BOUNDS";
+
+    /**
+     * Disable group state lazy store. It means that group state won't be cached for {@link CheckpointEntry} and will be
+     * read from wal every time. Should be used for test purposes only.
+     */
+    public static final String IGNITE_DISABLE_GRP_STATE_LAZY_STORE = "IGNITE_DISABLE_GRP_STATE_LAZY_STORE";
 
     /**
      * Enforces singleton.

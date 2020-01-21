@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurren
 import org.apache.ignite.internal.processors.cache.persistence.CleanupRestoredCachesSlowTest;
 import org.apache.ignite.internal.processors.cache.transactions.PartitionUpdateCounterTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyHistoryRebalanceCompEnabledTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyHistoryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyVolatileRebalanceTest;
@@ -88,6 +89,7 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         suite.addTestSuite(TxPartitionCounterStateConsistencyTest.class);
         suite.addTestSuite(TxPartitionCounterStateConsistencyHistoryRebalanceTest.class);
         suite.addTestSuite(TxPartitionCounterStateConsistencyVolatileRebalanceTest.class);
+        suite.addTestSuite(TxPartitionCounterStateConsistencyHistoryRebalanceCompEnabledTest.class);
 
         suite.addTestSuite(GridLongRunningInitNewCrdFutureDiagnosticsTest.class);
 

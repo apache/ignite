@@ -391,7 +391,16 @@ public class CheckpointHistory {
                 }
             }
             catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to process checkpoint: " + (chpEntry != null ? chpEntry : "none"), ex);
+                U.warn(log, "Failed to process checkpoint: " + (chpEntry != null ? chpEntry : "none"), ex);
+
+                try {
+                    cctx.wal().release(chpEntry.checkpointMark());
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to release checkpoint WAL pointer: " + chpEntry, e);
+                }
+
+                return res;
             }
         }
 

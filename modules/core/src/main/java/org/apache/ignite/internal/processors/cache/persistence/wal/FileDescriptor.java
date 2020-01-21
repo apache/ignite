@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
 
     /** file extension of WAL segment. */
-    private static final String WAL_SEGMENT_FILE_EXT = ".wal";
+    public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** Length of WAL segment file name. */
     private static final int WAL_SEGMENT_FILE_NAME_LENGTH = 16;
