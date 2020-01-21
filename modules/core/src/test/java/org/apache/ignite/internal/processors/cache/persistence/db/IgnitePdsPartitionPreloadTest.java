@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -42,7 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -86,11 +84,11 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     public static final int MB = 1024 * 1024;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        cfg = super.optimize(cfg);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cfg.isClientMode() != TRUE) {
-            String val = "node" + getTestIgniteInstanceIndex(cfg.getIgniteInstanceName());
+        if (!cfg.isClientMode()) {
+            String val = "node" + getTestIgniteInstanceIndex(gridName);
             cfg.setUserAttributes(Collections.singletonMap(TEST_ATTR, val));
             cfg.setConsistentId(val);
         }
