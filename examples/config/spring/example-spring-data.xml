@@ -36,6 +36,9 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!-- Imports default Ignite configuration -->
+    <import resource="../example-default.xml"/>
+
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="igniteInstanceName" value="springDataNode" />
         <property name="peerClassLoadingEnabled" value="true" />
