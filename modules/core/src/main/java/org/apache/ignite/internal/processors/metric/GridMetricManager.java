@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -445,7 +446,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rateTimeInterval.
-     * @see HistogramMetric#reset(long[])
+     * @see HistogramMetricImpl#reset(long[])
      */
     private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
         if (rateTimeInterval == null)
@@ -471,7 +472,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (bounds == null)
             return;
 
-        HistogramMetric m = find(name, HistogramMetric.class);
+        HistogramMetricImpl m = find(name, HistogramMetricImpl.class);
 
         if (m == null)
             return;

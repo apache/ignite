@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleGauge;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
@@ -293,12 +293,12 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param name Name
      * @param bounds Bounds of measurements.
      * @param desc Description.
-     * @return {@link HistogramMetric}
+     * @return {@link HistogramMetricImpl}
      */
-    public HistogramMetric histogram(String name, long[] bounds, @Nullable String desc) {
+    public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
         String fullName = metricName(regName, name);
 
-        HistogramMetric metric = addMetric(name, new HistogramMetric(fullName, desc, bounds));
+        HistogramMetricImpl metric = addMetric(name, new HistogramMetricImpl(fullName, desc, bounds));
 
         long[] cfgBounds = histogramCfgProvider.apply(fullName);
 
