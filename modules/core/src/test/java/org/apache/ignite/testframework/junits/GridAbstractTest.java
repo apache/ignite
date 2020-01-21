@@ -253,6 +253,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
+    /** Client mode flag. */
     private final transient ThreadLocal<Boolean> clientMode = ThreadLocal.withInitial(() -> false);
 
     /** */
