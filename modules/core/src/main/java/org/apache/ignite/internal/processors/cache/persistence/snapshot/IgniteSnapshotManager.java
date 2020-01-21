@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -127,7 +128,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 
 /** */
-public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteSnapshot {
+public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteSnapshot, PartitionsExchangeAware {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -288,6 +289,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         storeFactory = storeMgr::getPageStoreFactory;
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+
+        cctx.exchange().registerExchangeAwareComponent(this);
 
         takeSnpProc = new DistributedProcess<>(kctx, DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT,
             this::takeSnapshot, this::takeSnapshotResult);
@@ -654,6 +657,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
             cctx.kernalContext().event().removeDiscoveryEventListener(discoLsnr);
             cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
+
+            cctx.exchange().unregisterExchangeAwareComponent(this);
         }
         finally {
             busyLock.unblock();
@@ -784,10 +789,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         return null;
     }
 
-    /**
-     * @param fut Partition map exchange future.
-     */
-    public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    /** {@inheritDoc} */
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (clusterSnpTask == null || cctx.kernalContext().clientNode())
             return;
 
