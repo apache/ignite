@@ -102,6 +102,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -182,6 +183,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** Requested snapshot from remote node. */
     private final AtomicReference<RemoteSnapshotFuture> rmtSnpReq = new AtomicReference<>();
+
+    /** Mutex used to order cluster snapshot opertaion progress. */
+    private final Object snpOpMux = new Object();
 
     /** Main snapshot directory to save created snapshots. */
     private File locSnpDir;
@@ -765,23 +769,48 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param err Errors.
      */
     void takeSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+        synchronized (snpOpMux) {
+            boolean owner = clusterSnpFut != null && clusterSnpFut.id.equals(id);
+
+            // todo delete snapshot working directory if an error occurred on other nodes
+
+            if (!owner || clusterSnpFut.isDone())
+                return;
+
+            if (!F.isEmpty(err)) {
+                Exception e = err.values().stream().findFirst().get();
+
+                clusterSnpFut.onDone(e);
+            }
+            else
+                clusterSnpFut.onDone();
+
+            clusterSnpFut = null;
+        }
 
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name, List<Integer> grps) {
-        if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
-                "The previous snapshot operation was not completed."));
+        synchronized (snpOpMux) {
+            if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
+                return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
+                    "The previous snapshot operation was not completed."));
+            }
+
+            if (clusterSnpTask != null) {
+                return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
+                    "Parallel snapshot processes are not allowed."));
+            }
+
+            ClusterSnapshotFuture clsFut = new ClusterSnapshotFuture(UUID.randomUUID());
+
+            clusterSnpFut = clsFut;
+
+            takeSnpProc.start(clsFut.id, new SnapshotOperationRequest(name, grps));
+
+            return new IgniteFutureImpl<>(clsFut);
         }
-
-        ClusterSnapshotFuture clsFut = new ClusterSnapshotFuture(UUID.randomUUID());
-
-        clusterSnpFut = clsFut;
-
-        takeSnpProc.start(clsFut.id, new SnapshotOperationRequest(name, grps));
-
-        return new IgniteFutureImpl<>(clsFut);
     }
 
     /** {@inheritDoc} */
@@ -791,6 +820,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        // This method is called under exchange thread, order is guarandeed
         if (clusterSnpTask == null || cctx.kernalContext().clientNode())
             return;
 

@@ -96,7 +96,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /** Unique identifier of snapshot process. */
     private final String snpName;
 
-    /** Snapshot workgin directory on file system. */
+    /** Snapshot working directory on file system. */
     private final File snpWorkDir;
 
     /** Service to perform partitions copy. */
