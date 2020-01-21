@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -41,7 +40,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -51,7 +49,6 @@ import static java.util.Collections.singletonList;
 /**
  * Test async LFS cleanup during non-BLT node join.
  */
-@WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
 public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static class FilePageStoreManagerChild extends FilePageStoreManager {
@@ -168,6 +165,8 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
     @Test
     public void testCleanupSlow() throws Exception {
         Ignite ignite = startGrids(2);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         ClusterNode cn0 = grid(0).cluster().localNode();
         ClusterNode cn1 = grid(1).cluster().localNode();
