@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link IgniteConfiguration#setPluginProviders(PluginProvider[])}.
  * First method called to initialize plugin is {@link PluginProvider#initExtensions(PluginContext, ExtensionRegistry)}.
  * If {@link ServiceLoader} approach of plugin loading is chosen, fully-qualified {@link PluginProvider} class name is
- * used as the service's type. And required for plugin configuration in this case can be set up via
+ * used as the service's type. And required plugin configuration in this case can be set up via
  * {@link IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)}.
  *
  * @see IgniteConfiguration#setPluginProviders(PluginProvider[])
