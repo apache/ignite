@@ -265,7 +265,7 @@ public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibility
                 ignite.active(true);
 
                 ((IgniteEx)ignite).context().cache().context().database()
-                    .forceCheckpoint("force test checkpoint").futureFor(CheckpointState.FINISHED).get();
+                    .wakeupForCheckpoint("force test checkpoint").get();
 
                 ((GridCacheDatabaseSharedManager)(((IgniteEx)ignite).context().cache().context().database()))
                     .enableCheckpoints(false);
