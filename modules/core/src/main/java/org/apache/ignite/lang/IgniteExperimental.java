@@ -29,7 +29,8 @@ import static java.lang.annotation.ElementType.TYPE;
  * meaning that the API is not finalized yet and may be changed or replaced in future Ignite releases.
  * <p>
  * Such APIs are exposed so that users can make use of a feature before the API has been stabilized. The expectation is
- * that an API element should be "eventually" stabilized. Incompatible changes are allowed for such APIs.
+ * that an API element should be "eventually" stabilized. Incompatible changes are allowed for such APIs: API may be
+ * removed, changed or stabilized in future Ignite releases (both minor and maintenance).
  */
 @Target(value = {TYPE, METHOD, ANNOTATION_TYPE, PACKAGE})
 public @interface IgniteExperimental {
