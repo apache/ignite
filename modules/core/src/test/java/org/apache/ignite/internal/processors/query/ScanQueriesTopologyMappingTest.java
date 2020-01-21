@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.ArrayList;
+import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,11 +36,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import javax.cache.Cache;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 
@@ -152,7 +149,6 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
                 assertEquals(1, res.get(0).getKey());
                 assertEquals(2, res.get(0).getValue());
             }
-
 
             ScanQuery<Object, Object> qry = new ScanQuery<>().setLocal(true);
 
