@@ -17,18 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -654,12 +644,22 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                if (cctx.affinityNode())
+                if (cctx.affinityNode() && !cctx.topology().localPartitionMap().hasMovingPartitions())
                     return Collections.singletonList(cctx.localNode());
 
                 Collection<ClusterNode> affNodes = nodes(cctx, null, null);
 
-                return affNodes.isEmpty() ? affNodes : Collections.singletonList(F.rand(affNodes));
+                List<ClusterNode> nodes = new ArrayList<>(affNodes);
+
+                Collections.shuffle(nodes);
+
+                for (ClusterNode node : nodes) {
+                    if (!cctx.topology().partitions(node.id()).hasMovingPartitions()) {
+                        return Collections.singletonList(node);
+                    }
+                }
+
+                return affNodes;
 
             case PARTITIONED:
                 return nodes(cctx, prj, part);
