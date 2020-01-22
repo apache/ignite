@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Client
     /// <summary>
     /// Represents whole cluster (group of all nodes in a cluster).
     /// </summary>
-    public interface IClientCluster
+    public interface IClientCluster : IClientClusterGroup
     {
         /// <summary>
         /// Changes Ignite grid state to active or inactive.

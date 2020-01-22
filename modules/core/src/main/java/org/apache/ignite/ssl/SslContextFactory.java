@@ -22,11 +22,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -332,6 +335,8 @@ public class SslContextFactory implements Factory<SSLContext> {
     private SSLContext createSslContext() throws SSLException {
         checkParameters();
 
+        final KeyManager[] keyMgrs;
+
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
@@ -339,18 +344,38 @@ public class SslContextFactory implements Factory<SSLContext> {
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            TrustManager[] mgrs = trustMgrs;
+            keyMgrs = keyMgrFactory.getKeyManagers();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported keystore algorithm: " + keyAlgorithm, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to initialize key store (security exception occurred) [type=" +
+                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
 
-            if (mgrs == null) {
+        TrustManager[] trustMgrs = this.trustMgrs;
+
+        if (trustMgrs == null) {
+            try {
                 TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance(keyAlgorithm);
 
                 KeyStore trustStore = loadKeyStore(trustStoreType, trustStoreFilePath, trustStorePwd);
 
                 trustMgrFactory.init(trustStore);
 
-                mgrs = trustMgrFactory.getTrustManagers();
+                trustMgrs = trustMgrFactory.getTrustManagers();
             }
+            catch (NoSuchAlgorithmException e) {
+                throw new SSLException("Unsupported keystore algorithm: " + keyAlgorithm, e);
+            }
+            catch (GeneralSecurityException e) {
+                throw new SSLException("Failed to initialize key store (security exception occurred) [type=" +
+                    keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+            }
+        }
 
+        try {
             SSLContext ctx = SSLContext.getInstance(proto);
 
             if (cipherSuites != null || protocols != null) {
@@ -365,12 +390,15 @@ public class SslContextFactory implements Factory<SSLContext> {
                 ctx = new SSLContextWrapper(ctx, sslParameters);
             }
 
-            ctx.init(keyMgrFactory.getKeyManagers(), mgrs, null);
+            ctx.init(keyMgrs, trustMgrs, null);
 
             return ctx;
         }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to initialize SSL context " + parameters(), e);
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported SSL protocol: " + proto, e);
+        }
+        catch (KeyManagementException e) {
+            throw new SSLException("Failed to initialized SSL context.", e);
         }
     }
 
@@ -446,21 +474,21 @@ public class SslContextFactory implements Factory<SSLContext> {
      * @return Initialized key store.
      * @throws SSLException If key store could not be initialized.
      */
-    private KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd) throws SSLException {
-        InputStream input = null;
-
+    private KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)
+        throws SSLException {
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType);
 
-            input = openFileInputStream(storeFilePath);
+            try (InputStream input = openFileInputStream(storeFilePath)) {
 
-            keyStore.load(input, keyStorePwd);
+                keyStore.load(input, keyStorePwd);
 
-            return keyStore;
+                return keyStore;
+            }
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize key store (security exception occurred) [type=" +
-                keyStoreType + ", keyStorePath=" + storeFilePath + ']', e);
+                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
         }
         catch (FileNotFoundException e) {
             throw new SSLException("Failed to initialize key store (key store file was not found): [path=" +
@@ -468,15 +496,6 @@ public class SslContextFactory implements Factory<SSLContext> {
         }
         catch (IOException e) {
             throw new SSLException("Failed to initialize key store (I/O error occurred): " + storeFilePath, e);
-        }
-        finally {
-            if (input != null) {
-                try {
-                    input.close();
-                }
-                catch (IOException ignored) {
-                }
-            }
         }
     }
 

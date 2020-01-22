@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.suite;
 
+import java.security.Security;
 import org.apache.ignite.internal.jdbc2.JdbcBlobTest;
 import org.apache.ignite.internal.jdbc2.JdbcBulkLoadSelfTest;
 import org.apache.ignite.internal.jdbc2.JdbcConnectionReopenTest;
@@ -55,6 +56,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinConnectionTimeoutSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDataPageScanPropertySelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDataSourceSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinDefaultTimeoutTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDeleteStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedNearSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinDynamicIndexAtomicPartitionedSelfTest;
@@ -95,6 +97,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplex
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -179,6 +182,7 @@ import org.junit.runners.Suite;
     JdbcThinStatementCancelSelfTest.class,
     JdbcThinStatementTimeoutSelfTest.class,
     JdbcThinConnectionTimeoutSelfTest.class,
+    JdbcThinDefaultTimeoutTest.class,
 
     JdbcThinInsertStatementSelfTest.class,
     JdbcThinUpdateStatementSelfTest.class,
@@ -234,4 +238,12 @@ import org.junit.runners.Suite;
     JdbcThinTransactionsLeaksMvccTest.class,
 })
 public class IgniteJdbcDriverTestSuite {
+    /**
+     * Enable NULL algorithm and keep 3DES_EDE_CBC disabled.
+     * See {@link JdbcThinConnectionSSLTest#testDisabledCustomCipher()} for details.
+     */
+    @BeforeClass
+    public static void init() {
+        Security.setProperty("jdk.tls.disabledAlgorithms", "3DES_EDE_CBC");
+    }
 }

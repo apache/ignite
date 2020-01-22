@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -130,7 +130,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
      */
     protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> ops) {
         ops.forEach(r -> {
-            VERIFIER.clear().initiator(initiator);
+            VERIFIER.initiator(initiator);
 
             setupVerifier(VERIFIER);
 
@@ -147,12 +147,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Map that contains an expected behaviour.
          */
-        private final Map<String, T2<Integer, Integer>> expInvokes = new HashMap<>();
+        private final Map<T2<String, String>, T2<Integer, AtomicInteger>> expInvokes = new ConcurrentHashMap<>();
 
         /**
-         * List of registered security subjects.
+         * Checked errors.
          */
-        private final List<T2<UUID, String>> registeredSubjects = new ArrayList<>();
+        private final Collection<String> errors = new ArrayBlockingQueue<>(10);
 
         /**
          * Expected security subject id.
@@ -160,24 +160,35 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID expSecSubjId;
 
         /** */
-        public Verifier clear() {
-            registeredSubjects.clear();
+        private void clear() {
             expInvokes.clear();
 
-            expSecSubjId = null;
+            errors.clear();
 
-            return this;
+            expSecSubjId = null;
         }
 
         /**
-         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with
-         * passed name.
+         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
+         * name.
          *
          * @param nodeName Node name.
          * @param num Expected number of invokes.
          */
         public Verifier expect(String nodeName, int num) {
-            expInvokes.put(nodeName, new T2<>(num, 0));
+            return expect(nodeName, null, num);
+        }
+
+        /**
+         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
+         * name and the passed operation name.
+         *
+         * @param nodeName Node name.
+         * @param opName Operation name.
+         * @param num Expected number of invokes.
+         */
+        public Verifier expect(String nodeName, String opName, int num) {
+            expInvokes.put(new T2<>(nodeName, opName), new T2<>(num, new AtomicInteger()));
 
             return this;
         }
@@ -186,49 +197,75 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * Registers a security subject referred for {@code localIgnite} and increments invoke counter.
          */
         public void register() {
-            register((IgniteEx)localIgnite());
+            register((IgniteEx)localIgnite(), null);
+        }
+
+        /**
+         * Registers a security subject referred for {@code localIgnite} with the passed operation name and increments
+         * invoke counter.
+         *
+         * @param opName Operation name.
+         */
+        public void register(String opName) {
+            register((IgniteEx)localIgnite(), opName);
         }
 
         /**
          * Registers a security subject referred for the passed {@code ignite} and increments invoke counter.
+         *
+         * @param ignite Instance of ignite.
          */
-        public synchronized void register(IgniteEx ignite) {
-            registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
+        public void register(IgniteEx ignite) {
+            register(ignite, null);
+        }
 
-            expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
-                Integer val = t2.getValue();
+        /**
+         * Registers a security subject referred for the passed {@code ignite} with the passed operation name and
+         * increments invoke counter.
+         *
+         * @param ignite Instance of ignite.
+         * @param opName Operation name.
+         */
+        public void register(IgniteEx ignite, String opName) {
+            if (expSecSubjId == null) {
+                error("SubjectId cannot be null.");
 
-                t2.setValue(++val);
+                return;
+            }
 
-                return t2;
-            });
+            UUID actualSubjId = secSubjectId(ignite);
+
+            if (!expSecSubjId.equals(actualSubjId)) {
+                error("Actual subjectId does not equal expected subjectId " + "[expected=" + expSecSubjId +
+                    ", actual=" + actualSubjId + "].");
+
+                return;
+            }
+
+            T2<Integer, AtomicInteger> v = expInvokes.get(new T2<>(ignite.name(), opName));
+
+            if (v != null)
+                v.get2().incrementAndGet();
+            else
+                error("Unexpected registration parameters [node=" + ignite.name() + ", opName=" + opName + "].");
         }
 
         /**
          * Checks result of test and clears expected behavior.
          */
         public void checkResult() {
-            registeredSubjects.forEach(t ->
-                assertEquals("Invalide security context on node " + t.get2(),
-                    expSecSubjId, t.get1())
-            );
+            if(!errors.isEmpty())
+                throw new AssertionError(errors.stream().reduce((s1, s2) -> s1 + "\n" + s2).get());
 
-            expInvokes.forEach((key, value) ->
-                assertEquals("Node " + key + ". Execution of register: ",
-                    value.get1(), value.get2()));
-
-            clear();
-        }
-
-        /** */
-        private Verifier expectSubjId(UUID expSecSubjId) {
-            this.expSecSubjId = expSecSubjId;
-
-            return this;
+            expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
+                (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
+                ". Execution of register: ", v.get1(), Integer.valueOf(v.get2().get())));
         }
 
         /** */
         public Verifier initiator(IgniteEx initiator) {
+            clear();
+
             expSecSubjId = secSubjectId(initiator);
 
             return this;
@@ -237,6 +274,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /** */
         private UUID secSubjectId(IgniteEx node) {
             return node.context().security().securityContext().subject().id();
+        }
+
+        /**
+         * @param msg Error message.
+         */
+        private void error(String msg) {
+            errors.add(msg);
         }
     }
 
@@ -341,7 +385,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             run();
 
             if (k instanceof Cache.Entry)
-                return (V) ((Cache.Entry)k).getValue();
+                return (V)((Cache.Entry)k).getValue();
 
             return null;
         }

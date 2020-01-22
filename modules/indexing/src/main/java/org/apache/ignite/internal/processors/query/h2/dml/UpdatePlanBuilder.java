@@ -690,7 +690,7 @@ public final class UpdatePlanBuilder {
                             return ctor0.newInstance();
                         }
                         catch (Exception e) {
-                            if (S.INCLUDE_SENSITIVE)
+                            if (S.includeSensitive())
                                 throw new IgniteCheckedException("Failed to instantiate " +
                                     (key ? "key" : "value") + " [type=" + typeName + ']', e);
                             else
@@ -709,7 +709,7 @@ public final class UpdatePlanBuilder {
                             return GridUnsafe.allocateInstance(cls);
                         }
                         catch (InstantiationException e) {
-                            if (S.INCLUDE_SENSITIVE)
+                            if (S.includeSensitive())
                                 throw new IgniteCheckedException("Failed to instantiate " +
                                     (key ? "key" : "value") + " [type=" + typeName + ']', e);
                             else

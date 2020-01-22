@@ -569,8 +569,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         private class BadJob : IComputeJob<object>, IBinarizable
         {
-            [InstanceResource]
-
             /** <inheritDoc /> */
             public object Execute()
             {

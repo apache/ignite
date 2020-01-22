@@ -195,9 +195,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var client = (IgniteClient) Client;
 
             // Create cache directly through a socket with only some config properties provided.
-            client.Socket.DoOutInOp<object>(ClientOp.CacheCreateWithConfiguration, s =>
+            client.Socket.DoOutInOp<object>(ClientOp.CacheCreateWithConfiguration, ctx =>
             {
-                var w = client.Marshaller.StartMarshal(s);
+                var w = ctx.Writer;
 
                 w.WriteInt(2 + 2 + 6 + 2 + 4);  // config length in bytes.
 
