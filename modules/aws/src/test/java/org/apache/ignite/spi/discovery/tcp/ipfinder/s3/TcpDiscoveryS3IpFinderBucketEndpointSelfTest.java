@@ -19,12 +19,16 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * TcpDiscoveryS3IpFinder tests bucket endpoint for IP finder.
  * For information about possible endpoint names visit
  * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>.
  */
+@RunWith(JUnit4.class)
 public class TcpDiscoveryS3IpFinderBucketEndpointSelfTest extends TcpDiscoveryS3IpFinderAbstractSelfTest {
     /**
      * Constructor.
@@ -49,6 +53,7 @@ public class TcpDiscoveryS3IpFinderBucketEndpointSelfTest extends TcpDiscoveryS3
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }

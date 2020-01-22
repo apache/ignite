@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +57,7 @@ class MvccPreviousCoordinatorQueries {
      * @param nodes Cluster nodes.
      * @param mgr Discovery manager.
      */
-    void init(Map<UUID, GridLongList> nodeQueries, Collection<ClusterNode> nodes, GridDiscoveryManager mgr) {
+    void init(GridLongList nodeQueries, Collection<ClusterNode> nodes, GridDiscoveryManager mgr) {
         synchronized (this) {
             assert !initDone;
             assert waitNodes == null;
@@ -66,18 +65,14 @@ class MvccPreviousCoordinatorQueries {
             waitNodes = new HashSet<>();
 
             for (ClusterNode node : nodes) {
-                if ((nodeQueries == null || !nodeQueries.containsKey(node.id())) &&
-                    mgr.alive(node) &&
-                    !F.contains(rcvd, node.id()))
+                if (!node.isLocal() && mgr.alive(node) && !F.contains(rcvd, node.id()))
                     waitNodes.add(node.id());
             }
 
             initDone = waitNodes.isEmpty();
 
-            if (nodeQueries != null) {
-                for (Map.Entry<UUID, GridLongList> e : nodeQueries.entrySet())
-                    mergeToActiveQueries(e.getKey(), e.getValue());
-            }
+            if (nodeQueries != null)
+                mergeToActiveQueries(mgr.localNode().id(), nodeQueries);
 
             if (initDone && !prevQueriesDone)
                 prevQueriesDone = activeQueries.isEmpty() && rcvdAcks.isEmpty();

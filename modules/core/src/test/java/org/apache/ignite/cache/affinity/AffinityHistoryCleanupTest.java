@@ -31,27 +31,23 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[4];
 
@@ -81,6 +77,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityHistoryCleanup() throws Exception {
         String histProp = System.getProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
 
@@ -115,8 +112,8 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
                 topVer(2, 1), // FullHistSize = 3.
                 topVer(3, 0), // FullHistSize = 4.
                 topVer(3, 1), // FullHistSize = 5.
-                topVer(4, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(4, 1)), // FullHistSize = 5.
+                topVer(4, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(4, 1)), // FullHistSize = 6 - 1 = 5.
                 5);
 
             client = true;
@@ -126,11 +123,13 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             stopGrid(4);
 
             checkHistory(ignite, F.asList(
+                topVer(2, 1), // FullHistSize = 3.
+                topVer(3, 0), // FullHistSize = 4.
                 topVer(3, 1), // FullHistSize = 5.
-                topVer(4, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(4, 1), // FullHistSize = 5.
-                topVer(5, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(6, 0)), // FullHistSize = 5.
+                topVer(4, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(4, 1), // FullHistSize = 6 - 1 = 5.
+                topVer(5, 0), // Client event -> FullHistSize = 5.
+                topVer(6, 0)), // Client event -> FullHistSize = 5.
                 5);
 
             startGrid(4);
@@ -138,11 +137,15 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             stopGrid(4);
 
             checkHistory(ignite, F.asList(
-                topVer(4, 1), // FullHistSize = 5.
-                topVer(5, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(6, 0), // FullHistSize = 5.
-                topVer(7, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(8, 0)), // FullHistSize = 5.
+                topVer(2, 1), // FullHistSize = 3.
+                topVer(3, 0), // FullHistSize = 4.
+                topVer(3, 1), // FullHistSize = 5.
+                topVer(4, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(4, 1), // FullHistSize = 6 - 1 = 5.
+                topVer(5, 0), // Client event -> FullHistSize = 5.
+                topVer(6, 0), // Client event -> FullHistSize = 5.
+                topVer(7, 0), // Client event -> FullHistSize = 5.
+                topVer(8, 0)), // Client event -> FullHistSize = 5.
                 5);
 
             startGrid(4);
@@ -150,11 +153,17 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             stopGrid(4);
 
             checkHistory(ignite, F.asList(
-                topVer(6, 0), // FullHistSize = 5.
-                topVer(7, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(8, 0), // FullHistSize = 5.
-                topVer(9, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(10, 0)), // FullHistSize = 5.
+                topVer(2, 1), // FullHistSize = 3.
+                topVer(3, 0), // FullHistSize = 4.
+                topVer(3, 1), // FullHistSize = 5.
+                topVer(4, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(4, 1), // FullHistSize = 6 - 1 = 5.
+                topVer(5, 0), // Client event -> FullHistSize = 5.
+                topVer(6, 0), // Client event -> FullHistSize = 5.
+                topVer(7, 0), // Client event -> FullHistSize = 5.
+                topVer(8, 0), // Client event -> FullHistSize = 5.
+                topVer(9, 0), // Client event -> FullHistSize = 5.
+                topVer(10, 0)), // Client event -> FullHistSize = 5.
                 5);
 
             client = false;
@@ -162,13 +171,30 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             startGrid(4);
 
             checkHistory(ignite, F.asList(
-                topVer(8, 0), // FullHistSize = 5.
-                topVer(9, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(10, 0), // FullHistSize = 5.
-                topVer(11, 0), // FullHistSize = (6 - IGNITE_AFFINITY_HISTORY_SIZE(5)/2) = 4.
-                topVer(11, 1)), // FullHistSize = 5.
+                topVer(3, 1), // FullHistSize = 5.
+                topVer(4, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(4, 1), // FullHistSize = 6 - 1 = 5.
+                topVer(5, 0), // Client event -> FullHistSize = 5.
+                topVer(6, 0), // Client event -> FullHistSize = 5.
+                topVer(7, 0), // Client event -> FullHistSize = 5.
+                topVer(8, 0), // Client event -> FullHistSize = 5.
+                topVer(9, 0), // Client event -> FullHistSize = 5.
+                topVer(10, 0), // Client event -> FullHistSize = 5.
+                topVer(11, 0), // FullHistSize = 6 - 1 = 5.
+                topVer(11, 1)), // FullHistSize = 6 - 1 = 5.
                 5);
-        }
+
+            stopGrid(4);
+
+            startGrid(4);
+
+        checkHistory(ignite, F.asList(
+            topVer(11, 0), // FullHistSize = 5.
+            topVer(11,1), // FullHistSize = 5.
+            topVer(12, 0), // FullHistSize = 6 - 1 =5.
+            topVer(13, 0), // FullHistSize = 5.
+            topVer(13, 1)), // FullHistSize = 6 - 1 =5.
+            5);}
         finally {
             if (histProp != null)
                 System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, histProp);
@@ -193,7 +219,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
         for (GridCacheContext cctx : proc.context().cacheContexts()) {
             GridAffinityAssignmentCache aff = GridTestUtils.getFieldValue(cctx.affinity(), "aff");
 
-            AtomicInteger fullHistSize = GridTestUtils.getFieldValue(aff, "fullHistSize");
+            AtomicInteger fullHistSize = GridTestUtils.getFieldValue(aff, "nonShallowHistSize");
 
             assertEquals(expSize, fullHistSize.get());
 

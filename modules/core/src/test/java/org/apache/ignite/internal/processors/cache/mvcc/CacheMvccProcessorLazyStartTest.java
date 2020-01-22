@@ -23,11 +23,15 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for a lazy MVCC processor start.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
@@ -37,6 +41,7 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreconfiguredCacheMvccNotStarted() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 0, 1);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -60,6 +65,7 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreconfiguredCacheMvccStarted() throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(CacheMode.PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 0, 1);
 
@@ -82,6 +88,7 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccRestartedWithDynamicCache() throws Exception {
         persistence = true;
 
@@ -129,6 +136,7 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccStartedWithDynamicCache() throws Exception {
         IgniteEx node1 = startGrid(1);
         IgniteEx node2 = startGrid(2);

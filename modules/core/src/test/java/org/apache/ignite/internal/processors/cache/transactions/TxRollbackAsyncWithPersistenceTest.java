@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 
 /**
@@ -52,6 +55,15 @@ public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
         super.afterTest();
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testSynchronousRollback() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10785");
+
+        super.testSynchronousRollback();
     }
 }
 

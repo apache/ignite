@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -30,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Range request.
  */
+@IgniteCodeGeneratingFail
 public class GridH2IndexRangeRequest implements Message {
     /** */
     private UUID originNodeId;

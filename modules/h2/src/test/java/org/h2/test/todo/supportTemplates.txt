@@ -1,0 +1,251 @@
+Old issue tracking
+
+Please send a question to the H2 Google Group or StackOverflow first,
+and only then, once you are completely sure it is an issue, submit it here.
+The reason is that only very few people actively monitor the issue tracker.
+
+Before submitting a bug, please also check the FAQ:
+http://www.h2database.com/html/faq.html
+
+What steps will reproduce the problem?
+(simple SQL scripts or simple standalone applications are preferred)
+1.
+2.
+3.
+
+What is the expected output? What do you see instead?
+
+
+What version of the product are you using? On what operating system, file
+system, and virtual machine?
+
+
+Do you know a workaround?
+
+What is your use case, meaning why do you need this feature?
+
+How important/urgent is the problem for you?
+
+Please provide any additional information below.
+
+------------------
+Benchmark:
+
+Hi,
+
+If you are running benchmarks, could you profile them please? To do that use java -Xrunhprof:cpu=samples,depth=8 ... - and then upload/post the file java.hprof.txt
+
+If the benchmark application is not a self contained application, another way is to generate 'full thread dumps' (maybe 30 or so) while running the benchmark, and upload them? To get a full thread dump, you can use "kill -QUIT <pid>", or (Windows) press Ctrl+Pause, or (Java 1.6) use jps -l to get the <pid>, and then use jstack <pid>.
+
+Regards,
+Thomas
+
+-----------------
+
+Can not reproduce:
+
+Hi,
+
+Sorry I can not reproduce this problem. Could you post a simple, standalone test case that reproduces the problem? It would be great if the test case does not have any dependencies except the H2 jar file (that is, a simple SQL script that can be run in the H2 Console, or a Java class uses the JDBC API and is run using a static main method). If the test case does have dependencies it would help a lot if you upload them somewhere (for example Rapidshare.com). Please include any initialization code (CREATE TABLE, INSERT and so on) in the Java class or in a .sql script file.
+
+Regards,
+Thomas
+
+-----------------
+
+Defect report:
+
+What steps will reproduce the problem?
+(simple SQL scripts or simple standalone applications are preferred)
+1.
+2.
+3.
+
+What is the expected output? What do you see instead?
+
+
+What version of the product are you using? On what operating system, file system, and virtual machine?
+
+
+Do you know a workaround?
+
+How important/urgent is the problem for you?
+
+In your view, is this a defect or a feature request?
+
+Please provide any additional information below.
+
+-----------------
+Hi,
+
+This looks like a corrupt database. To recover the data, use the tool org.h2.tools.Recover to create the SQL script file, and then re-create the database using this script. Does it work when you do this?
+
+With version 1.3.171 and older: when using local temporary tables and not dropping them manually before closing the session, and then killing the process could result in a database that couldn't be opened.
+
+With version 1.3.162 and older: on out of disk space, the database can get corrupt sometimes, if later write operations succeed. The same problem happens on other kinds of I/O exceptions (where one or some of the writes fail, but subsequent writes succeed). Now the file is closed on the first unsuccessful write operation, so that later requests fail consistently.
+
+Important corruption problems were fixed in version 1.2.135 and version 1.2.140 (see the change log). Known causes for corrupt databases are: if the database was created or used with a version older than 1.2.135, and the process was killed while the database was closing or writing a checkpoint. Using the transaction isolation level READ_UNCOMMITTED (LOCK_MODE 0) while at the same time using multiple connections. Disabling database file protection using (setting FILE_LOCK to NO in the database URL). Some other areas that are not fully tested are: Platforms other than Windows XP, Linux, Mac OS X, or JVMs other than Sun 1.5 or 1.6; the feature MULTI_THREADED; the features AUTO_SERVER and AUTO_RECONNECT; the file locking method 'Serialized'.
+
+I am very interested in analyzing and solving this problem. Corruption problems have top priority for me. I have a few questions:
+
+- What is your database URL?
+- Did you use LOG=0 or LOG=1? Did you read the FAQ about it?
+- Did the system ever run out of disk space?
+- Could you send the full stack trace of the exception including message text?
+- Did you use SHUTDOWN DEFRAG or the database setting DEFRAG_ALWAYS with H2 version 1.3.159 or older?
+- How many connections does your application use concurrently?
+- Do you use temporary tables?
+- With which version of H2 was this database created?
+    You can find it out using:
+    select * from information_schema.settings where name='CREATE_BUILD'
+    or have a look in the SQL script created by the recover tool.
+- Did the application run out of memory (once, or multiple times)?
+- Do you use any settings or special features (for example cache settings,
+    two phase commit, linked tables)?
+- Do you use any H2-specific system properties?
+- Is the application multi-threaded?
+- What operating system, file system, and virtual machine
+    (java -version) do you use?
+- How did you start the Java process (java -Xmx... and so on)?
+- Is it (or was it at some point) a networked file system?
+- How big is the database (file sizes)?
+- How much heap memory does the Java process have?
+- Is the database usually closed normally, or is process terminated
+    forcefully or the computer switched off?
+- Is it possible to reproduce this problem using a fresh database
+    (sometimes, or always)?
+- Are there any other exceptions (maybe in the .trace.db file)?
+    Could you send them please?
+- Do you still have any .trace.db files, and if yes could you send them?
+- Could you send the .h2.db file where this exception occurs?
+
+Regards,
+Thomas
+
+-----------------
+
+
+This looks like a serious problem. I have a few questions:
+
+- Could you send the full stack trace of the exception including message text?
+- What is your database URL?
+- Did you use multiple connections?
+- Do you use temporary tables?
+- A workarounds is: use the tool org.h2.tools.Recover to create
+    the SQL script file, and then re-create the database using this script.
+    Does it work when you do this?
+- With which version of H2 was this database created?
+    You can find it out using:
+    select * from information_schema.settings where name='CREATE_BUILD'
+    or have a look in the SQL script created by the recover tool.
+- Did the application run out of memory (once, or multiple times)?
+- Do you use any settings or special features (for example cache settings,
+    two phase commit, linked tables)?
+- Do you use any H2-specific system properties?
+- Is the application multi-threaded?
+- What operating system, file system, and virtual machine
+    (java -version) do you use?
+- How did you start the Java process (java -Xmx... and so on)?
+- Is it (or was it at some point) a networked file system?
+- How big is the database (file sizes)?
+- How much heap memory does the Java process have?
+- Is the database usually closed normally, or is process terminated
+    forcefully or the computer switched off?
+- Is it possible to reproduce this problem using a fresh database
+    (sometimes, or always)?
+- Are there any other exceptions (maybe in the .trace.db file)?
+    Could you send them please?
+- Do you still have any .trace.db files, and if yes could you send them?
+- Could you send the .h2.db file where this exception occurs?
+
+-----------------
+
+
+Hi,
+
+I have a few questions:
+
+- The database URL?
+- With which version of H2 was this database created?
+    You can find it out using:
+    select * from information_schema.settings where name='CREATE_BUILD'
+- Did the application run out of memory (once, or multiple times)?
+- Did you use multiple connections?
+- Do you use any settings or special features (for example, the setting
+    LOG=0, or two phase commit, linked tables, cache settings)?
+- Is the application multi-threaded?
+- What operating system, file system, and virtual machine
+    (java -version) do you use?
+- How big is the database (file sizes)?
+- Is the database usually closed normally, or is process terminated
+    forcefully or the computer switched off?
+- Are there any other exceptions (maybe in the .trace.db file)?
+    Could you send them please?
+- Do you still have any .trace.db files, and if yes could you send them?
+- Could you send the .h2.db file where this exception occurs?
+
+
+
+
+Corrupted database
+
+I am sorry to say that, but it looks like a corruption problem. I am very interested in analyzing and solving this problem. Corruption problems have top priority for me. I have a few questions:
+
+- Could you send the full stack trace of the exception including message text?
+- What is your database URL?
+- Do you use Tomcat or another web server?
+    Do you unload or reload the web application?
+- You can find out if the database is corrupted when running
+    SCRIPT TO 'test.sql'
+- What version H2 are you using?
+- Did you use multiple connections?
+- The first workarounds is: append ;RECOVER=1 to the database URL.
+    Does it work when you do this?
+- The second workarounds is: delete the index.db file (it is re-created
+    automatically) and try again. Does it work when you do this?
+- The third workarounds is: use the tool org.h2.tools.Recover to create
+    the SQL script file, and then re-create the database using this script.
+    Does it work when you do this?
+- With which version of H2 was this database created?
+    You can find it out using:
+    select * from information_schema.settings where name='CREATE_BUILD'
+- Did the application run out of memory (once, or multiple times)?
+- Do you use any settings or special features (for example, the setting
+    LOG=0, or two phase commit, linked tables, cache settings)?
+- Is the application multi-threaded?
+- What operating system, file system, and virtual machine
+    (java -version) do you use?
+- Is it (or was it at some point) a networked file system?
+- How big is the database (file sizes)?
+- Is the database usually closed normally, or is process terminated
+    forcefully or the computer switched off?
+- Is it possible to reproduce this problem using a fresh database
+    (sometimes, or always)?
+- Are there any other exceptions (maybe in the .trace.db file)?
+    Could you send them please?
+- Do you still have any .trace.db files, and if yes could you send them?
+- Could you send the .data.db file where this exception occurs?
+
+
+
+Hi,
+
+I have a few questions:
+
+- The database URL?
+- With which version of H2 was this database created?
+    You can find it out using:
+    select * from information_schema.settings where name='CREATE_BUILD'
+- Did you use multiple connections?
+- Do you use any settings or special features (for example, the setting
+    LOG=0, or two phase commit, linked tables, cache settings)?
+- Is the application multi-threaded?
+- What operating system, file system, and virtual machine
+    (java -version) do you use?
+- How big is the database (file sizes)?
+- Is the database usually closed normally, or is process terminated
+    forcefully or the computer switched off?
+- Are there any other exceptions (maybe in the .trace.db file)?
+    Could you send them please?
+- Do you still have any .trace.db files, and if yes could you send them?
+- Could you send the .h2.db file where this exception occurs?

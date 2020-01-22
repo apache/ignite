@@ -32,17 +32,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link SqlFieldsQueryEx#skipReducerOnUpdate} flag.
  */
+@RunWith(JUnit4.class)
 public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static int NODE_COUNT = 4;
 
@@ -70,12 +69,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -189,6 +182,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
@@ -201,6 +195,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateFastKey() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
@@ -214,6 +209,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateLimit() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
@@ -227,6 +223,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateWhereSubquery() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, -100);
 
@@ -245,6 +242,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateSetSubquery() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
@@ -262,6 +260,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateSetTableSubquery() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
@@ -279,6 +278,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertValues() throws Exception {
         String text = "INSERT INTO \"acc\".Account (_key, name, sn, depo)" +
             " VALUES (?, ?, ?, ?), (?, ?, ?, ?)";
@@ -291,6 +291,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertFromSelect() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
 
@@ -307,6 +308,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertFromSelectOrderBy() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
 
@@ -324,6 +326,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertFromSelectUnion() throws Exception {
         Map<Integer, Account> accounts = getAccounts(20, 1, 1000);
 
@@ -342,6 +345,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertFromSelectGroupBy() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);
@@ -362,6 +366,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertFromSelectDistinct() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 2, 100);
 
@@ -378,6 +383,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsertFromSelectJoin() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
         Map<Integer, Stock> stocks = getStocks(5);
@@ -397,6 +403,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelete() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
@@ -412,6 +419,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteTop() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
 
@@ -427,6 +435,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteWhereSubquery() throws Exception {
         Map<Integer, Account> accounts = getAccounts(20, 1, 100);
         Map<Integer, Trade> trades = getTrades(10, 2);
@@ -445,6 +454,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeValues() throws Exception {
         Map<Integer, Account> accounts = getAccounts(1, 1, 100);
 
@@ -459,6 +469,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeFromSelectJoin() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 100);
         Map<Integer, Stock> stocks = getStocks(5);
@@ -482,6 +493,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeFromSelectOrderBy() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
 
@@ -503,6 +515,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMergeFromSelectGroupBy() throws Exception {
         Map<Integer, Account> accounts = getAccounts(100, 1, 1000);
         Map<Integer, Trade> trades = getTrades(100, 2);

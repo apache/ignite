@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-import {UIRouter} from '@uirouter/angularjs';
+import publicTemplate from '../../../views/public.pug';
+import {UIRouter, StateParams} from '@uirouter/angularjs';
 import {IIgniteNg1StateDeclaration} from 'app/types';
+
+export type PageSigninStateParams = StateParams & {activationToken?: string};
 
 export function registerState($uiRouter: UIRouter) {
     const state: IIgniteNg1StateDeclaration = {
-        url: '/signin',
+        url: '/signin?{activationToken:string}',
         name: 'signin',
-        component: 'pageSignin',
+        views: {
+            '': {
+                template: publicTemplate
+            },
+            'page@signin': {
+                component: 'pageSignin'
+            }
+        },
         unsaved: true,
         redirectTo: (trans) => {
             const skipStates = new Set(['signup', 'forgotPassword', 'landing']);
@@ -46,6 +56,11 @@ export function registerState($uiRouter: UIRouter) {
         },
         tfMetaTags: {
             title: 'Sign In'
+        },
+        resolve: {
+            activationToken() {
+                return $uiRouter.stateService.transition.params<PageSigninStateParams>().activationToken;
+            }
         }
     };
 

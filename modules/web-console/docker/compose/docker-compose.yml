@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-version: 1
+version: '3'
 
 services:
   mongodb:
@@ -50,7 +50,6 @@ services:
     image: apacheignite/web-console-frontend
     depends_on:
       - mongodb
-      - testenv
     ports:
       # Proxy HTTP nginx port (HOST_PORT:DOCKER_PORT)
       - 80:80

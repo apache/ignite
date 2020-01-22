@@ -34,6 +34,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG;
@@ -45,6 +48,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALL
  * This class tests that parser confirms memcache extended specification.
  */
 @SuppressWarnings("TypeMayBeWeakened")
+@RunWith(JUnit4.class)
 public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
     private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
@@ -58,6 +62,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimplePacketParsing() throws Exception {
         GridNioSession ses = new MockNioSession();
 
@@ -93,6 +98,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncorrectPackets() throws Exception {
         final GridNioSession ses = new MockNioSession();
 
@@ -142,6 +148,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomMessages() throws Exception {
         GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
@@ -178,6 +185,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMixedParsing() throws Exception {
         GridNioSession ses1 = new MockNioSession();
         GridNioSession ses2 = new MockNioSession();
@@ -247,6 +255,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParseContinuousSplit() throws Exception {
         ByteBuffer tmp = ByteBuffer.allocate(10 * 1024);
 
@@ -301,6 +310,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testParseClientHandshake() throws Exception {
         for (int splitPos = 1; splitPos < 5; splitPos++) {
             log.info("Checking split position: " + splitPos);

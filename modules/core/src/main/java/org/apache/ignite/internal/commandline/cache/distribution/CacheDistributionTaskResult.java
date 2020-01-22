@@ -294,10 +294,10 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
 
             Row other = (Row)o;
 
-            int res = grpId - other.grpId;
+            int res = Integer.compare(grpId, other.grpId);
 
             if (res == 0) {
-                res = partId - other.partId;
+                res = Integer.compare(partId, other.partId);
 
                 if (res == 0)
                     res = nodeId.compareTo(other.nodeId);

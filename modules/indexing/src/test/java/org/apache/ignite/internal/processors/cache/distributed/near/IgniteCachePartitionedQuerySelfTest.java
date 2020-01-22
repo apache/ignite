@@ -41,6 +41,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -67,6 +68,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQuery() throws Exception {
         Person p1 = new Person("Jon", 1500);
         Person p2 = new Person("Jane", 2000);
@@ -106,6 +108,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesQuery() throws Exception {
         Person p1 = new Person("Jon", 1500);
         Person p2 = new Person("Jane", 2000);
@@ -154,6 +157,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryPagination() throws Exception {
         final int pageSize = 5;
 

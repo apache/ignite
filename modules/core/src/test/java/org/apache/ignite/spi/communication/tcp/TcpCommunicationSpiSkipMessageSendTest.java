@@ -48,10 +48,14 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that the client will be segmented in time and won't hang due to canceling compute jobs.
  */
+@RunWith(JUnit4.class)
 public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTest {
     /** */
     private static final CountDownLatch COMPUTE_JOB_STARTED = new CountDownLatch(1);
@@ -105,6 +109,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientSegmented() throws Exception {
         startGrid("server");
 

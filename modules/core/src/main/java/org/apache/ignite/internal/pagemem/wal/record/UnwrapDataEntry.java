@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Data Entry for automatic unwrapping key and value from Data Entry
  */
-public class UnwrapDataEntry extends DataEntry {
+public class UnwrapDataEntry extends DataEntry implements UnwrappedDataEntry {
     /** Cache object value context. Context is used for unwrapping objects. */
     private final CacheObjectValueContext cacheObjValCtx;
 
@@ -64,13 +64,8 @@ public class UnwrapDataEntry extends DataEntry {
         this.keepBinary = keepBinary;
     }
 
-    /**
-     * Unwraps key value from cache key object into primitive boxed type or source class. If client classes were used
-     * in key, call of this method requires classes to be available in classpath.
-     *
-     * @return Key which was placed into cache. Or null if failed to convert.
-     */
-    public Object unwrappedKey() {
+    /** {@inheritDoc} */
+    @Override public Object unwrappedKey() {
         try {
             if (keepBinary && key instanceof BinaryObject)
                 return key;
@@ -93,13 +88,8 @@ public class UnwrapDataEntry extends DataEntry {
         }
     }
 
-    /**
-     * Unwraps value value from cache value object into primitive boxed type or source class. If client classes were
-     * used in key, call of this method requires classes to be available in classpath.
-     *
-     * @return Value which was placed into cache. Or null for delete operation or for failure.
-     */
-    public Object unwrappedValue() {
+    /** {@inheritDoc} */
+    @Override public Object unwrappedValue() {
         try {
             if (val == null)
                 return null;

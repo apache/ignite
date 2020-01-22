@@ -33,21 +33,21 @@ import org.apache.ignite.internal.processors.cache.WalStateManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Check Tx state recovery from WAL.
  */
+@RunWith(JUnit4.class)
 public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
@@ -63,7 +63,6 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(FINDER))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(100_000_000L)
@@ -88,6 +87,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedRollback() throws Exception {
         checkSingleNodeRestart(true, false, true);
     }
@@ -95,6 +95,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedRollbackRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(true, true, true);
     }
@@ -102,6 +103,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedCommit() throws Exception {
         checkSingleNodeRestart(false, false, true);
     }
@@ -109,6 +111,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeTxMissedCommitRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(false, true, true);
     }
@@ -116,6 +119,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeRollbackedTxRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(true, true, false);
     }
@@ -123,6 +127,7 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testSingleNodeCommitedTxRecoverFromWAL() throws Exception {
         checkSingleNodeRestart(false, true, false);
     }
@@ -208,9 +213,9 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10219")
+    @Test
     public void testLostRollbackOnBackup() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10219");
-
         IgniteEx node = startGrid(0);
 
         startGrid(1);

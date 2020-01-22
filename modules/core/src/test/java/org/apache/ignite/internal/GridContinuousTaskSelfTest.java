@@ -55,11 +55,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Continuous task test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int JOB_COUNT = 10;
@@ -70,6 +74,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsChain() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -89,6 +94,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsChainMultiThreaded() throws Exception {
         try {
             final Ignite ignite = startGrid(0);
@@ -121,6 +127,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsSessionChain() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -137,6 +144,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousSlowMap() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -154,6 +162,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testClearTimeouts() throws Exception {
         int holdccTimeout = 4000;
 
@@ -176,6 +185,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleHoldccCalls() throws Exception {
         try {
             Ignite grid = startGrid(0);
@@ -190,6 +200,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testClosureWithNestedInternalTask() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);

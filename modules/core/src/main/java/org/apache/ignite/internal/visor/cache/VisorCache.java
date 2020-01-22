@@ -91,6 +91,9 @@ public class VisorCache extends VisorDataTransferObject {
     /** Cache system state. */
     private boolean sys;
 
+    /** Checks whether statistics collection is enabled in this cache. */
+    private boolean statisticsEnabled;
+
     /**
      * Create data transfer object for given cache.
      */
@@ -119,7 +122,7 @@ public class VisorCache extends VisorDataTransferObject {
         backupSize = ca.localSizeLong(PEEK_ONHEAP_BACKUP);
         nearSize = ca.nearSize();
         size = primarySize + backupSize + nearSize;
-        
+
         partitions = ca.affinity().partitions();
         near = cctx.isNear();
 
@@ -127,6 +130,8 @@ public class VisorCache extends VisorDataTransferObject {
             metrics = new VisorCacheMetrics(ignite, name);
 
         sys = ignite.context().cache().systemCache(name);
+
+        statisticsEnabled = ca.clusterMetrics().isStatisticsEnabled();
     }
 
     /**
@@ -278,9 +283,16 @@ public class VisorCache extends VisorDataTransferObject {
         return metrics != null ? metrics.getOffHeapEntriesCount() : 0L;
     }
 
+    /**
+     * @return Checks whether statistics collection is enabled in this cache.
+     */
+    public boolean isStatisticsEnabled() {
+        return statisticsEnabled;
+    }
+
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V2;
+        return V3;
     }
 
     /** {@inheritDoc} */
@@ -298,6 +310,7 @@ public class VisorCache extends VisorDataTransferObject {
         out.writeBoolean(near);
         out.writeObject(metrics);
         out.writeBoolean(sys);
+        out.writeBoolean(statisticsEnabled);
     }
 
     /** {@inheritDoc} */
@@ -316,6 +329,9 @@ public class VisorCache extends VisorDataTransferObject {
         metrics = (VisorCacheMetrics)in.readObject();
 
         sys = protoVer > V1 ? in.readBoolean() : metrics != null && metrics.isSystem();
+
+        if (protoVer > V2)
+            statisticsEnabled = in.readBoolean();
     }
 
     /** {@inheritDoc} */

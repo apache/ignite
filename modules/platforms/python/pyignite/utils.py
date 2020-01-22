@@ -16,6 +16,7 @@
 from functools import wraps
 from typing import Any, Type, Union
 
+from pyignite.datatypes.base import IgniteDataType
 from .constants import *
 
 
@@ -47,11 +48,14 @@ def is_hinted(value):
     return (
         isinstance(value, tuple)
         and len(value) == 2
-        and isinstance(value[1], object)
+        and issubclass(value[1], IgniteDataType)
     )
 
 
 def is_wrapped(value: Any) -> bool:
+    """
+    Check if a value is of WrappedDataObject type.
+    """
     return (
         type(value) is tuple
         and len(value) == 2

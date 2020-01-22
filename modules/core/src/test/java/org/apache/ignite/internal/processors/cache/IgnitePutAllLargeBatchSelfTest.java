@@ -30,10 +30,14 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -42,6 +46,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 /**
  * Tests putAll method with large number of keys.
  */
+@RunWith(JUnit4.class)
 public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;
@@ -51,6 +56,13 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
     /** Backups. */
     private int backups = 1;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -79,6 +91,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticOneBackupPartitioned() throws Exception {
         backups = 1;
 
@@ -88,6 +101,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticOneBackupNear() throws Exception {
         backups = 1;
 
@@ -97,6 +111,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticOneBackupPartitioned() throws Exception {
         backups = 1;
 
@@ -106,6 +121,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticOneBackupNear() throws Exception {
         backups = 1;
 
@@ -115,6 +131,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticTwoBackupsPartitioned() throws Exception {
         backups = 2;
 
@@ -124,6 +141,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticTwoBackupsNear() throws Exception {
         backups = 2;
 
@@ -133,6 +151,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticTwoBackupsPartitioned() throws Exception {
         backups = 2;
 
@@ -142,6 +161,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticTwoBackupsNear() throws Exception {
         backups = 2;
 
@@ -236,6 +256,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValuePartitionedOneBackup() throws Exception {
         backups = 1;
         nearEnabled = false;
@@ -246,6 +267,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValuePartitionedTwoBackups() throws Exception {
         backups = 2;
         nearEnabled = false;
@@ -256,6 +278,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValueNearOneBackup() throws Exception {
         backups = 1;
         nearEnabled = true;
@@ -266,6 +289,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValueNearTwoBackups() throws Exception {
         backups = 2;
         nearEnabled = true;

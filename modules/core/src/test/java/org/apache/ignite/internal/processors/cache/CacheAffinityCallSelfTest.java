@@ -33,11 +33,12 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -45,6 +46,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Test for {@link IgniteCompute#affinityCall(String, Object, IgniteCallable)} and
  * {@link IgniteCompute#affinityRun(String, Object, IgniteRunnable)}.
  */
+@RunWith(JUnit4.class)
 public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "myCache";
@@ -52,18 +54,9 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 4;
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
         cfg.setFailoverSpi(failSpi);
@@ -72,7 +65,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         if (igniteInstanceName.equals(getTestIgniteInstanceName(SRVS))) {
             cfg.setClientMode(true);
 
-            spi.setForceServerMode(true);
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
         else {
             CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -89,6 +82,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallRestartNode() throws Exception {
         startGridsMultiThreaded(SRVS);
 
@@ -98,6 +92,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallFromClientRestartNode() throws Exception {
         startGridsMultiThreaded(SRVS + 1);
 
@@ -146,6 +141,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCallNoServerNode() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-1741");
 

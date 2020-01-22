@@ -46,23 +46,24 @@ public class MavenUtils {
     private static boolean useGgRepo;
 
     /**
-     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactName}.
+     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
      * <br>
      * At first, artifact is looked for in the Maven local repository, if it isn't exists there, it will be downloaded
      * and stored via Maven.
      * <br>
-     * @param groupName group name, e.g. 'org.apache.ignite'.
+     *
+     * @param groupId group name, e.g. 'org.apache.ignite'.
      * @param ver Version of ignite or 3rd party library artifact.
      * @param classifier Artifact classifier.
      * @return Path to the artifact.
      * @throws Exception In case of an error.
      * @see #getPathToArtifact(String)
      */
-    public static String getPathToIgniteArtifact(@NotNull String groupName,
-        @NotNull String artifactName, @NotNull String ver,
+    public static String getPathToIgniteArtifact(@NotNull String groupId,
+        @NotNull String artifactId, @NotNull String ver,
         @Nullable String classifier) throws Exception {
-        String artifact = groupName +
-            ":" + artifactName + ":" + ver;
+        String artifact = groupId +
+            ":" + artifactId + ":" + ver;
 
         if (classifier != null)
             artifact += ":jar:" + classifier;
@@ -213,6 +214,6 @@ public class MavenUtils {
         if (m2Home == null)
             return "mvn";
 
-        return m2Home + "/bin/mvn" ;
+        return m2Home + "/bin/mvn";
     }
 }

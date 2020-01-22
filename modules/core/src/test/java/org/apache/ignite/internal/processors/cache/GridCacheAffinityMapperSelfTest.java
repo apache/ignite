@@ -24,10 +24,14 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test affinity mapper.
  */
+@RunWith(JUnit4.class)
 public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -37,6 +41,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testMethodAffinityMapper() {
         AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
@@ -63,6 +68,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFieldAffinityMapper() {
         AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
@@ -89,6 +95,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testFieldAffinityMapperWithWrongClass() {
         AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();

@@ -204,7 +204,9 @@ namespace Apache.Ignite.Linq.Impl
                 PageSize = _options.PageSize,
                 EnforceJoinOrder = _options.EnforceJoinOrder,
                 Timeout = _options.Timeout,
+#pragma warning disable 618
                 ReplicatedOnly = _options.ReplicatedOnly,
+#pragma warning restore 618
                 Colocated = _options.Colocated,
                 Local = _options.Local,
                 Arguments = args,

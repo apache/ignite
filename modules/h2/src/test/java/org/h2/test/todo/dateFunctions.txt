@@ -1,0 +1,10 @@
+h2
+update FOO set a = dateadd('second', 4320000, a);
+ms sql server
+update FOO set a = dateadd(s, 4320000, a);
+mysql
+update FOO set a = date_add(a, interval 4320000 second);
+postgresql
+update FOO set a = a + interval '4320000 s';
+oracle
+update FOO set a = a + INTERVAL '4320000' SECOND;

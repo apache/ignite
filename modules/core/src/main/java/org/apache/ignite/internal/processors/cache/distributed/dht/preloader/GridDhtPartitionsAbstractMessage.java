@@ -118,14 +118,14 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /**
      * @return {@code True} if message data is compressed.
      */
-    protected final boolean compressed() {
+    public final boolean compressed() {
         return (flags & COMPRESSED_FLAG_MASK) != 0;
     }
 
     /**
      * @param compressed {@code True} if message data is compressed.
      */
-    protected final void compressed(boolean compressed) {
+    public final void compressed(boolean compressed) {
         flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
     }
 
@@ -145,7 +145,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */
@@ -163,19 +163,19 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
         }
 
         switch (writer.state()) {
-            case 2:
+            case 3:
                 if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 writer.incrementState();
 
-            case 3:
+            case 4:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
@@ -197,7 +197,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
             return false;
 
         switch (reader.state()) {
-            case 2:
+            case 3:
                 exchId = reader.readMessage("exchId");
 
                 if (!reader.isLastRead())
@@ -205,7 +205,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
                 reader.incrementState();
 
-            case 3:
+            case 4:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -213,7 +213,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 lastVer = reader.readMessage("lastVer");
 
                 if (!reader.isLastRead())

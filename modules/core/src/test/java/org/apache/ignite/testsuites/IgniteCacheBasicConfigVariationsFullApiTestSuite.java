@@ -20,16 +20,18 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsFullApiTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache API.
  */
-public class IgniteCacheBasicConfigVariationsFullApiTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheBasicConfigVariationsFullApiTestSuite {
     /**
      * @return Cache API test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return new ConfigVariationsTestSuiteBuilder(
             "Cache New Full API Test Suite",
             IgniteCacheConfigVariationsFullApiTest.class)

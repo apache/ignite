@@ -31,10 +31,10 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -43,10 +43,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 /**
  * Checks ordered preloading.
  */
+@RunWith(JUnit4.class)
 public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids in test. */
     private static final int GRID_CNT = 4;
 
@@ -86,12 +84,6 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
             cacheConfig(firstCacheMode, 1, FIRST_CACHE_NAME),
             cacheConfig(secondCacheMode, 2, SECOND_CACHE_NAME));
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         Map<IgnitePredicate<? extends Event>, int[]> listeners = new HashMap<>();
 
         listeners.put(new IgnitePredicate<CacheRebalancingEvent>() {
@@ -125,6 +117,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderPartitionedPartitioned() throws Exception {
         checkPreloadOrder(PARTITIONED, PARTITIONED);
     }
@@ -132,6 +125,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderReplicatedReplicated() throws Exception {
         checkPreloadOrder(REPLICATED, REPLICATED);
     }
@@ -139,6 +133,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderPartitionedReplicated() throws Exception {
         checkPreloadOrder(PARTITIONED, REPLICATED);
     }
@@ -146,6 +141,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadOrderReplicatedPartitioned() throws Exception {
         checkPreloadOrder(REPLICATED, PARTITIONED);
     }

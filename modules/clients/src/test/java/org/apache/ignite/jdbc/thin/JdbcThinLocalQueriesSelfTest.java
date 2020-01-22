@@ -23,10 +23,14 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test that replicated-only query is executed locally.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -47,6 +51,7 @@ public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
     /**
      *
      */
+    @Test
     public void testLocalThinJdbcQuery() throws SQLException {
         try (Connection c = connect(grid(0), "replicatedOnly=true")) {
             execute(c, "CREATE TABLE Company(id int primary key, name varchar) WITH " +

@@ -17,23 +17,26 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.stream.socket.SocketStreamerSelfTest;
 import org.apache.ignite.stream.socket.SocketStreamerUnmarshalVulnerabilityTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Stream test suite.
  */
-public class IgniteStreamSelfTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteStreamSelfTestSuite {
     /**
      * @return Stream tests suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Stream Test Suite");
 
-        suite.addTest(new TestSuite(SocketStreamerSelfTest.class));
-        suite.addTest(new TestSuite(SocketStreamerUnmarshalVulnerabilityTest.class));
+        suite.addTest(new JUnit4TestAdapter(SocketStreamerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(SocketStreamerUnmarshalVulnerabilityTest.class));
 
         return suite;
     }

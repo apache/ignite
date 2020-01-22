@@ -25,18 +25,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Base class for JSR-310 Java 8 Date and Time API queries tests.
  */
 public abstract class CacheQueryJsr310Java8DateTimeApiAbstractTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@link LocalTime} instance. */
     protected static final LocalTime LOCAL_TIME = LocalTime.now().minusHours(10);
 
@@ -52,16 +46,6 @@ public abstract class CacheQueryJsr310Java8DateTimeApiAbstractTest extends GridC
 
     /** {@link LocalDateTime} instance. */
     protected static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.of(LOCAL_DATE, LocalTime.MIDNIGHT);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        discoverySpi.setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
 
     /**
      * Creates a cache configuration with the specified cache name
