@@ -19,11 +19,13 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -165,7 +167,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
 
             try {
-                IgniteEx g = startGrid(1);
+                IgniteEx g = startClientGrid(1);
 
                 checkIsClientFlag(g);
 
@@ -227,7 +229,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
-                IgniteEx g = startGrid(1);
+                IgniteEx g = startClientGrid(1);
 
                 checkIsClientFlag(g);
 
@@ -318,7 +320,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(prop);
 
             try {
-                IgniteEx g = startGrid(1);
+                IgniteEx g = startClientGrid(1);
 
                 checkIsClientFlag(g);
 
@@ -352,7 +354,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         mode = CONTINUOUS;
 
         try {
-            startGrid(1);
+            startClientGrid(1);
 
             fail();
         }
@@ -374,13 +376,12 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         p2pEnabled = true;
 
         try {
-            startGrid(1);
+            startClientGrid(1);
 
             fail();
         }
-        catch (IgniteCheckedException e) {
-            if (!e.getCause().getMessage().startsWith("Remote node has peer class loading enabled flag different from"))
-                throw e;
+        catch (IgniteCheckedException | IgniteException e) {
+            assertTrue(X.hasCause(e, "Remote node has peer class loading enabled flag different from"));
         }
     }
 
@@ -394,7 +395,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         System.setProperty(PREFER_IPV4, val);
 
         for (int i = 0; i < 2; i++) {
-            Ignite g = startGrid(i);
+            Ignite g = i == 1 ? startClientGrid(i) : startGrid(i);
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
 
