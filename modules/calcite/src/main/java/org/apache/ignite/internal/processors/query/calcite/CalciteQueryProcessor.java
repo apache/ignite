@@ -403,13 +403,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
     }
 
-    public void onQueryStarted(UUID nodeId, UUID queryId, long fragmentId, Throwable error) {
-        QueryInfo info = running.get(queryId);
-
-        if (info != null)
-            info.onResponse(nodeId, fragmentId, error);
-    }
-
+    /**
+     * Cancels query execution.
+     *
+     * @param queryId Query ID.
+     */
     public void cancel(UUID queryId) {
         for (Outbox<?> node : locals.values()) {
             if (node.queryId().equals(queryId))
@@ -422,6 +420,21 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             info.cancel();
     }
 
+    /**
+     *
+     * @param nodeId Remote node ID.
+     * @param queryId Query ID.
+     * @param fragmentId Fragment ID.
+     * @param error Error.
+     */
+    public void onQueryStarted(UUID nodeId, UUID queryId, long fragmentId, @Nullable Throwable error) {
+        QueryInfo info = running.get(queryId);
+
+        if (info != null)
+            info.onResponse(nodeId, fragmentId, error);
+    }
+
+    /** */
     private void onClose(ConsumerNode consumer) {
         if (consumer.canceled())
             cancel(consumer.queryId());
