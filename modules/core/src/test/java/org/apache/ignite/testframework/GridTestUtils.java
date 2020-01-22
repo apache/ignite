@@ -2125,7 +2125,7 @@ public final class GridTestUtils {
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
-     * @param maxLen Maximal length of string
+     * @param maxLen Maximal length of string.
      * @return Random string object.
      */
     public static String randomString(Random rnd, int maxLen) {
@@ -2136,8 +2136,8 @@ public final class GridTestUtils {
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
-     * @param maxLen Maximal length of string
-     * @param minLen Minimum length of string
+     * @param minLen Minimum length of string.
+     * @param maxLen Maximal length of string.
      * @return Random string object.
      */
     public static String randomString(Random rnd, int minLen, int maxLen) {
