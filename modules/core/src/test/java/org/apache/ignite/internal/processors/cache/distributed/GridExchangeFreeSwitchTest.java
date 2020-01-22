@@ -287,11 +287,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
 
-            boolean pmeExpected = !persistence ||
-                (persistence && !allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH));
+            boolean pmeFree = persistence && allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH);
 
-            assertEquals(pmeExpected ? (nodes - 1) : 0, cntSingle.get());
-            assertEquals(pmeExpected ? (nodes - 1) : 0, cntFull.get());
+            assertEquals(pmeFree ? 0 : (nodes - 1), cntSingle.get());
+            assertEquals(pmeFree ? 0 : (nodes - 1), cntFull.get());
 
             cntSingle.set(0);
             cntFull.set(0);
