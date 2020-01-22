@@ -34,6 +34,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Command line handler test with SSL.
@@ -84,10 +85,8 @@ public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMetho
         final CommandHandler cmd = new CommandHandler();
 
         List<String> params = new ArrayList<>();
-        params.add("--keystore");
-        params.add(GridTestUtils.keyStorePath("node01"));
-        params.add("--keystore-password");
-        params.add(GridTestUtils.keyStorePassword());
+
+        addSslParams(params);
 
         if (!F.isEmpty(utilityCipherSuite)) {
             params.add("--ssl-cipher-suites");

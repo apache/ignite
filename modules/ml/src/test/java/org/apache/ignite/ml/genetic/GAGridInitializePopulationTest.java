@@ -37,14 +37,16 @@ import static org.junit.Assert.assertEquals;
  */
 public class GAGridInitializePopulationTest {
     /** Ignite instance */
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** GAGrid **/
-    private GAGrid gaGrid = null;
+    private GAGrid gaGrid;
 
+    /**
+     * Initialize the population.
+     */
     @Before
     public void initialize() {
-
         try {
 
             // Create an Ignite instance as you would in any other use case.
@@ -64,13 +66,15 @@ public class GAGridInitializePopulationTest {
             gaGrid = new GAGrid(gaCfg, ignite);
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
+    /**
+     * Check the initialization of genes.
+     */
     @Test
     public void testInitializeGenes() {
-
         try {
             IgniteCache<Long, Gene> geneCache = ignite.cache(GAGridConstants.GENE_CACHE);
             gaGrid.initializeGenePopulation();
@@ -91,10 +95,13 @@ public class GAGridInitializePopulationTest {
         }
 
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testInitializePopulation() {
         try {
@@ -119,7 +126,7 @@ public class GAGridInitializePopulationTest {
         }
 
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 
@@ -137,12 +144,15 @@ public class GAGridInitializePopulationTest {
             'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '!', '"', '#', '$', '%', '&', '(', ')', '*', '+', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^'};
 
         for (int i = 0; i < chars.length; i++) {
-            Gene gene = new Gene(new Character(chars[i]));
+            Gene gene = new Gene(chars[i]);
             list.add(gene);
         }
         return list;
     }
 
+    /**
+     * Stop the Ignite.
+     */
     @After
     public void tearDown() {
 

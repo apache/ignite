@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.database;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 
@@ -46,7 +48,8 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             pageMem,
             null,
             rootId,
-            initNew
+            initNew,
+            new GridTestKernalContext(log)
         );
     }
 
@@ -77,9 +80,10 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             PageMemory pageMem,
             IgniteWriteAheadLogManager wal,
             long metaPageId,
-            boolean initNew
+            boolean initNew,
+            GridKernalContext ctx
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener());
+            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener(), ctx, null);
         }
 
         /**

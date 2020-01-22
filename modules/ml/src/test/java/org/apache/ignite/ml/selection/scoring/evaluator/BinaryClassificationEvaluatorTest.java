@@ -19,6 +19,7 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -29,6 +30,7 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
+import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -38,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class BinaryClassificationEvaluatorTest extends TrainerTest {
     /**
-     * Test evalutor and trainer on classification model y = x.
+     * Test evaluator and trainer on classification model y = x.
      */
     @Test
     public void testEvaluatorWithoutFilter() {
@@ -62,7 +64,7 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
     }
 
     /**
-     * Test evalutor and trainer on classification model y = x.
+     * Test evaluator and trainer on classification model y = x.
      */
     @Test
     public void testEvaluatorWithFilter() {
@@ -73,7 +75,7 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer().withK(3);
 
-        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
+        TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>(new SHA256UniformMapper<>(new Random(100)))
             .split(0.75);
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
@@ -86,6 +88,6 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
         );
 
         double score = Evaluator.evaluate(cacheMock, split.getTestFilter(), mdl, vectorizer, MetricName.ACCURACY);
-        assertEquals(0.9, score, 1);
+        assertEquals(0.9769230769230769, score, 1e-12);
     }
 }

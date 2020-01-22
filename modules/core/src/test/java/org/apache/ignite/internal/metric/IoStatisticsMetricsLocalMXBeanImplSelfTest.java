@@ -18,22 +18,15 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.management.ManagementFactory;
 import java.util.stream.StreamSupport;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -46,6 +39,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderQuery.LOGICAL_
 import static org.apache.ignite.internal.metric.IoStatisticsHolderQuery.PHYSICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
+import static org.apache.ignite.internal.metric.MetricsConfigurationTest.metricsBean;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -161,7 +155,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
         GridMetricManager mmgr = ignite.context().metric();
 
         StreamSupport.stream(mmgr.spliterator(), false)
-            .map(MetricRegistry::name)
+            .map(ReadOnlyMetricRegistry::name)
             .filter(name -> {
                 for (IoStatisticsType type : IoStatisticsType.values()) {
                     if (name.startsWith(type.metricGroupName()))
@@ -180,20 +174,6 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      * @param grpName Group name to reset metrics.
      */
     public static void resetMetric(IgniteEx ignite, String grpName) {
-        try {
-            ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Kernal",
-                IgniteKernal.class.getSimpleName());
-
-            MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-            if (!mbeanSrv.isRegistered(mbeanName))
-                fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-            IgniteMXBean bean = MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, IgniteMXBean.class, false);
-
-            bean.resetMetrics(grpName);
-        } catch (MalformedObjectNameException e) {
-            throw new IgniteException(e);
-        }
+        metricsBean(ignite).resetMetrics(grpName);
     }
 }

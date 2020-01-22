@@ -934,7 +934,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
         // Interceptor on near node needs old values to execute callbacks.
-        if (!F.isEmpty(req.writes())) {
+        if (req.writes() != null) {
             for (IgniteTxEntry e : req.writes()) {
                 IgniteTxEntry txEntry = tx.entry(e.txKey());
 
@@ -1057,14 +1057,16 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         boolean validateCache = needCacheValidation(node);
 
+        boolean writesEmpty = isEmpty(req.writes());
+
         if (validateCache) {
             GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
 
-            if (topFut != null && !isEmpty(req.writes())) {
+            if (topFut != null && !writesEmpty) {
                 // All caches either read only or not. So validation of one cache context is enough.
                 GridCacheContext ctx = F.first(req.writes()).context();
 
-                Throwable err = topFut.validateCache(ctx, req.recovery(), isEmpty(req.writes()), null, null);
+                Throwable err = topFut.validateCache(ctx, req.recovery(), writesEmpty, null, null);
 
                 if (err != null)
                     onDone(null, new IgniteCheckedException(err));
@@ -1073,7 +1075,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         boolean ser = tx.serializable() && tx.optimistic();
 
-        if (!F.isEmpty(req.writes()) || (ser && !F.isEmpty(req.reads()))) {
+        if (!writesEmpty || (ser && !F.isEmpty(req.reads()))) {
             Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
 
             for (IgniteTxEntry entry : req.writes())
@@ -1231,7 +1233,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             assert key != null : entry.key();
 
-            if (S.INCLUDE_SENSITIVE)
+            if (S.includeSensitive())
                 msg.append("key=").append(key.toString()).append(", keyCls=").append(key.getClass().getName());
         }
         catch (Exception e) {
@@ -1246,7 +1248,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             Object val = cacheVal != null ? cctx.unwrapBinaryIfNeeded(cacheVal, entry.keepBinary(), false) : null;
 
             if (val != null) {
-                if (S.INCLUDE_SENSITIVE)
+                if (S.includeSensitive())
                     msg.append(", val=").append(val.toString()).append(", valCls=").append(val.getClass().getName());
             }
             else
@@ -1309,7 +1311,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             TxCounters counters = tx.txCounters(true);
 
             // Assign keys to primary nodes.
-            if (!F.isEmpty(req.writes())) {
+            if (req.writes() != null) {
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
@@ -1326,7 +1328,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            if (!F.isEmpty(req.reads())) {
+            if (req.reads() != null) {
                 for (IgniteTxEntry read : req.reads())
                     map(tx.entry(read.txKey()));
             }

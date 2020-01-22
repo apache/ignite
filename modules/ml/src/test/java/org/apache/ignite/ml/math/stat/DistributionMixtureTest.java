@@ -33,8 +33,9 @@ public class DistributionMixtureTest {
     /** */
     private DistributionMixture<Constant> mixture;
 
+    /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         mixture = new DistributionMixture<Constant>(
             VectorUtils.of(0.3, 0.3, 0.4),
             Arrays.asList(new Constant(0.5), new Constant(1.0), new Constant(0.))
@@ -63,16 +64,16 @@ public class DistributionMixtureTest {
     /** */
     private static class Constant implements Distribution {
         /** Value. */
-        private final double value;
+        private final double val;
 
         /** */
         public Constant(double value) {
-            this.value = value;
+            this.val = value;
         }
 
         /** {@inheritDoc} */
         @Override public double prob(Vector x) {
-            return value;
+            return val;
         }
 
         /** {@inheritDoc} */

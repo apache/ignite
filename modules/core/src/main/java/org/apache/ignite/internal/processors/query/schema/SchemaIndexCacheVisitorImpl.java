@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -69,6 +71,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Whether to stop the process. */
     private volatile boolean stop;
 
+    /** Count of partitions to be processed. */
+    private final AtomicInteger partsCnt = new AtomicInteger();
+
+    /** Logger. */
+    protected IgniteLogger log;
+
     static {
         int parallelism = IgniteSystemProperties.getInteger(INDEX_REBUILDING_PARALLELISM, 0);
 
@@ -110,6 +118,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
 
         this.cctx = cctx;
+
+        log = cctx.kernalContext().log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -120,6 +130,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         if (parts.isEmpty())
             return;
+
+        partsCnt.set(parts.size());
 
         GridCompoundFuture<Void, Void> fut = null;
 
@@ -132,7 +144,18 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             fut.markInitialized();
         }
 
-        processPartitions(parts, clo, 0);
+        try {
+            processPartitions(parts, clo, 0);
+        }
+        catch (Throwable e) {
+            U.error(log, "Error during parallel index create/rebuild.", e);
+
+            stop = true;
+
+            resetPartitionsCount();
+
+            throw e;
+        }
 
         if (fut != null)
             fut.get();
@@ -234,7 +257,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         finally {
             part.release();
 
-            cctx.group().metrics().decrementIndexBuildCountPartitionsLeft();
+            if (partsCnt.getAndUpdate(v -> v > 0 ? v - 1 : 0) > 0)
+                cctx.group().metrics().decrementIndexBuildCountPartitionsLeft();
         }
     }
 
@@ -278,6 +302,16 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     private void checkCancelled() throws IgniteCheckedException {
         if (cancel != null && cancel.isCancelled())
             throw new IgniteCheckedException("Index creation was cancelled.");
+    }
+
+    /**
+     * Resets value of partitions count to be processed and update metrics.
+     */
+    private void resetPartitionsCount() {
+        int cnt = partsCnt.getAndSet(0);
+
+        if (cnt > 0)
+            cctx.group().metrics().addIndexBuildCountPartitionsLeft(-cnt);
     }
 
     /** {@inheritDoc} */
@@ -335,7 +369,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
                 stop = true;
 
-                cctx.group().metrics().setIndexBuildCountPartitionsLeft(0);
+                resetPartitionsCount();
             }
             finally {
                 fut.onDone(err);

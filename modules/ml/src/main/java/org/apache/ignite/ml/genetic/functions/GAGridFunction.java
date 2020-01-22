@@ -110,7 +110,7 @@ public class GAGridFunction {
 
             for (Gene gene : genes) {
                 row[i] = gene.getVal().toString();
-                i = i + 1;
+                i += 1;
             }
             //Add a row for an individual Chromosome
             rs2.addRow(row);

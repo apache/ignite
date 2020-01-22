@@ -17,6 +17,8 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStableTopologyTest;
+import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -37,7 +39,9 @@ import org.junit.runners.Suite;
     SslParametersTest.class,
     ConnectionTest.class,
     ConnectToStartingNodeTest.class,
-    AsyncChannelTest.class
+    AsyncChannelTest.class,
+    ThinClientPartitionAwarenessStableTopologyTest.class,
+    ThinClientPartitionAwarenessUnstableTopologyTest.class
 })
 public class ClientTestSuite {
     // No-op.

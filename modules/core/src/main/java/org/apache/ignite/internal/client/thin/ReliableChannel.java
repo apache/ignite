@@ -20,14 +20,20 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
@@ -36,28 +42,44 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Adds failover abd thread-safety to {@link ClientChannel}.
+ * Communication channel with failover and partition awareness.
  */
 final class ReliableChannel implements AutoCloseable {
-    /** Raw channel. */
-    private final Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory;
+    /** Channel factory. */
+    private final Function<ClientChannelConfiguration, ClientChannel> chFactory;
 
-    /** Servers count. */
-    private final int srvCnt;
+    /** Client channel holders for each configured address. */
+    private final ClientChannelHolder[] channels;
 
-    /** Primary server. */
-    private InetSocketAddress primary;
+    /** Index of the current channel. */
+    private int curChIdx;
 
-    /** Backup servers. */
-    private final Deque<InetSocketAddress> backups = new LinkedList<>();
+    /** Partition awareness enabled. */
+    private final boolean partitionAwarenessEnabled;
 
-    /** Channel. */
-    private ClientChannel ch;
+    /** Cache partition awareness context. */
+    private final ClientCacheAffinityContext affinityCtx;
 
-    /** Ignite config. */
-    private final ClientConfiguration clientCfg;
+    /** Node channels. */
+    private final Map<UUID, ClientChannelHolder> nodeChannels = new ConcurrentHashMap<>();
+
+    /** Async tasks thread pool. */
+    private final ExecutorService asyncRunner = Executors.newSingleThreadExecutor(
+        new ThreadFactory() {
+            @Override public Thread newThread(@NotNull Runnable r) {
+                return new Thread(r, "thin-client-channel-async-runner");
+            }
+        }
+    );
+
+    /** Channels reinit was scheduled. */
+    private final AtomicBoolean scheduledChannelsReinit = new AtomicBoolean();
+
+    /** Affinity map update is in progress. */
+    private final AtomicBoolean affinityUpdateInProgress = new AtomicBoolean();
 
     /** Channel is closed. */
     private boolean closed;
@@ -66,8 +88,9 @@ final class ReliableChannel implements AutoCloseable {
      * Constructor.
      */
     ReliableChannel(
-        Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory,
-        ClientConfiguration clientCfg
+        Function<ClientChannelConfiguration, ClientChannel> chFactory,
+        ClientConfiguration clientCfg,
+        IgniteBinary binary
     ) throws ClientException {
         if (chFactory == null)
             throw new NullPointerException("chFactory");
@@ -76,30 +99,34 @@ final class ReliableChannel implements AutoCloseable {
             throw new NullPointerException("clientCfg");
 
         this.chFactory = chFactory;
-        this.clientCfg = clientCfg;
 
         List<InetSocketAddress> addrs = parseAddresses(clientCfg.getAddresses());
 
-        srvCnt = addrs.size();
+        channels = new ClientChannelHolder[addrs.size()];
 
-        primary = addrs.get(new Random().nextInt(addrs.size())); // we already verified there is at least one address
+        for (int i = 0; i < channels.length; i++)
+            channels[i] = new ClientChannelHolder(new ClientChannelConfiguration(clientCfg, addrs.get(i)));
 
-        for (InetSocketAddress a : addrs) {
-            if (a != primary)
-                backups.add(a);
-        }
+        curChIdx = new Random().nextInt(channels.length); // We already verified there is at least one address.
+
+        partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled() && channels.length > 1;
+
+        affinityCtx = new ClientCacheAffinityContext(binary);
 
         ClientConnectionException lastEx = null;
 
-        for (int i = 0; i < addrs.size(); i++) {
+        for (int i = 0; i < channels.length; i++) {
             try {
-                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+                channels[curChIdx].getOrCreateChannel();
+
+                if (partitionAwarenessEnabled)
+                    initAllChannelsAsync();
 
                 return;
             } catch (ClientConnectionException e) {
                 lastEx = e;
 
-                rollAddress();
+                rollCurrentChannel();
             }
         }
 
@@ -107,14 +134,11 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void close() throws Exception {
+    @Override public synchronized void close() {
         closed = true;
 
-        if (ch != null) {
-            ch.close();
-
-            ch = null;
-        }
+        for (ClientChannelHolder hld : channels)
+            hld.closeChannel();
     }
 
     /**
@@ -127,7 +151,7 @@ final class ReliableChannel implements AutoCloseable {
     ) throws ClientException {
         ClientConnectionException failure = null;
 
-        for (int i = 0; i < srvCnt; i++) {
+        for (int i = 0; i < channels.length; i++) {
             ClientChannel ch = null;
 
             try {
@@ -141,7 +165,7 @@ final class ReliableChannel implements AutoCloseable {
                 else
                     failure.addSuppressed(e);
 
-                changeServer(ch);
+                onChannelFailure(ch);
             }
         }
 
@@ -161,6 +185,97 @@ final class ReliableChannel implements AutoCloseable {
      */
     public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter) throws ClientException {
         service(op, payloadWriter, null);
+    }
+
+    /**
+     * Send request to affinity node and handle response.
+     */
+    public <T> T affinityService(
+        int cacheId,
+        Object key,
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException {
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+            UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
+
+            if (affinityNodeId != null) {
+                ClientChannelHolder hld = nodeChannels.get(affinityNodeId);
+
+                if (hld != null) {
+                    ClientChannel ch = null;
+
+                    try {
+                        ch = hld.getOrCreateChannel();
+
+                        return ch.service(op, payloadWriter, payloadReader);
+                    }
+                    catch (ClientConnectionException ignore) {
+                        onChannelFailure(hld, ch);
+                    }
+                }
+            }
+        }
+
+        // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
+        return service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Checks if affinity information for the cache is up to date and tries to update it if not.
+     *
+     * @return {@code True} if affinity information is up to date, {@code false} if there is not affinity information
+     * available for this cache or information is obsolete and failed to update it.
+     */
+    private boolean affinityInfoIsUpToDate(int cacheId) {
+        if (affinityCtx.affinityUpdateRequired(cacheId)) {
+            if (affinityUpdateInProgress.compareAndSet(false, true)) {
+                try {
+                    ClientCacheAffinityContext.TopologyNodes lastTop = affinityCtx.lastTopology();
+
+                    if (lastTop == null)
+                        return false;
+
+                    for (UUID nodeId : lastTop.nodes()) {
+                        // Abort iterations when topology changed.
+                        if (lastTop != affinityCtx.lastTopology())
+                            return false;
+
+                        ClientChannelHolder hld = nodeChannels.get(nodeId);
+
+                        if (hld != null) {
+                            ClientChannel ch = null;
+
+                            try {
+                                ch = hld.getOrCreateChannel();
+
+                                return ch.service(ClientOperation.CACHE_PARTITIONS,
+                                    affinityCtx::writePartitionsUpdateRequest,
+                                    affinityCtx::readPartitionsUpdateResponse);
+                            }
+                            catch (ClientConnectionException ignore) {
+                                onChannelFailure(hld, ch);
+                            }
+                        }
+                    }
+
+                    // There is no one alive node found for last topology version, we should reset affinity context
+                    // to let affinity get updated in case of reconnection to the new cluster (with lower topology
+                    // version).
+                    affinityCtx.reset(lastTop);
+                }
+                finally {
+                    affinityUpdateInProgress.set(false);
+                }
+            }
+
+            // No suitable nodes found to update affinity, failed to execute service on all nodes or update is already
+            // in progress by another thread.
+            return false;
+        }
+        else
+            return true;
     }
 
     /**
@@ -199,34 +314,157 @@ final class ReliableChannel implements AutoCloseable {
         if (closed)
             throw new ClientException("Channel is closed");
 
-        if (ch == null) {
-            try {
-                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
-            }
-            catch (ClientConnectionException e) {
-                rollAddress();
-
-                throw e;
-            }
+        try {
+            return channels[curChIdx].getOrCreateChannel();
         }
+        catch (ClientConnectionException e) {
+            rollCurrentChannel();
 
-        return ch;
-    }
-
-    /** */
-    private void rollAddress() {
-        if (!backups.isEmpty()) {
-            backups.addLast(primary);
-
-            primary = backups.removeFirst();
+            throw e;
         }
     }
 
     /** */
-    private synchronized void changeServer(ClientChannel oldCh) {
-        if (oldCh == ch && ch != null) {
-            rollAddress();
+    private synchronized void rollCurrentChannel() {
+        if (++curChIdx >= channels.length)
+            curChIdx = 0;
+    }
 
+    /**
+     * On current channel failure.
+     */
+    private synchronized void onChannelFailure(ClientChannel ch) {
+        // There is nothing wrong if curChIdx was concurrently changed, since channel was closed by another thread
+        // when current index was changed and no other wrong channel will be closed by current thread because
+        // onChannelFailure checks channel binded to the holder before closing it.
+        onChannelFailure(channels[curChIdx], ch);
+    }
+
+    /**
+     * On channel of the specified holder failure.
+     */
+    private synchronized void onChannelFailure(ClientChannelHolder hld, ClientChannel ch) {
+        if (ch == hld.ch && ch != null) {
+            hld.closeChannel();
+
+            if (hld == channels[curChIdx])
+                rollCurrentChannel();
+        }
+    }
+
+    /**
+     * Asynchronously try to establish a connection to all configured servers.
+     */
+    private void initAllChannelsAsync() {
+        // Skip if there is already channels reinit scheduled.
+        if (scheduledChannelsReinit.compareAndSet(false, true)) {
+            asyncRunner.submit(
+                () -> {
+                    scheduledChannelsReinit.set(false);
+
+                    for (ClientChannelHolder hld : channels) {
+                        if (scheduledChannelsReinit.get())
+                            return; // New reinit task scheduled.
+
+                        try {
+                            hld.getOrCreateChannel(true);
+                        }
+                        catch (Exception ignore) {
+                            // No-op.
+                        }
+                    }
+                }
+            );
+        }
+    }
+
+    /**
+     * Topology version change detected on the channel.
+     *
+     * @param ch Channel.
+     */
+    private void onTopologyChanged(ClientChannel ch) {
+        if (partitionAwarenessEnabled && affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(),
+            ch.serverNodeId()))
+            initAllChannelsAsync();
+    }
+
+    /**
+     * Channels holder.
+     */
+    private class ClientChannelHolder {
+        /** Channel configuration. */
+        private final ClientChannelConfiguration chCfg;
+
+        /** Channel. */
+        private volatile ClientChannel ch;
+
+        /** Timestamps of reconnect retries. */
+        private final long[] reconnectRetries;
+
+        /**
+         * @param chCfg Channel config.
+         */
+        private ClientChannelHolder(ClientChannelConfiguration chCfg) {
+            this.chCfg = chCfg;
+
+            reconnectRetries = chCfg.getReconnectThrottlingRetries() > 0 && chCfg.getReconnectThrottlingPeriod() > 0L ?
+                new long[chCfg.getReconnectThrottlingRetries()] : null;
+        }
+
+        /**
+         * @return Whether reconnect throttling should be applied.
+         */
+        private boolean applyReconnectionThrottling() {
+            if (reconnectRetries == null)
+                return false;
+
+            long ts = System.currentTimeMillis();
+
+            for (int i = 0; i < reconnectRetries.length; i++) {
+                if (ts - reconnectRetries[i] >= chCfg.getReconnectThrottlingPeriod()) {
+                    reconnectRetries[i] = ts;
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /**
+         * Get or create channel.
+         */
+        private synchronized ClientChannel getOrCreateChannel() {
+            return getOrCreateChannel(false);
+        }
+
+        /**
+         * Get or create channel.
+         */
+        private synchronized ClientChannel getOrCreateChannel(boolean ignoreThrottling) {
+            if (ch == null) {
+                if (!ignoreThrottling && applyReconnectionThrottling())
+                    throw new ClientConnectionException("Reconnect is not allowed due to applied throttling");
+
+                ch = chFactory.apply(chCfg);
+
+                if (ch.serverNodeId() != null) {
+                    ch.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
+
+                    nodeChannels.values().remove(this);
+
+                    nodeChannels.putIfAbsent(ch.serverNodeId(), this);
+                }
+            }
+
+            return ch;
+        }
+
+        /**
+         * Close channel.
+         */
+        private synchronized void closeChannel() {
             U.closeQuiet(ch);
 
             ch = null;

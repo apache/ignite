@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
@@ -73,7 +74,16 @@ public enum IgniteFeatures {
     TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14),
 
     /** LRT system and user time dump settings.  */
-    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18);
+    LRT_SYSTEM_USER_TIME_DUMP_SETTINGS(18),
+
+    /** Partition Map Exchange-free switch on baseline node left at fully rebalanced cluster.  */
+    PME_FREE_SWITCH(19),
+
+    /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
+    MASTER_KEY_CHANGE(20),
+
+    /** ContinuousQuery with security subject id support. */
+    CONT_QRY_SECURITY_AWARE(21);
 
     /**
      * Unique feature identifier.

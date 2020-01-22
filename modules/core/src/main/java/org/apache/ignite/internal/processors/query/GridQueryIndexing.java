@@ -135,10 +135,11 @@ public interface GridQueryIndexing {
      * @param qry Text query.
      * @param typeName Type name.
      * @param filter Cache name and key filter.    @return Queried rows.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
-        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String qry, String typeName, IndexingQueryFilter filter, int limit) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -414,6 +415,13 @@ public interface GridQueryIndexing {
      * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
      */
     @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
+
+    /**
+     * Clear cache info and clear parser cache on call cache.close() on client node.
+     *
+     * @param cacheName Cache name to clear.
+     */
+    public void closeCacheOnClient(String cacheName);
 
     /**
      * Initialize table's cache context created for not started cache.

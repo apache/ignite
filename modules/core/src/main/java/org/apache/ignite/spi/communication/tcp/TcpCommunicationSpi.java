@@ -75,6 +75,9 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.internal.resources.MetricManagerResource;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -385,11 +388,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final int MAX_CONN_PER_NODE = 1024;
 
     /** No-op runnable. */
-    private static final IgniteRunnable NOOP = new IgniteRunnable() {
-        @Override public void run() {
-            // No-op.
-        }
-    };
+    private static final IgniteRunnable NOOP = () -> {};
 
     /** Node ID message type. */
     public static final short NODE_ID_MSG_TYPE = -1;
@@ -402,6 +401,45 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** Handshake wait message type. */
     public static final short HANDSHAKE_WAIT_MSG_TYPE = -28;
+
+    /** Communication metrics group name. */
+    public static final String COMMUNICATION_METRICS_GROUP_NAME = MetricUtils.metricName("communication", "tcp");
+
+    /** */
+    public static final String SENT_MESSAGES_METRIC_NAME = "sentMessagesCount";
+
+    /** */
+    public static final String SENT_MESSAGES_METRIC_DESC = "Total number of messages sent by current node";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_METRIC_NAME = "receivedMessagesCount";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_METRIC_DESC = "Total number of messages received by current node";
+
+    /** */
+    public static final String SENT_MESSAGES_BY_TYPE_METRIC_NAME = "sentMessagesByType";
+
+    /** */
+    public static final String SENT_MESSAGES_BY_TYPE_METRIC_DESC = "Total number of messages with given type sent by current node";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME = "receivedMessagesByType";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC = "Total number of messages with given type received by current node";
+
+    /** */
+    public static final String SENT_MESSAGES_BY_NODE_ID_METRIC_NAME = "sentMessagesToNode";
+
+    /** */
+    public static final String SENT_MESSAGES_BY_NODE_ID_METRIC_DESC = "Total number of messages sent by current node to the given node";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME = "receivedMessagesFromNode";
+
+    /** */
+    public static final String RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC = "Total number of messages received by current node from the given node";
 
     /** */
     private ConnectGateway connectGate;
@@ -602,7 +640,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
                         ", msg=" + msg0 + ']');
 
-                if (usePairedConnections(rmtNode)) {
+                if (isChannelConnIdx(msg0.connectionIndex()))
+                    ses.send(new RecoveryLastReceivedMessage(0));
+                else if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
                     ConnectClosureNew c = new ConnectClosureNew(ses, recoveryDesc, rmtNode);
@@ -1285,7 +1325,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private volatile boolean stopping;
 
     /** Statistics. */
-    private final TcpCommunicationMetricsListener metricsLsnr = new TcpCommunicationMetricsListener();
+    private TcpCommunicationMetricsListener metricsLsnr;
 
     /** Client connect futures. */
     private final ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
@@ -1347,6 +1387,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             setAddressResolver(ignite.configuration().getAddressResolver());
             setLocalAddress(ignite.configuration().getLocalHost());
         }
+    }
+
+    /** */
+    @MetricManagerResource
+    private void injectMetricManager(GridMetricManager mmgr) {
+        if (mmgr != null)
+            metricsLsnr = new TcpCommunicationMetricsListener(mmgr);
     }
 
     /**
@@ -2496,7 +2543,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =
                         new GridNioSslFilter(ignite.configuration().getSslContextFactory().create(),
-                            true, ByteOrder.nativeOrder(), log);
+                            true, ByteOrder.LITTLE_ENDIAN, log);
 
                     sslFilter.directMode(true);
 
@@ -2525,12 +2572,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     .serverName("tcp-comm")
                     .tcpNoDelay(tcpNoDelay)
                     .directBuffer(directBuf)
-                    .byteOrder(ByteOrder.nativeOrder())
+                    .byteOrder(ByteOrder.LITTLE_ENDIAN)
                     .socketSendBufferSize(sockSndBuf)
                     .socketReceiveBufferSize(sockRcvBuf)
                     .sendQueueLimit(msgQueueLimit)
                     .directMode(true)
-                    .metricsListener(metricsLsnr)
                     .writeTimeout(sockWriteTimeout)
                     .selectorSpins(selectorSpins)
                     .filters(filters)
@@ -2542,7 +2588,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (ignite instanceof IgniteEx) {
                     IgniteEx igniteEx = (IgniteEx)ignite;
 
-                    builder.workerListener(igniteEx.context().workersRegistry());
+                    builder.workerListener(igniteEx.context().workersRegistry())
+                        .metricRegistry(igniteEx.context().metric().registry(COMMUNICATION_METRICS_GROUP_NAME));
                 }
 
                 GridNioServer<Message> srvr = builder.build();
@@ -2725,6 +2772,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     void onNodeLeft(UUID nodeId) {
         assert nodeId != null;
 
+        metricsLsnr.onNodeLeft(nodeId);
+
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
 
         if (clients0 != null) {
@@ -2860,7 +2909,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ClusterNode node0 = getSpiContext().node(node.id());
 
                         if (node0 == null)
-                            throw new IgniteCheckedException("Failed to send message to remote node " +
+                            throw new ClusterTopologyCheckedException("Failed to send message to remote node " +
                                 "(node has left the grid): " + node.id());
                     }
 
@@ -3183,7 +3232,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             try {
                 client = new GridShmemCommunicationClient(
                     connIdx,
-                    metricsLsnr,
+                    metricsLsnr.metricRegistry(),
                     port,
                     timeoutHelper.nextTimeoutChunk(connTimeout),
                     log,
@@ -3843,7 +3892,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (isSslEnabled()) {
                 assert sslMeta != null;
 
-                sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
+                sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.LITTLE_ENDIAN, log);
 
                 if (!sslHnd.handshake())
                     throw new HandshakeException("SSL handshake is not completed.");
@@ -3921,7 +3970,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             buf = ByteBuffer.allocate(msg.getMessageSize());
 
-            buf.order(ByteOrder.nativeOrder());
+            buf.order(ByteOrder.LITTLE_ENDIAN);
 
             boolean written = msg.writeTo(buf, null);
 
@@ -3945,10 +3994,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 assert sslHnd != null;
 
                 buf = ByteBuffer.allocate(1000);
-                buf.order(ByteOrder.nativeOrder());
+                buf.order(ByteOrder.LITTLE_ENDIAN);
 
                 ByteBuffer decode = ByteBuffer.allocate(2 * buf.capacity());
-                decode.order(ByteOrder.nativeOrder());
+                decode.order(ByteOrder.LITTLE_ENDIAN);
 
                 for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                     int read = ch.read(buf);
@@ -3986,7 +4035,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else {
                 buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
-                buf.order(ByteOrder.nativeOrder());
+                buf.order(ByteOrder.LITTLE_ENDIAN);
 
                 for (int i = 0; i < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
                     int read = ch.read(buf);
@@ -4516,7 +4565,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 };
 
                 IpcToNioAdapter<Message> adapter = new IpcToNioAdapter<>(
-                    metricsLsnr,
+                    metricsLsnr.metricRegistry(),
                     log,
                     endpoint,
                     srvLsnr,

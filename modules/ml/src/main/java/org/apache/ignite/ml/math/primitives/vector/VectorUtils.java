@@ -64,17 +64,6 @@ public class VectorUtils {
     }
 
     /**
-     * Turn number into a local Vector of given size with one-hot encoding.
-     *
-     * @param num Number to turn into vector.
-     * @param vecSize Vector size of output vector.
-     * @return One-hot encoded number.
-     */
-    public static Vector oneHot(int num, int vecSize) {
-        return oneHot(num, vecSize, false);
-    }
-
-    /**
      * Turn number to 1-sized array.
      *
      * @param val Value to wrap in array.
@@ -82,19 +71,6 @@ public class VectorUtils {
      */
     public static double[] num2Arr(double val) {
         return new double[] {val};
-    }
-
-    /**
-     * Turn number into Vector of given size with one-hot encoding.
-     *
-     * @param num Number to turn into vector.
-     * @param vecSize Vector size of output vector.
-     * @param isDistributed Flag indicating if distributed vector should be created.
-     * @return One-hot encoded number.
-     */
-    public static Vector oneHot(int num, int vecSize, boolean isDistributed) {
-        Vector res = new DenseVector(vecSize);
-        return res.setX(num, 1);
     }
 
     /**

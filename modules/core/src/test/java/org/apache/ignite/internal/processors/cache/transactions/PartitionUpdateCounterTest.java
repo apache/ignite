@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -41,10 +40,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionAtomicUpdateCounterImpl;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -334,7 +332,6 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testWithPersistentNodeTx() throws Exception {
         testWithPersistentNode(CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -343,7 +340,6 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testWithPersistentNodeAtomic() throws Exception {
         testWithPersistentNode(CacheAtomicityMode.ATOMIC);
     }
@@ -356,6 +352,8 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         try {
             IgniteEx grid0 = startGrid(0);
+
+            grid0.cluster().baselineAutoAdjustEnabled(false);
             grid0.cluster().active(true);
             grid0.cluster().baselineAutoAdjustEnabled(false);
 

@@ -38,58 +38,58 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
     /**
      * First class lbl.
      */
-    private L firstClassLbl;
+    private L firstClsLbl;
 
     /**
      * Second class lbl.
      */
-    private L secondClassLbl;
+    private L secondClsLbl;
 
     /**
      * Creates an instance of BinaryClassificationEvaluationContext.
      */
     public BinaryClassificationEvaluationContext() {
-        this.firstClassLbl = null;
-        this.secondClassLbl = null;
+        this.firstClsLbl = null;
+        this.secondClsLbl = null;
     }
 
     /**
      * Creates an instance of BinaryClassificationEvaluationContext.
      *
-     * @param firstClassLbl  First class lbl.
-     * @param secondClassLbl Second class lbl.
+     * @param firstClsLbl  First class lbl.
+     * @param secondClsLbl Second class lbl.
      */
-    public BinaryClassificationEvaluationContext(L firstClassLbl, L secondClassLbl) {
-        this.firstClassLbl = firstClassLbl;
-        this.secondClassLbl = secondClassLbl;
+    public BinaryClassificationEvaluationContext(L firstClsLbl, L secondClsLbl) {
+        this.firstClsLbl = firstClsLbl;
+        this.secondClsLbl = secondClsLbl;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override public void aggregate(LabeledVector<L> vector) {
-        L label = vector.label();
-        if (firstClassLbl == null)
-            this.firstClassLbl = label;
-        else if (secondClassLbl == null && !label.equals(firstClassLbl)) {
-            secondClassLbl = label;
+        L lb = vector.label();
+        if (firstClsLbl == null)
+            this.firstClsLbl = lb;
+        else if (secondClsLbl == null && !lb.equals(firstClsLbl)) {
+            secondClsLbl = lb;
             swapLabelsIfNeed();
         }
         else
-            checkNewLabel(label);
+            checkNewLabel(lb);
     }
 
     /**
      * Swaps labels in sorting order if it's possible.
      */
     private void swapLabelsIfNeed() {
-        if (firstClassLbl instanceof Comparable) {
-            Comparable cmp1 = (Comparable)firstClassLbl;
-            int res = cmp1.compareTo(secondClassLbl);
+        if (firstClsLbl instanceof Comparable) {
+            Comparable cmp1 = (Comparable)firstClsLbl;
+            int res = cmp1.compareTo(secondClsLbl);
             if (res > 0) {
-                L tmp = secondClassLbl;
-                secondClassLbl = firstClassLbl;
-                firstClassLbl = tmp;
+                L tmp = secondClsLbl;
+                secondClsLbl = firstClsLbl;
+                firstClsLbl = tmp;
             }
         }
     }
@@ -99,17 +99,17 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
      */
     @Override public BinaryClassificationEvaluationContext<L> mergeWith(
         BinaryClassificationEvaluationContext<L> other) {
-        checkNewLabel(other.firstClassLbl);
-        checkNewLabel(other.secondClassLbl);
+        checkNewLabel(other.firstClsLbl);
+        checkNewLabel(other.secondClsLbl);
 
         List<L> uniqLabels = new ArrayList<>(4);
-        uniqLabels.add(this.firstClassLbl);
-        uniqLabels.add(this.secondClassLbl);
-        uniqLabels.add(other.firstClassLbl);
-        uniqLabels.add(other.secondClassLbl);
+        uniqLabels.add(this.firstClsLbl);
+        uniqLabels.add(this.secondClsLbl);
+        uniqLabels.add(other.firstClsLbl);
+        uniqLabels.add(other.secondClsLbl);
         Stream<L> s = uniqLabels.stream().filter(Objects::nonNull).distinct();
-        if (firstClassLbl instanceof Comparable || secondClassLbl instanceof Comparable ||
-            other.firstClassLbl instanceof Comparable || other.secondClassLbl instanceof Comparable)
+        if (firstClsLbl instanceof Comparable || secondClsLbl instanceof Comparable ||
+            other.firstClsLbl instanceof Comparable || other.secondClsLbl instanceof Comparable)
             s = s.sorted();
         uniqLabels = s.collect(Collectors.toList());
 
@@ -125,8 +125,8 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
      *
      * @return First class label.
      */
-    public L getFirstClassLbl() {
-        return firstClassLbl;
+    public L getFirstClsLbl() {
+        return firstClsLbl;
     }
 
     /**
@@ -134,23 +134,23 @@ public class BinaryClassificationEvaluationContext<L extends Serializable> imple
      *
      * @return Second class label.
      */
-    public L getSecondClassLbl() {
-        return secondClassLbl;
+    public L getSecondClsLbl() {
+        return secondClsLbl;
     }
 
     /**
-     * Checks new label to mergeability with this context.
+     * Checks new label to merge-ability with this context.
      *
-     * @param label Label.
+     * @param lb Label.
      */
-    private void checkNewLabel(L label) {
+    private void checkNewLabel(L lb) {
         A.ensure(
-            firstClassLbl == null || secondClassLbl == null || label == null ||
-                label.equals(firstClassLbl) || label.equals(secondClassLbl),
+            firstClsLbl == null || secondClsLbl == null || lb == null ||
+                lb.equals(firstClsLbl) || lb.equals(secondClsLbl),
             "Unable to collect binary classification ctx stat. There are more than two labels. " +
-                "First label = " + firstClassLbl +
-                ", second label = " + secondClassLbl +
-                ", another label = " + label
+                "First label = " + firstClsLbl +
+                ", second label = " + secondClsLbl +
+                ", another label = " + lb
         );
     }
 }

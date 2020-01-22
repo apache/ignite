@@ -40,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -92,16 +91,12 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -117,6 +112,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         try {
             IgniteEx g0 = startGrid(0);
 
+            g0.cluster().baselineAutoAdjustEnabled(false);
             startGrid(1);
 
             g0.cluster().active(true);
@@ -246,6 +242,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         try {
             IgniteEx g0 = startGrids(2);
 
+            g0.cluster().baselineAutoAdjustEnabled(false);
             g0.cluster().active(true);
 
             awaitPartitionMapExchange();
@@ -265,7 +262,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             assertNotNull(part);
 
-            // Prevent eviction.
+            // Wait for eviction. Same could be achieved by calling awaitPartitionMapExchange(true, true, null, true);
             part.reserve();
 
             startGrid(2);
@@ -280,6 +277,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             CountDownLatch l2 = new CountDownLatch(1);
 
             // Create race between processing of final supply message and partition clearing.
+            // Evicted partition will be recreated using supplied factory.
             top.partitionFactory((ctx, grp, id) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, false) :
                 new GridDhtLocalPartition(ctx, grp, id, false) {
                     @Override public void beforeApplyBatch(boolean last) {

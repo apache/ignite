@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,7 +47,10 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Permissions. */
-    private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+    public static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+
+    /** Sandbox permissions. */
+    private static final Map<SecurityCredentials, Permissions> SANDBOX_PERMS = new ConcurrentHashMap<>();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
@@ -54,21 +58,28 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
 
+    /** Global authentication. */
+    private final boolean globalAuth;
+
     /**
      * Constructor.
      */
     public TestSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
-        Collection<TestSecurityData> predefinedAuthData) {
+        Collection<TestSecurityData> predefinedAuthData, boolean globalAuth) {
         super(ctx);
 
         this.nodeSecData = nodeSecData;
         this.predefinedAuthData = predefinedAuthData.isEmpty()
             ? Collections.emptyList()
             : new ArrayList<>(predefinedAuthData);
+        this.globalAuth = globalAuth;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+        if (!PERMS.containsKey(cred))
+            return null;
+
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
@@ -76,16 +87,20 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin(cred.getLogin())
                 .setPerms(PERMS.get(cred))
+                .sandboxPermissions(SANDBOX_PERMS.get(cred))
         );
     }
 
     /** {@inheritDoc} */
     @Override public boolean isGlobalNodeAuthentication() {
-        return false;
+        return globalAuth;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext ctx) {
+        if (!PERMS.containsKey(ctx.credentials()))
+            return null;
+
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
@@ -93,6 +108,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
                 .setPerms(PERMS.get(ctx.credentials()))
+                .sandboxPermissions(SANDBOX_PERMS.get(ctx.credentials()))
         );
     }
 
@@ -130,11 +146,14 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         super.start();
 
         PERMS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
+        SANDBOX_PERMS.put(nodeSecData.credentials(), nodeSecData.sandboxPermissions());
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
-        for (TestSecurityData data : predefinedAuthData)
+        for (TestSecurityData data : predefinedAuthData) {
             PERMS.put(data.credentials(), data.getPermissions());
+            SANDBOX_PERMS.put(nodeSecData.credentials(), data.sandboxPermissions());
+        }
     }
 
     /** {@inheritDoc} */
@@ -142,8 +161,16 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         super.stop(cancel);
 
         PERMS.remove(nodeSecData.credentials());
+        SANDBOX_PERMS.remove(nodeSecData.credentials());
 
-        for (TestSecurityData data : predefinedAuthData)
+        for (TestSecurityData data : predefinedAuthData) {
             PERMS.remove(data.credentials());
+            SANDBOX_PERMS.remove(data.credentials());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean sandboxEnabled() {
+        return true;
     }
 }

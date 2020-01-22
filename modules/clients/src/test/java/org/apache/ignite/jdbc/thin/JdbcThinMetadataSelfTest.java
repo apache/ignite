@@ -49,8 +49,8 @@ import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
-import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.sql.Types.DATE;
@@ -69,6 +69,10 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+
+    /** URL with partition awareness enabled. */
+    public static final String URL_PARTITION_AWARENESS =
+        "jdbc:ignite:thin://127.0.0.1:10800..10801?partitionAwareness=true";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -333,16 +337,27 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS",
                 "SYS.CACHES",
                 "SYS.TASKS",
-                "SYS.LOCAL_SQL_QUERY_HISTORY",
+                "SYS.SQL_QUERIES_HISTORY",
                 "SYS.NODES",
                 "SYS.SCHEMAS",
                 "SYS.NODE_METRICS",
                 "SYS.BASELINE_NODES",
                 "SYS.INDEXES",
                 "SYS.LOCAL_CACHE_GROUPS_IO",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES",
+                "SYS.SQL_QUERIES",
+                "SYS.SCAN_QUERIES",
                 "SYS.NODE_ATTRIBUTES",
-                "SYS.TABLES"
+                "SYS.TABLES",
+                "SYS.CLIENT_CONNECTIONS",
+                "SYS.TRANSACTIONS",
+                "SYS.VIEWS",
+                "SYS.TABLE_COLUMNS",
+                "SYS.VIEW_COLUMNS",
+                "SYS.CONTINUOUS_QUERIES",
+                "SYS.STRIPED_THREADPOOL_QUEUE",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE",
+                "SYS.CACHE_GROUP_PAGE_LISTS",
+                "SYS.DATA_REGION_PAGE_LISTS"
             ))
         );
     }
@@ -620,8 +635,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_GROUPS.REBALANCE_DELAY.null.19",
                 "SYS.CACHE_GROUPS.REBALANCE_ORDER.null.10",
                 "SYS.CACHE_GROUPS.BACKUPS.null.10",
-                "SYS.INDEXES.CACHE_GROUP_ID.null.10",
-                "SYS.INDEXES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.INDEXES.CACHE_ID.null.10",
                 "SYS.INDEXES.CACHE_NAME.null.2147483647",
                 "SYS.INDEXES.SCHEMA_NAME.null.2147483647",
@@ -636,26 +649,46 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.LOCAL_CACHE_GROUPS_IO.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.LOCAL_CACHE_GROUPS_IO.PHYSICAL_READS.null.19",
                 "SYS.LOCAL_CACHE_GROUPS_IO.LOGICAL_READS.null.19",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.SCHEMA_NAME.null.2147483647",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.SQL.null.2147483647",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.LOCAL.null.1",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.EXECUTIONS.null.19",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.FAILURES.null.19",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.DURATION_MIN.null.19",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.DURATION_MAX.null.19",
-                "SYS.LOCAL_SQL_QUERY_HISTORY.LAST_START_TIME.null.26.6",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.QUERY_ID.null.2147483647",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.SQL.null.2147483647",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.SCHEMA_NAME.null.2147483647",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.LOCAL.null.1",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.START_TIME.null.26.6",
-                "SYS.LOCAL_SQL_RUNNING_QUERIES.DURATION.null.19",
+                "SYS.SQL_QUERIES_HISTORY.SCHEMA_NAME.null.2147483647",
+                "SYS.SQL_QUERIES_HISTORY.SQL.null.2147483647",
+                "SYS.SQL_QUERIES_HISTORY.LOCAL.null.1",
+                "SYS.SQL_QUERIES_HISTORY.EXECUTIONS.null.19",
+                "SYS.SQL_QUERIES_HISTORY.FAILURES.null.19",
+                "SYS.SQL_QUERIES_HISTORY.DURATION_MIN.null.19",
+                "SYS.SQL_QUERIES_HISTORY.DURATION_MAX.null.19",
+                "SYS.SQL_QUERIES_HISTORY.LAST_START_TIME.null.26.6",
+                "SYS.SQL_QUERIES.QUERY_ID.null.2147483647",
+                "SYS.SQL_QUERIES.SQL.null.2147483647",
+                "SYS.SQL_QUERIES.SCHEMA_NAME.null.2147483647",
+                "SYS.SQL_QUERIES.LOCAL.null.1",
+                "SYS.SQL_QUERIES.START_TIME.null.26.6",
+                "SYS.SQL_QUERIES.DURATION.null.19",
+                "SYS.SQL_QUERIES.ORIGIN_NODE_ID.null.2147483647",
+                "SYS.SCAN_QUERIES.START_TIME.null.19",
+                "SYS.SCAN_QUERIES.TRANSFORMER.null.2147483647",
+                "SYS.SCAN_QUERIES.LOCAL.null.1",
+                "SYS.SCAN_QUERIES.QUERY_ID.null.19",
+                "SYS.SCAN_QUERIES.PARTITION.null.10",
+                "SYS.SCAN_QUERIES.CACHE_GROUP_ID.null.10",
+                "SYS.SCAN_QUERIES.CACHE_NAME.null.2147483647",
+                "SYS.SCAN_QUERIES.TOPOLOGY.null.2147483647",
+                "SYS.SCAN_QUERIES.CACHE_GROUP_NAME.null.2147483647",
+                "SYS.SCAN_QUERIES.TASK_NAME.null.2147483647",
+                "SYS.SCAN_QUERIES.DURATION.null.19",
+                "SYS.SCAN_QUERIES.KEEP_BINARY.null.1",
+                "SYS.SCAN_QUERIES.FILTER.null.2147483647",
+                "SYS.SCAN_QUERIES.SUBJECT_ID.null.2147483647",
+                "SYS.SCAN_QUERIES.CANCELED.null.1",
+                "SYS.SCAN_QUERIES.CACHE_ID.null.10",
+                "SYS.SCAN_QUERIES.PAGE_SIZE.null.10",
+                "SYS.SCAN_QUERIES.ORIGIN_NODE_ID.null.2147483647",
                 "SYS.NODES.NODE_ID.null.2147483647",
                 "SYS.NODES.CONSISTENT_ID.null.2147483647",
                 "SYS.NODES.VERSION.null.2147483647",
                 "SYS.NODES.IS_CLIENT.null.1",
                 "SYS.NODES.IS_DAEMON.null.1",
-                "SYS.NODES.NODE_ORDER.null.10",
+                "SYS.NODES.IS_LOCAL.null.1",
+                "SYS.NODES.NODE_ORDER.null.19",
                 "SYS.NODES.ADDRESSES.null.2147483647",
                 "SYS.NODES.HOSTNAMES.null.2147483647",
                 "SYS.NODE_ATTRIBUTES.NODE_ID.null.2147483647",
@@ -718,9 +751,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODE_METRICS.RECEIVED_MESSAGES_COUNT.null.10",
                 "SYS.NODE_METRICS.RECEIVED_BYTES_COUNT.null.19",
                 "SYS.NODE_METRICS.OUTBOUND_MESSAGES_QUEUE.null.10",
-                "SYS.SCHEMAS.SCHEMA_NAME.null.2147483647",
-                "SYS.TABLES.CACHE_GROUP_ID.null.10",
-                "SYS.TABLES.CACHE_GROUP_NAME.null.2147483647",
                 "SYS.TABLES.CACHE_ID.null.10",
                 "SYS.TABLES.CACHE_NAME.null.2147483647",
                 "SYS.TABLES.SCHEMA_NAME.null.2147483647",
@@ -730,6 +760,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TABLES.VALUE_ALIAS.null.2147483647",
                 "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
                 "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647",
+                "SYS.TABLES.IS_INDEX_REBUILD_IN_PROGRESS.null.1",
                 "SYS.METRICS.NAME.null.2147483647",
                 "SYS.METRICS.VALUE.null.2147483647",
                 "SYS.METRICS.DESCRIPTION.null.2147483647",
@@ -754,7 +785,102 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TASKS.JOB_ID.null.2147483647",
                 "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
                 "SYS.TASKS.TASK_CLASS_NAME.null.2147483647",
-                "SYS.TASKS.EXEC_NAME.null.2147483647"
+                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
+                "SYS.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.TYPE.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.USER.null.2147483647",
+                "SYS.CLIENT_CONNECTIONS.VERSION.null.2147483647",
+                "SYS.TASKS.EXEC_NAME.null.2147483647",
+                "SYS.TRANSACTIONS.LOCAL_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.STATE.null.2147483647",
+                "SYS.TRANSACTIONS.XID.null.2147483647",
+                "SYS.TRANSACTIONS.LABEL.null.2147483647",
+                "SYS.TRANSACTIONS.START_TIME.null.19",
+                "SYS.TRANSACTIONS.ISOLATION.null.2147483647",
+                "SYS.TRANSACTIONS.CONCURRENCY.null.2147483647",
+                "SYS.TRANSACTIONS.COLOCATED.null.1",
+                "SYS.TRANSACTIONS.DHT.null.1",
+                "SYS.TRANSACTIONS.IMPLICIT.null.1",
+                "SYS.TRANSACTIONS.IMPLICIT_SINGLE.null.1",
+                "SYS.TRANSACTIONS.INTERNAL.null.1",
+                "SYS.TRANSACTIONS.LOCAL.null.1",
+                "SYS.TRANSACTIONS.NEAR.null.1",
+                "SYS.TRANSACTIONS.ONE_PHASE_COMMIT.null.1",
+                "SYS.TRANSACTIONS.SUBJECT_ID.null.2147483647",
+                "SYS.TRANSACTIONS.SYSTEM.null.1",
+                "SYS.TRANSACTIONS.THREAD_ID.null.19",
+                "SYS.TRANSACTIONS.TIMEOUT.null.19",
+                "SYS.TRANSACTIONS.DURATION.null.19",
+                "SYS.TRANSACTIONS.ORIGINATING_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.OTHER_NODE_ID.null.2147483647",
+                "SYS.TRANSACTIONS.TOP_VER.null.2147483647",
+                "SYS.TRANSACTIONS.KEYS_COUNT.null.10",
+                "SYS.TRANSACTIONS.CACHE_IDS.null.2147483647",
+                "SYS.SCHEMAS.NAME.null.2147483647",
+                "SYS.SCHEMAS.PREDEFINED.null.1",
+                "SYS.VIEWS.NAME.null.2147483647",
+                "SYS.VIEWS.DESCRIPTION.null.2147483647",
+                "SYS.VIEWS.SCHEMA.null.2147483647",
+                "SYS.TABLE_COLUMNS.AFFINITY_COLUMN.null.1",
+                "SYS.TABLE_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCALE.null.10",
+                "SYS.TABLE_COLUMNS.PK.null.1",
+                "SYS.TABLE_COLUMNS.TYPE.null.2147483647",
+                "SYS.TABLE_COLUMNS.DEFAULT_VALUE.null.2147483647",
+                "SYS.TABLE_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.TABLE_NAME.null.2147483647",
+                "SYS.TABLE_COLUMNS.NULLABLE.null.1",
+                "SYS.TABLE_COLUMNS.PRECISION.null.10",
+                "SYS.TABLE_COLUMNS.AUTO_INCREMENT.null.1",
+                "SYS.VIEW_COLUMNS.NULLABLE.null.1",
+                "SYS.VIEW_COLUMNS.SCHEMA_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.COLUMN_NAME.null.2147483647",
+                "SYS.VIEW_COLUMNS.TYPE.null.2147483647",
+                "SYS.VIEW_COLUMNS.PRECISION.null.19",
+                "SYS.VIEW_COLUMNS.DEFAULT_VALUE.null.2147483647",
+                "SYS.VIEW_COLUMNS.SCALE.null.10",
+                "SYS.VIEW_COLUMNS.VIEW_NAME.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.NOTIFY_EXISTING.null.1",
+                "SYS.CONTINUOUS_QUERIES.OLD_VALUE_REQUIRED.null.1",
+                "SYS.CONTINUOUS_QUERIES.KEEP_BINARY.null.1",
+                "SYS.CONTINUOUS_QUERIES.IS_MESSAGING.null.1",
+                "SYS.CONTINUOUS_QUERIES.AUTO_UNSUBSCRIBE.null.1",
+                "SYS.CONTINUOUS_QUERIES.LAST_SEND_TIME.null.19",
+                "SYS.CONTINUOUS_QUERIES.LOCAL_TRANSFORMED_LISTENER.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.TOPIC.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.BUFFER_SIZE.null.10",
+                "SYS.CONTINUOUS_QUERIES.REMOTE_TRANSFORMER.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.DELAYED_REGISTER.null.1",
+                "SYS.CONTINUOUS_QUERIES.IS_QUERY.null.1",
+                "SYS.CONTINUOUS_QUERIES.NODE_ID.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.INTERVAL.null.19",
+                "SYS.CONTINUOUS_QUERIES.IS_EVENTS.null.1",
+                "SYS.CONTINUOUS_QUERIES.ROUTINE_ID.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.REMOTE_FILTER.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.CACHE_NAME.null.2147483647",
+                "SYS.CONTINUOUS_QUERIES.LOCAL_LISTENER.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.STRIPE_INDEX.null.10",
+                "SYS.STRIPED_THREADPOOL_QUEUE.DESCRIPTION.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.TASK_NAME.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.STRIPE_INDEX.null.10",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.DESCRIPTION.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.TASK_NAME.null.2147483647",
+                "SYS.CACHE_GROUP_PAGE_LISTS.CACHE_GROUP_ID.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.PARTITION_ID.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.NAME.null.2147483647",
+                "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_NUMBER.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_SIZE.null.19",
+                "SYS.CACHE_GROUP_PAGE_LISTS.STRIPES_COUNT.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.CACHED_PAGES_COUNT.null.10",
+                "SYS.DATA_REGION_PAGE_LISTS.NAME.null.2147483647",
+                "SYS.DATA_REGION_PAGE_LISTS.BUCKET_NUMBER.null.10",
+                "SYS.DATA_REGION_PAGE_LISTS.BUCKET_SIZE.null.19",
+                "SYS.DATA_REGION_PAGE_LISTS.STRIPES_COUNT.null.10",
+                "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
@@ -1110,8 +1236,17 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
-            assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite database product version.",
+                conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite driver version.",
+                conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+
+        try (Connection conn = DriverManager.getConnection(URL_PARTITION_AWARENESS)) {
+            assertEquals("Unexpected ignite database product version.",
+                conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite driver version.",
+                conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
         }
     }
 

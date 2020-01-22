@@ -30,7 +30,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Release\Apache.Ignite.Linq.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Apache.Ignite.Linq.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
@@ -77,7 +77,6 @@
     <Compile Include="Impl\ExpressionWalker.cs" />
     <Compile Include="Impl\JoinInnerSequenceParameterNotNullExpressionVisitor.cs" />
     <Compile Include="IUpdateDescriptor.cs" />
-    <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryOptions.cs" />
   </ItemGroup>

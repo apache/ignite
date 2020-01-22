@@ -49,6 +49,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -113,7 +114,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
             .cache().context().database());
 
-        dbMgr.forceCheckpoint("test compression").finishFuture().get();
+        dbMgr.forceCheckpoint("test compression").futureFor(FINISHED).get();
 
         FilePageStoreManager storeMgr = dbMgr.getFileStoreManager();
 
@@ -212,7 +213,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
             assertTrue(cache.putIfAbsent(i, new TestVal(i)));
 
             if (i % 50_000 == 0) {
-                dbMgr.forceCheckpoint("test").finishFuture().get();
+                dbMgr.forceCheckpoint("test").futureFor(FINISHED).get();
 
                 long sparse = mreg.<LongMetric>findMetric("SparseStorageSize").value();
                 long size = mreg.<LongMetric>findMetric("StorageSize").value();

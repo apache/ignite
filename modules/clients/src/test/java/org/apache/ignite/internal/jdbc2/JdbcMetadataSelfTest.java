@@ -313,7 +313,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -325,15 +324,25 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "CACHE_GROUPS",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
-            "LOCAL_SQL_QUERY_HISTORY",
-            "LOCAL_SQL_RUNNING_QUERIES",
+            "SQL_QUERIES_HISTORY",
+            "SQL_QUERIES",
+            "SCAN_QUERIES",
             "NODES",
             "NODE_ATTRIBUTES",
             "NODE_METRICS",
             "SCHEMAS",
             "TABLES",
             "TASKS",
-            "SERVICES"
+            "SERVICES",
+            "CLIENT_CONNECTIONS",
+            "TRANSACTIONS",
+            "VIEWS",
+            "TABLE_COLUMNS",
+            "VIEW_COLUMNS",
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "CACHE_GROUP_PAGE_LISTS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -358,7 +367,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertEquals(expViews, actViews);
         }
     }
-
 
     /**
      * @throws Exception If failed.

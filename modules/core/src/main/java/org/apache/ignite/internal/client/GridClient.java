@@ -31,16 +31,15 @@ import java.util.UUID;
  * can have multiple instances of {@code GridClient} running in the same VM. For
  * information on how to start or stop Grid please refer to {@link GridClientFactory} class.
  * <p>
- * Use following methods to get access to remote cache functionality:
+ * Use the following method to get access to remote cache functionality:
  * <ul>
- * <li>{@link #data()}</li>
  * <li>{@link #data(String)}</li>
  * </ul>
  * Use following methods to get access to remote compute functionality:
  * <ul>
  * <li>{@link #compute()}</li>
  * </ul>
- * <h1 class="header">Affinity Awareness</h1>
+ * <h1 class="header">Partition awareness</h1>
  * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
@@ -61,14 +60,6 @@ public interface GridClient extends AutoCloseable {
      * @return Generated client id.
      */
     public UUID id();
-
-    /**
-     * Gets a data projection for a default grid cache with {@code null} name.
-     *
-     * @return Data projection for grid cache with {@code null} name.
-     * @throws GridClientException If client was closed.
-     */
-    public GridClientData data() throws GridClientException;
 
     /**
      * Gets a data projection for grid cache with name <tt>cacheName</tt>. If

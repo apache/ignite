@@ -35,7 +35,9 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -70,16 +72,19 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.CURRENT_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -87,6 +92,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 class TcpClientChannel implements ClientChannel {
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_6_0,
         V1_5_0,
         V1_4_0,
         V1_2_0,
@@ -98,7 +104,13 @@ class TcpClientChannel implements ClientChannel {
     private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
     /** Protocol version agreed with the server. */
-    private ProtocolVersion ver = V1_5_0;
+    private ProtocolVersion ver = CURRENT_VER;
+
+    /** Server node ID. */
+    private UUID srvNodeId;
+
+    /** Server topology version. */
+    private AffinityTopologyVersion srvTopVer;
 
     /** Channel. */
     private final Socket sock;
@@ -120,6 +132,9 @@ class TcpClientChannel implements ClientChannel {
 
     /** Pending requests. */
     private final Map<Long, ClientRequestFuture> pendingReqs = new ConcurrentHashMap<>();
+
+    /** Topology change listeners. */
+    private final Collection<Consumer<ClientChannel>> topChangeLsnrs = new CopyOnWriteArrayList<>();
 
     /** Constructor. */
     TcpClientChannel(ClientChannelConfiguration cfg) throws ClientConnectionException, ClientAuthenticationException {
@@ -276,9 +291,13 @@ class TcpClientChannel implements ClientChannel {
             short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
-                // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
-                dataInput.readLong(); // topVer.
-                dataInput.readInt(); // minorTopVer.
+                long topVer = dataInput.readLong();
+                int minorTopVer = dataInput.readInt();
+
+                srvTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                for (Consumer<ClientChannel> lsnr : topChangeLsnrs)
+                    lsnr.accept(this);
             }
 
             if ((flags & ClientFlag.ERROR) != 0)
@@ -312,6 +331,21 @@ class TcpClientChannel implements ClientChannel {
     /** {@inheritDoc} */
     @Override public ProtocolVersion serverVersion() {
         return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID serverNodeId() {
+        return srvNodeId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion serverTopologyVersion() {
+        return srvTopVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addTopologyChangeListener(Consumer<ClientChannel> lsnr) {
+        topChangeLsnrs.add(lsnr);
     }
 
     /** Validate {@link ClientConfiguration}. */
@@ -401,8 +435,7 @@ class TcpClientChannel implements ClientChannel {
         try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
             if (res.readBoolean()) { // Success flag.
                 if (ver.compareTo(V1_4_0) >= 0)
-                    // TODO: IGNITE-11898 Implement Best Effort Affinity for java thin client.
-                    r.readUuid(); // Server node UUID.
+                    srvNodeId = r.readUuid(); // Server node UUID.
             }
             else {
                 ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());

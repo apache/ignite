@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,10 +53,12 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        this.mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
+        if (ctx.query().getIndexing() instanceof IgniteH2Indexing) {
+            mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        sysViewReg.forEach(this::register);
-        sysViewReg.addSystemViewCreationListener(this::register);
+            sysViewReg.forEach(this::register);
+            sysViewReg.addSystemViewCreationListener(this::register);
+        }
     }
 
     /**
@@ -75,7 +78,8 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
 
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        SystemViewLocal<?> view = new SystemViewLocal<>(ctx, sysView);
+        SystemViewLocal<?> view = sysView instanceof FiltrableSystemView ?
+            new FiltrableSystemViewLocal<>(ctx, sysView) : new SystemViewLocal<>(ctx, sysView);
 
         mgr.createSystemView(SCHEMA_SYS, view);
     }

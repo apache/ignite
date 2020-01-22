@@ -31,14 +31,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -60,12 +60,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
@@ -162,7 +164,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
 
-        long stop = U.currentTimeMillis() + 60_000;
+        long stop = U.currentTimeMillis() + 30_000;
 
         Random r = new Random();
 
@@ -187,7 +189,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, 1, "node-restarter");
 
-        doRandomUpdates(r, client, primaryKeys, cache, stop).get();
+        doRandomUpdates(r, client, primaryKeys, cache, () -> U.currentTimeMillis() >= stop).get(stop + 30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
@@ -214,7 +216,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + 60_000;
+        long stop = U.currentTimeMillis() + 30_000;
 
         long seed = System.nanoTime();
 
@@ -251,7 +253,83 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, 1, "node-restarter");
 
-        doRandomUpdates(r, prim, primaryKeys, cache, stop).get();
+        doRandomUpdates(r, prim, primaryKeys, cache, () -> U.currentTimeMillis() >= stop).get(stop + 30_000);
+        fut.get();
+
+        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Test primary-backup partitions consistency while restarting backup nodes under load with changing BLT.
+     */
+    @Test
+    public void testPartitionConsistencyWithBackupRestart_ChangeBLT() throws Exception {
+        backups = 2;
+
+        final int srvNodes = SERVER_NODES + 1; // Add one non-owner node to test to increase entropy.
+
+        Ignite prim = startGrids(srvNodes);
+
+        prim.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = prim.cache(DEFAULT_CACHE_NAME);
+
+        List<Integer> primaryKeys = primaryKeys(cache, 10_000);
+
+        List<Ignite> backups = backupNodes(primaryKeys.get(0), DEFAULT_CACHE_NAME);
+
+        assertFalse(backups.contains(prim));
+
+        long stop = U.currentTimeMillis() + 30_000;
+
+        long seed = System.nanoTime();
+
+        log.info("Seed: " + seed);
+
+        Random r = new Random(seed);
+
+        assertTrue(prim == grid(0));
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            while (U.currentTimeMillis() < stop) {
+                doSleep(1_000);
+
+                Ignite restartNode = grid(1 + r.nextInt(backups.size()));
+
+                assertFalse(prim == restartNode);
+
+                String name = restartNode.name();
+
+                stopGrid(true, name);
+
+                try {
+                    waitForTopology(SERVER_NODES);
+
+                    if (persistenceEnabled())
+                        resetBaselineTopology();
+
+                    awaitPartitionMapExchange();
+
+                    doSleep(5_000);
+
+                    startGrid(name);
+
+                    if (persistenceEnabled())
+                        resetBaselineTopology();
+
+                    awaitPartitionMapExchange();
+                }
+                catch (IllegalStateException e) {
+                    // No-op.
+                }
+                catch (Exception e) {
+                    fail(X.getFullStackTrace(e));
+                }
+            }
+        }, 1, "node-restarter");
+
+        // Wait with timeout to avoid hanging suite.
+        doRandomUpdates(r, prim, primaryKeys, cache, () -> U.currentTimeMillis() >= stop).get(stop + 30_000);
         fut.get();
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
@@ -262,7 +340,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * entries could undo deletion causing inconsistency.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, value = "1000")
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared() throws Exception {
         backups = 2;
 
@@ -273,7 +350,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         List<Integer> keys = partitionKeys(prim.cache(DEFAULT_CACHE_NAME), primaryParts[0], 2, 0);
 
         prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
-        prim.cache(DEFAULT_CACHE_NAME).put(keys.get(1), keys.get(1));
 
         forceCheckpoint();
 
@@ -301,8 +377,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             doSleep(2000);
 
-            prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1)); // Ensure queue cleanup is triggered.
-
+            // Ensure queue cleanup is triggered before releasing supply message.
             spi.stopBlock();
         });
 
@@ -358,6 +433,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             if (name.equals(backupName) && msg instanceof GridDhtPartitionSupplyMessage) {
                 GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                if (msg0.groupId() != CU.cacheId(DEFAULT_CACHE_NAME))
+                    return false;
 
                 Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
 
@@ -438,9 +516,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
 
         // Block all rebalance from crd.
-        crdSpi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+        crdSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtPartitionSupplyMessage;
+            }
+        });
 
-        crd.cluster().active(true);
+        crd.cluster().active(true); // Rebalancing is triggered on activation.
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             try {
@@ -469,9 +551,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      */
     @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_NoOp() throws Exception {
-        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(s -> {
-        }, s -> {
-        });
+        testPartitionConsistencyDuringRebalanceConcurrentlyWithTopologyChange(s -> {}, s -> {});
     }
 
     /**
@@ -622,16 +702,16 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         // Put one key per partition.
         try(IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int k = 0; k < PARTS_CNT; k++)
+            for (int k = 0; k < partitions(); k++)
                 streamer.addData(k, 0);
         }
 
         Integer key0 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
         Integer key = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(crd);
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
 
-        spi.blockMessages((node, message) -> {
+        crdSpi.blockMessages((node, message) -> {
             if (message instanceof GridDhtPartitionsFullMessage) {
                 GridDhtPartitionsFullMessage tmp = (GridDhtPartitionsFullMessage)message;
 
@@ -644,11 +724,11 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         // Locks mapped wait.
         CountDownLatch l = new CountDownLatch(1);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture startNodeFut = GridTestUtils.runAsync(() -> {
             U.awaitQuiet(l);
 
             try {
-                startGrid(SERVER_NODES);
+                startGrid(SERVER_NODES); // Start node out of BLT.
             }
             catch (Exception e) {
                 fail(X.getFullStackTrace(e));
@@ -662,7 +742,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         });
 
         IgniteInternalFuture txFut = GridTestUtils.runAsync(() -> {
-            try(Transaction tx = client.transactions().txStart()) {
+            try (Transaction tx = client.transactions().txStart()) {
                 Map<Integer, Integer> map = new LinkedHashMap<>();
 
                 map.put(key, key); // clientFirst=true in lockAll.
@@ -680,7 +760,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
                 l.countDown();
 
-                spi.waitForBlocked(); // Block PME after finish on crd and wait on others.
+                crdSpi.waitForBlocked(); // Block PME after finish on crd and wait on others.
 
                 cliSpi.stopBlock(); // Start remote lock mapping.
             }
@@ -689,12 +769,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         });
 
-        txFut.get(); // Transaction should not be blocked by concurrent PME.
         lockFut.get();
-
-        spi.stopBlock();
-
-        fut.get();
+        crdSpi.stopBlock();
+        txFut.get();
+        startNodeFut.get();
 
         awaitPartitionMapExchange();
 
@@ -726,6 +804,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         rndAddrsField.set(customDiscoSpi, true);
 
         Ignite crd = startGrid(0); // Start coordinator with custom discovery SPI.
+
+        configureBaselineAutoAdjust();
+
         IgniteEx g1 = startGrid(1);
         startGrid(2);
 
@@ -747,6 +828,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertEquals(consistentId, g3.localNode().consistentId());
 
+        crd.cluster().baselineAutoAdjustEnabled(false);
         resetBaselineTopology();
         awaitPartitionMapExchange();
 
@@ -760,7 +842,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteCache<Object, Object> cache2 = client.getOrCreateCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2"));
 
         // Put one key per partition.
-        for (int k = 0; k < PARTS_CNT; k++) {
+        for (int k = 0; k < partitions(); k++) {
             cache.put(k, 0);
             cache2.put(k, 0);
         }
@@ -894,18 +976,23 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * @param near Near node.
      * @param primaryKeys Primary keys.
      * @param cache Cache.
-     * @param stop Time to stop.
+     * @param stopClo A closure providing stop condition.
      * @return Finish future.
      */
-    private IgniteInternalFuture<?> doRandomUpdates(Random r, Ignite near, List<Integer> primaryKeys,
-        IgniteCache<Object, Object> cache, long stop) throws Exception {
+    protected IgniteInternalFuture<?> doRandomUpdates(
+        Random r,
+        Ignite near,
+        List<Integer> primaryKeys,
+        IgniteCache<Object, Object> cache,
+        BooleanSupplier stopClo
+    ) throws Exception {
         LongAdder puts = new LongAdder();
         LongAdder removes = new LongAdder();
 
         final int max = 100;
 
         return multithreadedAsync(() -> {
-            while (U.currentTimeMillis() < stop) {
+            while (!stopClo.getAsBoolean()) {
                 int rangeStart = r.nextInt(primaryKeys.size() - max);
                 int range = 5 + r.nextInt(max - 5);
 
@@ -986,6 +1073,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             if (name.equals(backupName) && msg instanceof GridDhtPartitionSupplyMessage) {
                 GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
+
+                if (msg0.groupId() != CU.cacheId(DEFAULT_CACHE_NAME))
+                    return false;
 
                 Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
 

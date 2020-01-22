@@ -55,6 +55,8 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -128,6 +130,24 @@ public class GridNioServer<T> {
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
+
+    /** */
+    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME = "outboundMessagesQueueSize";
+
+    /** */
+    public static final String OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Number of messages waiting to be sent";
+
+    /** */
+    public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
+
+    /** */
+    public static final String RECEIVED_BYTES_METRIC_DESC = "Total number of bytes received by current node";
+
+    /** */
+    public static final String SENT_BYTES_METRIC_NAME = "sentBytes";
+
+    /** */
+    public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
 
     /**
      *
@@ -213,8 +233,18 @@ public class GridNioServer<T> {
     /** Whether direct mode is used. */
     private final boolean directMode;
 
-    /** Metrics listener. */
-    private final GridNioMetricsListener metricsLsnr;
+    /** */
+    @Nullable private final MetricRegistry mreg;
+
+    /** Received bytes count metric. */
+    @Nullable private final LongAdderMetric rcvdBytesCntMetric;
+
+    /** Sent bytes count metric. */
+    @Nullable private final LongAdderMetric sentBytesCntMetric;
+
+    /** Outbound messages queue size. */
+    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
@@ -267,12 +297,12 @@ public class GridNioServer<T> {
      * @param sndQueueLimit Send queue limit.
      * @param directMode Whether direct mode is used.
      * @param daemon Daemon flag to create threads.
-     * @param metricsLsnr Metrics listener.
      * @param writerFactory Writer factory.
      * @param skipRecoveryPred Skip recovery predicate.
      * @param msgQueueLsnr Message queue size listener.
      * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param workerLsnr Worker lifecycle listener.
+     * @param mreg Metrics registry.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -293,12 +323,12 @@ public class GridNioServer<T> {
         int sndQueueLimit,
         boolean directMode,
         boolean daemon,
-        GridNioMetricsListener metricsLsnr,
         GridNioMessageWriterFactory writerFactory,
         IgnitePredicate<Message> skipRecoveryPred,
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
+        @Nullable MetricRegistry mreg,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -382,7 +412,6 @@ public class GridNioServer<T> {
         }
 
         this.directMode = directMode;
-        this.metricsLsnr = metricsLsnr;
         this.writerFactory = writerFactory;
 
         this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
@@ -404,6 +433,19 @@ public class GridNioServer<T> {
         }
 
         this.balancer = balancer0;
+
+        this.mreg = mreg;
+
+        rcvdBytesCntMetric = mreg == null ?
+            null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
+
+        sentBytesCntMetric = mreg == null ?
+            null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
+
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        );
     }
 
     /**
@@ -1133,8 +1175,8 @@ public class GridNioServer<T> {
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-            if (metricsLsnr != null)
-                metricsLsnr.onBytesReceived(cnt);
+            if (rcvdBytesCntMetric != null)
+                rcvdBytesCntMetric.add(cnt);
 
             ses.bytesReceived(cnt);
 
@@ -1195,8 +1237,8 @@ public class GridNioServer<T> {
                     if (log.isTraceEnabled())
                         log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                    if (metricsLsnr != null)
-                        metricsLsnr.onBytesSent(cnt);
+                    if (sentBytesCntMetric != null)
+                        sentBytesCntMetric.add(cnt);
 
                     ses.bytesSent(cnt);
                 }
@@ -1296,8 +1338,8 @@ public class GridNioServer<T> {
             if (cnt == 0)
                 return;
 
-            if (metricsLsnr != null)
-                metricsLsnr.onBytesReceived(cnt);
+            if (rcvdBytesCntMetric != null)
+                rcvdBytesCntMetric.add(cnt);
 
             ses.bytesReceived(cnt);
             onRead(cnt);
@@ -1377,8 +1419,8 @@ public class GridNioServer<T> {
                 if (sslNetBuf != null) {
                     int cnt = sockCh.write(sslNetBuf);
 
-                    if (metricsLsnr != null)
-                        metricsLsnr.onBytesSent(cnt);
+                    if (sentBytesCntMetric != null)
+                        sentBytesCntMetric.add(cnt);
 
                     ses.bytesSent(cnt);
 
@@ -1494,8 +1536,8 @@ public class GridNioServer<T> {
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                        if (metricsLsnr != null)
-                            metricsLsnr.onBytesSent(cnt);
+                        if (sentBytesCntMetric != null)
+                            sentBytesCntMetric.add(cnt);
 
                         ses.bytesSent(cnt);
                     }
@@ -1551,8 +1593,8 @@ public class GridNioServer<T> {
             while ((buf = queue.peek()) != null) {
                 int cnt = sockCh.write(buf);
 
-                if (metricsLsnr != null)
-                    metricsLsnr.onBytesSent(cnt);
+                if (sentBytesCntMetric != null)
+                    sentBytesCntMetric.add(cnt);
 
                 ses.bytesSent(cnt);
 
@@ -1681,8 +1723,8 @@ public class GridNioServer<T> {
                 if (log.isTraceEnabled())
                     log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
 
-                if (metricsLsnr != null)
-                    metricsLsnr.onBytesSent(cnt);
+                if (sentBytesCntMetric != null)
+                    sentBytesCntMetric.add(cnt);
 
                 ses.bytesSent(cnt);
                 onWrite(cnt);
@@ -2583,6 +2625,7 @@ public class GridNioServer<T> {
                     (InetSocketAddress)sockCh.getRemoteAddress(),
                     fut.accepted(),
                     sndQueueLimit,
+                    mreg,
                     writeBuf,
                     readBuf);
 
@@ -2708,7 +2751,8 @@ public class GridNioServer<T> {
             if (e != null) {
                 // Print stack trace only if has runtime exception in it's cause.
                 if (e.hasCause(IOException.class))
-                    U.warn(log, "Closing NIO session because of unhandled exception [cls=" + e.getClass() +
+                    U.warn(log, "Client disconnected abruptly due to network connection loss or because " +
+                        "the connection was left open on application shutdown. [cls=" + e.getClass() +
                         ", msg=" + e.getMessage() + ']');
                 else
                     U.error(log, "Closing NIO session because of unhandled exception.", e);
@@ -2862,12 +2906,10 @@ public class GridNioServer<T> {
      * @return Write queue size.
      */
     public int outboundMessagesQueueSize() {
-        int res = 0;
+        if (outboundMessagesQueueSizeMetric == null)
+            return -1;
 
-        for (GridSelectorNioSessionImpl ses : sessions)
-            res += ses.writeQueueSize();
-
-        return res;
+        return (int) outboundMessagesQueueSizeMetric.value();
     }
 
     /**
@@ -3654,7 +3696,7 @@ public class GridNioServer<T> {
         private boolean directBuf;
 
         /** Byte order. */
-        private ByteOrder byteOrder = ByteOrder.nativeOrder();
+        private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
 
         /** NIO server listener. */
         private GridNioServerListener<T> lsnr;
@@ -3670,9 +3712,6 @@ public class GridNioServer<T> {
 
         /** Whether direct mode is used. */
         private boolean directMode;
-
-        /** Metrics listener. */
-        private GridNioMetricsListener metricsLsnr;
 
         /** NIO filters. */
         private GridNioFilter[] filters;
@@ -3707,6 +3746,9 @@ public class GridNioServer<T> {
         /** Worker lifecycle listener to be used by server's worker threads. */
         private GridWorkerListener workerLsnr;
 
+        /** Metrics registry. */
+        private MetricRegistry mreg;
+
         /**
          * Finishes building the instance.
          *
@@ -3731,12 +3773,12 @@ public class GridNioServer<T> {
                 sndQueueLimit,
                 directMode,
                 daemon,
-                metricsLsnr,
                 writerFactory,
                 skipRecoveryPred,
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
                 workerLsnr,
+                mreg,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3913,16 +3955,6 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param metricsLsnr Metrics listener.
-         * @return This for chaining.
-         */
-        public Builder<T> metricsListener(GridNioMetricsListener metricsLsnr) {
-            this.metricsLsnr = metricsLsnr;
-
-            return this;
-        }
-
-        /**
          * @param filters NIO filters.
          * @return This for chaining.
          */
@@ -3998,6 +4030,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> workerListener(GridWorkerListener workerLsnr) {
             this.workerLsnr = workerLsnr;
+
+            return this;
+        }
+
+        /**
+         * @param mreg Metrics registry.
+         * @return This for chaining.
+         */
+        public Builder<T> metricRegistry(MetricRegistry mreg) {
+            this.mreg = mreg;
 
             return this;
         }
