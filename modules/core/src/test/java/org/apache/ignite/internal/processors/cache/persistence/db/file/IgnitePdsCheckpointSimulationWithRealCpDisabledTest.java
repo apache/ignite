@@ -334,8 +334,8 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             if (op != GridCacheOperation.DELETE)
                 val = cctx.toCacheObject("value-" + i);
 
-            entries.add(new DataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
-                cctx.affinity().partition(i), i));
+            entries.add(new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
+                0L, cctx.affinity().partition(i), i));
         }
 
         UUID cpId = UUID.randomUUID();

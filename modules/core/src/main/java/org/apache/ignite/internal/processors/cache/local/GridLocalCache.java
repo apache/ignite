@@ -568,7 +568,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
                                                 entry.unswap();
 
-                                                GridCacheVersion newVer = ctx.versions().next();
+                                                GridCacheVersion newVer = nextVersion();
 
                                                 EntryGetResult verVal = entry.versionedValue(
                                                     cacheVal,
@@ -712,5 +712,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                 }
             }, ctx.operationContextPerCall(), /*retry*/false);
         }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion nextVersion() {
+        return ctx.versions().next(ctx.shared().kernalContext().discovery().topologyVersion());
     }
 }

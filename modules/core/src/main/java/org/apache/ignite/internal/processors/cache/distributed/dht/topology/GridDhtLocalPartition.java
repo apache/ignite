@@ -1127,7 +1127,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @throws NodeStoppingException If node stopping.
      */
     private long clearAll(EvictionContext evictionCtx) throws NodeStoppingException {
-        GridCacheVersion clearVer = ctx.versions().next();
+        GridCacheVersion clearVer = ctx.versions().next(ctx.kernalContext().discovery().topologyVersion());
 
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
 
