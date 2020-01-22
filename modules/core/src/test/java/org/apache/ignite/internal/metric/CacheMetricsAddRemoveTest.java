@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.Arrays;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,15 +108,15 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     /** */
     private void checkMetricsNotEmpty(String cachePrefix) {
         for (int i=0; i<2; i++) {
-            GridMetricManager mmgr = metricManager(i);
+            IgniteMetric mmgr = metricManager(i);
 
-            MetricRegistry mreg = mmgr.getOrCreate(cachePrefix);
+            ReadOnlyMetricRegistry mreg = mmgr.registry(cachePrefix);
 
             assertNotNull(mreg.metric(CACHE_GETS));
             assertNotNull(mreg.metric(CACHE_PUTS));
 
             if (nearEnabled) {
-                mreg = mmgr.getOrCreate(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, true));
+                mreg = mmgr.registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, true));
 
                 assertNotNull(mreg.metric(CACHE_GETS));
                 assertNotNull(mreg.metric(CACHE_PUTS));
@@ -127,15 +127,15 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     /** */
     private void checkMetricsEmpty(String cachePrefix) {
         for (int i=0; i<3; i++) {
-            GridMetricManager mmgr = metricManager(i);
+            IgniteMetric mmgr = metricManager(i);
 
-            MetricRegistry mreg = mmgr.getOrCreate(cachePrefix);
+            ReadOnlyMetricRegistry mreg = mmgr.registry(cachePrefix);
 
             assertNull(mreg.metric(metricName(cachePrefix, CACHE_GETS)));
             assertNull(mreg.metric(metricName(cachePrefix, CACHE_PUTS)));
 
             if (nearEnabled) {
-                mreg = mmgr.getOrCreate(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, true));
+                mreg = mmgr.registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, true));
 
                 assertNull(mreg.metric(CACHE_GETS));
                 assertNull(mreg.metric(CACHE_PUTS));
@@ -144,10 +144,10 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private GridMetricManager metricManager(int gridIdx) {
+    private IgniteMetric metricManager(int gridIdx) {
         if (gridIdx < 2)
-            return grid(0).context().metric();
+            return grid(0).metrics();
         else
-            return grid("client").context().metric();
+            return grid("client").metrics();
     }
 }

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -63,7 +64,10 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
 
-            MetricRegistry mreg = ctx.metric().getOrCreate(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
+            ReadOnlyMetricRegistry mreg = ctx.metric().registry(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
+
+            if (mreg == null)
+                emptyIterator();
 
             IntMetric grpId = mreg.metric("grpId");
             ObjectMetric<String> grpName = mreg.metric("name");
@@ -88,7 +92,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
                 grpCtx -> toRow(ses,
                     grpCtx.groupId(),
                     grpCtx.cacheOrGroupName(),
-                    mmgr.getOrCreate(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
+                    mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
                 true,
                 grpCtx -> !grpCtx.systemCache());
         }
@@ -97,7 +101,10 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     }
 
     /** */
-    private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mreg) {
+    private Row toRow(Session ses, int grpId, String grpName, ReadOnlyMetricRegistry mreg) {
+        if (mreg == null)
+            return createRow(ses, grpId, grpName, 0, 0);
+
         IntMetric grpIdMetric = mreg.metric("grpId");
 
         if (grpIdMetric == null)

@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MetricsMxBean;
@@ -283,23 +282,23 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            HistogramMetricImpl getTime = g0.context().metric().getOrCreate(cacheRegName).metric("GetTime");
+            HistogramMetric getTime = g0.metrics().registry(cacheRegName).metric("GetTime");
 
             assertNotEquals(BOUNDS.length, getTime.bounds().length);
 
             metricsBean(g0).configureHistogramMetric(mname, BOUNDS);
 
             assertArrayEquals(BOUNDS,
-                g0.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
+                g0.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             assertArrayEquals(BOUNDS,
-                g1.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
+                g1.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
         }, (g0, g1) -> {
             assertArrayEquals(BOUNDS,
-                g0.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
+                g0.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             assertArrayEquals(BOUNDS,
-                g1.context().metric().getOrCreate(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
+                g1.metrics().registry(cacheRegName).<HistogramMetric>metric("GetTime").bounds());
 
             g0.destroyCache("test");
 

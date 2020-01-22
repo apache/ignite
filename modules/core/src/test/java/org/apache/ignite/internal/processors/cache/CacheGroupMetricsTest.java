@@ -33,6 +33,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteMetric;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -45,7 +46,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -393,9 +393,9 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
         T2<CacheGroupMetricsMXBean, ReadOnlyMetricRegistry> mxBean0Grp2 = cacheGroupMetrics(0, "group2");
         T2<CacheGroupMetricsMXBean, ReadOnlyMetricRegistry> mxBean0Grp3 = cacheGroupMetrics(0, "cache4");
 
-        GridMetricManager mmgr = ignite.context().metric();
+        IgniteMetric mmgr = ignite.metrics();
 
-        LongMetric totalPages = mmgr.getOrCreate(metricName(DATAREGION_METRICS_PREFIX, "default"))
+        LongMetric totalPages = mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, "default"))
             .metric("TotalAllocatedPages");
 
         assertEquals(totalPages.value(),
