@@ -17,17 +17,16 @@
 
 package org.apache.ignite.yardstick.cache.dml;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.Person1;
 import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkUtils;
+
+import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Ignite benchmark that performs SQL UPDATE operations.
@@ -37,39 +36,25 @@ public class IgniteSqlUpdateBenchmark extends IgniteCacheAbstractBenchmark<Integ
     @Override public void setUp(final BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        final AtomicInteger i = new AtomicInteger();
+        try (IgniteDataStreamer<Integer, Person1> dataLdr = ignite().dataStreamer(cache().getName())) {
+            for (int i = 0; i < args.range(); i++) {
+                if (i % 100 == 0 && Thread.currentThread().isInterrupted())
+                    break;
 
-        Collection<Thread> setupThreads = new ArrayList<>(cfg.threads());
+                dataLdr.addData(i, new Person1(i));
 
-        for (int j = 0; j < cfg.threads(); j++) {
-            Thread t = new Thread() {
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    int k;
-
-                    while ((k = i.getAndIncrement()) < args.range()) {
-                        cache().put(k, new Person1(k));
-                        if (++k % 100000 == 0)
-                            BenchmarkUtils.println(cfg, "UPDATE setUp: have successfully put " + k + " items");
-                    }
-                }
-            };
-
-            setupThreads.add(t);
-
-            t.start();
+                if (i % 100000 == 0)
+                    println(cfg, "Populated persons: " + i);
+            }
         }
-
-        for (Thread t : setupThreads)
-            t.join();
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        cache().query(new SqlFieldsQuery("update Person1 set _val = ? where _key = ?")
-            .setArgs(new Person1(rnd.nextInt(args.range())), rnd.nextInt(args.range())));
+        cache().query(new SqlFieldsQuery("update Person1 set val1 = ? where _key = ?")
+            .setArgs(rnd.nextInt(args.range()), rnd.nextInt(args.range())));
 
         return true;
     }

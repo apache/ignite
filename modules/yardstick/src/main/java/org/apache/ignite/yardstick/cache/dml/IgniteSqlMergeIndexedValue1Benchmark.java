@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
-import org.apache.ignite.yardstick.cache.model.Person1;
 
 /**
  * Ignite benchmark that performs SQL MERGE operations for entity with indexed fields.
@@ -31,7 +30,7 @@ public class IgniteSqlMergeIndexedValue1Benchmark extends IgniteCacheAbstractBen
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.query(new SqlFieldsQuery("merge into Person1(_key, _val) values (?, ?)").setArgs(key, new Person1(key)));
+        cache.query(new SqlFieldsQuery("merge into Person1(_key, val1) values (?, ?)").setArgs(key, key));
 
         return true;
     }

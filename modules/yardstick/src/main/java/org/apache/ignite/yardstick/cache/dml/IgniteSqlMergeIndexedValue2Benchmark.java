@@ -31,7 +31,9 @@ public class IgniteSqlMergeIndexedValue2Benchmark extends IgniteCacheAbstractBen
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.query(new SqlFieldsQuery("merge into Person2(_key, _val) values (?, ?)").setArgs(key, new Person2(key)));
+        Person2 p = new Person2(key);
+        cache.query(new SqlFieldsQuery("merge into Person2(_key, val1, val2) values (?, ?, ?)")
+            .setArgs(key, p.val1(), p.val2()));
 
         return true;
     }

@@ -100,6 +100,46 @@ public class Person8 implements Serializable {
         return result;
     }
 
+    /** */
+    public int val1() {
+        return val1;
+    }
+
+    /** */
+    public int val2() {
+        return val2;
+    }
+
+    /** */
+    public int val3() {
+        return val3;
+    }
+
+    /** */
+    public int val4() {
+        return val4;
+    }
+
+    /** */
+    public int val5() {
+        return val5;
+    }
+
+    /** */
+    public int val6() {
+        return val6;
+    }
+
+    /** */
+    public int val7() {
+        return val7;
+    }
+
+    /** */
+    public int val8() {
+        return val8;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return "Person8 [val1=" + val1 + ", val2=" + val2 + ", val3=" + val3 + ", val4=" + val4 + ", val5=" + val5 +

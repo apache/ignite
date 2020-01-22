@@ -54,6 +54,16 @@ public class Person2 implements Serializable {
         return val1 == value2.val1 && val2 == value2.val2;
     }
 
+    /** */
+    public int val1() {
+        return val1;
+    }
+
+    /** */
+    public int val2() {
+        return val2;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * val1 + val2;
