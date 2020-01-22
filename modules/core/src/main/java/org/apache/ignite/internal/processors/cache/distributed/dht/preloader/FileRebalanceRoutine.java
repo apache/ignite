@@ -474,13 +474,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                     idxRebuildFut.cancel();
                 }
-
-                for (Integer grpId : remaining.keySet()) {
-                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                    if (grp != null)
-                        grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
-                }
             }
             catch (IgniteCheckedException e) {
                 if (err != null)
