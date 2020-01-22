@@ -380,6 +380,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.pageListCacheLimit = pageListCacheLimit;
 
+        emptyDataPagesBucket = bucket(MIN_SIZE_FOR_DATA_PAGE, false);
+
         init(metaPageId, initNew);
     }
 

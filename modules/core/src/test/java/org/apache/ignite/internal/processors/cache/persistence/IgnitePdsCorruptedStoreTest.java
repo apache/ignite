@@ -433,45 +433,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test node invalidation due to error on WAL write header.
-     */
-    public void testWalFsyncWriteHeaderFailure() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().active(true);
-
-        ignite.cache(CACHE_NAME1).put(0, 0);
-
-        failingFileIOFactory.createClosure((file, options) -> {
-            FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
-
-            if (file.getName().endsWith(".wal")) {
-                return new FileIODecorator(delegate) {
-                    @Override public int write(ByteBuffer srcBuf) throws IOException {
-                        throw new IOException("No space left on device");
-                    }
-                };
-            }
-
-            return delegate;
-        });
-
-        ignite.context().cache().context().database().checkpointReadLock();
-
-        try {
-            ignite.context().cache().context().wal().log(new CheckpointRecord(null));
-        }
-        catch (StorageException expected) {
-            // No-op.
-        }
-        finally {
-            ignite.context().cache().context().database().checkpointReadUnlock();
-        }
-
-        waitFailure(StorageException.class);
-    }
-
-    /**
      * @param expError Expected error.
      */
     private void waitFailure(Class<? extends Throwable> expError) throws IgniteInterruptedCheckedException {

@@ -1211,8 +1211,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             FileWriteHandle next = initNextWriteHandle(cur);
 
-            next.writeHeader();
-
             boolean swapped = CURR_HND_UPD.compareAndSet(this, hnd, next);
 
             assert swapped : "Concurrent updates on rollover are not allowed";
