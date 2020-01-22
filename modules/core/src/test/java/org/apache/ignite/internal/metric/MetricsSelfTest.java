@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -232,7 +232,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogram() throws Exception {
-        HistogramMetric h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetricImpl h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -343,7 +343,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogramNames() throws Exception {
-        HistogramMetric h = new HistogramMetric("test", null, new long[]{10, 50, 500});
+        HistogramMetricImpl h = new HistogramMetricImpl("test", null, new long[]{10, 50, 500});
 
         Map<String, T2<long[], String[]>> cache = new HashMap<>();
 

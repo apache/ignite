@@ -17,18 +17,23 @@
 
 package org.apache.ignite.spi.metric;
 
-import org.jetbrains.annotations.Nullable;
+import java.util.function.Consumer;
 
 /**
- * Read only metric registry.
+ * Read only metric manager.
  */
-public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
-    /** @return Registry name. */
-    public String name();
+public interface ReadOnlyMetricManager extends Iterable<ReadOnlyMetricRegistry> {
+    /**
+     * Adds listener of metrics registry creation events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 
     /**
-     * @param name Name of the metric.
-     * @return Metric with specified name if exists. Null otherwise.
+     * Adds listener of metrics registry remove events.
+     *
+     * @param lsnr Listener.
      */
-    @Nullable public <M extends Metric> M findMetric(String name);
+    public void addMetricRegistryRemoveListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 }
