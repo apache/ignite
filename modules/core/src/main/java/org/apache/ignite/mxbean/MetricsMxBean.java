@@ -18,8 +18,8 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 
 /**
  * Metrics MXBean interface.

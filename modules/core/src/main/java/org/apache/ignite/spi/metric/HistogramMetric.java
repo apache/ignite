@@ -17,18 +17,12 @@
 
 package org.apache.ignite.spi.metric;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
- * Read only metric registry.
+ * Histogram metric calculates counts of measurements that gets into each bounds interval.
+ * Note, that {@link #value()} will return array length of {@code bounds.length + 1}.
+ * Last element will contains count of measurements bigger then most right value of bounds.
  */
-public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
-    /** @return Registry name. */
-    public String name();
-
-    /**
-     * @param name Name of the metric.
-     * @return Metric with specified name if exists. Null otherwise.
-     */
-    @Nullable public <M extends Metric> M findMetric(String name);
+public interface HistogramMetric extends ObjectMetric<long[]> {
+    /** @return Bounds of this histogram. */
+    public long[] bounds();
 }
