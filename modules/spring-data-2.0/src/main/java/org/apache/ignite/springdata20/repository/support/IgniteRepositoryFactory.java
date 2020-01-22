@@ -33,8 +33,8 @@ import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.AbstractEntityInformation;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
-import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
+import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -121,7 +121,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
     /** {@inheritDoc} */
     @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
-        EvaluationContextProvider evaluationCtxProvider) {
+        QueryMethodEvaluationContextProvider evaluationCtxProvider) {
         return Optional.of((mtd, metadata, factory, namedQueries) -> {
 
             final Query annotation = mtd.getAnnotation(Query.class);
