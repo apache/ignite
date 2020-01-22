@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffheapUpdateSelfTes
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedGetSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedProjectionAffinitySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVariableTopologySelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionGenerationWithCacheStorageTest;
 import org.apache.ignite.internal.processors.cache.IgniteAtomicCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryProcessorNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheIncrementTxTest;
@@ -179,6 +180,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
         suite.addTestSuite(GridCacheLocalIsolatedNodesSelfTest.class);
         suite.addTestSuite(GridCacheFastNodeLeftForTransactionTest.class);
+        suite.addTestSuite(GridCacheVersionGenerationWithCacheStorageTest.class);
 
         // Partitioned cache.
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
