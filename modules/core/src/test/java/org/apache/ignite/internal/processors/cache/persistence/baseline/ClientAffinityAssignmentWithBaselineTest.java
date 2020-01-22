@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -58,7 +58,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -157,20 +156,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
             IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -287,6 +272,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     private void testChangingBaselineDown(String cacheName, boolean lateActivation) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         IgniteEx client1 = null;
         IgniteEx client2 = null;
 
@@ -423,6 +409,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     public void testCrossCacheTxs() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().active(true);
 
         AtomicBoolean stopLoad = new AtomicBoolean(false);

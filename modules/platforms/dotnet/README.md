@@ -2,11 +2,7 @@
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a><img src="https://ptupitsyn.github.io/images/net-framework.png" hspace="20" />
 
-<a href="https://www.nuget.org/packages?q=Apache.Ignite"><img src="https://img.shields.io/nuget/v/Apache.Ignite.svg" /></a>
-
-<a href="https://www.myget.org/gallery/apache-ignite-net-nightly"><img src="https://img.shields.io/myget/apache-ignite-net-nightly/vpre/Apache.Ignite.svg" /></a>
-
-<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests24Java8_IgnitePlatformNet&branch_IgniteTests24Java8=<default>"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests24Java8_IgnitePlatformNet)/statusIcon" /></a>
+<a href="https://www.nuget.org/packages?q=GridGain.Ignite"><img src="https://img.shields.io/nuget/v/GridGain.Ignite.svg" /></a>
 
 ## Getting Started
 

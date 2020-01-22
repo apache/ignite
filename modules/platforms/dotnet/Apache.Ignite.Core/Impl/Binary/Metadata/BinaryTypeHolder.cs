@@ -68,19 +68,27 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         }
 
         /// <summary>
-        /// Get saved flag.
+        /// Gets saved flag.
         /// </summary>
-        /// <returns>True if type metadata was saved at least once.</returns>
-        public bool Saved()
+        /// <value>True if type metadata was saved at least once.</value>
+        public bool IsSaved
         {
-            return _saved;
+            get { return _saved; }
+        }
+
+        /// <summary>
+        /// Gets the cached binary type metadata.
+        /// </summary>
+        public BinaryType BinaryType
+        {
+            get { return _meta; }
         }
 
         /// <summary>
         /// Currently cached field IDs.
         /// </summary>
         /// <returns>Cached field IDs.</returns>
-        public ICollection<int> GetFieldIds()
+        public HashSet<int> GetFieldIds()
         {
             var ids0 = _ids;
 
@@ -134,24 +142,51 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                 // 2. Add new fields.
                 foreach (var fieldMeta in fieldsMap)
                 {
-                    int fieldId = BinaryUtils.FieldId(meta.TypeId, fieldMeta.Key, null, null);
+                    var fieldId = fieldMeta.Value.FieldId;
 
-                    if (!newIds.Contains(fieldId))
-                    {
-                        newIds.Add(fieldId);
-                    }
-
-                    if (!newFields.ContainsKey(fieldMeta.Key))
-                    {
-                        newFields[fieldMeta.Key] = fieldMeta.Value;
-                    }
+                    newIds.Add(fieldId);
+                    newFields[fieldMeta.Key] = fieldMeta.Value;
                 }
+                
+                // 3. Merge schema.
+                var schema = MergeSchemas(meta0, meta); 
 
-                // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
+                // 4. Assign new meta. Order is important here: meta must be assigned before field IDs.
                 _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName, _isEnum, 
-                    meta.EnumValuesMap, _marshaller);
+                    meta.EnumValuesMap, _marshaller, schema);
+                
                 _ids = newIds;
             }
+        }
+
+        /// <summary>
+        /// Merges schemas from two binary types.
+        /// </summary>
+        private static BinaryObjectSchema MergeSchemas(BinaryType a, BinaryType b)
+        {
+            if (a == null || a.Schema == null)
+            {
+                return b.Schema;
+            }
+
+            if (b == null || b.Schema == null)
+            {
+                return a.Schema;
+            }
+
+            var res = new BinaryObjectSchema();
+            
+            foreach (var schema in a.Schema.GetAll())
+            {
+                res.Add(schema.Key, schema.Value);
+            }
+            
+            foreach (var schema in b.Schema.GetAll())
+            {
+                res.Add(schema.Key, schema.Value);
+            }
+
+            return res;
         }
     }
 }

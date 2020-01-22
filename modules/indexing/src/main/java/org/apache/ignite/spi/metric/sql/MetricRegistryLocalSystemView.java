@@ -21,9 +21,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -36,18 +36,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
     /** Metric registry. */
-    private ReadOnlyMetricRegistry mreg;
+    private ReadOnlyMetricManager mreg;
 
     /** Metric filter. */
-    private @Nullable Predicate<MetricRegistry> filter;
+    private @Nullable Predicate<ReadOnlyMetricRegistry> filter;
 
     /**
      * @param ctx Context.
      * @param mreg Metric registry.
      * @param filter Metric registry filter.
      */
-    public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricRegistry mreg,
-        @Nullable Predicate<MetricRegistry> filter) {
+    public MetricRegistryLocalSystemView(GridKernalContext ctx, ReadOnlyMetricManager mreg,
+        @Nullable Predicate<ReadOnlyMetricRegistry> filter) {
         super(SqlViewMetricExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
             ctx,
             newColumn("NAME", Value.STRING),
@@ -62,7 +62,7 @@ public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         return new Iterator<Row>() {
             /** */
-            private Iterator<MetricRegistry> grps = mreg.iterator();
+            private Iterator<ReadOnlyMetricRegistry> grps = mreg.iterator();
 
             /** */
             private Iterator<Metric> curr = Collections.emptyIterator();
@@ -70,7 +70,7 @@ public class MetricRegistryLocalSystemView extends SqlAbstractLocalSystemView {
             /** */
             private boolean advance() {
                 while (grps.hasNext()) {
-                    MetricRegistry mreg = grps.next();
+                    ReadOnlyMetricRegistry mreg = grps.next();
 
                     if (filter != null && !filter.test(mreg))
                         continue;

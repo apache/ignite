@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -112,7 +113,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -275,11 +276,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
+    /** List of exchange aware components. */
+    private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
+
     /** Histogram of PME durations. */
-    private volatile HistogramMetric durationHistogram;
+    private volatile HistogramMetricImpl durationHistogram;
 
     /** Histogram of blocking PME durations. */
-    private volatile HistogramMetric blockingDurationHistogram;
+    private volatile HistogramMetricImpl blockingDurationHistogram;
+
+    /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
+    private volatile long rebalanceDelay;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -1200,6 +1207,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (pendingResend.compareAndSet(timeout, update))
                 cctx.time().addTimeoutObject(update);
         }
+    }
+
+    /**
+     * Registers component that will be notified on every partition map exchange.
+     *
+     * @param comp Component to be registered.
+     */
+    public void registerExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.add(comp);
+    }
+
+    /**
+     * Removes exchange aware component from list of listeners.
+     *
+     * @param comp Component to be registered.
+     */
+    public void unregisterExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.remove(comp);
+    }
+
+    /**
+     * @return List of registered exchange listeners.
+     */
+    public List<PartitionsExchangeAware> exchangeAwareComponents() {
+        return U.sealList(exchangeAwareComps);
     }
 
     /**
@@ -2481,6 +2513,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @param delay Rebalance delay.
+     */
+    public void rebalanceDelay(long delay) {
+        this.rebalanceDelay = delay;
+    }
+
+    /**
      * For testing only.
      *
      * @return Current version to wait for.
@@ -2816,12 +2855,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** @return Histogram of PME durations metric. */
-    public HistogramMetric durationHistogram() {
+    public HistogramMetricImpl durationHistogram() {
         return durationHistogram;
     }
 
     /** @return Histogram of blocking PME durations metric. */
-    public HistogramMetric blockingDurationHistogram() {
+    public HistogramMetricImpl blockingDurationHistogram() {
         return blockingDurationHistogram;
     }
 
@@ -3313,6 +3352,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             rebTopVer = NONE;
 
                         if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
+                            if (rebalanceDelay > 0)
+                                U.sleep(rebalanceDelay);
+
                             assignsMap = new HashMap<>();
                             fileAssignsMap = new HashMap<>();
 
