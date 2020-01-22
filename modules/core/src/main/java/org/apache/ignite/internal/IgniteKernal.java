@@ -4020,6 +4020,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return ctx.encryption();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteMetric metrics() {
         return ctx.metric();
     }

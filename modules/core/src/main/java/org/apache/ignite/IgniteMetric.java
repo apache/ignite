@@ -49,5 +49,9 @@ import org.jetbrains.annotations.Nullable;
  * @see HistogramMetric
  */
 public interface IgniteMetric extends Iterable<ReadOnlyMetricRegistry> {
+    /**
+     * @param name Metric registry name.
+     * @return Metric registry if exists, {@code null} otherwise.
+     */
     @Nullable ReadOnlyMetricRegistry registry(String name);
 }
