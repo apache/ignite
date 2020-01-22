@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -63,7 +64,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -73,7 +73,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED
  * File rebalancing tests.
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
-@WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
 @WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value = "0")
 public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCacheRebalancingCommonAbstractTest {
     /** Initial entries count. */
@@ -163,9 +162,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testSimpleRebalancing() throws Exception {
         checkEvents = true;
 
-        IgniteEx ignite0 = startGrid(0);
-
-        ignite0.cluster().active(true);
+        IgniteEx ignite0 = startGrid(0, true);
 
         LoadParameters<TestValue> idxCache =
             testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
@@ -218,9 +215,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         checkEvents = true;
 
-        IgniteEx ignite0 = startGrid(0);
-
-        ignite0.cluster().active(true);
+        IgniteEx ignite0 = startGrid(0, true);
 
         DataLoader<TestValue> ldr = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
 
@@ -292,9 +287,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testSimpleRebalancingWithLoad() throws Exception {
         boolean checkRemoves = true;
 
-        IgniteEx ignite0 = startGrid(0);
-
-        ignite0.cluster().active(true);
+        IgniteEx ignite0 = startGrid(0, true);
 
         DataLoader<TestValue> idxLdr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(ignite0);
 
@@ -336,9 +329,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testSimpleRebalancingSharedGroupOrdered() throws Exception {
         boolean checkRemoves = true;
 
-        IgniteEx ignite0 = startGrid(0);
-
-        ignite0.cluster().active(true);
+        IgniteEx ignite0 = startGrid(0, true);
 
         DataLoader<TestValue> idxLdr = testValuesLoader(checkRemoves, 1).loadData(ignite0);
 
@@ -393,9 +384,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testHistoricalWithFileRebalancing() throws Exception {
         assert backups() >= 2;
 
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-        IgniteEx ignite2 = startGrid(2);
+        IgniteEx ignite0 = startGrid(0, false);
+        IgniteEx ignite1 = startGrid(1, false);
+        IgniteEx ignite2 = startGrid(2, true);
 
         ignite0.cluster().active(true);
 
@@ -455,9 +446,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testCoordinatorJoinsBaselineWithLoad() throws Exception {
         boolean checkRemoves = false;
 
-        IgniteEx node = startGrid(0);
-
-        node.cluster().active(true);
+        IgniteEx node = startGrid(0, true);
 
         IgniteEx crd = startGrid(1);
 
@@ -510,9 +499,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testContinuousBaselineChangeWithLoad() throws Exception {
         boolean checkRemoves = false;
 
-        IgniteEx crd = startGrid(0);
-
-        crd.cluster().active(true);
+        IgniteEx crd = startGrid(0, true);
 
         DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS).loadData(crd);
 
@@ -608,9 +595,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         boolean checkRemoves = true;
 
-        IgniteEx ignite0 = startGrid(0);
-
-        ignite0.cluster().active(true);
+        IgniteEx ignite0 = startGrid(0, true);
 
         blt.add(ignite0.localNode());
 
@@ -734,6 +719,22 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         }
 
         assertTrue(buf.toString(), buf.length() == 0);
+    }
+
+    /**
+     * @param idx Node index.
+     * @param activate Activate flag.
+     */
+    private IgniteEx startGrid(int idx, boolean activate) throws Exception {
+        IgniteEx ignite = startGrid(idx);
+
+        if (activate)
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+        if (idx == 0)
+            ignite.cluster().baselineAutoAdjustEnabled(false);
+
+        return ignite;
     }
 
     /** */
