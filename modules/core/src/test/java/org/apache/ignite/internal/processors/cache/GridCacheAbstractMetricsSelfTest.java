@@ -45,7 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -1415,7 +1415,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("GetTime");
+        HistogramMetricImpl m = metric("GetTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
@@ -1433,7 +1433,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testPutTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("PutTime");
+        HistogramMetricImpl m = metric("PutTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
@@ -1447,7 +1447,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testRemoveTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("RemoveTime");
+        HistogramMetricImpl m = metric("RemoveTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 

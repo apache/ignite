@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -138,9 +139,9 @@ class TcpCommunicationMetricsListener {
             if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
                 return;
 
-            mreg.longAdderMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME, SENT_MESSAGES_BY_NODE_ID_METRIC_DESC);
+            ((MetricRegistry)mreg).longAdderMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME, SENT_MESSAGES_BY_NODE_ID_METRIC_DESC);
 
-            mreg.longAdderMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME, RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC);
+            ((MetricRegistry)mreg).longAdderMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME, RECEIVED_MESSAGES_BY_NODE_ID_METRIC_DESC);
         });
     }
 
@@ -297,7 +298,7 @@ class TcpCommunicationMetricsListener {
 
         String mregPrefix = COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR;
 
-        for (MetricRegistry mreg : mmgr) {
+        for (ReadOnlyMetricRegistry mreg : mmgr) {
             if (mreg.name().startsWith(mregPrefix)) {
                 String nodeIdStr = mreg.name().substring(mregPrefix.length());
 
@@ -327,7 +328,7 @@ class TcpCommunicationMetricsListener {
                 metric.reset();
         }
 
-        for (MetricRegistry mreg : mmgr) {
+        for (ReadOnlyMetricRegistry mreg : mmgr) {
             if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)) {
                 mreg.findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME).reset();
 
