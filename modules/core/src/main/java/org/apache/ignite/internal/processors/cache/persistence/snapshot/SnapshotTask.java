@@ -138,6 +138,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private final CountDownLatch startedLatch = new CountDownLatch(1);
 
     /** Absolute snapshot storage path. */
+    // todo rewise configuration
     private File nodeSnpDir;
 
     /** An exception which has been ocurred during snapshot processing. */
@@ -280,24 +281,26 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             if (lastTh == null)
                 lastTh = th;
 
+            Throwable lastTh0 = lastTh;
+
             for (PageStoreSerialWriter writer : partDeltaWriters.values())
                 U.closeQuiet(writer);
 
-            snpSndr.close(lastTh);
+            snpSndr.close(lastTh0);
 
             if (nodeSnpDir != null)
                 U.delete(nodeSnpDir);
 
             // Delete snapshot directory if no other files exists.
             try {
-                if (U.fileCount(snpWorkDir.toPath()) == 0)
+                if (U.fileCount(snpWorkDir.toPath()) == 0 || lastTh0 != null)
                     U.delete(snpWorkDir.toPath());
             }
             catch (IOException e) {
                 log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + snpWorkDir + ']');
             }
 
-            snpFut.onDone(true, lastTh, cancelled);
+            snpFut.onDone(true, lastTh0, cancelled);
         }
     }
 
@@ -381,7 +384,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
         ctx.collectPartStat(parts);
 
-        ctx.cpFinishFut().listen(f -> {
+        ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
                 cpEndFut.complete(true);
             else

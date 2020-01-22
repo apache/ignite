@@ -32,13 +32,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private enum Op
         {
+            // ReSharper disable UnusedMember.Local
             GetMeta = 1,
             GetAllMeta = 2,
             PutMeta = 3,
             GetSchema = 4,
             RegisterType = 5,
             GetType = 6,
-            RegisterEnum = 7
+            RegisterEnum = 7,
+            GetMetaWithSchemas = 8
+            // ReSharper restore UnusedMember.Local
         }
 
         /// <summary>
@@ -55,13 +58,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public BinaryType GetBinaryType(int typeId)
         {
-            return DoOutInOp((int) Op.GetMeta,
+            return DoOutInOp((int) Op.GetMetaWithSchemas,
                 writer => writer.WriteInt(typeId),
                 stream =>
                 {
                     var reader = Marshaller.StartUnmarshal(stream, false);
 
-                    return reader.ReadBoolean() ? new BinaryType(reader) : null;
+                    return reader.ReadBoolean() ? new BinaryType(reader, true) : null;
                 }
             );
         }
@@ -83,18 +86,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
 
                 return res;
-            });
-        }
-
-        /// <summary>
-        /// Gets the schema.
-        /// </summary>
-        public int[] GetSchema(int typeId, int schemaId)
-        {
-            return DoOutInOp<int[]>((int) Op.GetSchema, writer =>
-            {
-                writer.WriteInt(typeId);
-                writer.WriteInt(schemaId);
             });
         }
 

@@ -52,6 +52,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -141,9 +142,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
     /** The reason of checkpoint start for needs of snapshot. */
     public static final String SNAPSHOT_CP_REASON = "Wakeup for checkpoint to take snapshot [name=%s]";
-
-    /** Default working directory for snapshot temporary files. */
-    public static final String DFLT_LOCAL_SNAPSHOT_DIRECTORY = "snapshots";
 
     /** Default snapshot directory for loading remote snapshots. */
     public static final String DFLT_SNAPSHOT_WORK_DIRECTORY = "snp";
@@ -264,9 +262,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         if (!CU.isPersistenceEnabled(cctx.kernalContext().config()))
             return;
 
-        pageSize = kctx.config()
-            .getDataStorageConfiguration()
-            .getPageSize();
+        DataStorageConfiguration dcfg = kctx.config().getDataStorageConfiguration();
+
+        pageSize = dcfg.getPageSize();
 
         assert pageSize > 0;
 
@@ -284,8 +282,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
-        // todo must be available on storage configuration
-        locSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), DFLT_LOCAL_SNAPSHOT_DIRECTORY, false);
+        locSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), dcfg.getLocalSnapshotPath(), false);
         tmpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
 
         U.ensureDirectory(locSnpDir, "local snapshots directory", log);
@@ -689,23 +686,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param snpName Snapshot name.
      * @return Local snapshot directory for snapshot with given name.
      */
-    public File localSnapshotDir(String snpName) {
-        return new File(localSnapshotWorkDir(), snpName);
-    }
-
-    /**
-     * @return Snapshot directory used by manager for local snapshots.
-     */
-    public File localSnapshotWorkDir() {
+    public File snapshotLocalDir(String snpName) {
         assert locSnpDir != null;
 
-        return locSnpDir;
+        return new File(locSnpDir, snpName);
     }
 
     /**
      * @return Node snapshot working directory.
      */
-    public File snapshotWorkDir() {
+    public File snapshotTempDir() {
         assert tmpWorkDir != null;
 
         return tmpWorkDir;
@@ -856,7 +846,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     return grps;
                 }));
 
-        File rootSnpDir0 = localSnapshotDir(snpName);
+        File rootSnpDir0 = snapshotLocalDir(snpName);
 
         try {
             return runLocalSnapshotTask(snpName,
@@ -1049,7 +1039,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             snpName0 -> new SnapshotTask(cctx,
                 srcNodeId,
                 snpName0,
-                new File(snapshotWorkDir(), snpName0),
+                new File(snapshotTempDir(), snpName0),
                 exec,
                 ioFactory,
                 snpSndr,
@@ -1629,8 +1619,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 if (log.isInfoEnabled())
                     log.info("Local snapshot sender closed, resouces released [dbNodeSnpDir=" + dbNodeSnpDir + ']');
             }
-            else
+            else {
+                dbNodeSnpDir.delete();
+
                 U.error(log, "Local snapshot sender closed due to an error occurred", th);
+            }
         }
 
         /**

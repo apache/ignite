@@ -941,7 +941,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param reason The text message reason.
      * @return Checkpoint progress future.
      */
-    public CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
+    public CheckpointProgress wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
         return null;
     }
 
