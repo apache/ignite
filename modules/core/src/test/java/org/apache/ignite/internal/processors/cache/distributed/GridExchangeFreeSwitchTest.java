@@ -144,34 +144,57 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testNodeLeftOnFullyRebalancedCluster();
+        testNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.NONE);
     }
 
     /**
-     * Checks Partition Exchange is absent in case of fixed baseline. It's possible to perform switch since primaries
-     * can't change.
+     * Checks if Partition Exchange is regular in case of fixed baseline, when one of the nodes may be started with
+     * IGNITE_PME_FREE_SWITCH_DISABLED set to true, and Partition Exchange is absent when this node is stopped.
      */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        persistence = true;
-
-        try {
-            testNodeLeftOnFullyRebalancedCluster();
-        }
-        finally {
-            persistence = false;
-        }
-    }
-
-    /**
-     * Start the nodes and Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
-     */
-    private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
-        int nodes = 10;
-
-        startGridsMultiThreaded(nodes);
+    public void testNodeLeftOnFullyRebalancedCluster(NodeIndexChoice order) throws Exception {
+        startCluster(order);
 
         checkNodeLeftOnFullyRebalancedCluster();
+    }
+
+    /**
+     * Starts the cluster where one node may be with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
+     *
+     * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
+     */
+    private void startCluster(NodeIndexChoice order) throws Exception {
+        int nodes = 10;
+        int idx = 0;
+
+        try {
+            switch (order) {
+                case FIRST:
+                    break;
+
+                case MIDDLE:
+                    idx = nodes / 2 - 1;
+                    break;
+
+                case LAST:
+                    idx = nodes - 1;
+                    break;
+
+                case NONE:
+                    startGridsMultiThreaded(nodes);
+                    return;
+            }
+
+            if (idx > 0)
+                startGridsMultiThreaded(idx, false);
+
+            startGridWithPmeFreeSwitchDisabled(idx++);
+
+            if (idx < nodes)
+                startGridsMultiThreaded(idx, nodes - idx);
+        }
+        finally {
+            checkTopology(nodes);
+        }
     }
 
     /**
@@ -237,41 +260,22 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Checks Partition Exchange is absent in case of fixed baseline and all nodes support PME_FREE_SWITCH.
+     * It's possible to perform switch since primaries can't change.
      */
     @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.FIRST);
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeAbsent() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.NONE);
     }
 
     /**
-     *
+     * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.MIDDLE);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.LAST);
-    }
-
-    /**
-     * Checks if Partition Exchange is regular in case of fixed baseline, when one of the nodes is started with
-     * IGNITE_PME_FREE_SWITCH_DISABLED set to true, and Partition Exchange is absent when this node is stopped.
-     */
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-        NodeIndexChoice order) throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedCluster(NodeIndexChoice order) throws Exception {
         persistence = true;
 
         try {
-            startClusterWithPmeFreeDisabledNode(order);
-
-            checkNodeLeftOnFullyRebalancedCluster();
+            testNodeLeftOnFullyRebalancedCluster(order);
         }
         finally {
             persistence = false;
@@ -279,39 +283,27 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts the cluster where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
      *
-     * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
-    private void startClusterWithPmeFreeDisabledNode(NodeIndexChoice order) throws Exception {
-        int nodes = 10;
-        int idx = 0;
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
+        testNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.FIRST);
+    }
 
-        try {
-            switch (order) {
-                case FIRST:
-                    break;
+    /**
+     *
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
+        testNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.MIDDLE);
+    }
 
-                case MIDDLE:
-                    idx = nodes / 2 - 1;
-                    break;
-
-                case LAST:
-                    idx = nodes - 1;
-                    break;
-            }
-
-            if (idx > 0)
-                startGridsMultiThreaded(idx, false);
-
-            startGridWithPmeFreeSwitchDisabled(idx++);
-
-            if (idx < nodes)
-                startGridsMultiThreaded(idx, nodes - idx);
-        }
-        finally {
-            checkTopology(nodes);
-        }
+    /**
+     *
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
+        testNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.LAST);
     }
 
     /**
@@ -725,6 +717,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         MIDDLE,
 
         /** Last. */
-        LAST
+        LAST,
+
+        /** None. */
+        NONE
     }
 }
