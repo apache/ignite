@@ -432,6 +432,11 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public GridFutureAdapter<?> removeAsync(@NotNull String key) throws IgniteCheckedException {
+        return startWrite(key, null);
+    }
+
+    /** {@inheritDoc} */
     @Override public void remove(@NotNull String key) throws IgniteCheckedException {
         startWrite(key, null).get();
     }

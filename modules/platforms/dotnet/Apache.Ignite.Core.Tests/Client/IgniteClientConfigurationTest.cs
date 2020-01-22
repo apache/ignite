@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     "bar:123",
                     "baz:100..103"
                 },
-                EnableAffinityAwareness = true,
+                EnablePartitionAwareness = true,
                 Logger = new ConsoleLogger
                 {
                     MinLevel = LogLevel.Debug
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var cfg = new IgniteClientConfiguration("127.0.0.1")
                 {
                     ProtocolVersion = new ClientProtocolVersion(1, 0, 0),
-                    EnableAffinityAwareness = true,
+                    EnablePartitionAwareness = true,
                 };
 
                 configAction(cfg);
@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSchemaValidation()
         {
-            var xml = File.ReadAllText("Config\\Client\\IgniteClientConfiguration.xml");
+            var xml = File.ReadAllText(Path.Combine("Config", "Client", "IgniteClientConfiguration.xml"));
             var xmlns = "http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection";
             var schemaFile = "IgniteClientConfigurationSection.xsd";
 

@@ -296,6 +296,16 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
+     * @param idx Stripe index.
+     * @return Queue size of specific stripe.
+     */
+    public int queueStripeSize(int idx) {
+        A.ensure(idx >= 0, "Stripe index should be non-negative: " + idx);
+
+        return stripes[idx % stripes.length].queueSize();
+    }
+
+    /**
      * @return Completed tasks count.
      */
     public long completedTasks() {

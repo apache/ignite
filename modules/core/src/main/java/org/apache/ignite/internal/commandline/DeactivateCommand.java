@@ -23,19 +23,22 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 
 /**
  * Command to deactivate cluster.
+ * @deprecated Use {@link ClusterStateChangeCommand} instead.
  */
+@Deprecated
 public class DeactivateCommand implements Command<Void> {
     /** Cluster name. */
     private String clusterName;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Deactivate cluster:", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
+        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
@@ -57,6 +60,8 @@ public class DeactivateCommand implements Command<Void> {
      * @throws Exception If failed to deactivate.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
 

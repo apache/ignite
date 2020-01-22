@@ -59,8 +59,6 @@ public class TxCrossCacheRemoteMultiplePartitionReservationTest extends GridComm
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(igniteInstanceName.equals("client"));
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
         cfg.setClientMode("client".equals(igniteInstanceName));
         cfg.setCacheConfiguration(cacheConfiguration(CACHE1), cacheConfiguration(CACHE2));
