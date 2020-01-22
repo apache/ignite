@@ -3120,7 +3120,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private GridCacheVersion nextVersion() {
         // Do not change topology version when generating next version.
-        return cctx.versions().next(ver);
+        return cctx.versions().next(ver, 8);
     }
 
     /** {@inheritDoc} */
