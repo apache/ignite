@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -62,7 +61,8 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -226,12 +225,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         String nodePath = relativeStoragePath(ig.context().cache().context());
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
-            Paths.get(mgr.localSnapshotDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
+            Paths.get(mgr.snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
         );
 
         assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
 
-        File snpWorkDir = mgr.snapshotWorkDir();
+        File snpWorkDir = mgr.snapshotTempDir();
 
         assertEquals("Snapshot working directory must be cleand after usage", 0, snpWorkDir.listFiles().length);
     }
@@ -271,7 +270,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File snapshotDir0 = mgr.localSnapshotDir(SNAPSHOT_NAME);
+        File snapshotDir0 = mgr.snapshotLocalDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
             .runLocalSnapshotTask(SNAPSHOT_NAME,
@@ -294,7 +293,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 });
 
         dbMgr.forceCheckpoint("snapshot is ready to be created")
-            .beginFuture()
+            .futureFor(CheckpointState.MARKER_STORED_TO_DISK)
             .get();
 
         // Change data after backup
@@ -302,13 +301,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             ig.cache(DEFAULT_CACHE_NAME).put(i, 3 * i);
 
         // Backup on the next checkpoint must copy page before write it to partition
-        CheckpointFuture cpFut = ig.context()
+        CheckpointProgress cpFut = ig.context()
             .cache()
             .context()
             .database()
             .forceCheckpoint("second cp");
 
-        cpFut.finishFuture().get();
+        cpFut.futureFor(CheckpointState.FINISHED).get();
 
         slowCopy.countDown();
 
@@ -322,7 +321,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteUtils.delete(walDir);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setWorkDirectory(mgr.localSnapshotDir(SNAPSHOT_NAME).getAbsolutePath());
+            .setWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
 
         IgniteEx ig2 = startGrid(cfg);
 
@@ -394,7 +393,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        File snpDir0 = new File(mgr.localSnapshotWorkDir(), SNAPSHOT_NAME);
+        File snpDir0 = mgr.snapshotLocalDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> fut = mgr.runLocalSnapshotTask(SNAPSHOT_NAME,
             ig.localNode().id(),
@@ -424,13 +423,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        CheckpointFuture cpFut = ig0.context()
+        CheckpointProgress cpFut = ig0.context()
             .cache()
             .context()
             .database()
             .forceCheckpoint("the next one");
 
-        cpFut.finishFuture().get();
+        cpFut.futureFor(CheckpointState.FINISHED).get();
 
         IgniteSnapshotManager mgr0 = ig0.context()
             .cache()
@@ -484,13 +483,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        CheckpointFuture cpFut = ig0.context()
+        CheckpointProgress cpFut = ig0.context()
             .cache()
             .context()
             .database()
             .forceCheckpoint("the next one");
 
-        cpFut.finishFuture().get();
+        cpFut.futureFor(CheckpointState.FINISHED).get();
 
         IgniteSnapshotManager mgr0 = ig0.context()
             .cache()
@@ -520,7 +519,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     @Test(expected = ClusterTopologyCheckedException.class)
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testRemoteSnapshotRequestedNodeLeft() throws Exception {
         IgniteEx ig0 = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
         IgniteEx ig1 = startGrid(1);
@@ -597,7 +595,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     @Test(expected = IgniteCheckedException.class)
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testRemoteOutdatedSnapshot() throws Exception {
         IgniteEx ig0 = startGrids(2);
 
@@ -615,7 +612,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 .context()
                 .database()
                 .forceCheckpoint("the next one")
-                .finishFuture()
+                .futureFor(CheckpointState.FINISHED)
                 .get();
         }
 
@@ -681,7 +678,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch cpLatch = new CountDownLatch(1);
 
-        File snapshotDir0 = mgr.localSnapshotDir(SNAPSHOT_NAME);
+        File snapshotDir0 = mgr.snapshotLocalDir(SNAPSHOT_NAME);
 
         IgniteInternalFuture<?> snpFut = mgr
             .runLocalSnapshotTask(SNAPSHOT_NAME,
@@ -749,18 +746,19 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Start grid node with data before each test.
         IgniteEx ig = startGrid(0);
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         for (int i = 0; i < range; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        CheckpointFuture cpFut = ig.context()
+        CheckpointProgress cpFut = ig.context()
             .cache()
             .context()
             .database()
             .forceCheckpoint("the next one");
 
-        cpFut.finishFuture().get();
+        cpFut.futureFor(CheckpointState.FINISHED).get();
 
         return ig;
     }

@@ -17,13 +17,13 @@
 
 package org.apache.ignite;
 
+import javax.net.ssl.HostnameVerifier;
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -1169,11 +1169,6 @@ public final class IgniteSystemProperties {
      * Maximum size of history of server nodes (server node IDs) that ever joined to current topology.
      */
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
-
-    /**
-     * Flag to enable baseline auto-adjust by default.
-     */
-    public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
 
     /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.

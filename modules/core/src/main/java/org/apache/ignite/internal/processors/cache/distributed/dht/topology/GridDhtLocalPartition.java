@@ -86,6 +86,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.EvictReason.CLEARING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.EvictReason.EVICTION;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
  * Key partition.
@@ -745,7 +748,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             return;
                         }
 
-                        ctx.evict().evictPartitionAsync(grp, GridDhtLocalPartition.this);
+                        ctx.evict().evictPartitionAsync(grp, this, CLEARING);
                     }
                 });
 
@@ -772,7 +775,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
 
-        ctx.evict().evictPartitionAsync(grp, this);
+        ctx.evict().evictPartitionAsync(grp, this, EVICTION);
     }
 
     /**
@@ -822,54 +825,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return {@code true} if evicting thread was added.
+     * @return {@code True} if evicting thread was added.
      */
     private boolean addEvicting() {
-        while (true) {
-            int cnt = evictGuard.get();
-
-            if (cnt != 0)
-                return false;
-
-            if (evictGuard.compareAndSet(cnt, cnt + 1))
-                return true;
-        }
+        return evictGuard.compareAndSet(0, 1);
     }
 
     /**
-     * @return {@code true} if no thread evicting partition at the moment.
+     * Clears evicting flag.
      */
-    private boolean clearEvicting() {
-        boolean free;
-
-        while (true) {
-            int cnt = evictGuard.get();
-
-            assert cnt > 0;
-
-            if (evictGuard.compareAndSet(cnt, cnt - 1)) {
-                free = cnt == 1;
-
-                break;
-            }
-        }
-
-        return free;
+    private void clearEvicting() {
+        evictGuard.set(0);
     }
 
     /**
-     * @return {@code True} if partition is safe to destroy.
+     * @return {@code True} if partition is marked for destroy.
      */
     public boolean markForDestroy() {
-        while (true) {
-            int cnt = evictGuard.get();
-
-            if (cnt != 0)
-                return false;
-
-            if (evictGuard.compareAndSet(0, -1))
-                return true;
-        }
+        return evictGuard.compareAndSet(0, -1);
     }
 
     /**
@@ -1006,10 +979,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 throw e;
             }
             finally {
-                boolean free = clearEvicting();
+                clearEvicting();
 
-                if (free)
-                    clearFuture.finish();
+                clearFuture.finish();
             }
         }
 
@@ -1167,9 +1139,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Reset partition counters.
+     * Reset partition update counter.
      */
-    public void resetCounters() {
+    public void resetUpdateCounter() {
         store.resetUpdateCounter();
     }
 
@@ -1271,7 +1243,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             if (forceTestCheckpointOnEviction) {
                 if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
-                    ctx.database().forceCheckpoint("test").finishFuture().get();
+                    ctx.database().forceCheckpoint("test").futureFor(FINISHED).get();
 
                     log.warning("Forced checkpoint by test reasons for partition: " + this);
 

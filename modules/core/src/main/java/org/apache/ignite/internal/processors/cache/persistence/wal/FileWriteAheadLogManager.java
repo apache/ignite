@@ -908,7 +908,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try (WALIterator it = replay(ptr)) {
             IgniteBiTuple<WALPointer, WALRecord> rec = it.next();
 
-            if (rec.get1().equals(ptr))
+            if (rec != null && rec.get2().position().equals(ptr))
                 return rec.get2();
             else
                 throw new StorageException("Failed to read record by pointer [ptr=" + ptr + ", rec=" + rec + "]");
