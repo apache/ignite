@@ -199,6 +199,67 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.FIRST);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.MIDDLE);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.LAST);
+    }
+
+    /**
+     * Checks if Partition Exchange is regular in case of fixed baseline, when one of the nodes is started with
+     * IGNITE_PME_FREE_SWITCH_DISABLED set to true, and Partition Exchange is absent when this node is stopped.
+     */
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
+        NodeIndexChoice order) throws Exception {
+        persistence = true;
+
+        try {
+            startClusterWithPmeFreeDisabledNode(order);
+
+            checkNodeLeftOnFullyRebalancedCluster();
+        }
+        finally {
+            persistence = false;
+        }
+    }
+
+    /**
+     * @param idx Index.
+     * @return Started grid.
+     */
+    private Ignite startGridWithPmeFreeSwitchDisabled(int idx) throws Exception {
+        try {
+            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+
+            Ignite ignite = startGrid(idx);
+
+            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
+
+            return ignite;
+        }
+        finally {
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
+    }
+
+    /**
      * Checks if PME absents/presents on node left for fully rebalanced topology (Latest PME == LAA).
      */
     private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
@@ -233,68 +294,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             cntSingle.set(0);
             cntFull.set(0);
-        }
-    }
-
-
-    /**
-     *
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
-       testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.FIRST);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.MIDDLE);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
-        testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(NodeIndexChoice.LAST);
-    }
-
-    /**
-     * Checks if Partition Exchange is regular in case of fixed baseline, when one of the nodes is started
-     * with IGNITE_PME_FREE_SWITCH_DISABLED set to true, and Partition Exchange is absent when this node is stopped.
-     */
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledOneNode(
-        NodeIndexChoice order) throws Exception {
-        persistence = true;
-
-        try {
-            startClusterWithPmeFreeDisabledNode(order);
-
-            checkNodeLeftOnFullyRebalancedCluster();
-        }
-        finally {
-            persistence = false;
-        }
-    }
-
-    /**
-     * @param idx Index.
-     * @return Started grid.
-     */
-    private Ignite startGridWithPmeFreeSwitchDisabled(int idx) throws Exception {
-        try {
-            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-
-            Ignite ignite = startGrid(idx);
-
-            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
-
-            return ignite;
-        }
-        finally {
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
         }
     }
 
@@ -694,7 +693,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     break;
 
                 case MIDDLE:
-                    idx = nodes/2 - 1;
+                    idx = nodes / 2 - 1;
                     break;
 
                 case LAST:
