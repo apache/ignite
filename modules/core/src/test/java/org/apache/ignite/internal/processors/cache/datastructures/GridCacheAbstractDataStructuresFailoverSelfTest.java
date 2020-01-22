@@ -71,6 +71,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -98,9 +99,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 2;
-
-    /** */
-    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -151,7 +149,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setCacheConfiguration(ccfg);
 
-        if (client)
+        if (cfg.isClientMode() == TRUE)
             ((TcpDiscoverySpi)(cfg.getDiscoverySpi())).setForceServerMode(true);
 
         return cfg;

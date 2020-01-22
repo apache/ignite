@@ -987,7 +987,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         clientMode.set(true);
 
         try {
-            return (IgniteEx)startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)));
+            return (IgniteEx)startGrid(igniteInstanceName, (GridSpringResourceContext)null);
         }
         finally {
             clientMode.set(false);

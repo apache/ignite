@@ -187,7 +187,10 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                     doSleep(500 + r.nextInt(1000));
 
-                    startGrid(nodeId);
+                    if (nodeId >= SRV_CNT)
+                        startClientGrid(nodeId);
+                    else
+                        startGrid(nodeId);
 
                     reservedIdx.set(nodeId, 0);
                 }
