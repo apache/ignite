@@ -279,6 +279,42 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Starts the cluster where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
+     *
+     * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
+     */
+    private void startClusterWithPmeFreeDisabledNode(NodeIndexChoice order) throws Exception {
+        int nodes = 10;
+        int idx = 0;
+
+        try {
+            switch (order) {
+                case FIRST:
+                    break;
+
+                case MIDDLE:
+                    idx = nodes / 2 - 1;
+                    break;
+
+                case LAST:
+                    idx = nodes - 1;
+                    break;
+            }
+
+            if (idx > 0)
+                startGridsMultiThreaded(idx, false);
+
+            startGridWithPmeFreeSwitchDisabled(idx++);
+
+            if (idx < nodes)
+                startGridsMultiThreaded(idx, nodes - idx);
+        }
+        finally {
+            checkTopology(nodes);
+        }
+    }
+
+    /**
      * @param idx Index.
      * @return Started grid.
      */
@@ -675,42 +711,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             res.add(p0);
 
             return res;
-        }
-    }
-
-    /**
-     * Starts the cluster where one node with option IGNITE_PME_FREE_SWITCH_DISABLED is true.
-     *
-     * @param order Node start order with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
-     */
-    private void startClusterWithPmeFreeDisabledNode(NodeIndexChoice order) throws Exception {
-        int nodes = 10;
-        int idx = 0;
-
-        try {
-            switch (order) {
-                case FIRST:
-                    break;
-
-                case MIDDLE:
-                    idx = nodes / 2 - 1;
-                    break;
-
-                case LAST:
-                    idx = nodes - 1;
-                    break;
-            }
-
-            if (idx > 0)
-                startGridsMultiThreaded(idx, false);
-
-            startGridWithPmeFreeSwitchDisabled(idx++);
-
-            if (idx < nodes)
-                startGridsMultiThreaded(idx, nodes - idx);
-        }
-        finally {
-            checkTopology(nodes);
         }
     }
 
