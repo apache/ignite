@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.memtracker;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,22 +29,19 @@ import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycle
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * PageMemory tracker plugin provider.
  */
-public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemoryTrackerConfiguration>,
-    IgniteChangeGlobalStateSupport, DatabaseLifecycleListener {
+public class PageMemoryTrackerPluginProvider extends AbstractTestPluginProvider
+    implements IgniteChangeGlobalStateSupport, DatabaseLifecycleListener {
     /** System property name to implicitly enable page memory tracker . */
     public static final String IGNITE_ENABLE_PAGE_MEMORY_TRACKER = "IGNITE_ENABLE_PAGE_MEMORY_TRACKER";
 
@@ -63,16 +57,6 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     /** {@inheritDoc} */
     @Override public String name() {
         return PLUGIN_NAME;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String copyright() {
-        return "";
     }
 
     /** {@inheritDoc} */
@@ -128,11 +112,6 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
-    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
         ((IgniteEx)ctx.grid()).context().internalSubscriptionProcessor().registerDatabaseListener(this);
     }
@@ -141,31 +120,6 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     @Override public void stop(boolean cancel) {
         if (plugin != null)
             plugin.stop();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStart() {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-        // No-op
     }
 
     /** {@inheritDoc} */
