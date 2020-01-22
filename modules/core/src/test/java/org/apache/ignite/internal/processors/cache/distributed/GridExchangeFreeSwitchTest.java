@@ -179,7 +179,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     idx = nodes - 1;
                     break;
 
-                case NONE:
+                default:
                     startGridsMultiThreaded(nodes);
                     return;
             }
@@ -260,8 +260,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange is absent in case of fixed baseline and all nodes support PME_FREE_SWITCH.
-     * It's possible to perform switch since primaries can't change.
+     * Checks Partition Exchange is absent in case of fixed baseline and all nodes support PME_FREE_SWITCH. It's
+     * possible to perform switch since primaries can't change.
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeAbsent() throws Exception {
