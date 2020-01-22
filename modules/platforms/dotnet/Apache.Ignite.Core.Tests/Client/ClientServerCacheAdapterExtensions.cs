@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
+namespace Apache.Ignite.Core.Tests.Client
+{
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Client.Cache;
 
-import org.jetbrains.annotations.Nullable;
-
-/**
- * Read only metric registry.
- */
-public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
-    /** @return Registry name. */
-    public String name();
-
-    /**
-     * @param name Name of the metric.
-     * @return Metric with specified name if exists. Null otherwise.
-     */
-    @Nullable public <M extends Metric> M findMetric(String name);
+    /// <summary>
+    /// Extension methods related to <see cref="ClientServerCacheAdapter{TK, TV}"/>.
+    /// </summary>
+    public static class ClientServerCacheAdapterExtensions
+    {
+        /// <summary>
+        /// Returns given <see cref="ICache{TK,TV}"/> wrapped as <see cref="ICacheClient{TK,TV}"/>.
+        /// </summary>
+        public static ICacheClient<TK, TV> AsCacheClient<TK, TV>(this ICache<TK, TV> cache)
+        {
+            return new ClientServerCacheAdapter<TK, TV>(cache);
+        }
+    }
 }

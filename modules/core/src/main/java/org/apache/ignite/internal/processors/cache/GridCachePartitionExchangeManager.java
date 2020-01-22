@@ -111,7 +111,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -278,10 +278,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
 
     /** Histogram of PME durations. */
-    private volatile HistogramMetric durationHistogram;
+    private volatile HistogramMetricImpl durationHistogram;
 
     /** Histogram of blocking PME durations. */
-    private volatile HistogramMetric blockingDurationHistogram;
+    private volatile HistogramMetricImpl blockingDurationHistogram;
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
@@ -2853,12 +2853,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** @return Histogram of PME durations metric. */
-    public HistogramMetric durationHistogram() {
+    public HistogramMetricImpl durationHistogram() {
         return durationHistogram;
     }
 
     /** @return Histogram of blocking PME durations metric. */
-    public HistogramMetric blockingDurationHistogram() {
+    public HistogramMetricImpl blockingDurationHistogram() {
         return blockingDurationHistogram;
     }
 
