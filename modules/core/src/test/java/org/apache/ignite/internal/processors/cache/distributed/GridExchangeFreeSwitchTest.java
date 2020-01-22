@@ -279,9 +279,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         Random r = new Random();
 
         while (nodes > 1) {
-            Ignite failed = G.allGrids().get(r.nextInt(nodes--));
-
-            failed.close(); // Stopping random node.
+            G.allGrids().get(r.nextInt(nodes--)).close(); // Stopping random node.
 
             awaitPartitionMapExchange(true, true, null, true);
 
