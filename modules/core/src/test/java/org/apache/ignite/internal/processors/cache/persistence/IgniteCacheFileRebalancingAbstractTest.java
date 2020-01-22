@@ -100,7 +100,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     private final Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
 
     /** */
-    private boolean checkEvents;
+    private boolean checkEvts;
 
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
@@ -149,7 +149,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         cfg.setCacheConfiguration(ccfgs0);
 
-        if (checkEvents)
+        if (checkEvts)
             cfg.setIncludeEventTypes(EVT_CACHE_REBALANCE_PART_LOADED);
 
         return cfg;
@@ -160,7 +160,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      */
     @Test
     public void testSimpleRebalancing() throws Exception {
-        checkEvents = true;
+        checkEvts = true;
 
         IgniteEx ignite0 = startGrid(0, true);
 
@@ -210,10 +210,10 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-    public void testHistoricalSucceededAfterIncompleteFileRebalancing() throws Exception {
+    public void testHistoricalStartsAfterFilesPreloading() throws Exception {
         assert backups() > 0 : backups();
 
-        checkEvents = true;
+        checkEvts = true;
 
         IgniteEx ignite0 = startGrid(0, true);
 
@@ -278,6 +278,64 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         List<Object> msgs = recCommSpi.recordedMessages(true);
 
         assertEquals("Expecting specified count demand messages for historical rebalance.", 2, msgs.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+    public void testHistoricalNotStartsOnFilesPreloadingInterruption() throws Exception {
+        assert backups() > 0 : backups();
+
+        checkEvts = true;
+
+        IgniteEx ignite0 = startGrid(0, true);
+
+        DataLoader<TestValue> ldr = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
+
+        ldr.start();
+
+        forceCheckpoint(ignite0);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        CountDownLatch cacheStartLatch = new CountDownLatch(1);
+
+        AtomicInteger loadedParts = new AtomicInteger();
+
+        IgniteInternalCache<Object, Object> cache = ignite0.cachex(INDEXED_CACHE);
+
+        int totalPartitions = cache.affinity().partitions();
+
+        ignite1.events().localListen(evt -> {
+            if (evt.shortDisplay().contains("cache=" + INDEXED_CACHE + ",")) {
+                if (loadedParts.incrementAndGet() > totalPartitions / 4)
+                    cacheStartLatch.countDown();
+            }
+
+            return true;
+        }, EVT_CACHE_REBALANCE_PART_LOADED);
+
+        // After baseline has changed.file rebalance should start.
+        ignite0.cluster().setBaselineTopology(2);
+
+        // Wait until some partition files received.
+        cacheStartLatch.await();
+
+        // Switching this partitions from read-only to normal mode.
+        forceCheckpoint(ignite1);
+
+        // Changing minor topology version to interrupt rebalancing routine.
+        ignite1.getOrCreateCache(new CacheConfiguration<>("tmp-cache"));
+
+        awaitPartitionMapExchange();
+
+        ldr.stop();
+
+        // If historical rebalancing starts after interrupting file preloading,
+        // we'll get inconsistent indexes and cache verification should fail.
+        verifyCache(ignite1, ldr);
     }
 
     /**

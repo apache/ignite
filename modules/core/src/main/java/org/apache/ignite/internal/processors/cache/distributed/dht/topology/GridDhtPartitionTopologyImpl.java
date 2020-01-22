@@ -2671,7 +2671,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean own(GridDhtLocalPartition part) {
-        assert !part.dataStore().readOnly() : "grp=" + grp.cacheOrGroupName() + " p=" + part.id();
+        assert !part.readOnly() : "grp=" + grp.cacheOrGroupName() + " p=" + part.id();
 
         lock.writeLock().lock();
 

@@ -258,7 +258,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
+                if (histSupplier != null && !exchFut.isClearingPartition(grp, p) && !part.isClearing()) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
