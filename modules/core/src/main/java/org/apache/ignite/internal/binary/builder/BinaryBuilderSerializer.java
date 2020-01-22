@@ -22,6 +22,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -179,7 +180,13 @@ class BinaryBuilderSerializer {
         }
 
         if (val instanceof Object[]) {
-            int compTypeId = writer.context().typeId(((Object[])val).getClass().getComponentType().getName());
+            int compTypeId;
+
+            if (val instanceof BinaryObjectBuilder[]) {
+                compTypeId = writer.context().typeId(BinaryObject.class.getName());
+            } else {
+                compTypeId = writer.context().typeId(((Object[])val).getClass().getComponentType().getName());
+            }
 
             if (val instanceof BinaryBuilderEnum[]) {
                 writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
