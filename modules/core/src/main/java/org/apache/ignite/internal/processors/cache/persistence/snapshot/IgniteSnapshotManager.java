@@ -57,6 +57,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -96,6 +97,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -706,12 +708,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @return Future which will be completed when a snapshot has been started.
      */
     IgniteInternalFuture<SnapshotOperationResponse> takeSnapshot(SnapshotOperationRequest req) {
+        if (cctx.kernalContext().clientNode())
+            return new GridFinishedFuture<>();
+
         // Executed inside discovery notifier thread, prior to firing discovery custom event
         if (clusterSnpTask != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpTask + ']'));
         }
 
+        // todo must reject stop cache requests
+        // todo write snapshot metadata
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         Map<Integer, GridIntList> parts = req.grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
@@ -724,12 +731,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         .currentLocalPartitions()
                         .forEach(p -> grps.add(p.id()));
 
-                    grps.add(INDEX_PARTITION);
+                    if (cctx.kernalContext().query().moduleEnabled())
+                        grps.add(INDEX_PARTITION);
 
                     return grps;
                 }));
-
-        File rootSnpDir0 = snapshotLocalDir(req.snpName);
 
         SnapshotTask task0;
 
@@ -738,16 +744,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 cctx.localNodeId(),
                 parts,
                 snpRunner,
-                localSnapshotSender(rootSnpDir0));
+                localSnapshotSender(snapshotLocalDir(req.snpName)));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
         }
 
         clusterSnpTask = task0;
-
-        if (cctx.kernalContext().clientNode())
-            return new GridFinishedFuture<>();
 
         return task0.snapshotFuture()
             .chain(f -> new SnapshotOperationResponse());
@@ -760,28 +763,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      */
     void takeSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
         synchronized (snpOpMux) {
-            boolean owner = clusterSnpFut != null && clusterSnpFut.id.equals(id);
+            assert clusterSnpFut == null || clusterSnpFut.id.equals(id);
 
-            // todo delete snapshot working directory if an error occurred on other nodes
+            if (!F.isEmpty(err) && clusterSnpTask != null)
+                IgniteUtils.delete(snapshotLocalDir(clusterSnpTask.snapshotName()).toPath());
 
-            if (!owner || clusterSnpFut.isDone())
-                return;
+            clusterSnpTask = null;
 
-            if (!F.isEmpty(err)) {
-                Exception e = err.values().stream().findFirst().get();
-
-                clusterSnpFut.onDone(e);
+            if (clusterSnpFut != null) {
+                if (F.isEmpty(err))
+                    clusterSnpFut.onDone();
+                else {
+                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation has been failed due to an error " +
+                        "on remote nodes [err=" + err + ']'));
+                }
             }
-            else
-                clusterSnpFut.onDone();
 
             clusterSnpFut = null;
         }
-
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name, List<Integer> grps) {
+        if (cctx.kernalContext().clientNode()) {
+            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
+                "perform this operation."));
+        }
+
+        if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT)) {
+            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
+                "a snapshot operation."));
+        }
+
         synchronized (snpOpMux) {
             if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
@@ -1052,27 +1065,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     }
 
     /**
-     * @param rootSnpDir Absolute snapshot directory.
+     * @param snpLocDir Absolute snapshot directory.
      * @return Snapshot receiver instance.
      */
-    SnapshotFileSender localSnapshotSender(File rootSnpDir) throws IgniteCheckedException {
+    SnapshotFileSender localSnapshotSender(File snpLocDir) throws IgniteCheckedException {
         // Relative path to snapshot storage of local node.
         // Example: snapshotWorkDir/db/IgniteNodeName0
         String dbNodePath = relativeStoragePath(cctx);
 
+        File snpTargetDir = new File(snpLocDir, dbNodePath);
+
         // todo should be fired on executor on task init
-        U.ensureDirectory(new File(rootSnpDir, dbNodePath), "local snapshot directory", log);
+        U.ensureDirectory(snpTargetDir, "local snapshot directory", log);
 
         return new LocalSnapshotFileSender(log,
-            new File(rootSnpDir, dbNodePath),
+            snpTargetDir,
             ioFactory,
             storeFactory,
             cctx.kernalContext()
                 .cacheObjects()
-                .binaryWriter(rootSnpDir.getAbsolutePath()),
+                .binaryWriter(snpLocDir.getAbsolutePath()),
             cctx.kernalContext()
                 .marshallerContext()
-                .marshallerMappingWriter(cctx.kernalContext(), rootSnpDir.getAbsolutePath()),
+                .marshallerMappingWriter(cctx.kernalContext(), snpLocDir.getAbsolutePath()),
             pageSize);
     }
 
