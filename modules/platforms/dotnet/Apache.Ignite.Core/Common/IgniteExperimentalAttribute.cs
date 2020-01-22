@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Common
     /// (both minor and maintenance).
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-    public class IgniteExperimental : Attribute
+    public class IgniteExperimentalAttribute : Attribute
     {
         // No-op.
     }
