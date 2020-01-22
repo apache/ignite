@@ -139,30 +139,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param nodes Nodes.
-     * @param cntSingle Counter for GridDhtPartitionsSingleMessage.
-     * @param cntFull Counter for GridDhtPartitionsFullMessage.
-     */
-    private void initCountPmeMessages(int nodes, AtomicLong cntSingle, AtomicLong cntFull) {
-        for (int i = 0; i < nodes; i++) {
-            TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-            spi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
-                @Override public void apply(ClusterNode node, Message msg) {
-                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cntSingle.incrementAndGet();
-
-                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cntFull.incrementAndGet();
-                }
-            });
-        }
-    }
-
-    /**
      * Checks Partition Exchange happen in case of baseline auto-adjust (in-memory cluster). It's not possible to
      * perform switch since primaries may change.
      */
@@ -196,6 +172,68 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(nodes);
 
         checkNodeLeftOnFullyRebalancedCluster();
+    }
+
+    /**
+     * Checks if PME absents/presents on node left for fully rebalanced topology (Latest PME == LAA).
+     */
+    private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
+        List<Ignite> ignites = G.allGrids();
+
+        ignites.get(0).cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        int nodes = ignites.size();
+
+        AtomicLong cntSingle = new AtomicLong();
+        AtomicLong cntFull = new AtomicLong();
+
+        initCountPmeMessages(nodes, cntSingle, cntFull);
+
+        Random r = new Random();
+
+        while (nodes > 1) {
+            G.allGrids().get(r.nextInt(nodes--)).close(); // Stopping random node.
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            IgniteEx alive = (IgniteEx)G.allGrids().get(0);
+
+            assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
+
+            boolean pmeFree = persistence && allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH);
+
+            assertEquals(pmeFree ? 0 : (nodes - 1), cntSingle.get());
+            assertEquals(pmeFree ? 0 : (nodes - 1), cntFull.get());
+
+            cntSingle.set(0);
+            cntFull.set(0);
+        }
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param cntSingle Counter for GridDhtPartitionsSingleMessage.
+     * @param cntFull Counter for GridDhtPartitionsFullMessage.
+     */
+    private void initCountPmeMessages(int nodes, AtomicLong cntSingle, AtomicLong cntFull) {
+        for (int i = 0; i < nodes; i++) {
+            TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+            spi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
+                @Override public void apply(ClusterNode node, Message msg) {
+                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        cntSingle.incrementAndGet();
+
+                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        cntFull.incrementAndGet();
+                }
+            });
+        }
     }
 
     /**
@@ -256,44 +294,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         }
         finally {
             System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
-    }
-
-    /**
-     * Checks if PME absents/presents on node left for fully rebalanced topology (Latest PME == LAA).
-     */
-    private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
-        List<Ignite> ignites = G.allGrids();
-
-        ignites.get(0).cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        int nodes = ignites.size();
-
-        AtomicLong cntSingle = new AtomicLong();
-        AtomicLong cntFull = new AtomicLong();
-
-        initCountPmeMessages(nodes, cntSingle, cntFull);
-
-        Random r = new Random();
-
-        while (nodes > 1) {
-            G.allGrids().get(r.nextInt(nodes--)).close(); // Stopping random node.
-
-            awaitPartitionMapExchange(true, true, null, true);
-
-            IgniteEx alive = (IgniteEx)G.allGrids().get(0);
-
-            assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
-
-            boolean pmeFree = persistence && allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH);
-
-            assertEquals(pmeFree ? 0 : (nodes - 1), cntSingle.get());
-            assertEquals(pmeFree ? 0 : (nodes - 1), cntFull.get());
-
-            cntSingle.set(0);
-            cntFull.set(0);
         }
     }
 
