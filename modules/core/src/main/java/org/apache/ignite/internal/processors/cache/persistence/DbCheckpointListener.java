@@ -43,7 +43,7 @@ public interface DbCheckpointListener {
         /**
          * @return Checkpoint future which will be completed when checkpoint ends.
          */
-        public IgniteInternalFuture<?> cpFinishFut();
+        public IgniteInternalFuture<?> finishedStateFut();
 
         /**
          * @return Collection partition which require meta to be collected.

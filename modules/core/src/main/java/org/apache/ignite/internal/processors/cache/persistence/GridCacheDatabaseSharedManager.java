@@ -4417,8 +4417,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
-                @Override public IgniteInternalFuture<?> cpFinishFut() {
-                    return delegate.cpFinishFut();
+                @Override public IgniteInternalFuture<?> finishedStateFut() {
+                    return delegate.finishedStateFut();
                 }
 
                 /** {@inheritDoc} */
@@ -4597,8 +4597,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             /** {@inheritDoc} */
-            @Override public IgniteInternalFuture<?> cpFinishFut() {
-                return curr.cpFinishFut;
+            @Override public IgniteInternalFuture<?> finishedStateFut() {
+                return curr.futureFor(FINISHED);
             }
 
             /** {@inheritDoc} */
