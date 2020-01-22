@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /** Abstract test to verify default sql schema. */
@@ -91,13 +90,6 @@ public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTe
             () -> sql("DROP TABLE UNKNOWN_SCHEMA." + TBL_NAME),
             SQLException.class
         );
-    }
-
-    /** */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-25387")
-    @Test
-    public void testDropIfExistsNonExistingSchema() {
-        sql("DROP TABLE IF EXISTS UNKNOWN_SCHEMA." + TBL_NAME);
     }
 
     /** */

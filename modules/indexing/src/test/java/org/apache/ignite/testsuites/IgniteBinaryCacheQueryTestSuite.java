@@ -199,7 +199,6 @@ import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTe
 import org.apache.ignite.internal.processors.query.IgniteSqlQueryParallelismTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
-import org.apache.ignite.internal.processors.query.IgniteSqlSchemaNameValidationTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemasDiffConfigurationsTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
@@ -531,7 +530,6 @@ import org.junit.runners.Suite;
     IgniteSqlCustomSchemaTest.class,
     JdbcSqlDefaultSchemaTest.class,
     JdbcSqlCustomSchemaTest.class,
-    IgniteSqlSchemaNameValidationTest.class,
     IgniteSqlCustomSchemaWithPdsEnabled.class,
     IgniteSqlSchemasDiffConfigurationsTest.class,
 

@@ -19,15 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /** Verifies custom sql schema within different configurations. */
@@ -53,21 +50,6 @@ public class IgniteSqlSchemasDiffConfigurationsTest extends AbstractIndexingComm
     @After
     public void tearDown() {
         stopAllGrids();
-    }
-
-    /** */
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-25468")
-    @Test
-    @SuppressWarnings("ThrowableNotThrown")
-    public void testNodeFailWhenJoinWithDiffCacheConfig() throws Exception {
-        final String cacheName = "test_cache";
-
-        startGrid(createTestConf("ign1", SCHEMA_NAME_1, cacheName));
-
-        GridTestUtils.assertThrowsWithCause(
-            () -> startGrid(createTestConf("ign2", SCHEMA_NAME_2, cacheName)),
-            IgniteException.class
-        );
     }
 
     /** */
