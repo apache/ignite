@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCreateDestroyCheckTest;
+import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
