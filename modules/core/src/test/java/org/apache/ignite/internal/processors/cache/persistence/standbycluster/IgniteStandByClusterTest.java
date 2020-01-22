@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,15 +37,9 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -417,7 +409,8 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public static class StanByClusterTestProvider implements PluginProvider, IgnitePlugin, IgniteChangeGlobalStateSupport {
+    public static class StanByClusterTestProvider extends AbstractTestPluginProvider implements IgnitePlugin,
+        IgniteChangeGlobalStateSupport {
         /** */
         static final String NAME = "StanByClusterTestProvider";
 
@@ -430,69 +423,6 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String name() {
             return NAME;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String version() {
-            return "1.0";
-        }
-
-        /** {@inheritDoc} */
-        @Override public String copyright() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(
-            PluginContext ctx,
-            ExtensionRegistry registry
-        ) throws IgniteCheckedException {
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) throws IgniteCheckedException {
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStart() throws IgniteCheckedException {
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStop(boolean cancel) {
-
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-            return null;
         }
 
         /** {@inheritDoc} */
