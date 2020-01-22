@@ -1226,6 +1226,42 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
+     * @param part Partition.
+     * @param cnt Count.
+     * @param skipCnt Skip keys from start.
+     * @return List of keys for partition.
+     */
+    protected List<Integer> partitionKeys(IgniteCache<?, ?> cache, int part, int cnt, int skipCnt) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        int k = 0, c = 0, skip0 = 0;
+
+        List<Integer> keys = new ArrayList<>(cnt);
+
+        while(c < cnt) {
+            if (cctx.affinity().partition(k) == part) {
+                if (skip0 < skipCnt) {
+                    k++;
+                    skip0++;
+
+                    continue;
+                }
+
+                c++;
+
+                keys.add(k);
+            }
+
+            k++;
+        }
+
+        return keys;
+    }
+
+    /**
+     * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */

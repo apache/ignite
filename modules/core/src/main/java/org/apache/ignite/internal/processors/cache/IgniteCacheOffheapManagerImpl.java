@@ -90,6 +90,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
+    /** Batch size for cache removals during destroy. */
+    private static final int BATCH_SIZE = 1000;
+
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -1670,7 +1673,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCursor<? extends CacheDataRow> cur =
                 cursor(cacheId, null, null, CacheDataRowAdapter.RowData.KEY_ONLY);
 
+            int rmv = 0;
+
             while (cur.next()) {
+                if (++rmv == BATCH_SIZE) {
+                    ctx.database().checkpointReadUnlock();
+
+                    rmv = 0;
+
+                    ctx.database().checkpointReadLock();
+                }
+
                 CacheDataRow row = cur.get();
 
                 assert row.link() != 0 : row;
