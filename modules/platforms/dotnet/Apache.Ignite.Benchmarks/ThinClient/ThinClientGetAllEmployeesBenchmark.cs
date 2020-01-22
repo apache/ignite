@@ -18,54 +18,29 @@
 namespace Apache.Ignite.Benchmarks.ThinClient
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Benchmarks.Interop;
-    using Apache.Ignite.Benchmarks.Model;
-    using Apache.Ignite.Core.Client.Cache;
+    using System.Linq;
 
     /// <summary>
-    /// Cache get benchmark.
+    /// Cache GetAll benchmark.
     /// </summary>
-    internal class ThinClientGetBenchmark : PlatformBenchmarkBase
+    internal class ThinClientGetAllEmployeesBenchmark : ThinClientGetBenchmark
     {
-        /** Cache name. */
-        private const string CacheName = "cache";
-
-        /** Native cache wrapper. */
-        private ICacheClient<int, Employee> _cache;
-
-        /// <summary>
-        /// Gets the cache.
-        /// </summary>
-        public ICacheClient<int, Employee> Cache
-        {
-            get { return _cache; }
-        }
-
-        /** <inheritDoc /> */
-        protected override void OnStarted()
-        {
-            base.OnStarted();
-
-            _cache = GetClient().GetCache<int, Employee>(CacheName);
-
-            for (int i = 0; i < Emps.Length; i++)
-                _cache.Put(i, Emps[i]);
-        }
-
         /** <inheritDoc /> */
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(BenchmarkOperationDescriptor.Create("ThinClientGet", Get, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("GetAllEmployees", GetAll, 1));
         }
 
         /// <summary>
-        /// Cache get.
+        /// Cache GetAll.
         /// </summary>
-        private void Get(BenchmarkState state)
+        private void GetAll(BenchmarkState state)
         {
-            var idx = BenchmarkUtils.GetRandomInt(Dataset);
+            var batchSize = Dataset / 10;
+            var idx = BenchmarkUtils.GetRandomInt(Dataset - batchSize);
+            var keys = Enumerable.Range(idx, batchSize);
 
-            _cache.Get(idx);
+            Cache.GetAll(keys);
         }
     }
 }
