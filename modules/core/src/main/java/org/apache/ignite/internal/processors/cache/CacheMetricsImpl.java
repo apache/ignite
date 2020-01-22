@@ -185,10 +185,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     private final HistogramMetricImpl rmvTime;
 
     /** Commit time. */
-    private final HistogramMetric commitTime;
+    private final HistogramMetricImpl commitTime;
 
     /** Rollback time. */
-    private final HistogramMetric rollbackTime;
+    private final HistogramMetricImpl rollbackTime;
 
     /** Cache metrics. */
     @GridToStringExclude

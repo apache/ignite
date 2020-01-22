@@ -21,7 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -268,7 +268,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     public void testCommitTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("CommitTime");
+        HistogramMetricImpl m = metric("CommitTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
@@ -286,7 +286,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     public void testRollbackTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("RollbackTime");
+        HistogramMetricImpl m = metric("RollbackTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
