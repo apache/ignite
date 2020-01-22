@@ -46,9 +46,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRequestMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -774,6 +776,29 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         if (!removes && cnt != cache.size()) {
             buf.append("\ncache=").append(cache.getName()).append(" size mismatch [expect=").append(cnt).
                 append(", actual=").append(cache.size()).append('\n');
+        }
+
+        // todo remove next block
+        if (buf.length() > 0) {
+            long size = 0;
+
+            for (Ignite g : G.allGrids()) {
+                log.info("Partitions states [node=" + g.name() + ", cache=" + name + "]");
+
+                CacheGroupContext ctx = ((IgniteEx)g).cachex(name).context().group();
+
+                for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+                    log.info("\tp="+part.id() + " size=" + part.fullSize() + " init=" + part.initialUpdateCounter() + ", cntr=" + part.updateCounter() + ", state="+ part.state() + " mode=" + (part.primary(ctx.affinity().lastVersion()) ? "PRIMARY" : "BACKUP"));
+
+                for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+                    boolean primary = part.primary(ctx.affinity().lastVersion());
+
+                    if (primary)
+                        size += part.fullSize();
+                }
+            }
+
+            log.info("Expected size for " + name + " is " + size);
         }
 
         assertTrue(buf.toString(), buf.length() == 0);

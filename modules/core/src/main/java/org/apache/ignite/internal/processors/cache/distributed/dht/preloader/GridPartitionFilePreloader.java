@@ -177,12 +177,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!supports(grp))
                 continue;
 
-            //boolean hasReadOnlyParttitions = ;
-
-            //boolean allReadOnly = required(grp);
-
-            //System.out.println("grp=" + grp.cacheOrGroupName() + ", readonly=" + hasReadOnlyParttitions + " allReadOnly=" + allReadOnly);
-
             if (!locJoinBaselineChange && !required(grp)) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
@@ -191,15 +185,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                         part.readOnly(false);
 
-                        System.out.println("clearing " + part.id());
-                        part.clearAsync();
+                        exchFut.addClearingPartition(grp, part.id());
                     }
                 }
 
                 continue;
             }
-
-            //boolean toFull = !allReadOnly && hasReadOnlyParttitions;
 
             boolean toReadOnly = fileRebalanceApplicable(grp, exchFut);
 
@@ -207,11 +198,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 if (part.dataStore().readOnly(toReadOnly)) {
                     ((GridCacheDataStore)part.dataStore()).close();
 
-                    if (!toReadOnly) {
-                        System.out.println("starting clear " + part.id());
-
-                        part.clearAsync();
-                    }
+                    if (!toReadOnly)
+                        exchFut.addClearingPartition(grp, part.id());
                 }
             }
         }
@@ -359,15 +347,19 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         // File rebalancing should start only if all partitions are in read-only mode.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (!part.readOnly())
-                return false;
-            else
+            if (part.readOnly())
                 required = true;
+            else
+                return false;
         }
 
         return required;
     }
 
+    /**
+     * @param grp Cache group.
+     * @return {@code True} if cache group has at least one read-only partition.
+     */
     private boolean hasReadOnlyParttitions(CacheGroupContext grp) {
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (part.readOnly())

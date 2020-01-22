@@ -468,12 +468,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                             fut.get();
                     }
                 }
-
-                if (log.isDebugEnabled() && !idxRebuildFut.isDone() && !idxRebuildFut.futures().isEmpty()) {
-                    log.debug("Index rebuild is still in progress, cancelling.");
-
-                    idxRebuildFut.cancel();
-                }
             }
             catch (IgniteCheckedException e) {
                 if (err != null)
