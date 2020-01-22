@@ -729,7 +729,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     return grps;
                 }));
 
-        File rootSnpDir0 = localSnapshotDir(req.snpName);
+        File rootSnpDir0 = snapshotLocalDir(req.snpName);
 
         SnapshotTask task0;
 
