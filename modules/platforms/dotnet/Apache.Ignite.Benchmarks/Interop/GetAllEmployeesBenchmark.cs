@@ -18,53 +18,29 @@
 namespace Apache.Ignite.Benchmarks.Interop
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Benchmarks.Model;
-    using Apache.Ignite.Core.Cache;
+    using System.Linq;
 
     /// <summary>
-    /// Cache Get benchmark.
+    /// Cache GetAll benchmark.
     /// </summary>
-    internal class GetBenchmark : PlatformBenchmarkBase
+    internal class GetAllEmployeesBenchmark : GetBenchmark
     {
-        /** Cache name. */
-        private const string CacheName = "cache";
-
-        /** Native cache wrapper. */
-        private ICache<int, Employee> _cache;
-
-        /// <summary>
-        /// Gets the cache.
-        /// </summary>
-        protected ICache<int, Employee> Cache
-        {
-            get { return _cache; }
-        }
-
-        /** <inheritDoc /> */
-        protected override void OnStarted()
-        {
-            base.OnStarted();
-
-            _cache = Node.GetCache<int, Employee>(CacheName);
-
-            for (int i = 0; i < Emps.Length; i++)
-                _cache.Put(i, Emps[i]);
-        }
-
         /** <inheritDoc /> */
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(BenchmarkOperationDescriptor.Create("Get", Get, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("GetAllEmployees", GetAll, 1));
         }
-        
-        /// <summary>
-        /// Cache get.
-        /// </summary>
-        private void Get(BenchmarkState state)
-        {
-            var idx = BenchmarkUtils.GetRandomInt(Dataset);
 
-            _cache.Get(idx);
+        /// <summary>
+        /// Cache GetAll.
+        /// </summary>
+        private void GetAll(BenchmarkState state)
+        {
+            var batchSize = Dataset / 10;
+            var idx = BenchmarkUtils.GetRandomInt(Dataset - batchSize);
+            var keys = Enumerable.Range(idx, batchSize);
+
+            Cache.GetAll(keys);
         }
     }
 }
