@@ -6688,6 +6688,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         protected ComputeJobContext jobCtx;
 
         /** Injected grid instance. */
+        @IgniteInstanceResource
         protected IgniteEx ignite;
 
         /** Affinity topology version. */
@@ -6754,13 +6755,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             return true;
-        }
-
-        /** */
-        @IgniteInstanceResource
-        private void ignite(Ignite ignite) {
-            if (ignite != null)
-                this.ignite = ignite instanceof IgniteEx ? (IgniteEx)ignite : IgnitionEx.gridx(ignite.name());
         }
     }
 

@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
@@ -38,18 +37,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     public class PartitionAwarenessTest : ClientTestBase
     {
         /** */
-        private const string NodeIndexAttr = "test-node-idx";
-
-        /** */
-        private readonly List<ListLogger> _loggers = new List<ListLogger>();
-
+        private const int ServerCount = 3;
+        
         /** */
         private ICacheClient<int, int> _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
         /// </summary>
-        public PartitionAwarenessTest() : base(3)
+        public PartitionAwarenessTest() 
+            : base(ServerCount)
         {
             // No-op.
         }
@@ -262,7 +259,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             _cache.Get(1);
             _cache.Get(1);
 
-            var requests = _loggers.SelectMany(GetCacheRequestNames).ToArray();
+            var requests = GetAllServerRequestNames(RequestNamePrefixCache);
 
             var expectedRequests = new[]
             {
@@ -291,11 +288,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cache.Get(2);
             cache.Get(3);
 
-            var reqs = _loggers
-                .Select(l => new {Logger = l, Requests = GetCacheRequestNames(l).ToArray()})
-                .Where(r => r.Requests.Length > 0)
+            var reqs = GetLoggers()
+                .Select(l => GetServerRequestNames(l, RequestNamePrefixCache).ToArray())
+                .Where(x => x.Length > 0)
                 .ToArray();
-
+            
             // All requests should go to a single (default) node, because partition awareness is not applicable.
             Assert.AreEqual(1, reqs.Length);
 
@@ -308,7 +305,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 "Get"
             };
 
-            Assert.AreEqual(expectedRequests, reqs[0].Requests);
+            Assert.AreEqual(expectedRequests, reqs[0]);
         }
 
         [Test]
@@ -432,20 +429,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
         }
 
-        protected override IgniteConfiguration GetIgniteConfiguration()
-        {
-            var cfg = base.GetIgniteConfiguration();
-
-            var index = _loggers.Count;
-            cfg.UserAttributes = new Dictionary<string, object> {{NodeIndexAttr, index}};
-
-            var logger = new ListLogger();
-            cfg.Logger = logger;
-            _loggers.Add(logger);
-
-            return cfg;
-        }
-
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
             var cfg = base.GetClientConfiguration();
@@ -463,9 +446,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             try
             {
-                for (var i = 0; i < _loggers.Count; i++)
+                for (var i = 0; i < ServerCount; i++)
                 {
-                    var requests = GetCacheRequestNames(_loggers[i]);
+                    var requests = GetServerRequestNames(i, RequestNamePrefixCache);
 
                     if (requests.Contains(message))
                     {
@@ -478,27 +461,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             finally
             {
                 ClearLoggers();
-            }
-        }
-
-        private static IEnumerable<string> GetCacheRequestNames(ListLogger logger)
-        {
-            var messageRegex = new Regex(
-                @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
-                @"req=org.apache.ignite.internal.processors.platform.client.cache.ClientCache(\w+)Request@");
-
-            return logger.Entries
-                .Select(m => messageRegex.Match(m.Message))
-                .Where(m => m.Success)
-                .Select(m => m.Groups[1].Value);
-        }
-
-
-        private void ClearLoggers()
-        {
-            foreach (var logger in _loggers)
-            {
-                logger.Clear();
             }
         }
 
@@ -528,8 +490,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var idx = 0;
 
             // GetAll is not ordered - sort the same way as _loggers.
-            var ignites = Ignition.GetAll()
-                .OrderBy(n => n.GetCluster().GetLocalNode().GetAttribute<int>(NodeIndexAttr));
+            var ignites = Ignition.GetAll().OrderBy(i => i.Name);
 
             foreach (var ignite in ignites)
             {
