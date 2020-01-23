@@ -185,6 +185,9 @@ import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTes
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOffTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryTableLockAndConnectionPoolLazyModeOnTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaWithPdsEnabled;
+import org.apache.ignite.internal.processors.query.IgniteSqlDefaultSchemaTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlEntryCacheModeAgnosticTest;
@@ -196,11 +199,14 @@ import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTe
 import org.apache.ignite.internal.processors.query.IgniteSqlQueryParallelismTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlRoutingTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSchemaIndexingTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSchemasDiffConfigurationsTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
+import org.apache.ignite.internal.processors.query.JdbcSqlCustomSchemaTest;
+import org.apache.ignite.internal.processors.query.JdbcSqlDefaultSchemaTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
 import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTest;
@@ -519,6 +525,13 @@ import org.junit.runners.Suite;
     IgniteDecimalSelfTest.class,
     IgniteSQLColumnConstraintsTest.class,
     IgniteTransactionSQLColumnConstraintTest.class,
+
+    IgniteSqlDefaultSchemaTest.class,
+    IgniteSqlCustomSchemaTest.class,
+    JdbcSqlDefaultSchemaTest.class,
+    JdbcSqlCustomSchemaTest.class,
+    IgniteSqlCustomSchemaWithPdsEnabled.class,
+    IgniteSqlSchemasDiffConfigurationsTest.class,
 
     IgniteCachePartitionedAtomicColumnConstraintsTest.class,
     IgniteCachePartitionedTransactionalColumnConstraintsTest.class,
