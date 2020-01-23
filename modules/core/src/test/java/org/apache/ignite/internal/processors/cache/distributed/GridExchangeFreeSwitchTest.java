@@ -168,19 +168,19 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         switch (order) {
             case FIRST:
-                startClusterWithPmeFreeSwitchDisabled(nodes, idx);
+                startClusterWithPmeFreeSwitchDisabledOneNode(nodes, idx);
                 break;
 
             case MIDDLE:
                 idx = nodes / 2 - 1;
 
-                startClusterWithPmeFreeSwitchDisabled(nodes, idx);
+                startClusterWithPmeFreeSwitchDisabledOneNode(nodes, idx);
                 break;
 
             case LAST:
                 idx = nodes - 1;
 
-                startClusterWithPmeFreeSwitchDisabled(nodes, idx);
+                startClusterWithPmeFreeSwitchDisabledOneNode(nodes, idx);
                 break;
 
             case NONE:
@@ -195,7 +195,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * @param nodes Nodes.
      * @param idx Index node will be starts with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
-    private void startClusterWithPmeFreeSwitchDisabled(int nodes, int idx) throws Exception {
+    private void startClusterWithPmeFreeSwitchDisabledOneNode(int nodes, int idx) throws Exception {
         assert 0 <= idx && idx < nodes;
 
         if (idx > 0)
@@ -209,7 +209,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param idx Index.
-     * @return Started grid.
+     * @return Started grid with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
      */
     private Ignite startGridWithPmeFreeSwitchDisabled(int idx) throws Exception {
         try {
