@@ -49,7 +49,6 @@ public class GridCacheVersionGenerationWithCacheStorageTest extends GridCommonAb
     /** Latch in order to slow down exchange. */
     private CountDownLatch latch = new CountDownLatch(1);
 
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
