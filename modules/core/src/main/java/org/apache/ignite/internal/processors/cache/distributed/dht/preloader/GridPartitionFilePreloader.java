@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
@@ -61,11 +62,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
- * DHT cache partition files preloader, manages partition files preloading routine.
+ * DHT cache partition files preloader.
  */
 public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** */
-    private final boolean fileRebalanceEnabled = IgniteSystemProperties.getBoolean(IGNITE_FILE_REBALANCE_ENABLED, true);
+    private final boolean fileRebalanceEnabled =
+        IgniteSystemProperties.getBoolean(IGNITE_FILE_REBALANCE_ENABLED, true);
 
     /** */
     private final long fileRebalanceThreshold =
@@ -109,7 +111,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Callback on exchange done. Should be called after changing the local WAL state.
+     * Callback on exchange done.
      *
      * @param exchFut Exchange future.
      */
@@ -175,7 +177,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
-                if (hasReadOnlyParttitions(grp)) {
+                if (hasReadOnlyParttition(grp)) {
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                         part.readOnly(false);
 
@@ -276,7 +278,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param nodes List of Nodes.
      * @return {@code True} if file rebalancing is applicable for specified cache group and all nodes supports it.
      */
-    public boolean supports(CacheGroupContext grp, Collection<ClusterNode> nodes) {
+    public boolean supports(CacheGroupContext grp, @NotNull Collection<ClusterNode> nodes) {
         assert nodes != null && !nodes.isEmpty();
 
         if (!supports(grp))
@@ -294,12 +296,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             Long size = globalSizes.get(p);
 
             if (size != null && size > fileRebalanceThreshold)
-                return true;
-        }
-
-        // Also should check the sizes of the local partitions.
-        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.fullSize() > fileRebalanceThreshold)
                 return true;
         }
 
@@ -354,7 +350,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param grp Cache group.
      * @return {@code True} if cache group has at least one read-only partition.
      */
-    private boolean hasReadOnlyParttitions(CacheGroupContext grp) {
+    private boolean hasReadOnlyParttition(CacheGroupContext grp) {
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (part.readOnly())
                 return true;
@@ -397,7 +393,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
 
-        boolean hasHugePart = false;
+        boolean hasApplicablePart = false;
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
             if (!aff.get(p).contains(cctx.localNode())) {
@@ -413,11 +409,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 continue;
             }
 
-            if (!hasHugePart) {
+            if (!hasApplicablePart) {
                 Long partSize = globalSizes.get(p);
 
-                if (partSize != null && partSize >= fileRebalanceThreshold)
-                    hasHugePart = true;
+                if (partSize != null && partSize > fileRebalanceThreshold)
+                    hasApplicablePart = true;
             }
 
             if (grp.topology().localPartition(p).state() != MOVING)
@@ -428,7 +424,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                 return false;
         }
 
-        return hasHugePart;
+        return hasApplicablePart;
     }
 
     /**
@@ -459,6 +455,26 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         return res.values();
     }
 
+    /**
+     * Partition snapshot listener.
+     */
+    private class PartitionSnapshotListener implements SnapshotListener {
+        /** {@inheritDoc} */
+        @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
+            fileRebalanceRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onEnd(UUID rmtNodeId) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onException(UUID rmtNodeId, Throwable t) {
+            log.error("Unable to receive partitions [rmtNode=" + rmtNodeId + ", msg=" + t.getMessage() + "]", t);
+        }
+    }
+
     /** */
     private static class CheckpointListener implements DbCheckpointListener {
         /** Checkpoint requests queue. */
@@ -485,28 +501,8 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         /**
          * @param task Task to execute.
          */
-        public void schedule(final Runnable task) {
+        public void schedule(Runnable task) {
             requests.offer(task);
-        }
-    }
-
-    /**
-     * Partition snapshot listener.
-     */
-    private class PartitionSnapshotListener implements SnapshotListener {
-        /** {@inheritDoc} */
-        @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
-            fileRebalanceRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onEnd(UUID rmtNodeId) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onException(UUID rmtNodeId, Throwable t) {
-            log.error("Unable to receive partitions [rmtNode=" + rmtNodeId + ", msg=" + t.getMessage() + "]", t);
         }
     }
 }

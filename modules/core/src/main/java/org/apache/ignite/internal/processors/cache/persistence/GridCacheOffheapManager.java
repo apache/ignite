@@ -1056,7 +1056,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = 0;
 
             for (CacheDataStore store : cacheDataStores()) {
-                cleared += ((GridCacheDataStore)(store)).purgeExpired(cctx, c, amount - cleared);
+                cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, amount - cleared);
 
                 if (amount != -1 && cleared >= amount)
                     return true;
@@ -1074,7 +1074,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         long size = 0;
 
         for (CacheDataStore store : cacheDataStores())
-            size += ((GridCacheDataStore)(store)).expiredSize();
+            size += ((GridCacheDataStore)store).expiredSize();
 
         return size;
     }

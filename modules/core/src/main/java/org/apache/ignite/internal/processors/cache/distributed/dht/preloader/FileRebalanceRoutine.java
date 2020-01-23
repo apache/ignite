@@ -568,9 +568,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             if (!clearTask.isDone() && log.isDebugEnabled())
-                log.debug("Wait for region cleanup [grp=" + grp.cacheOrGroupName() + "]");
+                log.debug("Wait for memory region cleanup [grp=" + grp.cacheOrGroupName() + "]");
             else if (clearTask.error() != null) {
-                log.warning("Off heap region was not cleared properly [region=" + region + "]", clearTask.error());
+                log.warning("Off-heap region was not cleared properly [region=" + region + "]", clearTask.error());
 
                 onDone(clearTask.error());
 
