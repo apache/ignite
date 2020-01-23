@@ -3957,6 +3957,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         req.onDone(null);
 
+                        grp.metrics().decrementInitializedLocalPartitions();
+
                         if (log.isDebugEnabled())
                             log.debug("Partition file has destroyed [grpId=" + grpId + ", partId=" + partId + "]");
                     }

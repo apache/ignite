@@ -29,10 +29,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MetricsMxBean;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -199,7 +200,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             MetricRegistry mreg = g0.context().metric().registry(TEST_REG);
 
             HitRateMetric hitRate = mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
-            HistogramMetric histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
+            HistogramMetricImpl histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
 
             assertEquals(1000, hitRate.rateTimeInterval());
             assertArrayEquals(BOUNDS, histogram.bounds());
@@ -240,7 +241,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            HistogramMetric getTime = g0.context().metric().registry(cacheRegName).findMetric("GetTime");
+            HistogramMetricImpl getTime = g0.context().metric().registry(cacheRegName).findMetric("GetTime");
 
             assertNotEquals(BOUNDS.length, getTime.bounds().length);
 
@@ -282,7 +283,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            HistogramMetric getTime = g0.context().metric().registry(cacheRegName).findMetric("GetTime");
+            HistogramMetricImpl getTime = g0.context().metric().registry(cacheRegName).findMetric("GetTime");
 
             assertNotEquals(BOUNDS.length, getTime.bounds().length);
 

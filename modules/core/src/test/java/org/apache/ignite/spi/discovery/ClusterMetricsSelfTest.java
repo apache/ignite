@@ -26,7 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -84,8 +84,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         LongMetric currentPMEDuration = reg.findMetric(PME_DURATION);
         LongMetric currentBlockingPMEDuration = reg.findMetric(PME_OPS_BLOCKED_DURATION);
 
-        HistogramMetric durationHistogram = reg.findMetric(PME_DURATION_HISTOGRAM);
-        HistogramMetric blockindDurationHistogram = reg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+        HistogramMetricImpl durationHistogram = reg.findMetric(PME_DURATION_HISTOGRAM);
+        HistogramMetricImpl blockindDurationHistogram = reg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
