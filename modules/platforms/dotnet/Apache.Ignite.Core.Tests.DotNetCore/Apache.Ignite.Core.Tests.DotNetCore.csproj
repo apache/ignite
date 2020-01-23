@@ -19,7 +19,7 @@
     <DelaySign>false</DelaySign>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -59,7 +59,19 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\AdvancedSerializationTest.cs" Link="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\CallbacksTest.cs" Link="Binary\Serializable\CallbacksTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\DynamicFieldSetSerializable.cs">
+      <Link>Binary\Serializable\DynamicFieldSetSerializable.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\DynamicFieldSetTest.cs">
+      <Link>Binary\Serializable\DynamicFieldSetTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\GenericCollectionsTest.cs" Link="Binary\Serializable\GenericCollectionsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\ObjectReferenceTests.cs">
+      <Link>Binary\Serializable\ObjectReferenceTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\PrimitivesTest.cs">
+      <Link>Binary\Serializable\PrimitivesTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\SqlDmlTest.cs" Link="Binary\Serializable\SqlDmlTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\AddArgCacheEntryProcessor.cs" Link="Cache\AddArgCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableAddArgCacheEntryProcessor.cs" Link="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
@@ -96,8 +108,14 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\AffinityAwarenessTest.cs">
-      <Link>ThinClient\Cache\AffinityAwarenessTest.cs</Link>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\DynamicFieldSetTest.cs">
+      <Link>ThinClient\Cache\DynamicFieldSetTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\SerializableObjectsTest.cs">
+      <Link>ThinClient\Cache\SerializableObjectsTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\PartitionAwarenessTest.cs">
+      <Link>ThinClient\Cache\PartitionAwarenessTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\BinaryBuilderTest.cs" Link="ThinClient\Cache\BinaryBuilderTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTest.cs" Link="ThinClient\Cache\CacheTest.cs" />
@@ -136,6 +154,12 @@
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolVersionTest.cs">
       <Link>ThinClient\ClientProtocolVersionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientServerCacheAdapter.cs">
+      <Link>ThinClient\ClientServerCacheAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientServerCacheAdapterExtensions.cs">
+      <Link>ThinClient\ClientServerCacheAdapterExtensions.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />

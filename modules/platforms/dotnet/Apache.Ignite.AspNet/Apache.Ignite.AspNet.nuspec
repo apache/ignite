@@ -34,9 +34,9 @@ Creating NuGet package:
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 Output Cache Provider: caches page output in a distributed in-memory cache.
@@ -44,15 +44,20 @@ Session State Store Provider: stores session state data in a distributed in-memo
             
 More info: https://apacheignite-net.readme.io/
         </description>
-        <releaseNotes></releaseNotes>
-        <copyright>Copyright 2019</copyright>
+        <copyright>Copyright 2020</copyright>
         <tags>OutputCacheProvider Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
+        <repository type="git" url="https://github.com/apache/ignite.git" />
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
+            <group targetFramework=".NETFramework4.0">
+                <dependency id="Apache.Ignite" version="[$version$]" />
+            </group>
         </dependencies>    
     </metadata>
     <files>
 	    <file src="bin\$configuration$\Apache.Ignite.AspNet.dll" target="lib\net40" />
 		<file src="bin\$configuration$\Apache.Ignite.AspNet.xml" target="lib\net40" />
+
+        <!-- Icon -->
+        <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>
 </package>

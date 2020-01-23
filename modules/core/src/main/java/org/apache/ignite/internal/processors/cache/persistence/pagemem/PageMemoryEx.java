@@ -99,7 +99,7 @@ public interface PageMemoryEx extends PageMemory {
 
     /**
      * Heuristic method which allows a thread to check if it safe to start memory struture modifications
-     * in regard with checkpointing.
+     * in regard with checkpointing. May return false-negative result during or after partition eviction.
      *
      * @return {@code False} if there are too many dirty pages and a thread should wait for a
      *      checkpoint to begin.
@@ -175,4 +175,9 @@ public interface PageMemoryEx extends PageMemory {
      * Calculates throttling condition.
      */
     public boolean shouldThrottle();
+
+    /**
+     * Total pages can be placed to memory.
+     */
+    public long totalPages();
 }
