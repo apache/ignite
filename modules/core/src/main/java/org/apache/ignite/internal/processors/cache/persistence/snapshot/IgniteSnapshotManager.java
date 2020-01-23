@@ -848,12 +848,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         SnapshotTask snpTask = clusterSnpTask;
 
-        snpTask.submit(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
+        IgniteInternalFuture<Void> startFut = snpTask.submit(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
 
         dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpTask.snapshotName()));
 
         // schedule task on checkpoint and wait when it starts
-        snpTask.awaitStarted();
+        try {
+            startFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Fail to wait while cluster-wide snapshot operation started", e);
+        }
     }
 
     /**
