@@ -754,7 +754,8 @@ public class ClusterCachesInfo {
                     return;
                 }
 
-                processStopCacheRequest(exchangeActions, req, cacheName, desc);
+                if (!processStopCacheRequest(exchangeActions, req, res, cacheName, desc))
+                    return;
 
                 needExchange = true;
             }
@@ -775,13 +776,26 @@ public class ClusterCachesInfo {
      * @param exchangeActions Exchange actions to update.
      * @param cacheName Cache name.
      * @param desc Dynamic cache descriptor.
+     * @return {@code true} if stop request can be proceed.
      */
-    private void processStopCacheRequest(
+    private boolean processStopCacheRequest(
         ExchangeActions exchangeActions,
         DynamicCacheChangeRequest req,
+        CacheChangeProcessResult res,
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
+        if (ctx.cache().context().snapshotMgr().snapshotInProgress()) {
+            IgniteCheckedException err = new IgniteCheckedException("Cache stop operation is not allowd during " +
+                "a snapshot operation in progress.");
+
+            U.warn(log, err);
+
+            res.errs.add(err);
+
+            return false;
+        }
+
         DynamicCacheDescriptor old = registeredCaches.get(cacheName);
 
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
@@ -826,6 +840,8 @@ public class ClusterCachesInfo {
                 }
             }
         }
+
+        return true;
     }
 
     /**

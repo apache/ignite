@@ -4219,6 +4219,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (res == null)
             res = validateRestartingCaches(node);
 
+        if (res == null && context().snapshotMgr().snapshotInProgress()) {
+            String msg = "Joining nodes to the cluster during cluster-wide snapshot operation is no allowed " +
+                "[joiningNodeId=" + node.id() + ']';
+
+            return new IgniteNodeValidationResult(node.id(), msg);
+        }
+
         return res;
     }
 

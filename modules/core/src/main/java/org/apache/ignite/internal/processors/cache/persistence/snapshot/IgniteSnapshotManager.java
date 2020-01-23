@@ -115,6 +115,7 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
@@ -218,7 +219,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     private int pageSize;
 
     /** Take snapshot operation procedure. */
-    private DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
+    private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
 
     /** Cluster snapshot operation requested by user. */
     private ClusterSnapshotFuture clusterSnpFut;
@@ -230,7 +231,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param ctx Kernal context.
      */
     public IgniteSnapshotManager(GridKernalContext ctx) {
-        // No-op.
+        takeSnpProc = new DistributedProcess<>(ctx, DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT,
+            this::takeSnapshot, this::takeSnapshotResult);
     }
 
     /**
@@ -294,9 +296,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
         cctx.exchange().registerExchangeAwareComponent(this);
-
-        takeSnpProc = new DistributedProcess<>(kctx, DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT,
-            this::takeSnapshot, this::takeSnapshotResult);
 
         // Receive remote snapshots requests.
         cctx.gridIO().addMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC, new GridMessageListener() {
@@ -717,7 +716,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpTask + ']'));
         }
 
-        // todo must reject stop cache requests
         // todo write snapshot metadata
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         Map<Integer, GridIntList> parts = req.grpIds.stream()
@@ -789,6 +787,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         }
     }
 
+    /**
+     * @return {@code True} if snapshot operation started.
+     */
+    public boolean snapshotInProgress() {
+        return clusterSnpTask != null;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name, List<Integer> grps) {
         if (cctx.kernalContext().clientNode()) {
@@ -799,6 +804,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT)) {
             return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
                 "a snapshot operation."));
+        }
+
+        if (!active(cctx.kernalContext().state().clusterState().state())) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Snapshot operation has been rejected. " +
+                "The cluster is inactive."));
         }
 
         synchronized (snpOpMux) {

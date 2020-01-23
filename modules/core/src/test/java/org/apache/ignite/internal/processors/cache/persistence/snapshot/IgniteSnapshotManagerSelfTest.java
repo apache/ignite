@@ -727,7 +727,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig0 = startGridsWithCache(grids, defaultCacheCfg, CACHE_KEYS_RANGE);
 
         // Start cache load
-        GridTestUtils.runMultiThreadedAsync(() -> {
+        IgniteInternalFuture<Long> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted() || !stop.get()) {
                 int idx = RAND.nextInt(grids);
 
@@ -738,13 +738,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteFuture<Void> fut = ig0.snapshot()
             .createSnapshot("backup23012020", Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
-        try {
-            fut.get();
-        }
-        finally {
-            stop.set(true);
-        }
+        fut.listen(f -> stop.set(true));
+
+        loadFut.get();
     }
+
+    // todo check exception on cache stop during snapshot operation in progress
+    // todo check join node is not allowed during snapshot operation in progress
 
     /**
      * @param src Source node to calculate.
