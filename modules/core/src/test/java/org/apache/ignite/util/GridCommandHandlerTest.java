@@ -404,6 +404,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
@@ -427,6 +429,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testBaselineRemove() throws Exception {
         Ignite ignite = startGrids(1);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         Ignite other = startGrid("nodeToStop");
 
         assertFalse(ignite.cluster().active());
@@ -485,6 +490,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
@@ -506,6 +513,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         assertFalse(ignite.cluster().active());
 
@@ -1310,6 +1319,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
         IgniteEx ignite = startGrids(2);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         ignite.cluster().active(true);
 

@@ -78,7 +78,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toCollection;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -147,18 +146,11 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    /**
+     * @return Partitions count.
+     */
+    protected int partitions() {
+        return PARTS_CNT;
     }
 
     /** */
@@ -198,6 +190,12 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     }
 
     /**
+     */
+    protected void configureBaselineAutoAdjust() {
+        ignite(0).cluster().baselineAutoAdjustEnabled(false);
+    }
+
+    /**
      * Runs a scenario.
      *
      * @param partId Partition id.
@@ -218,6 +216,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         IgniteEx crd = startGrids(nodesCnt);
 
         crd.cluster().active(true);
+
+        configureBaselineAutoAdjust();
 
         assertEquals(0, crd.cache(DEFAULT_CACHE_NAME).size());
 
