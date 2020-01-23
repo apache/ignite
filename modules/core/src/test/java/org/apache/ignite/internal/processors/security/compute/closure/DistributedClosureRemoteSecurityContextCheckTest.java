@@ -103,6 +103,6 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
                 for (UUID id : nodesToCheckIds())
                     compute(id).applyAsync(createRunner(), new Object()).get();
             }
-        ).map(r -> new RegisterExecAndForward<>(OPERATION_START, r, endpointIds()));
+        ).map(this::createRunner);
     }
 }

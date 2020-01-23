@@ -80,9 +80,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         IgniteRunnable operation = () -> {
             VERIFIER.register(OPERATION_START);
 
-            localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(
-                new RegisterExecAndForward<>(SRV_CHECK, endpointIds())
-            );
+            localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(createRunner(SRV_CHECK));
         };
 
         runAndCheck(grid(SRV_INITIATOR), operation);

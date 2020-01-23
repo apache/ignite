@@ -89,6 +89,6 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
             () -> localIgnite().<Integer, Integer>cache(CACHE_NAME)
                 .invokeAllAsync(singleton(key), createRunner()).get()
-        ).map(r -> new RegisterExecAndForward<>(OPERATION_START, r, endpointIds()));
+        ).map(this::createRunner);
     }
 }

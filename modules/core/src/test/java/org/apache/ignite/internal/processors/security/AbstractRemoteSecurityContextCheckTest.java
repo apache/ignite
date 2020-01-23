@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -320,6 +318,11 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /** */
+    protected <K, V> RegisterExecAndForward<K, V> createRunner(IgniteRunnable r) {
+        return new RegisterExecAndForward<>(OPERATION_START, r, endpointIds());
+    }
+
+    /** */
     protected <K, V> RegisterExecAndForward<K, V> createRunner() {
         return new RegisterExecAndForward<>(endpointIds());
     }
@@ -340,34 +343,22 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private final Collection<UUID> endpoints;
 
         /**
-         * @param runnable Runnable.
-         */
-        public RegisterExecAndForward(IgniteRunnable runnable) {
-            this(null, OPERATION_CHECK, Objects.requireNonNull(runnable), Collections.emptyList());
-        }
-
-        /**
          * @param node Expected local node name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        public RegisterExecAndForward(String node, Collection<UUID> endpoints) {
+        private RegisterExecAndForward(String node, Collection<UUID> endpoints) {
             this(node, OPERATION_CHECK, null, endpoints);
         }
 
         /**
          * @param endpoints Collection of endpont nodes ids.
          */
-        public RegisterExecAndForward(Collection<UUID> endpoints) {
+        private RegisterExecAndForward(Collection<UUID> endpoints) {
             this(null, OPERATION_CHECK, null, endpoints);
         }
 
         /** */
-        public RegisterExecAndForward(String node, String opName, Collection<UUID> endpoints) {
-            this(node, opName, null, endpoints);
-        }
-
-        /** */
-        public RegisterExecAndForward(String opName, IgniteRunnable runnable, Collection<UUID> endpoints) {
+        private RegisterExecAndForward(String opName, IgniteRunnable runnable, Collection<UUID> endpoints) {
             this(null, opName, runnable, endpoints);
         }
 
