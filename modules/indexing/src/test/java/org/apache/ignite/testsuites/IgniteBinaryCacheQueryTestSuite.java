@@ -179,6 +179,8 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryWithH2IndexingSelfTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlUpdatesTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
 import org.apache.ignite.internal.processors.cache.transaction.DmlInsideTransactionTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
@@ -522,6 +524,8 @@ import org.junit.runners.Suite;
     IgniteCheckClusterStateBeforeExecuteQueryTest.class,
     OptimizedMarshallerIndexNameTest.class,
     SqlSystemViewsSelfTest.class,
+    ScanQueryConcurrentUpdatesTest.class,
+    ScanQueryConcurrentSqlUpdatesTest.class,
 
     GridIndexRebuildSelfTest.class,
     GridIndexFullRebuildTest.class,
