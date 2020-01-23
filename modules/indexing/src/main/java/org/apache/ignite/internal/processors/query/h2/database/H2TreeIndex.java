@@ -158,6 +158,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** Query context registry. */
     private final QueryContextRegistry qryCtxRegistry;
 
+    /** IO statistics holder. */
+    private final IoStatisticsHolderIndex stats;
+
     /**
      * @param cctx Cache context.
      * @param rowCache Row cache.
@@ -239,7 +242,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         AtomicInteger maxCalculatedInlineSize = new AtomicInteger();
 
-        IoStatisticsHolder stats = new IoStatisticsHolderIndex(
+        stats = new IoStatisticsHolderIndex(
             SORTED_INDEX,
             cctx.name(),
             idxName,
@@ -541,6 +544,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
                     dropMetaPage(i);
                 }
+
+                ctx.metric().remove(stats.metricRegistryName());
             }
         }
         catch (IgniteCheckedException e) {

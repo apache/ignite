@@ -197,7 +197,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
 
         /** {@inheritDoc} */
         @Override public void beforeNodesStarted() {
-            BPlusTree.pageHndWrapper = (tree, hnd) -> {
+            BPlusTree.testHndWrapper = (tree, hnd) -> {
                 final IgniteEx locIgnite = (IgniteEx)Ignition.localIgnite();
 
                 if (getTestIgniteInstanceIndex(locIgnite.name()) != failedNodeIdx)
@@ -251,7 +251,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
         /** {@inheritDoc} */
         @Override public void afterTransactionsFinished() throws Exception {
             // Disable index corruption.
-            BPlusTree.pageHndWrapper = (tree, hnd) -> hnd;
+            BPlusTree.testHndWrapper = null;
 
             // Wait until node with corrupted index will left cluster.
             GridTestUtils.waitForCondition(() -> {

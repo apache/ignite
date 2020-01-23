@@ -297,10 +297,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                                 }
 
                                 if (backup == backup1) {
-                                    // Stop all backups first or recovery will commit a transaction on backups.
+                                    blockRecovery();
+
                                     stopGrid(skipCheckpoint, txTop.get2().get(0).name());
                                     stopGrid(skipCheckpoint, txTop.get2().get(1).name());
-                                    stopAllGrids();
+                                    stopAllGrids(); // Stop all remaining nodes.
                                 }
 
                                 return true;
@@ -320,7 +321,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             System.setProperty(IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY, "true");
 
         try {
-            // Start only backups.
+            // Start only backups in given order.
             startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[0]).name());
             startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[1]).name());
 

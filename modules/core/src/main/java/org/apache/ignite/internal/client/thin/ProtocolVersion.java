@@ -25,7 +25,7 @@ public final class ProtocolVersion implements Comparable<ProtocolVersion> {
     /** Protocol version: 1.5.0. Transactions support. */
     public static final ProtocolVersion V1_5_0 = new ProtocolVersion((short)1, (short)5, (short)0);
 
-    /** Protocol version: 1.4.0. Affinity awareness. */
+    /** Protocol version: 1.4.0. Partition awareness. */
     public static final ProtocolVersion V1_4_0 = new ProtocolVersion((short)1, (short)4, (short)0);
 
     /** Protocol version: 1.2.0. */
