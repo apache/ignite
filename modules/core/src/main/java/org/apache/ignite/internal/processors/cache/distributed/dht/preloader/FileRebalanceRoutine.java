@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -427,7 +426,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         boolean done = super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel);
 
-        if (cancel || err != null && done) {
+        if (done && (cancel || err != null)) {
             lock.lock();
 
             try {

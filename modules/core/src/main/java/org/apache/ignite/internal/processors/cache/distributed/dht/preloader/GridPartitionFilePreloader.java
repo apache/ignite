@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -215,7 +216,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         GridDhtPartitionsExchangeFuture exchFut,
         Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
     ) {
-        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = sortAssignments(assignments);
+        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
 
         if (orderedAssigns.isEmpty()) {
             if (log.isDebugEnabled())
@@ -431,53 +432,43 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param assignsMap The map of cache groups assignments to process.
+     * @param assignsMap The map of cache groups assignments to preload.
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
-    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> sortAssignments(
+    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> reorderAssignments(
         Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap) {
-        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> ordered = new TreeMap<>();
+        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> res = new TreeMap<>();
 
-        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> grpEntry : assignsMap.entrySet()) {
-            CacheGroupContext grp = grpEntry.getKey();
-
-            int grpId = grpEntry.getKey().groupId();
-
-            GridDhtPreloaderAssignments assigns = grpEntry.getValue();
+        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
+            CacheGroupContext grp = e.getKey();
+            GridDhtPreloaderAssignments assigns = e.getValue();
 
             assert required(grp);
 
-            int grpOrderNo = grp.config().getRebalanceOrder();
+            int order = grp.config().getRebalanceOrder();
 
-            ordered.putIfAbsent(grpOrderNo, new HashMap<>());
+            Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns = res.computeIfAbsent(order, v -> new HashMap<>());
 
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> grpAssigns : assigns.entrySet()) {
-                ClusterNode node = grpAssigns.getKey();
+            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
+                Map<Integer, Set<Integer>> grpAssigns = nodeAssigns.computeIfAbsent(e0.getKey(), v -> new HashMap<>());
 
-                ordered.get(grpOrderNo).putIfAbsent(node, new HashMap<>());
-
-                ordered.get(grpOrderNo)
-                    .get(node)
-                    .putIfAbsent(grpId,
-                        grpAssigns.getValue()
-                            .partitions()
-                            .fullSet());
+                grpAssigns.put(grp.groupId(), e0.getValue().partitions().fullSet());
             }
         }
 
-        return ordered.values();
+        return res.values();
     }
 
     /** */
     private static class CheckpointListener implements DbCheckpointListener {
-        /** Queue. */
-        private final ConcurrentLinkedQueue<Runnable> queue = new ConcurrentLinkedQueue<>();
+        /** Checkpoint requests queue. */
+        private final Queue<Runnable> requests = new ConcurrentLinkedQueue<>();
 
         /** {@inheritDoc} */
         @Override public void onMarkCheckpointBegin(Context ctx) {
             Runnable r;
 
-            while ((r = queue.poll()) != null)
+            while ((r = requests.poll()) != null)
                 r.run();
         }
 
@@ -495,7 +486,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
          * @param task Task to execute.
          */
         public void schedule(final Runnable task) {
-            queue.offer(task);
+            requests.offer(task);
         }
     }
 
