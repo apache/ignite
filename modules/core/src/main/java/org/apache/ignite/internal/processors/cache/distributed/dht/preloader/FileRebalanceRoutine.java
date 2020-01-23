@@ -81,9 +81,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Index rebuild future. */
-    private final GridCompoundFuture idxRebuildFut = new GridCompoundFuture<>();
-
     /** Exchange ID. */
     private final GridDhtPartitionExchangeId exchId;
 
@@ -386,12 +383,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         if (qryProc.moduleEnabled()) {
             U.log(log,"Starting index rebuild [grp=" + grpName + "]");
 
-            for (GridCacheContext ctx : grp.caches()) {
-                IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
-
-                if (fut != null)
-                    idxRebuildFut.add(fut);
-            }
+            for (GridCacheContext ctx : grp.caches())
+                qryProc.rebuildIndexesFromHash(ctx);
         }
         else
             U.log(log, "Skipping index rebuild [grp=" + grpName + "]");
@@ -399,20 +392,18 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         // Cache group file rebalancing is finished, historical rebalancing will send separate events.
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
-        int remain = remaining.size();
+        int remainGroupsCnt = remaining.size();
 
-        U.log(log, "Cache group files preload complete [grp=" + grpName + ", remainParts=" + remain + "]");
+        U.log(log, "Completed" + (remainGroupsCnt == 0 ? " (final)" : "") +
+            " cache group files preloading [grp=" + grpName + ", remain=" + remainGroupsCnt + "]");
 
         if (histAssignments.isEmpty())
             cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
         else
             requestHistoricalRebalance(grp, histAssignments);
 
-        if (remain == 0) {
-            idxRebuildFut.markInitialized();
-
+        if (remainGroupsCnt == 0)
             onDone(true);
-        }
     }
 
     /** {@inheritDoc} */
