@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -43,7 +42,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -134,8 +132,8 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /** Checkpoint end future. */
     private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
 
-    /** Latch to wait until checkpoint mark pahse will be finished and snapshot tasks scheduled. */
-    private final CountDownLatch startedLatch = new CountDownLatch(1);
+    /** Future to wait until checkpoint mark pahse will be finished and snapshot tasks scheduled. */
+    private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
 
     /** Absolute snapshot storage path. */
     // todo rewise configuration
@@ -221,18 +219,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
-     * Wait for the snapshot operation task started on checkpoint.
-     */
-    public void awaitStarted() {
-        try {
-            U.await(startedLatch);
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            acceptException(e);
-        }
-    }
-
-    /**
      * @param state A new snapshot state to set.
      * @return {@code true} if given state has been set by this call.
      */
@@ -247,8 +233,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             if (state == SnapshotState.STOPPING) {
                 this.state = SnapshotState.STOPPING;
 
-                startedLatch.countDown();
-
                 return true;
             }
 
@@ -256,7 +240,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                 this.state = state;
 
                 if (state == SnapshotState.STARTED)
-                    startedLatch.countDown();
+                    startedFut.onDone();
 
                 return true;
             }
@@ -269,8 +253,11 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      * @param th An exception which occurred during snapshot processing.
      */
     public void acceptException(Throwable th) {
-        if (state(SnapshotState.STOPPING))
+        if (state(SnapshotState.STOPPING)) {
             lastTh = th;
+
+            startedFut.onDone(th);
+        }
     }
 
     /**
@@ -308,7 +295,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      * @param adder Register current task on.
      * @param remover Deregister current taks on.
      */
-    public void submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
+    public IgniteInternalFuture<Void> submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
             // todo can be performed on the given executor
             nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
@@ -374,6 +361,8 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         catch (IgniteCheckedException e) {
             close(e);
         }
+
+        return startedFut;
     }
 
     /** {@inheritDoc} */
