@@ -168,43 +168,31 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
         switch (order) {
             case FIRST:
-                startClusterWithPmeFreeSwitchDisabledOneNode(nodes, idx);
                 break;
 
             case MIDDLE:
                 idx = nodes / 2 - 1;
-
-                startClusterWithPmeFreeSwitchDisabledOneNode(nodes, idx);
                 break;
 
             case LAST:
                 idx = nodes - 1;
-
-                startClusterWithPmeFreeSwitchDisabledOneNode(nodes, idx);
                 break;
 
             case NONE:
-                startGridsMultiThreaded(nodes, false);
+                idx = nodes;
                 break;
         }
-
-        checkTopology(nodes);
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @param idx Index node will be starts with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
-     */
-    private void startClusterWithPmeFreeSwitchDisabledOneNode(int nodes, int idx) throws Exception {
-        assert 0 <= idx && idx < nodes;
 
         if (idx > 0)
             startGridsMultiThreaded(idx, false);
 
-        startGridWithPmeFreeSwitchDisabled(idx++);
+        if (idx < nodes)
+            startGridWithPmeFreeSwitchDisabled(idx++);
 
         if (idx < nodes)
             startGridsMultiThreaded(idx, nodes - idx);
+
+        checkTopology(nodes);
     }
 
     /**
