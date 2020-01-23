@@ -39,7 +39,7 @@ public class IgniteThread extends Thread {
     public static final int GRP_IDX_UNASSIGNED = -1;
 
     /** Default thread's group. */
-    private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
+    private static final ThreadGroup DFLT_GRP = null;
 
     /** Number of all grid threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();
