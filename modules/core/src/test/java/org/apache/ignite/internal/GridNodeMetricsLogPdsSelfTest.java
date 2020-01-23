@@ -17,24 +17,17 @@
 
 package org.apache.ignite.internal;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
 /**
  * Check logging local node metrics with PDS enabled.
  */
 public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
-    /** */
-    private static final String UNKNOWN_SIZE = "unknown";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -44,6 +37,10 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
                 new DataRegionConfiguration()
                     .setMaxSize(30 * 1024 * 1024)
                     .setPersistenceEnabled(true))
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName("userTransientDataRegion")
+                .setMaxSize(20 * 1024 * 1024)
+                .setPersistenceEnabled(false))
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -71,51 +68,12 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
     @Override protected void checkNodeMetricsFormat(String logOutput) {
         super.checkNodeMetricsFormat(logOutput);
 
-        String msg = "Metrics are missing in the log or have an unexpected format";
-
-        assertTrue(msg, logOutput.matches("(?s).*Ignite persistence \\[used=.*].*"));
+        assertTrue("Metrics are missing in the log or have an unexpected format",
+            logOutput.matches("(?s).*Ignite persistence \\[used=[\\d]+MB].*"));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void checkMemoryMetrics(String logOutput) {
-        super.checkMemoryMetrics(logOutput);
-
-        boolean summaryFmtMatches = false;
-
-        Set<String> regions = new HashSet<>();
-
-        Pattern ptrn = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Ignite persistence) " +
-            "\\[used=(?<used>[-.\\d]+|" + UNKNOWN_SIZE + ")?.*]");
-
-        Matcher matcher = ptrn.matcher(logOutput);
-
-        while (matcher.find()) {
-            String subj = logOutput.substring(matcher.start(), matcher.end());
-
-            assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
-
-            String usedSize = matcher.group("used");
-
-            // TODO https://issues.apache.org/jira/browse/IGNITE-9455
-            // TODO The actual value of the metric should be printed when this issue is solved.
-            int used = UNKNOWN_SIZE.equals(usedSize) ? 0 : Integer.parseInt(usedSize);
-
-            assertTrue(used + " should be non negative: " + subj, used >= 0);
-
-            String regName = matcher.group("name");
-
-            if (F.isEmpty(regName))
-                summaryFmtMatches = true;
-            else
-                regions.add(regName);
-        }
-
-        assertTrue("Persistence metrics have unexpected format.", summaryFmtMatches);
-
-        Set<String> expRegions = grid(0).context().cache().context().database().dataRegions().stream()
-            .map(v -> v.config().getName().trim())
-            .collect(Collectors.toSet());
-
-        assertEquals(expRegions, regions);
+    /** */
+    @Override protected boolean persistenceEnabled(String name) {
+        return !VOLATILE_DATA_REGION_NAME.equals(name) && !name.contains("Transient");
     }
 }
