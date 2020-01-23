@@ -162,28 +162,51 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     @Test
     public void testCacheCreate() throws Exception {
-        cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
+        cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
+        cachePerms.put(FORBIDDEN_CACHE_NAME, EMPTY_PERM);
+
         startGrid(getConfiguration()).cluster().active(true);
 
         createCache(CACHE_NAME);
+        assertThrowsWithCause(() -> createCache(FORBIDDEN_CACHE_NAME), IgniteCheckedException.class);
+
+        if (defaultAllowAll || securityPermissionSet.contains(CACHE_CREATE))
+            createCache(NEW_TEST_CACHE);
+        else
+            assertThrowsWithCause(() -> createCache(NEW_TEST_CACHE), IgniteCheckedException.class);
 
         assertTrue(grid().cacheNames().contains(CACHE_NAME));
-
-        assertThrowsWithCause(() -> createCache(FORBIDDEN_CACHE_NAME), IgniteCheckedException.class);
         assertFalse(grid().cacheNames().contains(FORBIDDEN_CACHE_NAME));
+
+        if (defaultAllowAll || securityPermissionSet.contains(CACHE_CREATE))
+            assertTrue(grid().cacheNames().contains(NEW_TEST_CACHE));
+        else
+            assertFalse(grid().cacheNames().contains(NEW_TEST_CACHE));
+    }
+
+    @Test
+    public void testCacheCreateDflAllTrue() throws Exception {
+        try {
+            defaultAllowAll = true;
+
+            testCacheCreate();
+        }
+        finally {
+            defaultAllowAll = false;
+        }
     }
 
     @Test
     public void testCachePut() throws Exception {
         cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT});
-        startGrid(getConfiguration()).cluster().active(true);
 
-        createCache(CACHE_NAME);
+        testCacheCreate();
 
-        handle(new GridRestCacheRequest().cacheName(CACHE_NAME).key("key").value("value")
-            .command(GridRestCommand.CACHE_PUT));
+        cacheRestKey(CACHE_NAME, GridRestCommand.CACHE_PUT).get();
 
-        assertThrowsWithCause(() -> createCache(FORBIDDEN_CACHE_NAME), IgniteCheckedException.class);
+        cachePutAll(CACHE_NAME).get();
+
+        assertThrowsWithCause(() -> cachePutAll(FORBIDDEN_CACHE_NAME).get(), IgniteCheckedException.class);
     }
 
     /**
@@ -204,21 +227,20 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         return hnd.handleAsync(req);
     }
 
-    private IgniteInternalFuture<GridRestResponse> cacheRestKeyValue(String cachename, GridRestCommand cmd){
+    private IgniteInternalFuture<GridRestResponse> cacheRestKeyValue(String cachename, GridRestCommand cmd) {
         return handle(new GridRestCacheRequest().cacheName(cachename).key("key").value("value").command(cmd));
     }
 
-    private IgniteInternalFuture<GridRestResponse> cachePutAll(String cachename){
+    private IgniteInternalFuture<GridRestResponse> cachePutAll(String cachename) {
         return handle(new GridRestCacheRequest().cacheName(cachename).values(singletonMap("key", "value"))
             .command(GridRestCommand.CACHE_PUT_ALL));
     }
 
-    private IgniteInternalFuture<GridRestResponse> cacheRestKey(String cacheName, GridRestCommand cmd){
+    private IgniteInternalFuture<GridRestResponse> cacheRestKey(String cacheName, GridRestCommand cmd) {
         return handle(restCacheRequest(cacheName).key("key").command(cmd));
     }
 
-
-    private GridRestCacheRequest restCacheRequest(String cacheName){
+    private GridRestCacheRequest restCacheRequest(String cacheName) {
         return new GridRestCacheRequest().cacheName(cacheName);
 
     }
