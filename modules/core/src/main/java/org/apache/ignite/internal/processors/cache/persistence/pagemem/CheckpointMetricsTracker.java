@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -76,6 +80,15 @@ public class CheckpointMetricsTracker {
     /** */
     private long walCpRecordFsyncEnd;
 
+    /** */
+    private long splitAndSortCpPagesStart;
+
+    /** */
+    private long splitAndSortCpPagesEnd;
+
+    /** */
+    private long listenersExecEnd;
+
     /**
      * Increments counter if copy on write page was written.
      */
@@ -83,9 +96,7 @@ public class CheckpointMetricsTracker {
         COW_PAGES_UPDATER.incrementAndGet(this);
     }
 
-    /**
-     *
-     */
+    /** */
     public void onDataPageWritten() {
         DATA_PAGES_UPDATER.incrementAndGet(this);
     }
@@ -104,58 +115,57 @@ public class CheckpointMetricsTracker {
         return dataPages;
     }
 
-    /**
-     *
-     */
+    /** */
     public void onLockWaitStart() {
         cpLockWaitStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onMarkStart() {
         cpMarkStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onLockRelease() {
         cpLockRelease = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onPagesWriteStart() {
         cpPagesWriteStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onFsyncStart() {
         cpFsyncStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
     public void onEnd() {
         cpEnd = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
+    public void onListenersExecuteEnd() {
+        listenersExecEnd = System.currentTimeMillis();
+    }
+
+    /** */
     public void onWalCpRecordFsyncStart() {
         walCpRecordFsyncStart = System.currentTimeMillis();
     }
 
-    /**
-     *
-     */
+    /** */
+    public void onSplitAndSortCpPagesStart() {
+        splitAndSortCpPagesStart = System.currentTimeMillis();
+    }
+
+    /** */
+    public void onSplitAndSortCpPagesEnd() {
+        splitAndSortCpPagesEnd = System.currentTimeMillis();
+    }
+
+    /** */
     public void onWalCpRecordFsyncEnd() {
         walCpRecordFsyncEnd = System.currentTimeMillis();
     }
@@ -172,6 +182,20 @@ public class CheckpointMetricsTracker {
      */
     public long lockWaitDuration() {
         return cpMarkStart - cpLockWaitStart;
+    }
+
+    /**
+     * @return Checkpoint action before taken write lock duration.
+     */
+    public long beforeLockDuration() {
+        return cpLockWaitStart - cpStart;
+    }
+
+    /**
+     * @return Execution listeners under write lock duration.
+     */
+    public long listenersExecuteDuration() {
+        return listenersExecEnd - cpMarkStart;
     }
 
     /**
@@ -207,5 +231,28 @@ public class CheckpointMetricsTracker {
      */
     public long walCpRecordFsyncDuration() {
         return walCpRecordFsyncEnd - walCpRecordFsyncStart;
+    }
+
+    /**
+     * @return Duration of checkpoint entry buffer writing to file.
+     *
+     * @see GridCacheDatabaseSharedManager#writeCheckpointEntry(ByteBuffer, CheckpointEntry, CheckpointEntryType)
+     */
+    public long writeCheckpointEntryDuration() {
+        return splitAndSortCpPagesStart - walCpRecordFsyncEnd;
+    }
+
+    /**
+     * @return Duration of splitting and sorting checkpoint pages.
+     */
+    public long splitAndSortCpPagesDuration() {
+        return splitAndSortCpPagesEnd - splitAndSortCpPagesStart;
+    }
+
+    /**
+     * @return Checkpoint start time.
+     */
+    public long checkpointStartTime() {
+        return cpStart;
     }
 }

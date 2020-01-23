@@ -36,7 +36,7 @@ Apache Ignite prefer to use [consensus to make decisions](http://community.apach
 
 ## Contributing Documentation
 Documentation can be contributed to
- - End-User documentation https://apacheignite.readme.io/ . Use Suggest Edits.
+ - End-User documentation https://apacheignite.readme.io/ . Use Suggest Edits. See also [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).
  - Developer documentation, design documents, IEPs [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE). Ask at [Dev List](https://lists.apache.org/list.html?dev@ignite.apache.org) to be added as editor.
  - Markdown files, visible at GitHub, e.g. README.md; drawings explaining Apache Ignite & product internals.
  - Javadocs for packages (package-info.java), classes, methods, etc.

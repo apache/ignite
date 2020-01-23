@@ -29,16 +29,20 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Terminate Condition implementation for {@link OptimizeMakeChangeGAExample}.
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
-    /** */
+    /**
+     *
+     */
     private final Ignite ignite;
 
-    /** */
+    /**
+     *
+     */
     private final Consumer<String> logConsumer;
 
     /**
      * Create class instance.
      *
-     * @param ignite Ignite instance.
+     * @param ignite      Ignite instance.
      * @param logConsumer Logging consumer.
      */
     OptimizeMakeChangeTerminateCriteria(Ignite ignite, Consumer<String> logConsumer) {
@@ -47,14 +51,9 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     * Check whether termination condition is met.
-     *
-     * @param fittestChromosome Most fit chromosome at for the nth generation.
-     * @param averageFitnessScore Average fitness score as of the nth generation.
-     * @param currGeneration Current generation.
-     * @return Status whether condition is met or not.
+     * {@inheritDoc}
      */
-    public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
+    @Override public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
         boolean isTerminate = true;
 

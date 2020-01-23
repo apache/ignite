@@ -6,10 +6,13 @@
 	<AssemblyName>Apache.Ignite.Linq</AssemblyName>
 	<RootNamespace>Apache.Ignite.Linq</RootNamespace>
     <NoWarn>NU1701</NoWarn>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Linq.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>  
   
   <ItemGroup>
-    <PackageReference Include="Remotion.Linq" Version="2.0.1" />
+    <PackageReference Include="Remotion.Linq" Version="2.1.2" />
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.DotNetCore.csproj" />
   </ItemGroup>
   

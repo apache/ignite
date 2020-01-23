@@ -42,7 +42,10 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.commandline.cache.IdleVerify.logParsedArgs;
 
 /**
  * Task for collection checksums primary and backup partitions of specified caches. <br> Argument: Set of cache names,
@@ -76,7 +79,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public @Nullable Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
         VisorIdleVerifyTaskArg arg
     ) throws IgniteException {
@@ -137,7 +140,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
      * @return {@code true} if this records should be add to result and {@code false} otherwise.
      */
     private boolean needToAdd(List<PartitionHashRecordV2> records) {
-        if (records.isEmpty() || (taskArg != null && !taskArg.isSkipZeros()))
+        if (records.isEmpty() || (taskArg != null && !taskArg.skipZeros()))
             return true;
 
         PartitionHashRecordV2 record = records.get(0);
@@ -200,13 +203,31 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
         int skippedRecords,
         PrintWriter writer
     ) {
-        if (!F.isEmpty(conflictRes.exceptions())) {
-            int size = conflictRes.exceptions().size();
+        Map<ClusterNode, Exception> exceptions = conflictRes.exceptions();
+
+        if (!F.isEmpty(exceptions)) {
+            boolean noMatchingCaches = false;
+
+            for (Exception e : exceptions.values()) {
+                if (e instanceof NoMatchingCachesException) {
+                    noMatchingCaches = true;
+
+                    break;
+                }
+            }
+
+            int size = exceptions.size();
 
             writer.write("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+
+            if (noMatchingCaches)
+                writer.write("There are no caches matching given filter options.");
         }
 
-        writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
+        if (!partitions.isEmpty())
+            writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
+
+        logParsedArgs(taskArg, writer::write);
 
         if (skippedRecords > 0)
             writer.write(skippedRecords + " partitions was skipped\n");

@@ -378,7 +378,8 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * Sets checkpoint database user name. Note that authentication will be
      * performed only if both, {@code user} and {@code password} are set.
      *
-     * @param user Checkpoint database user name to set.
+     * @param user Checkpoint database user name to set. {@code null} is a valid value that means that no user
+     *      provided. Authentication won't be performed in this case.
      * @see #setPwd(String)
      * @return {@code this} for chaining.
      */
@@ -393,7 +394,8 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
      * Sets checkpoint database password. Note that authentication will be
      * performed only if both, {@code user} and {@code password} are set.
      *
-     * @param pwd Checkpoint database password to set.
+     * @param pwd Checkpoint database password to set. {@code null} is a valid value that means that no password
+     *      provided. Authentication won't be performed in this case.
      * @see #setUser(String)
      ** @return {@code this} for chaining.
      */

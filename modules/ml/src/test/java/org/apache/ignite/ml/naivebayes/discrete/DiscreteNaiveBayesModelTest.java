@@ -24,7 +24,7 @@ import org.junit.Test;
 
 /** Tests for {@code DiscreteNaiveBayesModel} */
 public class DiscreteNaiveBayesModelTest {
-    /** */
+    /** Test. */
     @Test
     public void testPredictWithTwoClasses() {
         double first = 1;
@@ -36,7 +36,8 @@ public class DiscreteNaiveBayesModelTest {
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
         double[][] thresholds = new double[][] {{.5}, {.2, .7}, {.5}, {.5, 1.5}, {.5}};
-        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
+        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities,
+                new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
         Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
 
         Assert.assertEquals(second, mdl.predict(observation), 0.0001);

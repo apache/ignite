@@ -32,7 +32,7 @@ import java.util.HashSet;
  */
 public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
     /** */
-    private static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
+    public static final String SCAN_INDEX_NAME_SUFFIX = "__SCAN_";
 
     /** Parent table. */
     private final GridH2Table tbl;

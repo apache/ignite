@@ -458,6 +458,11 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
                 }
             }
 
+            GridDeployment dep = verStore.searchDeploymentCache(meta);
+
+            if (dep != null)
+                return dep;
+
             if (reuse) {
                 GridDeployment locDep = locStore.getDeployment(meta);
 
@@ -496,7 +501,12 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         // Private or Isolated mode.
         meta.record(false);
 
-        GridDeployment dep = locStore.getDeployment(meta);
+        GridDeployment dep = ldrStore.searchDeploymentCache(meta);
+
+        if (dep != null)
+            return dep;
+
+        dep = locStore.getDeployment(meta);
 
         if (sndNodeId.equals(ctx.localNodeId())) {
             if (dep == null)
@@ -550,7 +560,6 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
     public boolean isGlobalLoader(ClassLoader ldr) {
         return ldr instanceof GridDeploymentClassLoader;
     }
-
 
     /**
      * @throws IgniteCheckedException If failed.

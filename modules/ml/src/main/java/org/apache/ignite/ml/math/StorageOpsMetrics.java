@@ -22,16 +22,6 @@ package org.apache.ignite.ml.math;
  */
 public interface StorageOpsMetrics {
     /**
-     * Checks if this implementation should be considered to be iterable in index order in an efficient way.
-     */
-    public boolean isSequentialAccess();
-
-    /**
-     * Checks if this implementation is optimized for random access.
-     */
-    public boolean isRandomAccess();
-
-    /**
      * Checks if this implementation should be considered dense so that it explicitly
      * represents every value.
      */
@@ -43,7 +33,7 @@ public interface StorageOpsMetrics {
     public boolean isArrayBased();
 
     /**
-     * Checks whether implementation is JVM-local or distributed (multi-JVM).
+     * @return true if all stored data are values of Number class.
      */
-    public boolean isDistributed();
+    public boolean isNumeric();
 }

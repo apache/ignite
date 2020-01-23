@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.dataset.impl.cache;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -30,7 +28,11 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * A dataset builder that makes {@link CacheBasedDataset}. Encapsulate logic of building cache based dataset such as
@@ -40,8 +42,8 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
-    /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
-    private static final int RETRIES = 15 * 60;
+    /** Default number of retries for the case when one of partitions not found on the node where loading is performed. */
+    public static final int DEFAULT_NUMBER_OF_RETRIES = 15 * 60;
 
     /** Retry interval (ms) for the case when one of partitions not found on the node where loading is performed. */
     private static final int RETRY_INTERVAL = 1000;
@@ -63,6 +65,10 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
     /** Upstream keep binary. */
     private final boolean upstreamKeepBinary;
+
+    /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
+    private final int retries;
+
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
      * predicate that passes all upstream entries to dataset.
@@ -96,7 +102,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerBuilder transformerBuilder) {
-        this(ignite, upstreamCache, filter, transformerBuilder, false);
+        this(ignite, upstreamCache, filter, transformerBuilder, false, DEFAULT_NUMBER_OF_RETRIES);
     }
 
     /**
@@ -107,17 +113,20 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param filter Filter.
      * @param transformerBuilder Transformer builder.
      * @param isKeepBinary Is keep binary for upstream cache.
+     * @param retries Number of retries for the case when one of partitions not found on the node where loading is performed.
      */
     public CacheBasedDatasetBuilder(Ignite ignite,
         IgniteCache<K, V> upstreamCache,
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerBuilder transformerBuilder,
-        Boolean isKeepBinary){
+        Boolean isKeepBinary,
+        int retries){
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
         this.transformerBuilder = transformerBuilder;
         this.upstreamKeepBinary = isKeepBinary;
+        this.retries = retries;
     }
 
     /** {@inheritDoc} */
@@ -125,7 +134,9 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     @Override public <C extends Serializable, D extends AutoCloseable> CacheBasedDataset<K, V, C, D> build(
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment localLearningEnv) {
+
         UUID datasetId = UUID.randomUUID();
 
         // Retrieves affinity function of the upstream Ignite Cache.
@@ -148,12 +159,13 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
             datasetCache.getName(),
             partCtxBuilder,
             envBuilder,
-            RETRIES,
+            retries,
             RETRY_INTERVAL,
-            upstreamKeepBinary
+            upstreamKeepBinary,
+            localLearningEnv.deployingContext()
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformerBuilder, datasetCache, envBuilder, partDataBuilder, datasetId, upstreamKeepBinary);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, transformerBuilder, datasetCache, envBuilder, partDataBuilder, datasetId, upstreamKeepBinary, localLearningEnv, retries);
     }
 
     /** {@inheritDoc} */
@@ -173,6 +185,25 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @param isKeepBinary Is keep binary.
      */
     public CacheBasedDatasetBuilder<K, V> withKeepBinary(boolean isKeepBinary){
-        return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary);
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary, retries);
+    }
+
+    /**
+     * Sets number of retries. 15 * 60 by default.
+     *
+     * @param retries Number of retries.
+     * @return CacheBasedDatasetBuilder instance.
+     */
+    public CacheBasedDatasetBuilder<K, V> withRetriesNumber(int retries) {
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder, upstreamKeepBinary, retries);
+    }
+
+    /**
+     * Returns upstream cache.
+     *
+     * @return Upstream cache.
+     */
+    public IgniteCache<K, V> getUpstreamCache() {
+        return upstreamCache;
     }
 }

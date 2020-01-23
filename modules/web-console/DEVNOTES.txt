@@ -1,6 +1,6 @@
 Ignite Web Console Build Instructions
 =====================================
-1. Install MongoDB (version >=3.2.0 <=3.4.15) using instructions from http://docs.mongodb.org/manual/installation.
+1. Install MongoDB (version >=3.0) using instructions from http://docs.mongodb.org/manual/installation.
 2. Install Node.js (version >=8.0.0) using installer from https://nodejs.org/en/download/current for your OS.
 3. Change directory to 'modules/web-console/backend' and
  run "npm install --no-optional" for download backend dependencies.
@@ -35,7 +35,7 @@ How to migrate model:
 Ignite Web Console Direct-Install Maven Build Instructions
 ==========================================================
 To build direct-install archive from sources run following command in Ignite project root folder:
-"mvn clean package -pl :ignite-web-console -am -P web-console,direct-install -DskipTests=true -DskipClientDocs -Dmaven.javadoc.skip=true"
+"mvn clean package -pl :ignite-web-console -am -P web-console,direct-install,lgpl -DskipTests=true -DskipClientDocs -Dmaven.javadoc.skip=true"
 
 Assembled archive can be found here: `modules/web-console/target/ignite-web-console-direct-install-*.zip`.
 

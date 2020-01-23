@@ -39,6 +39,9 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** Cache ids used for mvcc caching. See {@link MvccCachingManager}. */
     private GridIntList mvccCachingCacheIds = new GridIntList();
 
+    /** */
+    protected boolean mvccEnabled;
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -84,6 +87,12 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
 
         int cacheId = cctx.cacheId();
 
+        boolean mvccTx = tx.mvccSnapshot() != null;
+
+        assert activeCacheIds.isEmpty() || mvccEnabled == mvccTx;
+
+        mvccEnabled = mvccTx;
+
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
             activeCacheIds.add(cacheId);
@@ -123,6 +132,11 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** {@inheritDoc} */
     @Override public void onTxEnd(GridCacheSharedContext cctx, IgniteInternalTx tx, boolean commit) {
         assert false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccEnabled() {
+        return mvccEnabled;
     }
 
     /** {@inheritDoc} */

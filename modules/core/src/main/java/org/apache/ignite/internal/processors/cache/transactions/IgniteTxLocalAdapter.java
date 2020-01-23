@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -95,6 +94,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -431,7 +432,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         try {
             cctx.tm().prepareTx(this, entries);
 
-            calculatePartitionUpdateCounters();
+            if (txState().mvccEnabled())
+                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -451,7 +453,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * pair (init, delta) values, where init - initial update counter, and delta - updates count made
      * by current transaction for a given partition.
      */
-    private void calculatePartitionUpdateCounters() {
+    public void calculatePartitionUpdateCounters() throws IgniteTxRollbackCheckedException {
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
@@ -468,9 +470,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     continue;
 
                 PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
-                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-                assert ctx0 != null && ctx0.mvccEnabled();
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
                 GridDhtPartitionTopology top = ctx0.topology();
 
@@ -490,7 +491,31 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        assert part != null && part.state() == GridDhtPartitionState.OWNING;
+                        // Verify primary tx mapping.
+                        // LOST state is possible if tx is started over LOST partition.
+                        boolean valid = part != null &&
+                            (part.state() == OWNING || part.state() == LOST) &&
+                            part.primary(top.readyTopologyVersion());
+
+                        if (!valid) {
+                            // Local node is no longer primary for the partition, need to rollback a transaction.
+                            if (part != null && !part.primary(top.readyTopologyVersion())) {
+                                log.warning("Failed to prepare a transaction on outdated topology, rolling back " +
+                                    "[tx=" + CU.txString(this) +
+                                    ", readyTopVer=" + top.readyTopologyVersion() +
+                                    ", lostParts=" + top.lostPartitions() +
+                                    ", part=" + part.toString() + ']');
+
+                                throw new IgniteTxRollbackCheckedException("Failed to prepare a transaction on outdated " +
+                                    "topology, please try again [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+                            }
+
+                            // Trigger error.
+                            throw new AssertionError("Invalid primary mapping [tx=" + CU.txString(this) +
+                                ", readyTopVer=" + top.readyTopologyVersion() +
+                                ", lostParts=" + top.lostPartitions() +
+                                ", part=" + (part == null ? "NULL" : part.toString()) + ']');
+                        }
 
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
@@ -576,6 +601,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
+
+                TxCounters txCounters = txCounters(false);
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -893,7 +920,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                         }
                     }
+                }
 
+                if (!txState.mvccEnabled() && txCounters != null) {
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+
+                    for (IgniteTxEntry entry : commitEntries) {
+                        if (entry.cqNotifyClosure() != null)
+                            entry.cqNotifyClosure().applyx();
+                    }
                 }
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
@@ -986,7 +1021,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
         }
     }
-
 
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
@@ -1151,7 +1185,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx cached = txEntry.cached();
 
                 try {
-                    assert cached.detached() || cached.lockedByThread(threadId) || isRollbackOnly() :
+                    assert cached.detached() || cached.lockedLocally(xidVersion()) || isRollbackOnly() :
                         "Transaction lock is not acquired [entry=" + cached + ", tx=" + this +
                             ", nodeId=" + cctx.localNodeId() + ", threadId=" + threadId + ']';
 
@@ -1533,7 +1567,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 else if (explicitCand.dhtLocal())
                     locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
 
-                if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
+                if (!explicitVer.equals(xidVer) && explicitCand.isHeldByThread(threadId) && !explicitCand.tx() && locCand) {
                     txEntry.explicitVersion(explicitVer);
 
                     if (explicitVer.isLess(minVer))

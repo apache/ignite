@@ -38,17 +38,17 @@ import org.apache.ignite.resources.LoggerResource;
 public class RouletteWheelSelectionJob extends ComputeJobAdapter {
     /** Ignite instance */
     @IgniteInstanceResource
-    private Ignite ignite = null;
+    private Ignite ignite;
 
     /** Ignite logger */
     @LoggerResource
-    private IgniteLogger log = null;
+    private IgniteLogger log;
 
     /** Total Fitness score */
-    Double totalFitnessScore = null;
+    Double totalFitnessScore;
 
     /** Chromosome key/fitness score pair */
-    LinkedHashMap<Long, Double> map = null;
+    LinkedHashMap<Long, Double> map;
 
     /**
      * @param totalFitnessScore Total fitness score
@@ -86,7 +86,7 @@ public class RouletteWheelSelectionJob extends ComputeJobAdapter {
             Entry<Long, Double> entry = entries.next();
             Long key = entry.getKey();
             Double fitnessScore = entry.getValue();
-            partialSum = partialSum + fitnessScore;
+            partialSum += fitnessScore;
 
             if (partialSum >= value) {
                 notFound = false;

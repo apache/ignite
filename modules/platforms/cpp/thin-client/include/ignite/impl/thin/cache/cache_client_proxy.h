@@ -154,11 +154,6 @@ namespace ignite
                     void LocalPeek(const WritableKey& key, Readable& value);
 
                     /**
-                     * Update cache partitions info.
-                     */
-                    void RefreshAffinityMapping();
-
-                    /**
                      * Removes given key mapping from cache. If cache previously contained value for the given key,
                      * then this value is returned. In case of PARTITIONED or REPLICATED caches, the value will be
                      * loaded from the primary node, which in its turn may load the value from the disk-based swap

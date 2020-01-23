@@ -755,7 +755,6 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         @QuerySqlField(index = true)
         public int old = 17;
 
-
         /**
          * Constructs person record.
          *

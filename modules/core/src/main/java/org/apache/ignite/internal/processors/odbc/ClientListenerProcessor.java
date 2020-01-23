@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -52,16 +53,24 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.spi.IgnitePortProtocol;
+import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
 /**
  * Client connector processor.
  */
 public class ClientListenerProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String CLI_CONN_VIEW = metricName("client", "connections");
+
+    /** */
+    public static final String CLI_CONN_VIEW_DESC = "Client connections";
+
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -164,8 +173,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
                             .build();
 
-                        srv0.start();
-
                         srv = srv0;
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
@@ -193,11 +200,24 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                 if (!U.IGNITE_MBEANS_DISABLED)
                     registerMBean();
+
+                ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
+                    new ClientConnectionViewWalker(),
+                    srv.sessions(),
+                    ClientConnectionView::new);
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        if (srv != null)
+            srv.start();
     }
 
     /**
@@ -261,7 +281,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
                 ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
-                if (connCtx != null && connCtx.parser() != null) {
+                if (connCtx != null && connCtx.parser() != null && connCtx.handler().isCancellationSupported()) {
                     byte[] inMsg;
 
                     int cmdType;

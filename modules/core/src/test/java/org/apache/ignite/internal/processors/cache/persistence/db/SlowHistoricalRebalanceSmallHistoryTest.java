@@ -109,6 +109,16 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+    }
+
     /**
      * Checks that we reserve and release the same WAL index on exchange.
      */
@@ -116,6 +126,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
     public void testReservation() throws Exception {
         IgniteEx ig = startGrid(0);
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         ig.getOrCreateCache(new CacheConfiguration<>(SLOW_REBALANCE_CACHE)

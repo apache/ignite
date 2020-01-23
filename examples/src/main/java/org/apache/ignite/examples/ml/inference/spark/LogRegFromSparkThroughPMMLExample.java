@@ -19,18 +19,20 @@ package org.apache.ignite.examples.ml.inference.spark;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.xml.bind.JAXBException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 import org.dmg.pmml.PMML;
@@ -49,30 +51,39 @@ import org.xml.sax.SAXException;
  */
 public class LogRegFromSparkThroughPMMLExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model loaded from PMML over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
 
-            LogisticRegressionModel mdl = PMMLParser.load("examples/src/main/resources/models/spark/iris.pmml");
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            System.out.println(">>> Logistic regression model: " + mdl);
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
-                dataCache,
-                mdl,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0),
-                new Accuracy<>()
-            );
+                String path = IgniteUtils.resolveIgnitePath("examples/src/main/resources/models/spark/iris.pmml")
+                    .toPath().toAbsolutePath().toString();
+                LogisticRegressionModel mdl = PMMLParser.load(path);
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println(">>> Logistic regression model: " + mdl);
+
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer,
+                    new Accuracy<>()
+                );
+
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 

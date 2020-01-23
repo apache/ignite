@@ -26,7 +26,8 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
-import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
@@ -447,7 +448,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Checks Ignite grid is active or not active.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link #state()} instead.
      */
+    @Deprecated
     public boolean active();
 
     /**
@@ -455,8 +458,25 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @deprecated Use {@link #state(ClusterState)} instead.
      */
+    @Deprecated
     public void active(boolean active);
+
+    /**
+     * Gets current cluster state.
+     *
+     * @return Current cluster state.
+     */
+    public ClusterState state();
+
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     *
+     * @param newState New cluster state.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void state(ClusterState newState) throws IgniteException;
 
     /**
      * Gets current baseline topology. If baseline topology was not set, will return {@code null}.
@@ -533,9 +553,34 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean isWalEnabled(String cacheName);
 
     /**
-     * All distributed properties of baseline.
-     *
-     * @return Distributed baseline configuration.
+     * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
+     * {@code False} If cluster in manuale.
      */
-    public DistributedBaselineConfiguration baselineConfiguration();
+    public boolean isBaselineAutoAdjustEnabled();
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @throws IgniteException If operation failed.
+     */
+    public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
+
+    /**
+     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * (node join/left/fail).
+     * @throws IgniteException If operation failed.
+     */
+    public long baselineAutoAdjustTimeout();
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @throws IgniteException If failed.
+     */
+    public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException;
+
+    /**
+     * @return Status of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus();
 }

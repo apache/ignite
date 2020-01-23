@@ -24,17 +24,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public interface CheckpointWriteProgressSupplier {
     /**
-     * Counter for written checkpoint pages. Not null only if checkpoint is running.
+     * @return Counter for written checkpoint pages. Not <code>null</code> only if checkpoint is running.
      */
     public AtomicInteger writtenPagesCounter();
 
     /**
-     * @return Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
+     * @return Counter for fsynced checkpoint pages. Not  <code>null</code> only if checkpoint is running.
      */
     public AtomicInteger syncedPagesCounter();
 
     /**
-     * @return Counter for evicted pages during current checkpoint. Not null only if checkpoint is running.
+     * @return Counter for evicted pages during current checkpoint. Not <code>null</code> only if checkpoint is running.
      */
     public AtomicInteger evictedPagesCntr();
 

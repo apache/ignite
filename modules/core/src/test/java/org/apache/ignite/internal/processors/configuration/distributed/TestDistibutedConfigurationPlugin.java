@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.processors.configuration.distributed;
 
-import java.io.Serializable;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.PluginValidationException;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 
 /**
  * TODO: Add class description.
@@ -39,26 +31,24 @@ import org.jetbrains.annotations.Nullable;
  * @author @java.author
  * @version @java.version
  */
-public class TestDistibutedConfigurationPlugin implements PluginProvider {
+public class TestDistibutedConfigurationPlugin extends AbstractTestPluginProvider {
     /** */
     private GridKernalContext igniteCtx;
 
     public static Consumer<GridKernalContext> supplier = (ctx) -> {
     };
 
+    /**
+     * Clear current supplier.
+     */
+    public static void clear() {
+        supplier = (ctx) -> {
+        };
+    }
+
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestDistibutedConfigurationPlugin";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String copyright() {
-        return "";
     }
 
     /** {@inheritDoc} */
@@ -69,51 +59,5 @@ public class TestDistibutedConfigurationPlugin implements PluginProvider {
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) throws IgniteCheckedException {
         supplier.accept(igniteCtx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePlugin plugin() {
-        return new IgnitePlugin() {
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return null;
     }
 }

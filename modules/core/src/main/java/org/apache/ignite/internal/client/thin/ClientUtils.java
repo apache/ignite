@@ -34,6 +34,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -55,9 +56,11 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
+import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
 /**
  * Shared serialization/deserialization utils.
@@ -234,7 +237,7 @@ final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ClientListenerProtocolVersion ver) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolVersion ver) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
@@ -313,7 +316,7 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
 
-                                if (ver.compareTo(VER_1_2_0) >= 0) {
+                                if (ver.compareTo(V1_2_0) >= 0) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
                                 }
@@ -343,13 +346,31 @@ final class ClientUtils {
                 )
             );
 
+            if (ver.compareTo(V1_6_0) >= 0) {
+                itemWriter.accept(CfgItem.EXPIRE_POLICY, w -> {
+                    ExpiryPolicy expiryPlc = cfg.getExpiryPolicy();
+                    if (expiryPlc == null)
+                        w.writeBoolean(false);
+                    else {
+                        w.writeBoolean(true);
+                        w.writeLong(convertDuration(expiryPlc.getExpiryForCreation()));
+                        w.writeLong(convertDuration(expiryPlc.getExpiryForUpdate()));
+                        w.writeLong(convertDuration(expiryPlc.getExpiryForAccess()));
+                    }
+                });
+            }
+            else if (cfg.getExpiryPolicy() != null) {
+                throw new ClientProtocolError(String.format("Expire policies have not supported by the server " +
+                    "version %s, required version %s", ver, V1_6_0));
+            }
+
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
             writer.writeInt(origPos + 4, propCnt.get()); // properties count
         }
     }
 
     /** Deserialize configuration from stream. */
-    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ClientListenerProtocolVersion ver)
+    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolVersion ver)
         throws IOException {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
@@ -394,7 +415,7 @@ final class ClientUtils {
                             .setKeyFieldName(reader.readString())
                             .setValueFieldName(reader.readString());
 
-                        boolean isCliVer1_2 = ver.compareTo(VER_1_2_0) >= 0;
+                        boolean isCliVer1_2 = ver.compareTo(V1_2_0) >= 0;
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
@@ -468,7 +489,11 @@ final class ClientUtils {
                                 }
                             ));
                     }
-                ).toArray(new QueryEntity[0]));
+                ).toArray(new QueryEntity[0]))
+                .setExpiryPolicy(
+                    ver.compareTo(V1_6_0) < 0 ? null : reader.readBoolean() ?
+                        new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong()) : null
+                );
         }
     }
 
@@ -639,7 +664,8 @@ final class ClientUtils {
         /** Sql index max inline size. */SQL_IDX_MAX_INLINE_SIZE(204),
         /** Sql schema. */SQL_SCHEMA(203),
         /** Key configs. */KEY_CONFIGS(401),
-        /** Key entities. */QUERY_ENTITIES(200);
+        /** Key entities. */QUERY_ENTITIES(200),
+        /** Expire policy. */EXPIRE_POLICY(407);
 
         /** Code. */
         private final short code;

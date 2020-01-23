@@ -149,6 +149,8 @@ namespace ignite
             /** TCP port. */
             uint16_t port;
         };
+
+        typedef std::vector<EndPoint> EndPoints;
     }
 }
 

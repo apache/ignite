@@ -18,10 +18,14 @@ package org.apache.ignite.mxbean;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * This interface defines a JMX view on {@link DataRegionMetrics}.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to DataRegionMetrics of a local Apache Ignite node.")
 public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     /** {@inheritDoc} */
@@ -56,6 +60,10 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of allocated pages.")
     @Override public long getTotalAllocatedPages();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Total number of used pages.")
+    @Override public long getTotalUsedPages();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Allocation rate (pages per second) averaged across rateTimeInternal.")
@@ -128,6 +136,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      * will return average allocation rate (pages per second) for the last minute.
      *
      * @param rateTimeInterval Time interval (in milliseconds) used for allocation and eviction rates calculations.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @MXBeanDescription(
         "Sets time interval for pages allocation and eviction monitoring purposes."
@@ -138,6 +147,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @MXBeanParametersDescriptions(
         "Time interval (in milliseconds) to set."
     )
+    @Deprecated
     public void rateTimeInterval(long rateTimeInterval);
 
     /**
@@ -149,6 +159,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
      * calculation overhead.
      *
      * @param subInts A number of sub-intervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
     @MXBeanDescription(
         "Sets a number of sub-intervals to calculate allocation and eviction rates metrics."
@@ -159,5 +170,6 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @MXBeanParametersDescriptions(
         "Number of subintervals to set."
     )
+    @Deprecated
     public void subIntervals(int subInts);
 }

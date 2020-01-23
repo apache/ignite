@@ -204,7 +204,7 @@ public final class UpdatePlan {
         if (QueryUtils.isSqlType(desc.keyClass())) {
             assert keyColIdx != -1;
 
-            key = DmlUtils.convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx]);
+            key = DmlUtils.convert(key, rowDesc, desc.keyClass(), colTypes[keyColIdx], colNames[keyColIdx]);
         }
 
         Object val = valSupplier.apply(row);
@@ -212,7 +212,7 @@ public final class UpdatePlan {
         if (QueryUtils.isSqlType(desc.valueClass())) {
             assert valColIdx != -1;
 
-            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx]);
+            val = DmlUtils.convert(val, rowDesc, desc.valueClass(), colTypes[valColIdx], colNames[valColIdx]);
         }
 
         if (key == null) {
@@ -249,7 +249,7 @@ public final class UpdatePlan {
 
             Class<?> expCls = prop.type();
 
-            newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i]));
+            newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i], colNames[i]));
         }
 
         desc.setDefaults(key, val);
@@ -322,7 +322,7 @@ public final class UpdatePlan {
 
             assert prop != null : "Unknown property: " + colNames[i];
 
-            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type(), colTypes[i]));
+            newColVals.put(colNames[i], DmlUtils.convert(row.get(i + 2), rowDesc, prop.type(), colTypes[i], colNames[i]));
         }
 
         newVal = valSupplier.apply(row);
@@ -471,7 +471,7 @@ public final class UpdatePlan {
                 if (j == keyColIdx || j == valColIdx) {
                     Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
 
-                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j]);
+                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j], colNames[j]);
                 }
 
                 resRow.add(colVal);

@@ -237,7 +237,7 @@ public class TcpDiscoveryNodesRing {
 
             nodes = new TreeSet<>(nodes);
 
-            node.lastUpdateTime(U.currentTimeMillis());
+            node.lastUpdateTimeNanos(System.nanoTime());
 
             nodes.add(node);
 
@@ -310,7 +310,7 @@ public class TcpDiscoveryNodesRing {
                     firstAdd = false;
                 }
 
-                node.lastUpdateTime(U.currentTimeMillis());
+                node.lastUpdateTimeNanos(System.nanoTime());
 
                 this.nodes.add(node);
             }

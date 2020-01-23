@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains cluster-related classes.
  */
+
 package org.apache.ignite.cluster;

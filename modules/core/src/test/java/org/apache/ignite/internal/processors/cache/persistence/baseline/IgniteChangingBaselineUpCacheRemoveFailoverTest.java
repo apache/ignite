@@ -121,6 +121,8 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
 
                 IgniteEx ig0 = grid(0);
 
+                ig0.cluster().baselineAutoAdjustEnabled(false);
+
                 ig0.cluster().setBaselineTopology(baselineNodes(ig0.cluster().forServers().nodes()));
 
                 while (!stop.get()) {

@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -99,6 +98,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
 
+    /** Limits returned records quantity. */
+    private int limit;
+
     /** Transformer. */
     private IgniteClosure<?, ?> transform;
 
@@ -107,9 +109,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private final boolean incMeta;
-
-    /** */
-    private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
     private volatile int pageSize = Query.DFLT_PAGE_SIZE;
@@ -178,8 +177,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         log = cctx.logger(getClass());
 
-        metrics = new GridCacheQueryMetricsAdapter();
-
         this.incMeta = false;
         this.clsName = null;
         this.clause = null;
@@ -222,8 +219,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dataPageScanEnabled = dataPageScanEnabled;
 
         log = cctx.logger(getClass());
-
-        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**
@@ -239,6 +234,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param part Partition.
      * @param clsName Class name.
      * @param clause Clause.
+     * @param limit Response limit. Set to 0 for no limits.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param subjId Security subject ID.
@@ -259,6 +255,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable Integer part,
         @Nullable String clsName,
         String clause,
+        int limit,
         boolean incMeta,
         boolean keepBinary,
         UUID subjId,
@@ -278,6 +275,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.part = part;
         this.clsName = clsName;
         this.clause = clause;
+        this.limit = limit;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.subjId = subjId;
@@ -398,6 +396,20 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @return Response limit. Returns 0 for no limits.
+     **/
+    public int limit() {
+        return limit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheQuery<T> limit(int limit) {
+        this.limit = limit;
+
+        return this;
+    }
+
+    /**
      * @return Timeout.
      */
     public long timeout() {
@@ -483,16 +495,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** {@inheritDoc} */
     @Override public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         return execute0(rmtReducer, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryMetrics metrics() {
-        return metrics.copy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**
@@ -962,6 +964,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private static class MvccTrackingIterator implements GridCloseableIterator {
         /** Serial version uid. */
         private static final long serialVersionUID = -1905248502802333832L;
+
         /** Underlying iterator. */
         private final GridCloseableIterator it;
 

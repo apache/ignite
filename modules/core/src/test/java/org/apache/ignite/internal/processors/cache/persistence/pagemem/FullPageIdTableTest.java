@@ -239,7 +239,6 @@ public class FullPageIdTableTest  {
         System.out.println(msg);
     }
 
-
     /**
      * @param tbl Table to check.
      * @param check Expected mapping.

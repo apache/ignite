@@ -32,10 +32,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.aware.Segment
 final class LockedReadFileInput extends SimpleFileInput {
     /** Segment for read. */
     private final long segmentId;
+
     /** Holder of actual information of latest manipulation on WAL segments. */
     private final SegmentAware segmentAware;
+
     /** Factory of file I/O for segment. */
     private final SegmentIoFactory fileIOFactory;
+
     /** Last read was from archive or not. */
     private boolean isLastReadFromArchive;
 

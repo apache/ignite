@@ -258,11 +258,13 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     @Test
     public void testRebalanceVersion() throws Exception {
-        Ignite ignite0 = startGrid(0);
+        IgniteEx ignite0 = startGrid(0);
 
         int minorVer = ignite0.configuration().isLateAffinityAssignment() ? 1 : 0;
 
-        GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
+        boolean replicated = ignite0.context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).isReplicated();
+
+        GridDhtPartitionTopology top0 = ignite0.context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(2)));
@@ -299,9 +301,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5, 0);
-        waitRebalanceFinished(ignite2, 5, 0);
-        waitRebalanceFinished(ignite3, 5, 0);
+        waitRebalanceFinished(ignite0, 5, replicated ? 0 : minorVer);
+        waitRebalanceFinished(ignite2, 5, replicated ? 0 : minorVer);
+        waitRebalanceFinished(ignite3, 5, replicated ? 0 : minorVer);
     }
 
     /**
@@ -1753,11 +1755,22 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (System.currentTimeMillis() > startFilterTime) {
                     // Stop filter and check events.
                     if (dinQry != null) {
-                        dinQry.close();
+                        // If sync callback is used then we can close a query before checking notifications
+                        // because CQ listeners on a server side have a pending notification upon each
+                        // successfull cache update operations completion.
+                        if (!asyncCallback())
+                            dinQry.close();
 
-                        log.info("Continuous query listener closed. Await events: " + expEvtsNewLsnr.size());
+                        log.info("Await events: " + expEvtsNewLsnr.size());
 
                         checkEvents(expEvtsNewLsnr, dinLsnr, backups == 0);
+
+                        // If async callback is used and we close a query before checking notifications then
+                        // some updates can be missed because a callback submitted in parallel can be executed
+                        // after CQ is closed and no notification will be sent as a result.
+                        // So, we close CQ after the check.
+                        if (asyncCallback())
+                            dinQry.close();
                     }
 
                     dinLsnr = new CacheEventListener2();

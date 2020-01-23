@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDataMetrics;
@@ -312,16 +313,53 @@ public abstract class GridClientConnection {
      *
      * @param active Active.
      * @param destNodeId Destination node id.
+     * @deprecated Use {@link #changeState(ClusterState, UUID)} instead.
      */
+    @Deprecated
     public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
             throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Changes grid global state.
+     *
+     * @param state New cluster state.
+     * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
      * Get current grid state.
      *
      * @param destNodeId Destination node id.
+     * @deprecated Use {@link #state(UUID)} instead.
      */
+    @Deprecated
     public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+
+    /**
+     * Gets current grid global state.
+     *
+     * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<ClusterState> state(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Get a cluster name.
+     *
+     * @param destNodeId Destination node id.
+     * @return Future to get the cluster name.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<String> clusterName(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**

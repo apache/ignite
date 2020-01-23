@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 class DistributedMetaStorageUtil {
@@ -35,17 +34,17 @@ class DistributedMetaStorageUtil {
     /**
      * Prefix for user keys to store in distributed metastorage.
      */
-    private static final String KEY_PREFIX = "key-";
+    private static final String KEY_PREFIX = "k-";
 
     /**
      * Key for history version.
      */
-    private static final String HISTORY_VER_KEY = "hist-ver";
+    private static final String VER_KEY = "ver";
 
     /**
      * Prefix for history items. Each item will be stored using {@code hist-item-<ver>} key.
      */
-    private static final String HISTORY_ITEM_KEY_PREFIX = "hist-item-";
+    private static final String HISTORY_ITEM_KEY_PREFIX = "h-";
 
     /**
      * Special key indicating that local data for distributied metastorage is inconsistent because of the ungoing
@@ -54,13 +53,13 @@ class DistributedMetaStorageUtil {
     private static final String CLEANUP_GUARD_KEY = "clean";
 
     /** */
-    @Nullable public static byte[] marshal(Serializable val) throws IgniteCheckedException {
-        return val == null ? null : JdkMarshaller.DEFAULT.marshal(val);
+    public static byte[] marshal(JdkMarshaller marshaller, Serializable val) throws IgniteCheckedException {
+        return val == null ? null : marshaller.marshal(val);
     }
 
     /** */
-    @Nullable public static Serializable unmarshal(byte[] valBytes) throws IgniteCheckedException {
-        return valBytes == null ? null : JdkMarshaller.DEFAULT.unmarshal(valBytes, U.gridClassLoader());
+    public static Serializable unmarshal(JdkMarshaller marshaller, byte[] valBytes) throws IgniteCheckedException {
+        return valBytes == null ? null : marshaller.unmarshal(valBytes, U.gridClassLoader());
     }
 
     /** */
@@ -82,14 +81,15 @@ class DistributedMetaStorageUtil {
 
     /** */
     public static String historyItemKey(long ver) {
-        return historyItemPrefix() + ver;
+        // Natural order of keys should be preserved so we need leading zeroes.
+        return historyItemPrefix() + Long.toString(ver + 0x1000_0000_0000_0000L, 16).substring(1);
     }
 
     /** */
     public static long historyItemVer(String histItemKey) {
         assert histItemKey.startsWith(historyItemPrefix());
 
-        return Long.parseLong(histItemKey.substring(historyItemPrefix().length()));
+        return Long.parseLong(histItemKey.substring(historyItemPrefix().length()), 16);
     }
 
     /** */
@@ -98,8 +98,8 @@ class DistributedMetaStorageUtil {
     }
 
     /** */
-    public static String historyVersionKey() {
-        return COMMON_KEY_PREFIX + HISTORY_VER_KEY;
+    public static String versionKey() {
+        return COMMON_KEY_PREFIX + VER_KEY;
     }
 
     /** */

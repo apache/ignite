@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that .NET <see cref="ClientConnectorConfiguration"/> has all properties from Java configuration APIs.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class ClientConnectorConfigurationParityTest
     {
         /** Members that are missing on .NET side and should be added in future. */

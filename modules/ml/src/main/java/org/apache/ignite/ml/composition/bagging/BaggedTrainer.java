@@ -30,9 +30,9 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
 
@@ -148,16 +148,18 @@ public class BaggedTrainer<L> extends
 
 
     /** {@inheritDoc} */
-    @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, extractor);
+    @Override public <K, V> BaggedModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
+        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, preprocessor);
         return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
+        Preprocessor<K, V> preprocessor) {
+        learningEnvironment().initDeployingContext(preprocessor);
+
+        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, preprocessor);
         return new BaggedModel(updated);
     }
 
@@ -168,7 +170,6 @@ public class BaggedTrainer<L> extends
 
     /**
      * This method is never called, instead of constructing logic of update from
-     * {@link DatasetTrainer#isUpdateable} and
      * {@link DatasetTrainer#updateModel}
      * in this class we explicitly override update method.
      *
@@ -190,7 +191,7 @@ public class BaggedTrainer<L> extends
      * @return Updated model.
      */
     @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+        Preprocessor<K, V> preprocessor) {
         // Should be never called.
         throw new IllegalStateException();
     }

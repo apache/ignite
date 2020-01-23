@@ -290,10 +290,15 @@ public interface IgniteInternalTx {
     public boolean markFinalizing(FinalizationStatus status);
 
     /**
-     * @param cacheCtx Cache context.
+     * @return Finalization status.
+     */
+    public @Nullable FinalizationStatus finalizationStatus();
+
+    /**
+     * @param cacheId Cache id.
      * @param part Invalid partition.
      */
-    public void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int part);
+    public void addInvalidPartition(int cacheId, int part);
 
     /**
      * @return Invalid partitions.

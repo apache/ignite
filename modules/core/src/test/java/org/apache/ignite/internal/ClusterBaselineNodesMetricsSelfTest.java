@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.management.ManagementFactory;
-import java.util.Collection;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
+import java.util.Collection;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -52,6 +52,8 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     public void testBaselineNodes() throws Exception {
         // Start 2 server nodes.
         IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
         startGrid(1);
 
         // Cluster metrics.

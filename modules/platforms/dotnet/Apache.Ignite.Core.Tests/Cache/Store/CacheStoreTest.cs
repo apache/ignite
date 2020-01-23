@@ -182,10 +182,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
+            Assert.AreEqual(0, cache.GetSizeLongAsync().Result);
 
             cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait();
 
             Assert.AreEqual(5, cache.GetSizeAsync().Result);
+            Assert.AreEqual(5, cache.GetSizeLongAsync().Result);
 
             for (int i = 105; i < 110; i++)
             {

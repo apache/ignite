@@ -233,7 +233,6 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
             // mappers are assigned to all available nodes:
             assertEquals(nodes.size(), plan.mapperNodeIds().size());
 
-
             assertEquals(allIds(nodes), plan.mapperNodeIds());
         }
 

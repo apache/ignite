@@ -40,6 +40,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -265,7 +266,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false, false);
+                    desc = ctx.registerClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), true, false);
 
                     typeId = desc.typeId();
                 }
@@ -314,7 +315,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     BinaryClassDescriptor descriptor() {
         if (desc == null)
-            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);
 
         return desc;
     }
@@ -442,7 +443,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return wrapping exception
      */
     private BinaryObjectException wrapFieldException(String fieldName, Exception e) {
-        if (S.INCLUDE_SENSITIVE)
+        if (S.includeSensitive())
             return new BinaryObjectException("Failed to read field: " + fieldName, e);
         else
             return new BinaryObjectException("Failed to read field.", e);
@@ -1753,7 +1754,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case OBJ:
                 if (desc == null)
-                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, false);
 
                 streamPosition(dataStart);
 
@@ -2008,8 +2009,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 BinaryMetadata meta = type != null ? type.metadata() : null;
 
                 if (type == null || meta == null)
-                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                        typeId);
+                    throw new BinaryObjectException("Cannot find metadata for object with compact footer " +
+                        "(Ignite work directory might have been cleared after restart. Make sure that IGNITE_HOME " +
+                        "does not point to a temp folder or any other folder that is destroyed/cleared on restarts) [" +
+                        "typeId=" + typeId + ", IGNITE_HOME='" + U.getIgniteHome() + "']");
 
                 Collection<BinarySchema> existingSchemas = meta.schemas();
 

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains various combinators of trainers and models.
+ * Contains various combiners (ensembles) of trainers and models.
  */
 package org.apache.ignite.ml.composition.combinators;

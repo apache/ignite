@@ -77,6 +77,12 @@ namespace Apache.Ignite.Core
         ICompute GetCompute();
 
         /// <summary>
+        /// Gets Ignite version.
+        /// </summary>
+        /// <returns>Ignite node version.</returns>
+        IgniteProductVersion GetVersion();
+
+        /// <summary>
         /// Gets the cache instance for the given name to work with keys and values of specified types.
         /// <para/>
         /// You can get instances of ICache of the same name, but with different key/value types.
@@ -405,7 +411,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Adds cache configuration template. Name should contain *.
-        /// Template settins are applied to a cache created with <see cref="CreateCache{K,V}(string)"/> if specified
+        /// Template settings are applied to a cache created with <see cref="CreateCache{K,V}(string)"/> if specified
         /// name matches the template name.
         /// </summary>
         /// <param name="configuration">Configuration.</param>

@@ -18,12 +18,16 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 /**
  * Transactions MXBean implementation.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     /** */
     private static final long serialVersionUID = 0L;
@@ -41,7 +45,7 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     /**
      * @param transactionMetrics Transaction metrics.
      */
-    TransactionMetricsMxBeanImpl(TransactionMetrics transactionMetrics) {
+    public TransactionMetricsMxBeanImpl(TransactionMetrics transactionMetrics) {
         this.transactionMetrics = transactionMetrics;
     }
 

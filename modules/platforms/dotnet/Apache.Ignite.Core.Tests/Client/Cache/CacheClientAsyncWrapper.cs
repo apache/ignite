@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client.Cache;
 
@@ -134,10 +135,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /** <inheritDoc /> */
+#pragma warning disable 618
         public IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery)
         {
             return _cache.Query(sqlQuery);
         }
+#pragma warning restore 618
 
         /** <inheritDoc /> */
         public IFieldsQueryCursor Query(SqlFieldsQuery sqlFieldsQuery)
@@ -347,6 +350,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
             return _cache.WithKeepBinary<TK1, TV1>();
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> WithExpiryPolicy(IExpiryPolicy plc)
+        {
+            return _cache.WithExpiryPolicy(plc);
         }
     }
 }

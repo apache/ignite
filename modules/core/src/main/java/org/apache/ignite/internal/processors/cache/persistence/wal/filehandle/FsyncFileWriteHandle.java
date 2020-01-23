@@ -62,48 +62,65 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle {
     /** */
     private final RecordSerializer serializer;
+
     /** Max segment size. */
     private final long maxSegmentSize;
+
     /** Serializer latest version to use. */
     private final int serializerVersion =
         IgniteSystemProperties.getInteger(IGNITE_WAL_SERIALIZER_VERSION, LATEST_SERIALIZER_VERSION);
+
     /**
      * Accumulated WAL records chain. This reference points to latest WAL record. When writing records chain is iterated
      * from latest to oldest (see {@link WALRecord#previous()}) Records from chain are saved into buffer in reverse
      * order
      */
-    private final AtomicReference<WALRecord> head = new AtomicReference<>();
+    final AtomicReference<WALRecord> head = new AtomicReference<>();
+
     /**
      * Position in current file after the end of last written record (incremented after file channel write operation)
      */
     private volatile long written;
+
     /** */
     private volatile long lastFsyncPos;
+
     /** Stop guard to provide warranty that only one thread will be successful in calling {@link #close(boolean)} */
     private final AtomicBoolean stop = new AtomicBoolean(false);
+
     /** */
     private final Lock lock = new ReentrantLock();
+
     /** Condition activated each time writeBuffer() completes. Used to wait previously flushed write to complete */
     private final Condition writeComplete = lock.newCondition();
+
     /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()} */
     private final Condition fsync = lock.newCondition();
+
     /**
      * Next segment available condition. Protection from "spurious wakeup" is provided by predicate {@link
      * #fileIO}=<code>null</code>
      */
     private final Condition nextSegment = lock.newCondition();
+
     /** */
     private final WALMode mode;
+
     /** Thread local byte buffer size, see {@link #tlb} */
     private final int tlbSize;
+
     /** Context. */
     protected final GridCacheSharedContext cctx;
+
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
+
     /** Logger. */
     protected final IgniteLogger log;
+
     /** Fsync delay. */
     private final long fsyncDelay;
+
     /** Switch segment record offset. */
     private int switchSegmentRecordOffset;
 
@@ -171,9 +188,9 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * Write serializer version to current handle. NOTE: Method mutates {@code fileIO} position, written and
      * lastFsyncPos fields.
      *
-     * @throws IgniteCheckedException If fail to write serializer version.
+     * @throws StorageException If fail to write serializer version.
      */
-    @Override public void writeHeader() throws IgniteCheckedException {
+    @Override public void writeHeader() throws StorageException {
         try {
             assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
                 fileIO.position();
@@ -186,7 +203,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
             head.set(new FakeRecord(new FileWALPointer(getSegmentId(), (int)updatedPosition, 0), false));
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to write serializer version for segment " + getSegmentId(), e);
+            throw new StorageException("Unable to write serializer version for segment " + getSegmentId(), e);
         }
     }
 
@@ -623,7 +640,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
                         int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                        if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                        if (rollOver && written + switchSegmentRecSize < maxSegmentSize) {
                             final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
 
                             segmentRecord.position(new FileWALPointer(getSegmentId(), (int)written, switchSegmentRecSize));
@@ -822,7 +839,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * Fake record is zero-sized record, which is not stored into file. Fake record is used for storing position in file
      * {@link WALRecord#position()}. Fake record is allowed to have no previous record.
      */
-    private static final class FakeRecord extends WALRecord {
+    static final class FakeRecord extends WALRecord {
         /** */
         private final boolean stop;
 

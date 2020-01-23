@@ -218,7 +218,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** IO policy. */
     private byte plc;
 
-    /** */
+    /** One phase commit flag. */
     protected boolean onePhaseCommit;
 
     /** Commit version. */
@@ -631,7 +631,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Finalization status.
      */
-    protected FinalizationStatus finalizationStatus() {
+    @Override @Nullable public FinalizationStatus finalizationStatus() {
         return finalizing;
     }
 
@@ -705,22 +705,22 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int part) {
+    @Override public void addInvalidPartition(int cacheId, int part) {
         if (invalidParts == null)
             invalidParts = new HashMap<>();
 
-        Set<Integer> parts = invalidParts.get(cacheCtx.cacheId());
+        Set<Integer> parts = invalidParts.get(cacheId);
 
         if (parts == null) {
             parts = new HashSet<>();
 
-            invalidParts.put(cacheCtx.cacheId(), parts);
+            invalidParts.put(cacheId, parts);
         }
 
         parts.add(part);
 
         if (log.isDebugEnabled())
-            log.debug("Added invalid partition for transaction [cache=" + cacheCtx.name() + ", part=" + part +
+            log.debug("Added invalid partition for transaction [cacheId=" + cacheId + ", part=" + part +
                 ", tx=" + this + ']');
     }
 
@@ -808,18 +808,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
         assert e != null : "Exception is expected";
 
-        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s]";
 
         try {
             // First try printing a full transaction. This is error prone.
-            U.error(log, String.format(fmt, commit, this,
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, this), e);
         }
         catch (Throwable e0) {
             e.addSuppressed(e0);
 
-            U.error(log, String.format(fmt, commit, CU.txString(this),
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, CU.txString(this)), e);
         }
     }
 
@@ -874,7 +872,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
-            entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
+            entry.lockedBy(xidVersion()) || (explicit != null && entry.lockedBy(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
             !entry.hasLockCandidate(xidVersion()) || entry.lockedBy(xidVersion());
@@ -889,7 +887,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
-            entry.lockedByThreadUnsafe(threadId()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
+            entry.lockedByUnsafe(xidVersion()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
             // If candidate is not there, then lock was explicit.
             // Otherwise, check if entry is owned by version.
             !entry.hasLockCandidateUnsafe(xidVersion()) || entry.lockedByUnsafe(xidVersion());
@@ -2323,7 +2321,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
+        @Nullable @Override public FinalizationStatus finalizationStatus() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addInvalidPartition(int cacheId, int part) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

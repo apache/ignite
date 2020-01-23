@@ -843,7 +843,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         cache.cache.query(qry).getAll();
     }
 
-
     /**
      * Merge account by means of SQL API.
      *
@@ -2182,7 +2181,6 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             return "val";
         }
     }
-
 
     /**
      * @param caches Caches.

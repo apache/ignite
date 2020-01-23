@@ -40,8 +40,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -402,6 +402,20 @@ public class BinaryClassDescriptor {
      */
     boolean isEnum() {
         return mode == BinaryWriteMode.ENUM;
+    }
+
+    /**
+     * @return {@code True} if the type is registered as an OBJECT.
+     */
+    boolean isObject() {
+        return mode == BinaryWriteMode.OBJECT;
+    }
+
+    /**
+     * @return {@code True} if the type is registered as a BINARY object.
+     */
+    boolean isBinary() {
+        return mode == BinaryWriteMode.BINARY;
     }
 
     /**
@@ -823,13 +837,13 @@ public class BinaryClassDescriptor {
                     assert false : "Invalid mode: " + mode;
             }
         }
+        catch (UnregisteredBinaryTypeException | UnregisteredClassException e) {
+            throw e;
+        }
         catch (Exception e) {
-            if (e instanceof UnregisteredBinaryTypeException || e instanceof UnregisteredClassException)
-                throw e;
-
             String msg;
 
-            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+            if (S.includeSensitive() && !F.isEmpty(typeName))
                 msg = "Failed to serialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to serialize object [typeId=" + typeId + ']';
@@ -903,7 +917,7 @@ public class BinaryClassDescriptor {
         catch (Exception e) {
             String msg;
 
-            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+            if (S.includeSensitive() && !F.isEmpty(typeName))
                 msg = "Failed to deserialize object [typeName=" + typeName + ']';
             else
                 msg = "Failed to deserialize object [typeId=" + typeId + ']';
@@ -912,6 +926,56 @@ public class BinaryClassDescriptor {
 
             throw new BinaryObjectException(msg, e);
         }
+    }
+
+    /**
+     * @return A copy of this {@code BinaryClassDescriptor} marked as registered.
+     */
+    BinaryClassDescriptor makeRegistered() {
+        if (registered)
+            return this;
+        else
+            return new BinaryClassDescriptor(ctx,
+                cls,
+                userType,
+                typeId,
+                typeName,
+                affKeyFieldName,
+                mapper,
+                initialSerializer,
+                stableFieldsMeta != null,
+                true);
+    }
+
+    /**
+     * @return Instance of {@link BinaryMetadata} for this type.
+     */
+    BinaryMetadata metadata() {
+        return new BinaryMetadata(
+            typeId,
+            typeName,
+            stableFieldsMeta,
+            affKeyFieldName,
+            null,
+            isEnum(),
+            cls.isEnum() ? enumMap(cls) : null);
+    }
+
+    /**
+     * @param cls Enum class.
+     * @return Enum name to ordinal mapping.
+     */
+    private static Map<String, Integer> enumMap(Class<?> cls) {
+        assert cls.isEnum();
+
+        Object[] enumVals = cls.getEnumConstants();
+
+        Map<String, Integer> enumMap = new LinkedHashMap<>(enumVals.length);
+
+        for (Object enumVal : enumVals)
+            enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
+
+        return enumMap;
     }
 
     /**

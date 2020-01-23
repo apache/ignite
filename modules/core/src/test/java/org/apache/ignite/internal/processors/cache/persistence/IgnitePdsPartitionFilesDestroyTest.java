@@ -50,7 +50,8 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
+ * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash
+ * recovery.
  */
 public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Partitions count. */
@@ -135,7 +136,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            Assert.assertEquals("node = " + ignite.name() + ", key = " + k, (Integer) (k * multiplier), cache.get(k));
+            Assert.assertEquals("node = " + ignite.name() + ", key = " + k, (Integer)(k * multiplier), cache.get(k));
     }
 
     /**
@@ -145,8 +146,9 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
-        IgniteEx crd = (IgniteEx) startGrids(2);
+        IgniteEx crd = (IgniteEx)startGrids(2);
 
+        crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);
 
         int keysCnt = 50_000;
@@ -168,7 +170,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         checkPartitionFiles(crd, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 1);
+            checkData((IgniteEx)ignite, keysCnt, 1);
     }
 
     /**
@@ -179,6 +181,8 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     @Test
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         IgniteEx crd = startGrid(0);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
 
         IgniteEx node = startGrid(1);
 
@@ -216,7 +220,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         checkPartitionFiles(node, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 2);
+            checkData((IgniteEx)ignite, keysCnt, 2);
     }
 
     /**
@@ -227,6 +231,8 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     @Test
     public void testPartitionFileDestroyCrashRecovery1() throws Exception {
         IgniteEx crd = startGrid(0);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
 
         failFileIo = true;
 
@@ -265,22 +271,28 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        // Need to explicitly wait for checkpoint completion or no guarantee what filled on recovery destroyQueue is
+        // actually cleared.
+        forceCheckpoint(problemNode);
+
         // After recovery all evicted partition files should be deleted from disk.
         checkPartitionFiles(problemNode, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 1);
+            checkData((IgniteEx)ignite, keysCnt, 1);
     }
 
     /**
-     * Test that partitions files are not deleted if they were re-created on next time
-     * and no checkpoint has done during this time.
+     * Test that partitions files are not deleted if they were re-created on next time and no checkpoint has done during
+     * this time.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testPartitionFileDestroyCrashRecovery2() throws Exception {
         IgniteEx crd = startGrid(0);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
 
         failFileIo = true;
 
@@ -328,11 +340,15 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        // Need to explicitly wait for checkpoint completion or no guarantee what filled on recovery destroyQueue is
+        // actually cleared.
+        forceCheckpoint(problemNode);
+
         // After recovery all evicted partition files should be deleted from disk.
         checkPartitionFiles(problemNode, false);
 
         for (Ignite ignite : G.allGrids())
-            checkData((IgniteEx) ignite, keysCnt, 1);
+            checkData((IgniteEx)ignite, keysCnt, 1);
     }
 
     /**
@@ -342,7 +358,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
-        IgniteEx crd = (IgniteEx) startGrids(2);
+        IgniteEx crd = (IgniteEx)startGrids(2);
 
         crd.cluster().active(true);
 
@@ -364,15 +380,14 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * If {@code exists} is {@code true}, checks that all partition files exist
-     * if partition has state EVICTED.
+     * If {@code exists} is {@code true}, checks that all partition files exist if partition has state EVICTED.
      *
-     * If {@code exists} is {@code false}, checks that all partition files don't exist
-     * if partition is absent or has state EVICTED.
+     * If {@code exists} is {@code false}, checks that all partition files don't exist if partition is absent or has
+     * state EVICTED.
      *
      * @param ignite Node.
-     * @param exists If {@code true} method will check that partition file exists,
-     *               in other case will check that file doesn't exist.
+     * @param exists If {@code true} method will check that partition file exists, in other case will check that file
+     * doesn't exist.
      * @throws IgniteCheckedException If failed.
      */
     private void checkPartitionFiles(IgniteEx ignite, boolean exists) throws IgniteCheckedException {

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Client.Cache
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
@@ -154,6 +155,8 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         /// <param name="sqlQuery">SQL query.</param>
         /// <returns>Query cursor.</returns>
+        [Obsolete("Use SqlFieldsQuery instead. For strongly-typed queries use Apache.Ignite.Linq. " +
+                  "SqlQuery is a limited subset of SqlFieldsQuery.")]
         IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery);
 
         /// <summary>
@@ -421,5 +424,16 @@ namespace Apache.Ignite.Core.Client.Cache
         /// <typeparam name="TV1">Value type in binary mode.</typeparam>
         /// <returns>Cache instance with binary mode enabled.</returns>
         ICacheClient<TK1, TV1> WithKeepBinary<TK1, TV1>();
+
+        /// <summary>
+        /// Returns cache with the specified expired policy set. This policy will be used for each operation
+        /// invoked on the returned cache.
+        /// <para />
+        /// Unlike the <see cref="ICache{TK,TV}.WithExpiryPolicy"/> method, expiry durations are retrieved
+        /// from specified <see cref="IExpiryPolicy"/> on every key-value API operation.
+        /// </summary>
+        /// <param name="plc">Expiry policy to use.</param>
+        /// <returns>Cache instance with the specified expiry policy set.</returns>
+        ICacheClient<TK, TV> WithExpiryPolicy(IExpiryPolicy plc);
     }
 }

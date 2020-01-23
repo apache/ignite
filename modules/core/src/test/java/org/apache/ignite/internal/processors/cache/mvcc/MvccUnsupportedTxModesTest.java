@@ -42,6 +42,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     /** */
     private static IgniteCache<Object, Object> cache;
+
     /** */
     private static final CacheEntryProcessor<Object, Object, Object> testEntryProcessor = (entry, arguments) -> null;
 

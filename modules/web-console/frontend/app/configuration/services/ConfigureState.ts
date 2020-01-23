@@ -19,7 +19,7 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import {tap, scan} from 'rxjs/operators';
 
 export default class ConfigureState {
-    actions$: Subject<{type: string}>
+    actions$: Subject<{type: string}>;
 
     constructor() {
         this.actions$ = new Subject();

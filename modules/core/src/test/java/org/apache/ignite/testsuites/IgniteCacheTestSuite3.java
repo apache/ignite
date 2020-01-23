@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLockChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsNearTest;
@@ -129,12 +130,12 @@ public class IgniteCacheTestSuite3 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedPreloadLifecycleSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheSyncReplicatedPreloadSelfTest.class, ignoredTests);
 
-        //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedEntrySetSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheLockChangingTopologyTest.class, ignoredTests);
+
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedMarshallerTxTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedOnheapFullApiSelfTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedOnheapMultiNodeFullApiSelfTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxConcurrentGetTest.class, ignoredTests);
-        //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxMultiNodeBasicTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxReadTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheStartupInDeploymentModesTest.class, ignoredTests);

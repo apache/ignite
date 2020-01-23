@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
+import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -46,15 +46,16 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -159,8 +160,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -273,6 +272,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     private void testChangingBaselineDown(String cacheName, boolean lateActivation) throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         IgniteEx client1 = null;
         IgniteEx client2 = null;
 
@@ -409,6 +409,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     public void testCrossCacheTxs() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(DEFAULT_NODES_COUNT);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().active(true);
 
         AtomicBoolean stopLoad = new AtomicBoolean(false);
@@ -539,10 +540,9 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
      * Tests that if dynamic cache has no affinity nodes at the moment of start,
      * it will still work correctly when affinity nodes will appear.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8652")
     @Test
     public void testDynamicCacheStartNoAffinityNodes() throws Exception {
-        fail("IGNITE-8652");
-
         IgniteEx ig0 = startGrid(0);
 
         ig0.cluster().active(true);
@@ -835,8 +835,12 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
                         catch (CacheException e) {
-                            if (e.getCause() instanceof ClusterTopologyException)
-                                ((ClusterTopologyException)e.getCause()).retryReadyFuture().get();
+                            if (e.getCause() instanceof ClusterTopologyException) {
+                                IgniteFuture retryFut = ((ClusterTopologyException)e.getCause()).retryReadyFuture();
+
+                                if (retryFut != null)
+                                    retryFut.get();
+                            }
                         }
                         catch (ClusterTopologyException e) {
                             e.retryReadyFuture().get();
@@ -946,11 +950,10 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         while (U.currentTimeMillis() < startTs + waitMs) {
             Map<Long, Long> view2 = new HashMap<>(threadProgressTracker);
 
-            if (loadError.get() != null) {
-                loadError.get().printStackTrace();
+            Throwable t;
 
-                fail("Unexpected error in load thread: " + loadError.get().toString());
-            }
+            if ((t = loadError.get()) != null)
+                fail("Unexpected error in load thread: " + X.getFullStackTrace(t));
 
             boolean frozenThreadExists = false;
 

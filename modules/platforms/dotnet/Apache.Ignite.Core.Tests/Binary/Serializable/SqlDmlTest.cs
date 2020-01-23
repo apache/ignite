@@ -99,7 +99,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             };
 
             // Test SQL.
+#pragma warning disable 618
             var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where Int = 2")).GetAll().Single();
+#pragma warning restore 618
 
             Assert.AreEqual(2, res.Key);
             Assert.AreEqual(2, res.Value.Int);
@@ -163,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual("Value was either too large or too small for a UInt32.", ex.Message);
         }
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1  // Console redirect issues on .NET Core
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0// Console redirect issues on .NET Core
         /// <summary>
         /// Tests the log warning.
         /// </summary>

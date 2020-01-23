@@ -292,6 +292,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(prx.ToString(), svc.ToString());
             Assert.AreEqual(17, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
+            // ReSharper disable once AccessToModifiedClosure
             Assert.IsTrue(TestUtils.WaitForCondition(() => prx.Executed, 5000));
             Assert.IsFalse(prx.Cancelled);
             Assert.AreEqual(SvcName, prx.LastCallContextName);
@@ -1020,7 +1021,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
             if (!CompactFooter)
             {
                 springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
@@ -1138,6 +1139,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             /** */
             [InstanceResource]
+            // ReSharper disable once UnassignedField.Local
             private IIgnite _grid;
 
             /** <inheritdoc /> */

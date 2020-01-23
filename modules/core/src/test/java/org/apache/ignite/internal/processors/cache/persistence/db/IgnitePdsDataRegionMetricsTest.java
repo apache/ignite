@@ -100,6 +100,16 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+    }
+
     /**
      * @return Ignite cache configuration.
      */
@@ -175,6 +185,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         IgniteEx node0 = startGrid(0);
         IgniteEx node1 = startGrid(1);
 
+        node0.cluster().baselineAutoAdjustEnabled(false);
         node0.cluster().active(true);
 
         final IgniteCache<Integer, String> cache = node0.cache(DEFAULT_CACHE_NAME);

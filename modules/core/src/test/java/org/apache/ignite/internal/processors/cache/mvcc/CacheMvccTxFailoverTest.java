@@ -128,7 +128,6 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
         checkSingleNodeRestart(false, true, false);
     }
 
-
     /**
      * @param rollBack If {@code True} then Tx will be rolled backup, committed otherwise.
      * @param recoverFromWAL If {@code True} then Tx recovery from WAL will be checked,

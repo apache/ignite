@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
@@ -58,6 +57,7 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
 
         initStoreStrategy();
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();

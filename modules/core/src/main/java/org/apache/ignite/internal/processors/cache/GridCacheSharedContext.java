@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.managers.systemview.ScanQuerySystemView;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -138,10 +140,13 @@ public class GridCacheSharedContext<K, V> {
     private DeadlockDetectionManager deadlockDetectionMgr;
 
     /** Cache contexts map. */
-    private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
+    private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private final TransactionMetricsAdapter txMetrics;
+
+    /** Cache diagnostic manager. */
+    private CacheDiagnosticManager diagnosticMgr;
 
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
@@ -222,7 +227,8 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr
+        DeadlockDetectionManager deadlockDetectionMgr,
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -244,7 +250,8 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            deadlockDetectionMgr
+            deadlockDetectionMgr,
+            diagnosticMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -252,6 +259,8 @@ public class GridCacheSharedContext<K, V> {
         txMetrics = new TransactionMetricsAdapter(kernalCtx);
 
         ctxMap = new ConcurrentHashMap<>();
+
+        kernalCtx.systemView().registerView(new ScanQuerySystemView<>(ctxMap.values()));
 
         locStoreCnt = new AtomicInteger();
 
@@ -412,7 +421,9 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            deadlockDetectionMgr);
+            deadlockDetectionMgr,
+            diagnosticMgr
+        );
 
         this.mgrs = mgrs;
 
@@ -459,7 +470,10 @@ public class GridCacheSharedContext<K, V> {
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr) {
+        DeadlockDetectionManager deadlockDetectionMgr,
+        CacheDiagnosticManager diagnosticMgr
+    ) {
+        this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -830,6 +844,13 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Diagnostic manager.
+     */
+    public CacheDiagnosticManager diagnostic(){
+        return diagnosticMgr;
+    }
+
+    /**
      * @return Deadlock detection manager.
      */
     public DeadlockDetectionManager deadlockDetectionMgr() {
@@ -914,7 +935,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer, null);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
         f.add(finishLocalTxsFuture);
         f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
@@ -922,6 +943,21 @@ public class GridCacheSharedContext<K, V> {
         f.markInitialized();
 
         return f;
+    }
+
+    /**
+     * Captures all prepared operations that we need to wait before we able to perform PME-free switch.
+     * This method must be called only after {@link GridDhtPartitionTopology#updateTopologyVersion}
+     * method is called so that all new updates will wait to switch to the new version.
+     *
+     * Captured updates are wrapped in a future that will be completed once pending objects are released.
+     *
+     * @param topVer Topology version.
+     * @param node Failed node.
+     * @return {@code true} if waiting was successful.
+     */
+    public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node) {
+        return tm().finishLocalTxs(topVer, node);
     }
 
     /**
@@ -1042,10 +1078,9 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param tx Transaction to rollback.
-     * @throws IgniteCheckedException If failed.
      * @return Rollback future.
      */
-    public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
+    public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
@@ -1154,5 +1189,12 @@ public class GridCacheSharedContext<K, V> {
      */
     public void setTxManager(IgniteTxManager txMgr) {
         this.txMgr = txMgr;
+    }
+
+    /**
+     * @return {@code True} if lazy memory allocation enabled. {@code False} otherwise.
+     */
+    public boolean isLazyMemoryAllocation(@Nullable DataRegion region) {
+        return gridConfig().isClientMode() || region == null || region.config().isLazyMemoryAllocation();
     }
 }

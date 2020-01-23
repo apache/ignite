@@ -17,17 +17,45 @@
 
 package org.apache.ignite.internal.client;
 
+import org.apache.ignite.cluster.ClusterState;
+
 /**
  *  Interface for manage state of grid cluster.
  */
 public interface GridClientClusterState {
     /**
      * @param active {@code True} activate, {@code False} deactivate.
+     * @deprecated Use {@link #state()} instead.
      */
+    @Deprecated
     public void active(boolean active) throws GridClientException;
 
     /**
      * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
+     * @deprecated Use {@link #state(ClusterState)} instead.
      */
+    @Deprecated
     public boolean active() throws GridClientException;
+
+    /**
+     * @return Current cluster state.
+     * @throws GridClientException If the request to get the cluster state failed.
+     */
+    public ClusterState state() throws GridClientException;
+
+    /**
+     * Changes cluster state to {@code newState}.
+     *
+     * @param newState New cluster state.
+     * @throws GridClientException If the request to change the cluster state failed.
+     */
+    public void state(ClusterState newState) throws GridClientException;
+
+    /**
+     * Get the cluster name.
+     *
+     * @return The name of the cluster.
+     * @throws GridClientException If the request to get the cluster name failed.
+     * */
+    String clusterName() throws GridClientException;
 }

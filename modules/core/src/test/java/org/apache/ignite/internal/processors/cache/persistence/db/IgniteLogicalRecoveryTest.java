@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -122,6 +122,16 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(spi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
     }
 
     /**
@@ -308,6 +318,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
     public void testRecoveryOnJoinToDifferentBlt() throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(3);
 
+        crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().active(true);
 
         IgniteEx node = grid(2);

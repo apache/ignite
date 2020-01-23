@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.impl.DelegatingNamedVector;
@@ -65,17 +64,6 @@ public class VectorUtils {
     }
 
     /**
-     * Turn number into a local Vector of given size with one-hot encoding.
-     *
-     * @param num Number to turn into vector.
-     * @param vecSize Vector size of output vector.
-     * @return One-hot encoded number.
-     */
-    public static Vector oneHot(int num, int vecSize) {
-        return oneHot(num, vecSize, false);
-    }
-
-    /**
      * Turn number to 1-sized array.
      *
      * @param val Value to wrap in array.
@@ -83,19 +71,6 @@ public class VectorUtils {
      */
     public static double[] num2Arr(double val) {
         return new double[] {val};
-    }
-
-    /**
-     * Turn number into Vector of given size with one-hot encoding.
-     *
-     * @param num Number to turn into vector.
-     * @param vecSize Vector size of output vector.
-     * @param isDistributed Flag indicating if distributed vector should be created.
-     * @return One-hot encoded number.
-     */
-    public static Vector oneHot(int num, int vecSize, boolean isDistributed) {
-        Vector res = new DenseVector(vecSize);
-        return res.setX(num, 1);
     }
 
     /**
@@ -211,7 +186,7 @@ public class VectorUtils {
 
         Vector answer;
         if (Arrays.stream(values).anyMatch(Objects::isNull))
-            answer = new SparseVector(values.length, StorageConstants.RANDOM_ACCESS_MODE);
+            answer = new SparseVector(values.length);
         else
             answer = new DenseVector(values.length);
 
@@ -229,7 +204,7 @@ public class VectorUtils {
      * @return Named vector.
      */
     public static NamedVector of(Map<String, Double> values) {
-        SparseVector vector = new SparseVector(values.size(), StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector vector = new SparseVector(values.size());
         for (int i = 0; i < values.size(); i++)
             vector.set(i, Double.NaN);
 

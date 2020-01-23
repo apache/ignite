@@ -36,6 +36,7 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteCallable;
@@ -68,6 +69,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         // add cache template for cache with enabled cache interceptor
         grid.addCacheConfiguration(new CacheConfiguration<>(CACHE_INTERCEPTOR_TEMPLATE)
             .setInterceptor(new TestCacheInterceptor()));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean keepSerializedObjects() {
+        return true;
     }
 
     /**
@@ -108,7 +114,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B",
-            "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
+            "Value conversion failed [column=_VAL, from=java.lang.String, to=java.lang.Integer]");
     }
 
     /**
@@ -736,6 +742,61 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
 
         checkSqlErrorMessage("alter table test drop column", "42000",
             "Failed to parse query. Syntax error in SQL statement \"ALTER TABLE TEST DROP COLUMN [*]");
+    }
+
+    /**
+     * Checks execution DML request on read-only cluster error code and message.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdatesRejectedInReadOnlyMode() throws Exception {
+        try (Connection conn = getConnection()) {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY (ID LONG PRIMARY KEY, VAL LONG)");
+            }
+        }
+
+        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
+
+        try {
+            checkErrorState((conn) -> {
+                try (Statement statement = conn.createStatement()) {
+                    statement.executeUpdate("INSERT INTO TEST_READ_ONLY VALUES (1, 2)");
+                }
+            }, "90097", "Failed to execute DML statement. Cluster in read-only mode");
+        }
+        finally {
+            grid(0).cluster().state(ClusterState.ACTIVE);
+        }
+    }
+
+    /**
+     * Checks execution batch DML request on read-only cluster error code and message.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBatchUpdatesRejectedInReadOnlyMode() throws Exception {
+        try (Connection conn = getConnection()) {
+            try (Statement statement = conn.createStatement()) {
+                statement.executeUpdate("CREATE TABLE TEST_READ_ONLY_BATCH (ID LONG PRIMARY KEY, VAL LONG)");
+            }
+        }
+
+        grid(0).cluster().state(ClusterState.ACTIVE_READ_ONLY);
+
+        try {
+            checkErrorState((conn) -> {
+                try (Statement statement = conn.createStatement()) {
+                    statement.addBatch("INSERT INTO TEST_READ_ONLY_BATCH VALUES (1, 2)");
+                    statement.executeBatch();
+                }
+            }, "90097", null);
+        }
+        finally {
+            grid(0).cluster().state(ClusterState.ACTIVE);
+        }
     }
 
     /**

@@ -107,7 +107,7 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public bool IsKeepBinary { get; private set; }
-
+            
             public bool IsAllowAtomicOpsInTx { get; private set; }
 
             public ICache<int, int> WithSkipStore()
@@ -412,6 +412,36 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public Task<int> GetSizeAsync(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetSizeLong(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
             {
                 throw new NotImplementedException();
             }

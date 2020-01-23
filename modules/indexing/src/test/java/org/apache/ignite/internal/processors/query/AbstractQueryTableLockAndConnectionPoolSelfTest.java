@@ -53,7 +53,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private static final int PAGE_SIZE_SMALL = 12;
 
     /** Test duration. */
-    private static final long TEST_DUR = 10_000L;
+    private static final long TEST_DUR = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -352,7 +352,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             }
         }, qryThreads, "usr-qry");
 
-
         long tEnd = U.currentTimeMillis() + TEST_DUR;
 
         while (U.currentTimeMillis() < tEnd) {
@@ -507,7 +506,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             assertBaseQueryResults(rows);
         }
 
-
         // Test full iteration.
         {
             List<List<?>> rows = new ArrayList<>();
@@ -529,7 +527,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             for (int i = 0; i < 30; i++)
                 iter.next();
         }
-
 
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();
@@ -757,7 +754,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
         return ((IgniteEx)node).context().query().querySqlFields(qry.setLazy(lazy()), false);
     }
-
 
     /**
      * @return Lazy mode.

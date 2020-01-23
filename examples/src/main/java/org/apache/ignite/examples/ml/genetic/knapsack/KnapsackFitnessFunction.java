@@ -25,19 +25,16 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
 /**
  * This example demonstrates how to create a {@link IFitnessFunction}.
  * <p>
- * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want
- * to calculate the weight and value of an individual solution relative to other solutions.</p>
+ * Your fitness function will vary depending on your particular use case. For this fitness function, we simply want to
+ * calculate the weight and value of an individual solution relative to other solutions.</p>
  * <p>
  * To do this, we total the weights and values of all the genes within a chromosome.</p>
  */
 public class KnapsackFitnessFunction implements IFitnessFunction {
     /**
-     * Calculate fitness.
-     *
-     * @param genes List of Genes.
-     * @return Fitness value.
+     * {@inheritDoc}
      */
-    public double evaluate(List<Gene> genes) {
+    @Override public double evaluate(List<Gene> genes) {
         double val = 0;
         double weight = 0;
 
@@ -45,8 +42,8 @@ public class KnapsackFitnessFunction implements IFitnessFunction {
         int badSolution = 1;
 
         for (Gene gene : genes) {
-            weight = weight + ((Item)(gene.getVal())).getWeight();
-            val = val + ((Item)(gene.getVal())).getVal();
+            weight += ((Item)(gene.getVal())).getWeight();
+            val += ((Item)(gene.getVal())).getVal();
 
             double maximumWeight = 20;
             if (duplicates.contains(gene.id()) || (weight > maximumWeight)) {

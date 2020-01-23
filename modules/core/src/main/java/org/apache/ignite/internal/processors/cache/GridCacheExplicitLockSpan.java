@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -155,8 +156,34 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
             if (deque != null) {
                 assert !deque.isEmpty();
 
-                if (ver == null || deque.peekFirst().version().equals(ver)) {
-                    cand = deque.removeFirst();
+                GridCacheMvccCandidate first = deque.peekFirst();
+
+                if (ver == null || first.version().equals(ver)) {
+                    GridCacheMvccCandidate reentry  = first.unenter();
+
+                    if (reentry != null) {
+                        assert reentry.reentry() : reentry;
+
+                        boolean rmvd = false;
+
+                        Iterator<GridCacheMvccCandidate> it = deque.iterator();
+
+                        while (it.hasNext()) {
+                            if (it.next() == reentry) {
+                                it.remove();
+
+                                rmvd = true;
+
+                                break;
+                            }
+                        }
+
+                        assert rmvd : reentry;
+
+                        cand = reentry;
+                    }
+                    else
+                        cand = deque.removeFirst();
 
                     if (deque.isEmpty())
                         cands.remove(cand.key());

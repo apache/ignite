@@ -147,9 +147,6 @@ public final class IgniteNodeAttributes {
     /** Security credentials attribute name. Attribute is not available via public API. */
     public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
 
-    /** Security subject for authenticated node. */
-    public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
-
     /** V2 security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
 
@@ -192,9 +189,6 @@ public final class IgniteNodeAttributes {
 
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
-
-    /** Encryption master key digest. */
-    public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
 
     /** Rebalance thread pool size. */
     public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";

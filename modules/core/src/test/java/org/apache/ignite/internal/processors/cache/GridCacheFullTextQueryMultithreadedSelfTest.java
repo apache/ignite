@@ -76,6 +76,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int keyCnt = 5000;
         final int logFreq = 50;
         final String txt = "Value";
+        final int limit = 0;
 
         final GridCacheAdapter<Integer, H2TextValue> c = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
@@ -94,7 +95,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         // Create query.
         final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
-            H2TextValue.class.getName(), txt, false);
+            H2TextValue.class.getName(), txt, limit, false);
 
         qry.enableDedup(false);
         qry.includeBackups(false);

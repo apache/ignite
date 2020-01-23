@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="ICache{TK,TV}"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class CacheParityTest
     {
         /** Members that are not needed on .NET side. */
@@ -53,9 +54,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             "queryDetailMetrics",  // IGNITE-6680
             "resetQueryDetailMetrics",  // IGNITE-6680
-            "sizeLong",  // 	IGNITE-6563
-            "sizeLongAsync",  // IGNITE-6563
-            "localSizeLong",  // IGNITE-6563
             "enableStatistics",  // IGNITE-7276
             "clearStatistics",  // IGNITE-9017
         };

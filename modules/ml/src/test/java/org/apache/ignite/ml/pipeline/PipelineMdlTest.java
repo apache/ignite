@@ -45,8 +45,7 @@ public class PipelineMdlTest {
      */
     private PipelineMdl<Integer, double[]> getMdl(LogisticRegressionModel internalMdl) {
         return new PipelineMdl<Integer, double[]>()
-            .withFeatureExtractor(null)
-            .withLabelExtractor(null)
+            .withPreprocessor(null)
             .withInternalMdl(internalMdl);
     }
 

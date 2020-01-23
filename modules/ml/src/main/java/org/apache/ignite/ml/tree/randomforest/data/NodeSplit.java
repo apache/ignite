@@ -53,7 +53,7 @@ public class NodeSplit implements Serializable {
      * Split node from parameter onto two children nodes.
      *
      * @param node Node.
-     * @return list of children.
+     * @return List of children.
      */
     public List<TreeNode> split(TreeNode node) {
         List<TreeNode> children = node.toConditional(featureId, val);

@@ -119,8 +119,10 @@ public class MarshallerEnumDeadlockMultiJvmTest extends GridCommonAbstractTest {
     private static class UnmarshalCallable implements IgniteCallable<Object> {
         /** */
         private final byte[] one;
+
         /** */
         private final byte[] two;
+
         /** */
         @IgniteInstanceResource
         private Ignite ign;

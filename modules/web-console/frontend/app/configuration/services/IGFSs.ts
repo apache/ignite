@@ -41,7 +41,10 @@ export default class IGFSs {
             ipcEndpointEnabled: true,
             fragmentizerEnabled: true,
             colocateMetadata: true,
-            relaxedConsistency: true
+            relaxedConsistency: true,
+            secondaryFileSystem: {
+                kind: 'Caching'
+            }
         };
     }
 
@@ -76,4 +79,15 @@ export default class IGFSs {
     };
 
     normalize = omit(['__v', 'space', 'clusters']);
+
+    addSecondaryFsNameMapper(igfs) {
+        if (!_.get(igfs, 'secondaryFileSystem.userNameMapper.Chained.mappers'))
+            _.set(igfs, 'secondaryFileSystem.userNameMapper.Chained.mappers', []);
+
+        const item = {_id: ObjectID.generate(), kind: 'Basic'};
+
+        _.get(igfs, 'secondaryFileSystem.userNameMapper.Chained.mappers').push(item);
+
+        return item;
+    }
 }

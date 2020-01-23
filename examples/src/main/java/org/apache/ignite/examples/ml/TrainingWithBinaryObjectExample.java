@@ -26,44 +26,52 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.BinaryObjectVectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Example of support model training with binary objects.
  */
 public class TrainingWithBinaryObjectExample {
-    /** Run example. */
-    public static void main(String[] args) throws Exception {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Model training over cached dataset with binary objects usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, BinaryObject> dataCache = populateCache(ignite);
+            IgniteCache<Integer, BinaryObject> dataCache = null;
+            try {
+                dataCache = populateCache(ignite);
 
-            // Create dataset builder with enabled support of keeping binary for upstream cache.
-            CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
-                new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
+                // Create dataset builder with enabled support of keeping binary for upstream cache.
+                CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
+                    new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
-            //
-            IgniteBiFunction<Integer, BinaryObject, Vector> featureExtractor
-                = (k, v) -> VectorUtils.of(new double[] {v.field("feature1")});
+                Vectorizer<Integer, BinaryObject, String, Double> vectorizer =
+                    new BinaryObjectVectorizer<Integer>("feature1").labeled("label");
 
-            IgniteBiFunction<Integer, BinaryObject, Double> lbExtractor = (k, v) -> (double)v.field("label");
+                KMeansTrainer trainer = new KMeansTrainer();
+                KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
 
-            KMeansTrainer trainer = new KMeansTrainer();
-
-            KMeansModel kmdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
-
-            System.out.println(">>> Model trained over binary objects. Model " + kmdl);
+                System.out.println(">>> Model trained over binary objects. Model " + mdl);
+            }
+            finally {
+                dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
-    /** Populate cache with some binary objects. */
+    /**
+     * Populate cache with some binary objects.
+     */
     private static IgniteCache<Integer, BinaryObject> populateCache(Ignite ignite) {
         CacheConfiguration<Integer, BinaryObject> cacheConfiguration = new CacheConfiguration<>();
 

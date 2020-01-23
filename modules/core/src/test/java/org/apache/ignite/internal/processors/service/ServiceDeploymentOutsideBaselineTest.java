@@ -228,6 +228,8 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         Ignite insideNode = startGrid(0);
 
+        insideNode.cluster().baselineAutoAdjustEnabled(false);
+
         if (persistence)
             insideNode.cluster().active(true);
         else {
@@ -254,6 +256,8 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
         persistence = true;
 
         Ignite insideNode = startGrid(0);
+
+        insideNode.cluster().baselineAutoAdjustEnabled(false);
 
         IgniteCluster cluster = insideNode.cluster();
 
@@ -291,6 +295,9 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
         persistence = true;
 
         Ignite insideNode = startGrid(0);
+
+        insideNode.cluster().baselineAutoAdjustEnabled(false);
+
         startGrid(1);
 
         IgniteCluster cluster = insideNode.cluster();
@@ -346,6 +353,8 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
             depFut.get(10, TimeUnit.SECONDS);
         }
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         return ignite;
     }

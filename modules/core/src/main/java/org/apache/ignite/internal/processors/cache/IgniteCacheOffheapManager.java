@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
@@ -29,10 +31,12 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
@@ -46,6 +50,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
+import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,7 +95,7 @@ public interface IgniteCacheOffheapManager {
      * @return Number of processed partitions.
      * @throws IgniteCheckedException If failed.
      */
-    long restorePartitionStates(Map<GroupPartitionId, PartitionRecoverState> partitionRecoveryStates) throws IgniteCheckedException;
+    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
@@ -104,9 +109,10 @@ public interface IgniteCacheOffheapManager {
      * Initial counter will be updated on state restore only
      *
      * @param part Partition
-     * @param cntr New initial counter
+     * @param start Start.
+     * @param delta Delta.
      */
-    public void onPartitionInitialCounterUpdated(int part, long cntr);
+    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
 
     /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
@@ -241,27 +247,14 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
-     * @param entry Entry.
-     * @param val Value.
-     * @param ver Version.
-     * @param expireTime Expire time.
-     * @param mvccVer MVCC version.
-     * @param newMvccVer New MVCC version.
-     * @param txState Tx state hint for the mvcc version.
-     * @param newTxState Tx state hint for the new mvcc version.
-     * @return {@code True} if value was inserted.
-     * @throws IgniteCheckedException If failed.
+     * Tries to apply entry history.
+     * Either applies full entry history or do nothing.
+     *
+     * @param entry Entry to update.
+     * @param hist Full entry history.
+     * @return {@code True} if history applied successfully, {@code False} otherwise.
      */
-    public boolean mvccInitialValueIfAbsent(
-        GridCacheMapEntry entry,
-        @Nullable CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        MvccVersion mvccVer,
-        MvccVersion newMvccVer,
-        byte txState,
-        byte newTxState
-    ) throws IgniteCheckedException;
+    boolean mvccApplyHistoryIfAbsent(GridCacheMapEntry entry, List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
 
     /**
      * @param entry Entry.
@@ -329,6 +322,9 @@ public interface IgniteCacheOffheapManager {
     ) throws IgniteCheckedException;
 
     /**
+     * Apply update with full history.
+     * Note: History version may be skipped if it have already been actualized with previous update operation.
+     *
      * @param entry Entry.
      * @param val Value.
      * @param ver Version.
@@ -512,6 +508,17 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * Store entries.
+     *
+     * @param partId Partition number.
+     * @param infos Entry infos.
+     * @param initPred Applied to all created rows. Each row that not matches the predicate is removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void storeEntries(int partId, Iterator<GridCacheEntryInfo> infos,
+        IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
+
+    /**
      * Clears offheap entries.
      *
      * @param cctx Cache context.
@@ -594,21 +601,16 @@ public interface IgniteCacheOffheapManager {
      */
     interface CacheDataStore {
         /**
+         * Initialize data store if it exists.
+         *
+         * @return {@code True} if initialized.
+         */
+        boolean init();
+
+        /**
          * @return Partition ID.
          */
         int partId();
-
-        /**
-         * @return Store name.
-         */
-        String name();
-
-        /**
-         * @param size Size to init.
-         * @param updCntr Update counter to init.
-         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes);
 
         /**
          * @param cacheId Cache ID.
@@ -640,9 +642,24 @@ public interface IgniteCacheOffheapManager {
         void updateSize(int cacheId, long delta);
 
         /**
-         * @return Update counter.
+         * @return Update counter (LWM).
          */
         long updateCounter();
+
+        /**
+         * @return Reserved counter (HWM).
+         */
+        long reservedCounter();
+
+        /**
+         * @return Update counter or {@code null} if store is not yet created.
+         */
+        @Nullable PartitionUpdateCounter partUpdateCounter();
+
+        /**
+         * @param delta Delta.
+         */
+        long reserve(long delta);
 
         /**
          * @param val Update counter.
@@ -651,11 +668,10 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * Updates counters from start value by delta value.
-         *
          * @param start Start.
-         * @param delta Delta
+         * @param delta Delta.
          */
-        void updateCounter(long start, long delta);
+        boolean updateCounter(long start, long delta);
 
         /**
          * @return Next update counter.
@@ -692,6 +708,16 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+
+        /**
+         * Insert rows into page memory.
+         *
+         * @param rows Rows.
+         * @param initPred Applied to all rows. Each row that not matches the predicate is removed.
+         * @throws IgniteCheckedException If failed.
+         */
+        public void insertRows(Collection<DataRowCacheAware> rows,
+            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -748,29 +774,22 @@ public interface IgniteCacheOffheapManager {
             MvccVersion newMvccVer) throws IgniteCheckedException;
 
         /**
+         * Tries to apply entry history.
+         * Either applies full entry history or do nothing.
+         *
          * @param cctx Cache context.
          * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param mvccVer MVCC version.
-         * @param newMvccVer New MVCC version.
-         * @param txState Tx state hint for the mvcc version.
-         * @param newTxState Tx state hint for the new mvcc version.
-         * @return {@code True} if new value was inserted.
-         * @throws IgniteCheckedException If failed.
+         * @param hist Full entry history.
+         * @return {@code True} if entry history applied successfully, {@code False} otherwise.
          */
-        boolean mvccInitialValueIfAbsent(
+        boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,
             KeyCacheObject key,
-            @Nullable CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            MvccVersion mvccVer,
-            MvccVersion newMvccVer,
-            byte txState,
-            byte newTxState) throws IgniteCheckedException;
+            List<GridCacheMvccEntryInfo> hist) throws IgniteCheckedException;
 
         /**
+         * Apply update with full history.
+         * Note: History version may be skipped if it have already been actualized with previous update operation.
          *
          * @param cctx Grid cache context.
          * @param key Key.
@@ -1034,9 +1053,10 @@ public interface IgniteCacheOffheapManager {
         public RowStore rowStore();
 
         /**
-         * @param cntr Counter.
+         * @param start Counter.
+         * @param delta Delta.
          */
-        public void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long start, long delta);
 
         /**
          * Inject rows cache cleaner.
@@ -1064,5 +1084,15 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public void preload() throws IgniteCheckedException;
+
+        /**
+         * Reset counter for partition.
+         */
+        void resetUpdateCounter();
+
+        /**
+         * Partition storage.
+         */
+        public PartitionMetaStorage<SimpleDataRow> partStorage();
     }
 }

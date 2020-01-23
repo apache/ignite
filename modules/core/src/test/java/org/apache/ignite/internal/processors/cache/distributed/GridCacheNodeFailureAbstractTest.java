@@ -42,8 +42,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteState.STOPPED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -70,13 +68,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /** Grid instances. */
     private static final List<Ignite> IGNITEs = new ArrayList<>();
-
-    /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
-
-        super.setUp();
-    }
 
     /**
      * Start grid by default.
@@ -113,6 +104,8 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         for (int i = 0; i < GRID_CNT; i++) {
             if (Ignition.state(IGNITEs.get(i).name()) == STOPPED) {
                 info("Restarting grid: " + i);
@@ -191,8 +184,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
             stopGrid(idx);
 
             f.get();
-
-            U.sleep(getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 3000));
 
             IgniteCache<Integer, String> checkCache = jcache(checkIdx);
 

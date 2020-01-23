@@ -128,6 +128,10 @@ export class Bean extends EmptyBean {
         return this._property(this.arguments, 'boolean', model, null, nonNil);
     }
 
+    longConstructorArgument(model) {
+        return this._property(this.arguments, 'long', model, null, nonNil);
+    }
+
     classConstructorArgument(model) {
         return this._property(this.arguments, 'java.lang.Class', model, null, nonEmpty);
     }
@@ -260,6 +264,13 @@ export class Bean extends EmptyBean {
         return this._property(this.properties, 'PATH', model, name, nonEmpty);
     }
 
+    pathArrayProperty(id, name, items, varArg) {
+        if (items && items.length)
+            this.properties.push({clsName: 'PATH_ARRAY', id, name, items, varArg, typeClsName: 'PATH'});
+
+        return this;
+    }
+
     classProperty(model, name = model) {
         return this._property(this.properties, 'java.lang.Class', model, name, nonEmpty);
     }
@@ -367,8 +378,11 @@ export class Bean extends EmptyBean {
                 keyClsName: dflt.keyClsName,
                 keyField: dflt.keyField || 'name',
                 valClsName: dflt.valClsName,
+                valClsNameShow: dflt.valClsNameShow,
                 valField: dflt.valField || 'value',
-                entries
+                entries,
+                keyClsGenericType: dflt.keyClsGenericType,
+                isKeyClsGenericTypeExtended: dflt.isKeyClsGenericTypeExtended
             });
         }
 

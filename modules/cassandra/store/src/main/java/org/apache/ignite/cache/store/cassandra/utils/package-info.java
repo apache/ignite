@@ -18,4 +18,5 @@
 /**
  * Contains utility classes
  */
+
 package org.apache.ignite.cache.store.cassandra.utils;

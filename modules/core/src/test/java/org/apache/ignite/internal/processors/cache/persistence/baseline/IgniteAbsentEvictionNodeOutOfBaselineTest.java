@@ -73,6 +73,11 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+    }
+
     /**
      * Removed partitions if node is out of baseline.
      */
@@ -81,6 +86,7 @@ public class IgniteAbsentEvictionNodeOutOfBaselineTest extends GridCommonAbstrac
         //given: start 3 nodes with data
         Ignite ignite0 = startGrids(3);
 
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
         ignite0.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ignite0.getOrCreateCache(TEST_CACHE_NAME);

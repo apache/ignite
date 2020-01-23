@@ -175,8 +175,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
             }
+
+            awaitPartitionMapExchange();
 
             for (int i = 0; i < 10; i++)
                 grid(1).cache(DEFAULT_CACHE_NAME).put(i, i);

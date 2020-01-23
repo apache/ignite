@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  *
@@ -70,6 +69,9 @@ public class CacheGroupData implements Serializable {
     /** WAL change requests. */
     private final List<WalStateProposeMessage> walChangeReqs;
 
+    /** Cache configuration enrichment. */
+    private final CacheConfigurationEnrichment cacheCfgEnrichment;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -93,7 +95,9 @@ public class CacheGroupData implements Serializable {
         long flags,
         boolean persistenceEnabled,
         boolean walEnabled,
-        List<WalStateProposeMessage> walChangeReqs) {
+        List<WalStateProposeMessage> walChangeReqs,
+        CacheConfigurationEnrichment cacheCfgEnrichment
+    ) {
         assert cacheCfg != null;
         assert grpId != 0 : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
@@ -109,6 +113,7 @@ public class CacheGroupData implements Serializable {
         this.persistenceEnabled = persistenceEnabled;
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs;
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
     }
 
     /**
@@ -179,6 +184,13 @@ public class CacheGroupData implements Serializable {
      */
     public List<WalStateProposeMessage> walChangeRequests() {
         return walChangeReqs;
+    }
+
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
     }
 
     /** {@inheritDoc} */

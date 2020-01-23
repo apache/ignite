@@ -22,7 +22,7 @@ namespace Apache.Ignite.Config
     /// <summary>
     /// Parses Ignite config values.
     /// </summary>
-    internal class ConfigValueParser
+    internal static class ConfigValueParser
     {
         /// <summary>
         /// Parses provided string to int. Throws a custom exception if failed.

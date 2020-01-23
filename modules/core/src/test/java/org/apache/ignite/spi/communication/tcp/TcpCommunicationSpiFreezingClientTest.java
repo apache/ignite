@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import javax.cache.Cache;
 import java.lang.management.ManagementFactory;
 import java.util.Iterator;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
@@ -37,8 +37,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,7 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
  */
-@RunWith(JUnit4.class)
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -106,7 +103,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     @Test
     public void testFreezingClient() throws Exception {
         try {
-            final IgniteEx srv = startGrid(0);
+            final IgniteEx srv = startGrids(2);
 
             final IgniteEx client = startGrid("client");
 
@@ -126,6 +123,10 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         }
         catch (ClusterTopologyException e) {
             // Expected.
+
+            e.printStackTrace();
+
+            System.out.println(e);
         }
         finally {
             stopAllGrids();

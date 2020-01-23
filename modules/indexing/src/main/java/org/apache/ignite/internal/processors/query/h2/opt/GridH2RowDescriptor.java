@@ -89,6 +89,15 @@ public class GridH2RowDescriptor {
     }
 
     /**
+     * Gets table descriptor.
+     *
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor(){
+        return tbl;
+    }
+
+    /**
      * Update metadata of this row descriptor according to current state of type descriptor.
      */
     @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
@@ -141,7 +150,6 @@ public class GridH2RowDescriptor {
     public GridQueryTypeDescriptor type() {
         return type;
     }
-
 
     /**
      * Gets cache context info for this row descriptor.

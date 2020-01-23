@@ -64,7 +64,6 @@ public class IgniteNativeIoWithNoPersistenceTest extends GridCommonAbstractTest 
         for (int i = 0; i < 100; i++)
             cache.put(i, valueForKey(i));
 
-
         stopAllGrids();
     }
 

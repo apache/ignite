@@ -37,11 +37,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         List<IBinaryType> GetBinaryTypes();
 
         /// <summary>
-        /// Gets the schema.
-        /// </summary>
-        int[] GetSchema(int typeId, int schemaId);
-
-        /// <summary>
         /// Put binary types to Grid.
         /// </summary>
         /// <param name="types">Binary types.</param>

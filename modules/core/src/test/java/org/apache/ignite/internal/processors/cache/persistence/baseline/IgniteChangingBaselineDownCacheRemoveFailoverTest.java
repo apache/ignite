@@ -93,6 +93,7 @@ public class IgniteChangingBaselineDownCacheRemoveFailoverTest extends GridCache
 
         startGrid(GRIDS_COUNT);
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).active(true);
 
         awaitPartitionMapExchange();

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Process
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -147,18 +146,18 @@ namespace Apache.Ignite.Core.Tests.Process
             // Add test dll path
             args = args.Concat(new[] {"-assembly=" + GetType().Assembly.Location}).ToArray();
 
-            _proc = Start(ExePath, IgniteHome.Resolve(null), outReader, args);
+            _proc = Start(ExePath, IgniteHome.Resolve(), outReader, args);
         }
 
         /// <summary>
         /// Starts a grid process.
         /// </summary>
         /// <param name="exePath">Exe path.</param>
-        /// <param name="ggHome">Ignite home.</param>
+        /// <param name="igniteHome">Ignite home.</param>
         /// <param name="outReader">Output reader.</param>
         /// <param name="args">Arguments.</param>
         /// <returns>Started process.</returns>
-        public static Process Start(string exePath, string ggHome, IIgniteProcessOutputReader outReader = null, 
+        public static Process Start(string exePath, string igniteHome, IIgniteProcessOutputReader outReader = null,
             params string[] args)
         {
             Debug.Assert(!string.IsNullOrEmpty(exePath));
@@ -179,8 +178,8 @@ namespace Apache.Ignite.Core.Tests.Process
                 RedirectStandardError = true
             };
 
-            if (ggHome != null)
-                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = ggHome;
+            if (!string.IsNullOrWhiteSpace(igniteHome))
+                procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = igniteHome;
 
             procStart.EnvironmentVariables[Classpath.EnvIgniteNativeTestClasspath] = "true";
 
@@ -197,20 +196,9 @@ namespace Apache.Ignite.Core.Tests.Process
             Debug.Assert(proc != null);
 
             // 3. Attach output readers to avoid hangs.
-            AttachProcessConsoleReader(proc, outReader);
+            proc.AttachProcessConsoleReader(outReader ?? DfltOutReader);
 
             return proc;
-        }
-
-        /// <summary>
-        /// Attaches the process console reader.
-        /// </summary>
-        public static void AttachProcessConsoleReader(Process proc, IIgniteProcessOutputReader outReader = null)
-        {
-            outReader = outReader ?? DfltOutReader;
-
-            Attach(proc, proc.StandardOutput, outReader, false);
-            Attach(proc, proc.StandardError, outReader, true);
         }
 
         /// <summary>
@@ -284,22 +272,6 @@ namespace Apache.Ignite.Core.Tests.Process
             exitCode = 0;
 
             return false;
-        }
-
-        /// <summary>
-        /// Attach output reader to the process.
-        /// </summary>
-        /// <param name="proc">Process.</param>
-        /// <param name="reader">Process stream reader.</param>
-        /// <param name="outReader">Output reader.</param>
-        /// <param name="err">Whether this is error stream.</param>
-        private static void Attach(Process proc, StreamReader reader, IIgniteProcessOutputReader outReader, bool err)
-        {
-            new Thread(() =>
-            {
-                while (!proc.HasExited)
-                    outReader.OnOutput(proc, reader.ReadLine(), err);
-            }) {IsBackground = true}.Start();
         }
     }
 }

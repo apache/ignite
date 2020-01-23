@@ -873,7 +873,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testGetOrCreate() throws Exception {
         try {
@@ -935,7 +935,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testGetOrCreateCollection() throws Exception {
         final int cacheCnt = 3;

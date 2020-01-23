@@ -442,6 +442,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             false,
             null,
             false,
+            false,
             DFLT_ALLOW_ATOMIC_OPS_IN_TX)
             : opCtx.keepBinary();
 
@@ -1044,13 +1045,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeGridUuid(out, id);
-            out.writeLong(idx);
+            out.writeObject(idx);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             id = U.readGridUuid(in);
-            idx = in.readLong();
+            idx = (Long)in.readObject();
         }
     }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.cluster.ClusterState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -167,14 +168,26 @@ public enum GridRestCommand {
     @Deprecated
     CLUSTER_INACTIVE("inactive"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#ACTIVE} instead. */
+    @Deprecated
     CLUSTER_ACTIVATE("activate"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_SET_STATE} with {@link ClusterState#INACTIVE} instead. */
+    @Deprecated
     CLUSTER_DEACTIVATE("deactivate"),
 
-    /** */
+    /** @deprecated Use {@link #CLUSTER_STATE} instead. */
+    @Deprecated
     CLUSTER_CURRENT_STATE("currentstate"),
+
+    /** */
+    CLUSTER_NAME("clustername"),
+
+    /** */
+    CLUSTER_STATE("state"),
+
+    /** */
+    CLUSTER_SET_STATE("setstate"),
 
     /** */
     BASELINE_CURRENT_STATE("baseline"),
