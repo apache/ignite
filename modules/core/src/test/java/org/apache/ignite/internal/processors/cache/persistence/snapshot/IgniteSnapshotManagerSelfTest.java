@@ -709,6 +709,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testClusterSnapshot() throws Exception {
+
+    }
+
+    /**
      * @param src Source node to calculate.
      * @param grps Groups to collect owning parts.
      * @param rmtNodeId Remote node id.
