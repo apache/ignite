@@ -1007,7 +1007,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 conflictPutMap = F.viewReadOnly((Map)invokeMap,
                     new IgniteClosure<EntryProcessor, GridCacheDrInfo>() {
                         @Override public GridCacheDrInfo apply(EntryProcessor o) {
-                            return new GridCacheDrInfo(o, ctx.versions().next(opCtx.dataCenterId()));
+                            return new GridCacheDrInfo(o, nextVersion(opCtx.dataCenterId()));
                         }
                     });
 
@@ -1018,7 +1018,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 conflictRmvMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheVersion>() {
                     @Override public GridCacheVersion apply(V o) {
-                        return ctx.versions().next(opCtx.dataCenterId());
+                        return nextVersion(opCtx.dataCenterId());
                     }
                 });
 
@@ -1029,7 +1029,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 conflictPutMap = F.viewReadOnly((Map)map, new IgniteClosure<V, GridCacheDrInfo>() {
                     @Override public GridCacheDrInfo apply(V o) {
-                        return new GridCacheDrInfo(ctx.toCacheObject(o), ctx.versions().next(opCtx.dataCenterId()));
+                        return new GridCacheDrInfo(ctx.toCacheObject(o), nextVersion(opCtx.dataCenterId()));
                     }
                 });
 
@@ -1212,17 +1212,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             assert dcId != null;
 
             if (op == UPDATE) {
-                conflictPutVal = new GridCacheDrInfo(ctx.toCacheObject(val), ctx.versions().next(dcId));
+                conflictPutVal = new GridCacheDrInfo(ctx.toCacheObject(val), nextVersion(dcId));
 
                 val0 = null;
             }
             else if (op == GridCacheOperation.TRANSFORM) {
-                conflictPutVal = new GridCacheDrInfo(proc, ctx.versions().next(dcId));
+                conflictPutVal = new GridCacheDrInfo(proc, nextVersion(dcId));
 
                 val0 = null;
             }
             else
-                conflictRmvVer = ctx.versions().next(dcId);
+                conflictRmvVer = nextVersion(dcId);
         }
 
         CacheEntryPredicate[] filters = CU.filterArray(filter);
@@ -1310,7 +1310,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             drVers = F.transform(keys, new C1<K, GridCacheVersion>() {
                 @Override public GridCacheVersion apply(K k) {
-                    return ctx.versions().next(opCtx.dataCenterId());
+                    return nextVersion(opCtx.dataCenterId());
                 }
             });
         }
@@ -1527,7 +1527,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
                                     if (v == null) {
-                                        if (isNew && entry.markObsoleteIfEmpty(context().versions().next()))
+                                        if (isNew && entry.markObsoleteIfEmpty(nextVersion()))
                                             removeEntry(entry);
 
                                         success = false;
@@ -1896,7 +1896,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean hasNear = req.nearCache();
 
         // Assign next version for update inside entries lock.
-        GridCacheVersion ver = ctx.versions().next(top.readyTopologyVersion());
+        GridCacheVersion ver = ctx.versions().next(top.readyTopologyVersion().topologyVersion());
 
         if (hasNear)
             res.nearVersion(ver);
