@@ -1273,7 +1273,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
-            tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
+            tx.writeVersion(cctx.cacheContext(tx.txState().firstCacheId()).cache().nextVersion());
 
             TxCounters counters = tx.txCounters(true);
 

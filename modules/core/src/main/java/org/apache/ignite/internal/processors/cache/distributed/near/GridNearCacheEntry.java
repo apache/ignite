@@ -262,7 +262,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 // If we are here, then we already tried to evict this entry.
                 // If cannot evict, then update.
                 if (this.dhtVer == null) {
-                    if (!markObsolete(cctx.versions().next())) {
+                    if (!markObsolete(cctx.cache().nextVersion())) {
                         value(val);
 
                         ttlAndExpireTimeExtras((int) ttl, expireTime);

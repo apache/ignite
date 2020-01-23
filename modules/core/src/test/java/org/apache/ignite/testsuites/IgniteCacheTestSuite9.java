@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionGenerationWithCacheStorageTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
@@ -94,6 +95,9 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         suite.addTestSuite(GridLongRunningInitNewCrdFutureDiagnosticsTest.class);
 
         suite.addTestSuite(FailBackupOnAtomicOperationTest.class);
+
+        // Grid Cache Version generation coverage.
+        suite.addTestSuite(GridCacheVersionGenerationWithCacheStorageTest.class);
 
         return suite;
     }
