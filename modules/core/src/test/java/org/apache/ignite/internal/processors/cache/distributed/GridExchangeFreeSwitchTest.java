@@ -202,6 +202,25 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param idx Index.
+     * @return Started grid.
+     */
+    private Ignite startGridWithPmeFreeSwitchDisabled(int idx) throws Exception {
+        try {
+            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+
+            Ignite ignite = startGrid(idx);
+
+            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
+
+            return ignite;
+        }
+        finally {
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
+    }
+
+    /**
      * Checks if PME absents/presents on node left for fully rebalanced topology (Latest PME == LAA).
      */
     private void checkNodeLeftOnFullyRebalancedCluster() throws Exception {
@@ -308,25 +327,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
         testNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.LAST);
-    }
-
-    /**
-     * @param idx Index.
-     * @return Started grid.
-     */
-    private Ignite startGridWithPmeFreeSwitchDisabled(int idx) throws Exception {
-        try {
-            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
-
-            Ignite ignite = startGrid(idx);
-
-            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
-
-            return ignite;
-        }
-        finally {
-            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
-        }
     }
 
     /**
