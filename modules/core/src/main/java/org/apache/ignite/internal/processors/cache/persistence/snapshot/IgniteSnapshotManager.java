@@ -817,14 +817,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 snpRunner,
                 snpSndr);
 
-            snpTask.submit(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
+            IgniteInternalFuture<Void> startFut = snpTask.submit(dbMgr::addCheckpointListener,
+                dbMgr::removeCheckpointListener);
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one
             // right afther current will be completed.
             dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
 
-            snpTask.awaitStarted();
+            startFut.get();
 
             return snpTask.snapshotFuture();
         }
