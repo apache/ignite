@@ -660,22 +660,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
                 }
 
-                if (type == EVT_DISCOVERY_CUSTOM_EVT) {
-                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
-                        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
-
-                        if (list != null) {
-                            for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
-                                try {
-                                    lsnr.onCustomEvent(nextTopVer, node, customMsg);
-                                }
-                                catch (Exception e) {
-                                    U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
-                                }
-                            }
-                        }
-                    }
-                }
 
                 DiscoCache discoCache;
 
@@ -713,6 +697,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else
                     // Current version.
                     discoCache = discoCache();
+
+                if (type == EVT_DISCOVERY_CUSTOM_EVT) {
+                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
+
+                        if (list != null) {
+                            for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
+                                try {
+                                    lsnr.onCustomEvent(nextTopVer, node, customMsg);
+                                }
+                                catch (Exception e) {
+                                    U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
+                                }
+                            }
+                        }
+                    }
+                }
 
                 if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
                     if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
