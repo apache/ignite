@@ -169,28 +169,32 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         try {
             switch (order) {
                 case FIRST:
-                    break;
+                    startGridWithPmeFreeSwitchDisabled(idx++);
+
+                    startGridsMultiThreaded(idx, nodes - idx);
+                    return;
 
                 case MIDDLE:
                     idx = nodes / 2 - 1;
-                    break;
+
+                    startGridsMultiThreaded(idx, false);
+
+                    startGridWithPmeFreeSwitchDisabled(idx++);
+
+                    startGridsMultiThreaded(idx, nodes - idx);
+                    return;
 
                 case LAST:
                     idx = nodes - 1;
-                    break;
 
-                default:
-                    startGridsMultiThreaded(nodes);
+                    startGridsMultiThreaded(idx, false);
+
+                    startGridWithPmeFreeSwitchDisabled(idx);
                     return;
+
+                case NONE:
+                    startGridsMultiThreaded(nodes, false);
             }
-
-            if (idx > 0)
-                startGridsMultiThreaded(idx, false);
-
-            startGridWithPmeFreeSwitchDisabled(idx++);
-
-            if (idx < nodes)
-                startGridsMultiThreaded(idx, nodes - idx);
         }
         finally {
             checkTopology(nodes);
