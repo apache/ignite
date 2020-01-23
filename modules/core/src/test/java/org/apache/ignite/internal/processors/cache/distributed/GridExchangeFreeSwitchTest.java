@@ -166,42 +166,45 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         int nodes = 10;
         int idx = 0;
 
-        try {
-            switch (order) {
-                case FIRST:
-                    startGridWithPmeFreeSwitchDisabled(idx++);
+        switch (order) {
+            case FIRST:
+                startClusterWithPmeFreeSwitchDisabled(nodes, idx);
+                break;
 
-                    startGridsMultiThreaded(idx, nodes - idx);
+            case MIDDLE:
+                idx = nodes / 2 - 1;
 
-                    return;
+                startClusterWithPmeFreeSwitchDisabled(nodes, idx);
+                break;
 
-                case MIDDLE:
-                    idx = nodes / 2 - 1;
+            case LAST:
+                idx = nodes - 1;
 
-                    startGridsMultiThreaded(idx, false);
+                startClusterWithPmeFreeSwitchDisabled(nodes, idx);
+                break;
 
-                    startGridWithPmeFreeSwitchDisabled(idx++);
-
-                    startGridsMultiThreaded(idx, nodes - idx);
-
-                    return;
-
-                case LAST:
-                    idx = nodes - 1;
-
-                    startGridsMultiThreaded(idx, false);
-
-                    startGridWithPmeFreeSwitchDisabled(idx);
-
-                    return;
-
-                case NONE:
-                    startGridsMultiThreaded(nodes, false);
-            }
+            case NONE:
+                startGridsMultiThreaded(nodes, false);
+                break;
         }
-        finally {
-            checkTopology(nodes);
-        }
+
+        checkTopology(nodes);
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param idx Index node will be starts with JVM option IGNITE_PME_FREE_SWITCH_DISABLED.
+     */
+    private void startClusterWithPmeFreeSwitchDisabled(int nodes, int idx) throws Exception {
+        assert 0 <= idx && idx < nodes;
+
+        if (idx > 0)
+            startGridsMultiThreaded(idx, false);
+
+        startGridWithPmeFreeSwitchDisabled(idx++);
+
+        if (idx < nodes)
+            startGridsMultiThreaded(idx, nodes - idx);
     }
 
     /**
