@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
@@ -105,18 +104,12 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     @GridToStringInclude
     private final Map<String, IgniteInternalFuture> offheapClearTasks = new ConcurrentHashMap<>();
 
-    /** Requests to switch a partition from read-only mode to normal mode. */
-    private final Map<Long, IgniteInternalFuture> activatePartRequests = new ConcurrentHashMap<>();
-
-    /** Cancel callback invoked when routine is aborted. */
-    private final IgniteRunnable abortCb;
-
     /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
 
     /** */
     public FileRebalanceRoutine() {
-        this(null, null, null, null, 0, null);
+        this(null, null, null, null, 0);
 
         onDone(true);
     }
@@ -127,20 +120,17 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cctx Cache shared context.
      * @param exchId Exchange ID.
      * @param rebalanceId Rebalance ID
-     * @param abortCb Abort callback to handle the abortion process from the outside.
      */
     public FileRebalanceRoutine(
         Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
-        long rebalanceId,
-        IgniteRunnable abortCb
+        long rebalanceId
     ) {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
-        this.abortCb = abortCb;
 
         orderedAssgnments = assigns;
         topVer = startVer;
@@ -285,9 +275,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param partId Partition ID.
      */
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
-        if (isDone())
-            return;
-
         try {
             awaitCleanupIfNeeded(grpId);
 
@@ -308,23 +295,17 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             IgniteInternalFuture<Long> fut = cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone);
 
-            activatePartRequests.put(uniquePartId(grpId, partId), fut);
-
             fut.listen(f -> {
-                try {
-                    activatePartRequests.remove(uniquePartId(grpId, partId));
+                    try {
+                        if (!f.isCancelled())
+                            onPartitionSnapshotRestored(grpId, partId, f.get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
 
-                    onPartitionSnapshotRestored(grpId, partId, f.get());
-                }
-                catch (IgniteFutureCancelledCheckedException ignored) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
-
-                    onDone(e);
-                }
-            });
+                        onDone(e);
+                    }
+                });
 
             if (receivedCnt.incrementAndGet() == partsToNodes.size()) {
                 // All partition files are received and it is necessary to force checkpoint
@@ -448,18 +429,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                     snapFut.cancel();
                 }
-
-                // todo cancel should be synchronous
-                abortCb.run();
-
-//                for (IgniteInternalFuture fut : activatePartRequests.values()) {
-//                    // todo should wait cpReqFut here but not whole request (deadlock possible)
-//                    if (!fut.cancel())
-//                        log.warning("Partition request cannot be cancelled [req=" + fut + "]");
-//
-////                    if (!fut.isDone() && !fut.cancel())
-////                        fut.get();
-//                }
 
                 if (err == null) {
                     // Should await until off-heap cleanup is finished.

@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -42,7 +39,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
@@ -248,7 +244,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             // Start new rebalance session.
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
-                exchFut.exchangeId(), rebalanceId, cpLsnr::cancelAll);
+                exchFut.exchangeId(), rebalanceId);
 
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
@@ -374,18 +370,15 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      *
      * @param grpId Cache group ID.
      * @param partId Partition ID.
-     * @param cancelPred Cancel predicate.
+     * @param skipPred Boolean predicate to be able conditionally skip partition change mode.
      * @return Future that will be done when partition mode changed.
      */
-    public IgniteInternalFuture<Long> changePartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> cancelPred) {
+    public IgniteInternalFuture<Long> changePartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> skipPred) {
         GridFutureAdapter<Long> endFut = new GridFutureAdapter<>();
 
         cpLsnr.schedule(() -> {
-            if (cancelPred.apply()) {
-                endFut.onDone(-1L);
-
+            if (skipPred.apply())
                 return;
-            }
 
             final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -532,7 +525,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /** */
     private static class CheckpointListener implements DbCheckpointListener {
         /** Queue. */
-        private final ConcurrentLinkedQueue<CheckpointTask> queue = new ConcurrentLinkedQueue<>();
+        private final ConcurrentLinkedQueue<Runnable> queue = new ConcurrentLinkedQueue<>();
 
         /** {@inheritDoc} */
         @Override public void onMarkCheckpointBegin(Context ctx) {
@@ -552,53 +545,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             // No-op.
         }
 
-        /** */
-        public void cancelAll() {
-            List<CheckpointTask> tasks = new ArrayList<>(queue);
-
-            queue.clear();
-
-            for (CheckpointTask task : tasks)
-                task.fut.onDone();
-        }
-
         /**
          * @param task Task to execute.
          */
-        public IgniteInternalFuture<Void> schedule(final Runnable task) {
-            CheckpointTask<Void> cpTask = new CheckpointTask<>(() -> {
-                task.run();
-
-                return null;
-            });
-
-            queue.offer(cpTask);
-
-            return cpTask.fut;
-        }
-
-        /** */
-        private static class CheckpointTask<R> implements Runnable {
-            /** */
-            final GridFutureAdapter<R> fut = new GridFutureAdapter<>();
-
-            /** */
-            final Callable<R> task;
-
-            /** */
-            CheckpointTask(Callable<R> task) {
-                this.task = task;
-            }
-
-            /** {@inheritDoc} */
-            @Override public void run() {
-                try {
-                    fut.onDone(task.call());
-                }
-                catch (Exception e) {
-                    fut.onDone(e);
-                }
-            }
+        public void schedule(final Runnable task) {
+            queue.offer(task);
         }
     }
 
