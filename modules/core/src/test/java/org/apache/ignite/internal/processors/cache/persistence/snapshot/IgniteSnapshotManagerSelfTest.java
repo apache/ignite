@@ -75,9 +75,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -713,7 +716,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterSnapshot() throws Exception {
+        IgniteEx ig0 = startGridsWithCache(3, defaultCacheCfg, CACHE_KEYS_RANGE);
 
+        IgniteFuture<Void> fut = ig0.snapshot()
+            .createSnapshot("snapshot0", Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
+
+        fut.get();
     }
 
     /**
@@ -749,10 +757,21 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     private IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg, int range) throws Exception {
+        return startGridsWithCache(1, ccfg, range);
+    }
+
+    /**
+     * @param cnt Number of grids to start.
+     * @param ccfg Default cache configuration.
+     * @param range Range of cache keys to insert.
+     * @return Ignite instance.
+     * @throws Exception If fails.
+     */
+    private IgniteEx startGridsWithCache(int cnt, CacheConfiguration<Integer, Integer> ccfg, int range) throws Exception {
         defaultCacheCfg = ccfg;
 
         // Start grid node with data before each test.
-        IgniteEx ig = startGrid(0);
+        IgniteEx ig = startGrids(cnt);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
@@ -760,13 +779,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < range; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        CheckpointProgress cpFut = ig.context()
-            .cache()
-            .context()
-            .database()
-            .forceCheckpoint("the next one");
+        GridCompoundFuture<?, ?> cpFuts = new GridCompoundFuture<>();
 
-        cpFut.futureFor(CheckpointState.FINISHED).get();
+        for (int i = 0; i < cnt; i++) {
+            GridFutureAdapter cpFut = grid(i).context()
+                .cache()
+                .context()
+                .database()
+                .forceCheckpoint("the next one")
+                .futureFor(CheckpointState.FINISHED);
+
+            cpFuts.add(cpFut);
+        }
+
+        cpFuts.markInitialized();
+
+        cpFuts.get();
 
         return ig;
     }

@@ -86,7 +86,7 @@ public class InitMessage<I extends Serializable>  implements DiscoveryCustomMess
     /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
-        return null;
+        return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
     }
 
     /** @return Process id. */
