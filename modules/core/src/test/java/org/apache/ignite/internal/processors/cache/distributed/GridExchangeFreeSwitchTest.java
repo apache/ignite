@@ -268,7 +268,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      * possible to perform switch since primaries can't change.
      */
     @Test
-    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeAbsent() throws Exception {
+    public void testBaselineNodeLeftOnFullyRebalancedClusterAllNodesSupportPmeFreeSwitch() throws Exception {
         testBaselineNodeLeftOnFullyRebalancedCluster(NodeIndexChoice.NONE);
     }
 
