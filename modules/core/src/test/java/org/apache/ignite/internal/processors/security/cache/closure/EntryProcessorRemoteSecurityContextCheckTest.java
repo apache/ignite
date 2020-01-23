@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.cache.closure;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
@@ -41,9 +40,6 @@ import static org.apache.ignite.Ignition.localIgnite;
  */
 @RunWith(JUnit4.class)
 public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
-    /** Entry processor operation. */
-    private static final String OPERATION_ENTRY_PROC = "entry_proc";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -61,15 +57,6 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
         G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, OPERATION_ENTRY_PROC,  1)
-            .expectCheck(SRV_CHECK, 1)
-            .expectEndpoint(SRV_ENDPOINT, 1)
-            .expectEndpoint(CLNT_ENDPOINT, 1);
-    }
-
     /** */
     @Test
     public void test() {
@@ -78,13 +65,13 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToRun() {
-        return Collections.singletonList(nodeId(SRV_RUN));
+    @Override protected Collection<String> nodesToRun() {
+        return Collections.singletonList(SRV_RUN);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToCheck() {
-        return Collections.singletonList(nodeId(SRV_CHECK));
+    @Override protected Collection<String> nodesToCheck() {
+        return Collections.singletonList(SRV_CHECK);
     }
 
     /**
@@ -102,6 +89,6 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
             () -> localIgnite().<Integer, Integer>cache(CACHE_NAME)
                 .invokeAllAsync(singleton(key), createRunner()).get()
-        ).map(r -> new RegisterExecAndForward<>(OPERATION_ENTRY_PROC, r, endpoints()));
+        ).map(r -> new RegisterExecAndForward<>(OPERATION_START, r, endpointIds()));
     }
 }

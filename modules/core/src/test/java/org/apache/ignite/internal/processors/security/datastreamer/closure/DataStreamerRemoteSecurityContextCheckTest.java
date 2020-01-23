@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.datastreamer.closure;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterState;
@@ -40,9 +39,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
-    /** Data streamer operation. */
-    private static final String OPERATION_DATA_STREAMER = "data_streamer";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -60,23 +56,14 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
         G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, OPERATION_DATA_STREAMER, 1)
-            .expectCheck(SRV_CHECK, 1)
-            .expectEndpoint(SRV_ENDPOINT, 1)
-            .expectEndpoint(CLNT_ENDPOINT, 1);
-    }
-
     /** */
     @Test
     public void testDataStreamer() {
         IgniteRunnable op = () -> {
-            VERIFIER.register(OPERATION_DATA_STREAMER);
+            VERIFIER.register(OPERATION_START);
 
             try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
-                strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpoints())));
+                strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpointIds())));
 
                 strm.addData(primaryKey(grid(SRV_CHECK)), 100);
             }
@@ -87,12 +74,12 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToRun() {
-        return Collections.singletonList(nodeId(SRV_RUN));
+    @Override protected Collection<String> nodesToRun() {
+        return Collections.singletonList(SRV_RUN);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToCheck() {
-        return Collections.singletonList(nodeId(SRV_CHECK));
+    @Override protected Collection<String> nodesToCheck() {
+        return Collections.singletonList(SRV_CHECK);
     }
 }

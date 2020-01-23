@@ -38,9 +38,6 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
-    /** Executor service operation. */
-    private static final String OPERATION_EXECUTOR_SERVICE = "executor_service";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -62,26 +59,15 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
         G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, OPERATION_EXECUTOR_SERVICE, 1)
-            .expect(CLNT_RUN, OPERATION_EXECUTOR_SERVICE, 1)
-            .expectCheck(SRV_CHECK, 2)
-            .expectCheck(CLNT_CHECK, 2)
-            .expectEndpoint(SRV_ENDPOINT, 4)
-            .expectEndpoint(CLNT_ENDPOINT, 4);
-    }
-
     /** */
     @Test
     public void test() {
         IgniteRunnableX operation = () -> {
-            VERIFIER.register(OPERATION_EXECUTOR_SERVICE);
+            VERIFIER.register(OPERATION_START);
 
             Ignite loc = Ignition.localIgnite();
 
-            for (UUID nodeId : nodesToCheck()) {
+            for (UUID nodeId : nodesToCheckIds()) {
                 ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
                 svc.submit((Runnable) createRunner()).get();

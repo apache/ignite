@@ -61,9 +61,6 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
     /** */
     private static final CyclicBarrier BARRIER = new CyclicBarrier(2);
 
-    /** Cancel operation. */
-    private static final String OPERATION_CANCEL = "cancel";
-
     /** {@inheritDoc} */
     @Override protected void setupVerifier(Verifier verifier) {
         // No-op.
@@ -131,7 +128,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
     private void checkCancel(IgniteEx initator, IgniteEx rmt, Consumer<IgniteFuture> consumer) throws Exception {
         VERIFIER
             .initiator(initator)
-            .expect(rmt.name(), OPERATION_CANCEL, 1);
+            .expect(rmt.name(), OPERATION_START, 1);
 
         BARRIER.reset();
         CANCELED.set(false);
@@ -161,7 +158,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
                     private Ignite loc;
 
                     @Override public void cancel() {
-                        VERIFIER.register((IgniteEx)loc, OPERATION_CANCEL);
+                        VERIFIER.register((IgniteEx)loc, OPERATION_START);
 
                         CANCELED.set(true);
                     }

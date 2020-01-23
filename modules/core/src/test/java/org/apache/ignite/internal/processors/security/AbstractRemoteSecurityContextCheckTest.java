@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -73,6 +74,9 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /** Verifier to check results of tests. */
     protected static final Verifier VERIFIER = new Verifier();
 
+    /** Start operation. */
+    protected static final String OPERATION_START = "start";
+
     /** Check operation. */
     protected static final String OPERATION_CHECK = "check";
 
@@ -89,22 +93,43 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /**
      * @return Collection of feature call nodes ids.
      */
-    protected Collection<UUID> nodesToRun() {
-        return Arrays.asList(nodeId(SRV_RUN), nodeId(CLNT_RUN));
+    protected final Collection<UUID> nodesToRunIds() {
+        return nodesToRun().stream().map(this::nodeId).collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of feature call nodes names.
+     */
+    protected Collection<String> nodesToRun() {
+        return Arrays.asList(SRV_RUN, CLNT_RUN);
     }
 
     /**
      * @return Collection of feature transit nodes ids.
      */
-    protected Collection<UUID> nodesToCheck() {
-        return Arrays.asList(nodeId(SRV_CHECK), nodeId(CLNT_CHECK));
+    protected final Collection<UUID> nodesToCheckIds() {
+        return nodesToCheck().stream().map(this::nodeId).collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of feature transit nodes names.
+     */
+    protected Collection<String> nodesToCheck() {
+        return Arrays.asList(SRV_CHECK, CLNT_CHECK);
     }
 
     /**
      * @return Collection of endpont nodes ids.
      */
-    protected Collection<UUID> endpoints() {
-        return Arrays.asList(nodeId(SRV_ENDPOINT), nodeId(CLNT_ENDPOINT));
+    protected final Collection<UUID> endpointIds() {
+        return endpoints().stream().map(this::nodeId).collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of endpont nodes names.
+     */
+    protected Collection<String> endpoints() {
+        return Arrays.asList(SRV_ENDPOINT, CLNT_ENDPOINT);
     }
 
     /**
@@ -118,7 +143,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /**
      * Setups expected behavior to passed verifier.
      */
-    protected abstract void setupVerifier(Verifier verifier);
+    protected void setupVerifier(final Verifier verifier) {
+        Collection<String> toRuns = nodesToRun();
+
+        Collection<String> toChecks = nodesToCheck();
+
+        toRuns.forEach(n -> verifier.expect(n, OPERATION_START, 1));
+        toChecks.forEach(n -> verifier.expect(n, OPERATION_CHECK, toRuns.size()));
+        endpoints().forEach(n -> verifier.expect(n, OPERATION_ENDPOINT, toChecks.size() * toRuns.size()));
+    }
 
     /**
      * @param initiator Node that initiates an execution.
@@ -140,7 +173,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
             setupVerifier(VERIFIER);
 
-            compute(initiator, nodesToRun()).broadcast(r);
+            compute(initiator, nodesToRunIds()).broadcast(r);
 
             VERIFIER.checkResult();
         });
@@ -172,28 +205,6 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             errors.clear();
 
             expSecSubjId = null;
-        }
-
-        /**
-         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
-         * name and {@link #OPERATION_CHECK} operation.
-         *
-         * @param nodeName Node name.
-         * @param num Expected number of invokes.
-         */
-        public Verifier expectCheck(String nodeName, int num) {
-            return expect(nodeName, OPERATION_CHECK, num);
-        }
-
-        /**
-         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
-         * name and {@link #OPERATION_ENDPOINT} operation.
-         *
-         * @param nodeName Node name.
-         * @param num Expected number of invokes.
-         */
-        public Verifier expectEndpoint(String nodeName, int num) {
-            return expect(nodeName, OPERATION_ENDPOINT, num);
         }
 
         /**
@@ -305,12 +316,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
     /** */
     protected <K, V> RegisterExecAndForward<K, V> createRunner(String srvName) {
-        return new RegisterExecAndForward<>(srvName, endpoints());
+        return new RegisterExecAndForward<>(srvName, endpointIds());
     }
 
     /** */
     protected <K, V> RegisterExecAndForward<K, V> createRunner() {
-        return new RegisterExecAndForward<>(endpoints());
+        return new RegisterExecAndForward<>(endpointIds());
     }
 
     /** */

@@ -47,9 +47,6 @@ import static org.apache.ignite.Ignition.localIgnite;
  * security context is the initiator context.
  */
 public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
-    /** Compute task operation. */
-    private static final String OPERATION_COMPUTE_TASK = "compute_task";
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV_INITIATOR);
@@ -71,17 +68,6 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
         G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, OPERATION_COMPUTE_TASK, 1)
-            .expect(CLNT_RUN, OPERATION_COMPUTE_TASK, 1)
-            .expectCheck(SRV_CHECK, 2)
-            .expectCheck(CLNT_CHECK, 2)
-            .expectEndpoint(SRV_ENDPOINT, 4)
-            .expectEndpoint(CLNT_ENDPOINT, 4);
-    }
-
     /** */
     @Test
     public void test() {
@@ -95,14 +81,14 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
             () -> {
-                VERIFIER.register(OPERATION_COMPUTE_TASK);
+                VERIFIER.register(OPERATION_START);
 
-                localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0);
+                localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0);
             },
             () -> {
-                VERIFIER.register(OPERATION_COMPUTE_TASK);
+                VERIFIER.register(OPERATION_START);
 
-                localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheck(), endpoints()), 0).get();
+                localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0).get();
             }
         );
     }

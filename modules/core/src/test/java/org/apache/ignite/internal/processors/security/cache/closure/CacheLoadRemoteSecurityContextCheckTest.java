@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security.cache.closure;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,9 +42,6 @@ import static org.apache.ignite.Ignition.localIgnite;
 public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
     /** Transition load cache. */
     private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";
-
-    /** Load cache operation. */
-    private static final String OPERATION_LOAD_CACHE = "load_cache";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -78,23 +74,14 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
         };
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, OPERATION_LOAD_CACHE, 1)
-            .expectCheck(SRV_CHECK, 1)
-            .expectEndpoint(SRV_ENDPOINT, 1)
-            .expectEndpoint(CLNT_ENDPOINT, 1);
-    }
-
     /** */
     @Test
     public void test() {
         IgniteRunnable operation = () -> {
-            VERIFIER.register(OPERATION_LOAD_CACHE);
+            VERIFIER.register(OPERATION_START);
 
             localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(
-                new RegisterExecAndForward<>(SRV_CHECK, endpoints())
+                new RegisterExecAndForward<>(SRV_CHECK, endpointIds())
             );
         };
 
@@ -103,12 +90,12 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToRun() {
-        return Collections.singletonList(nodeId(SRV_RUN));
+    @Override protected Collection<String> nodesToRun() {
+        return Collections.singletonList(SRV_RUN);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToCheck() {
-        return Collections.singletonList(nodeId(SRV_CHECK));
+    @Override protected Collection<String> nodesToCheck() {
+        return Collections.singletonList(SRV_CHECK);
     }
 }
