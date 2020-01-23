@@ -765,14 +765,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         synchronized (snpOpMux) {
             assert clusterSnpFut == null || clusterSnpFut.id.equals(id);
 
-            if (!F.isEmpty(err) && clusterSnpTask != null)
+            SnapshotTask task0 = clusterSnpTask;
+
+            if (!F.isEmpty(err) && task0 != null)
                 IgniteUtils.delete(snapshotLocalDir(clusterSnpTask.snapshotName()).toPath());
 
             clusterSnpTask = null;
 
             if (clusterSnpFut != null) {
-                if (F.isEmpty(err))
+                if (F.isEmpty(err)) {
                     clusterSnpFut.onDone();
+
+                    if (log.isInfoEnabled())
+                        log.info("Cluster-wide snapshot operation finished successfully [snpName=" + task0.snapshotName() + ']');
+                }
                 else {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation has been failed due to an error " +
                         "on remote nodes [err=" + err + ']'));
@@ -811,6 +817,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             clusterSnpFut = clsFut;
 
             takeSnpProc.start(clsFut.id, new SnapshotOperationRequest(name, grps));
+
+            if(log.isInfoEnabled())
+                log.info("Cluster-wide snapshot operation started [snpName=" + name + ", gprs=" + grps + ']');
 
             return new IgniteFutureImpl<>(clsFut);
         }

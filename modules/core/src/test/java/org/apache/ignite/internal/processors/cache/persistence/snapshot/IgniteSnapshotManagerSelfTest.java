@@ -31,10 +31,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -97,6 +99,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  *
  */
 public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final Random RAND = new Random();
+
     /** */
     private static final FileIOFactory DFLT_IO_FACTORY = new RandomAccessFileIOFactory();
 
@@ -715,13 +720,30 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     @Test
-    public void testClusterSnapshot() throws Exception {
-        IgniteEx ig0 = startGridsWithCache(3, defaultCacheCfg, CACHE_KEYS_RANGE);
+    public void testClusterSnapshotUnderLoad() throws Exception {
+        int grids = 3;
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteEx ig0 = startGridsWithCache(grids, defaultCacheCfg, CACHE_KEYS_RANGE);
+
+        // Start cache load
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!Thread.currentThread().isInterrupted() || !stop.get()) {
+                int idx = RAND.nextInt(grids);
+
+                grid(idx).cache(DEFAULT_CACHE_NAME).put(RAND.nextInt(), RAND.nextInt());
+            }
+        }, 3, "Cache-put-");
 
         IgniteFuture<Void> fut = ig0.snapshot()
-            .createSnapshot("snapshot0", Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
+            .createSnapshot("backup23012020", Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
-        fut.get();
+        try {
+            fut.get();
+        }
+        finally {
+            stop.set(true);
+        }
     }
 
     /**
