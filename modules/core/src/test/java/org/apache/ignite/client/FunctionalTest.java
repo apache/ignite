@@ -22,12 +22,16 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -275,6 +279,111 @@ public class FunctionalTest {
             Person cachedVal = cache.get(key);
 
             assertEquals(val, cachedVal);
+        }
+    }
+
+    /**
+     * Test cache operations with different data types.
+     */
+    @Test
+    public void testDataTypes() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Object, Object> cache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+            Person person = new Person(1, "name");
+
+            // Primitive and built-in types.
+            checkDataType(cache, (byte)1);
+            checkDataType(cache, (short)1);
+            checkDataType(cache, 1);
+            checkDataType(cache, 1L);
+            checkDataType(cache, 1.0f);
+            checkDataType(cache, 1.0d);
+            checkDataType(cache, 'c');
+            checkDataType(cache, true);
+            checkDataType(cache, "string");
+            checkDataType(cache, UUID.randomUUID());
+            checkDataType(cache, new Date());
+
+            // Enum.
+            checkDataType(cache, CacheAtomicityMode.ATOMIC);
+
+            // Binary object.
+            checkDataType(cache, person);
+
+            // Arrays.
+            checkDataType(cache, new byte[] {(byte)1});
+            checkDataType(cache, new short[] {(short)1});
+            checkDataType(cache, new int[] {1});
+            checkDataType(cache, new long[] {1L});
+            checkDataType(cache, new float[] {1.0f});
+            checkDataType(cache, new double[] {1.0d});
+            checkDataType(cache, new char[] {'c'});
+            checkDataType(cache, new boolean[] {true});
+            checkDataType(cache, new String[] {"string"});
+            checkDataType(cache, new UUID[] {UUID.randomUUID()});
+            checkDataType(cache, new Date[] {new Date()});
+            checkDataType(cache, new int[][] {new int[] {1}});
+
+            checkDataType(cache, new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
+
+            checkDataType(cache, new Person[] {person});
+            checkDataType(cache, new Person[][] {new Person[] {person}});
+            checkDataType(cache, new Object[] {1, "string", person, new Person[] {person}});
+
+            // Lists.
+            checkDataType(cache, Arrays.asList(person, person));
+            checkDataType(cache, new ArrayList<>(Arrays.asList(person, person)));
+            checkDataType(cache, new LinkedList<>(Arrays.asList(person, person)));
+            checkDataType(cache, Arrays.asList(Arrays.asList(person, person), person));
+            checkDataType(cache, Collections.singletonList(person));
+            checkDataType(cache, Collections.emptyList());
+
+            // Sets.
+            checkDataType(cache, new HashSet<>(Arrays.asList(1, 2)));
+            checkDataType(cache, new HashSet<>(Arrays.asList(Arrays.asList(person, person), person)));
+            checkDataType(cache, new HashSet<>(new ArrayList<>(Arrays.asList(Arrays.asList(person, person), person))));
+            checkDataType(cache, Collections.singleton(person));
+            checkDataType(cache, Collections.emptySet());
+
+            // Maps.
+            checkDataType(cache, F.asMap(1, person));
+            checkDataType(cache, new HashMap<>(F.asMap(1, person)));
+            checkDataType(cache, Collections.emptyMap());
+            checkDataType(cache, Collections.singletonMap(1, person));
+        }
+    }
+
+    /**
+     * Check that we get the same value from the cache as we put before.
+     *
+     * @param cache Cache.
+     * @param obj Value of data type to check.
+     */
+    private void checkDataType(ClientCache<Object, Object> cache, Object obj) {
+        Integer key = 1;
+
+        cache.put(key, obj);
+
+        assertTrue(cache.containsKey(key));
+
+        Object cachedObj = cache.get(key);
+
+        if (obj instanceof Object[])
+            assertArrayEquals((Object[])obj, (Object[])cachedObj);
+        else if (U.isPrimitiveArray(obj))
+            assertArrayEquals(new Object[] {obj}, new Object[] {cachedObj}); // Hack to compare primitive arrays.
+        else
+            assertEquals(obj, cachedObj);
+
+        if (!obj.getClass().isArray()) { // TODO IGNITE-12578
+            // Server-side comparison with the original object.
+            assertTrue(cache.replace(key, obj, obj));
+
+            // Server-side comparison with the restored object.
+            assertTrue(cache.remove(key, cachedObj));
         }
     }
 
