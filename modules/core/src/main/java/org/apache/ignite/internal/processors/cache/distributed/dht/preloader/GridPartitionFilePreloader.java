@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -48,11 +47,9 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteOutClosure;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
@@ -244,7 +241,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             // Start new rebalance session.
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
-                exchFut.exchangeId(), rebalanceId);
+                exchFut.exchangeId(), rebalanceId, cpLsnr::schedule);
 
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
@@ -363,57 +360,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         }
 
         return false;
-    }
-
-    /**
-     * Schedule partition mode switch to enable updates.
-     *
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     * @param skipPred Boolean predicate to be able conditionally skip partition change mode.
-     * @return Future that will be done when partition mode changed.
-     */
-    public IgniteInternalFuture<Long> changePartitionMode(int grpId, int partId, IgniteOutClosure<Boolean> skipPred) {
-        GridFutureAdapter<Long> endFut = new GridFutureAdapter<>();
-
-        cpLsnr.schedule(() -> {
-            if (skipPred.apply())
-                return;
-
-            final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            // Cache was concurrently destroyed.
-            if (grp == null)
-                return;
-
-            GridDhtLocalPartition part = grp.topology().localPartition(partId);
-
-            assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
-
-            // Save current counter.
-            PartitionUpdateCounter readCntr = ((GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
-
-            // Save current update counter.
-            PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
-
-            part.readOnly(false);
-
-            AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
-
-            IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
-
-            // Operations that are in progress now will be lost and should be included in historical rebalancing.
-            // These operations can update the old update counter or the new update counter, so the maximum applied
-            // counter is used after all updates are completed.
-            partReleaseFut.listen(c -> {
-                    long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
-
-                    cctx.kernalContext().getSystemExecutorService().submit(() -> endFut.onDone(hwm));
-                }
-            );
-        });
-
-        return endFut;
     }
 
     /**

@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,7 +43,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -107,9 +112,12 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Snapshot future. */
     private volatile IgniteInternalFuture<Boolean> snapFut;
 
+    /** Checkpoint listener. */
+    private final Consumer<Runnable> cpLsnr;
+
     /** */
     public FileRebalanceRoutine() {
-        this(null, null, null, null, 0);
+        this(null, null, null, null, 0, null);
 
         onDone(true);
     }
@@ -120,17 +128,20 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cctx Cache shared context.
      * @param exchId Exchange ID.
      * @param rebalanceId Rebalance ID
+     * @param cpLsnr Checkpoint listener.
      */
     public FileRebalanceRoutine(
         Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
-        long rebalanceId
+        long rebalanceId,
+        Consumer<Runnable> cpLsnr
     ) {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
+        this.cpLsnr = cpLsnr;
 
         orderedAssgnments = assigns;
         topVer = startVer;
@@ -293,9 +304,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
-            IgniteInternalFuture<Long> fut = cctx.filePreloader().changePartitionMode(grpId, partId, this::isDone);
-
-            fut.listen(f -> {
+            changePartitionMode(grpId, partId)
+                .listen(f -> {
                     try {
                         if (!f.isCancelled())
                             onPartitionSnapshotRestored(grpId, partId, f.get());
@@ -487,6 +497,64 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         Runnable task = grp.preloader().addAssignments(grpAssigns, true, rebalanceId, null, histFut);
 
         cctx.kernalContext().getSystemExecutorService().submit(task);
+    }
+
+    /**
+     * Schedule partition mode change to enable updates.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @return Future that will be done when partition mode changed.
+     */
+    public IgniteInternalFuture<Long> changePartitionMode(int grpId, int partId) {
+        GridFutureAdapter<Long> endFut = new GridFutureAdapter<>();
+
+        cpLsnr.accept(() -> {
+            if (isDone())
+                return;
+
+            lock.lock();
+
+            try {
+                final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                // Cache was concurrently destroyed.
+                if (grp == null)
+                    return;
+
+                GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+                assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
+
+                // Save current counter.
+                PartitionUpdateCounter readCntr =
+                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
+
+                // Save current update counter.
+                PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
+
+                part.readOnly(false);
+
+                AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
+
+                IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
+
+                // Operations that are in progress now will be lost and should be included in historical rebalancing.
+                // These operations can update the old update counter or the new update counter, so the maximum applied
+                // counter is used after all updates are completed.
+                partReleaseFut.listen(c -> {
+                        long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
+
+                        cctx.kernalContext().getSystemExecutorService().submit(() -> endFut.onDone(hwm));
+                    }
+                );
+            }
+            finally {
+                lock.unlock();
+            }
+        });
+
+        return endFut;
     }
 
     /**
