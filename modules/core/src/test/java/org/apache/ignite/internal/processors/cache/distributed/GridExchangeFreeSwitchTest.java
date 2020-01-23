@@ -172,6 +172,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     startGridWithPmeFreeSwitchDisabled(idx++);
 
                     startGridsMultiThreaded(idx, nodes - idx);
+
                     return;
 
                 case MIDDLE:
@@ -182,6 +183,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     startGridWithPmeFreeSwitchDisabled(idx++);
 
                     startGridsMultiThreaded(idx, nodes - idx);
+
                     return;
 
                 case LAST:
@@ -190,6 +192,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     startGridsMultiThreaded(idx, false);
 
                     startGridWithPmeFreeSwitchDisabled(idx);
+
                     return;
 
                 case NONE:
