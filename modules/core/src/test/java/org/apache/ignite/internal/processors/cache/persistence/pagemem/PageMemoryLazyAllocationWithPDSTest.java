@@ -43,7 +43,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testNodeRestart() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startSrv()[0];
 
@@ -60,7 +59,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testClientNodeRestart() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startSrv()[0];
 
@@ -81,7 +79,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testHugeNotUsedMemoryRegion() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startGrid(cfgWithHugeRegion("test-server"));
 
@@ -104,7 +101,6 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testCreateCacheFailsInHugeMemoryRegion() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startGrid(cfgWithHugeRegion("test-server")
             .setFailureHandler(new StopNodeFailureHandler()));
@@ -118,14 +114,11 @@ public class PageMemoryLazyAllocationWithPDSTest extends PageMemoryLazyAllocatio
     @Test
     public void testCreateCacheFromClientFailsInHugeMemoryRegion() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startGrid(cfgWithHugeRegion("test-server")
             .setFailureHandler(new StopNodeFailureHandler()));
 
-        client = true;
-
-        IgniteEx clnt = startGrid(cfgWithHugeRegion("test-client")
+        IgniteEx clnt = startClientGrid(cfgWithHugeRegion("test-client")
             .setFailureHandler(new StopNodeFailureHandler()));
 
         srv.cluster().active(true);
