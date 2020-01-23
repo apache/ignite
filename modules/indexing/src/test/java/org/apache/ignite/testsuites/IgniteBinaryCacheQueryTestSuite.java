@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanW
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlDmlErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentSqlUpdatesTest;
+import org.apache.ignite.internal.processors.cache.query.ScanQueryConcurrentUpdatesTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCustomSchemaWithPdsEnabled;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultSchemaTest;
@@ -58,6 +60,8 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         suite.addTestSuite(GridIndexRebuildTest.class);
 
         suite.addTestSuite(BinaryMetadataConcurrentUpdateWithIndexesTest.class);
+        suite.addTestSuite(ScanQueryConcurrentUpdatesTest.class);
+        suite.addTestSuite(ScanQueryConcurrentSqlUpdatesTest.class);
 
         suite.addTestSuite(IgniteCacheSqlInsertValidationSelfTest.class);
         suite.addTestSuite(IgniteCacheSqlDmlErrorSelfTest.class);
