@@ -74,7 +74,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
 
 /**
@@ -435,6 +434,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         ignite.cluster().active(true);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         query(cache, "create table t (id integer primary key, p integer, f integer, p integer) with \"BACKUPS=1\"");
@@ -501,7 +502,6 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testLongIndexDeletionWithRebalance() throws Exception {
         testLongIndexDeletion(false, true, false, false, true);
     }
