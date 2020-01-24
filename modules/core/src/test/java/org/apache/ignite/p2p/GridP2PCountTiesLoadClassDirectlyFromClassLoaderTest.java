@@ -97,7 +97,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
     /**
      * @throws Exception if error occur.
      */
-    public void executeP2PTaskWithResatrtMaster(DeploymentMode depMode) throws Exception {
+    public void executeP2PTaskWithRestartMaster(DeploymentMode depMode) throws Exception {
         try {
             CountTriesClassLoader testCountLdr = new CountTriesClassLoader(Thread.currentThread()
                 .getContextClassLoader());
@@ -115,7 +115,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
             Map<UUID, Integer> res = (Map<UUID, Integer>)ignite.compute(ignite.cluster().forRemotes()).execute(
                 (ComputeTask)urlClsLdr.loadClass(COMPUTE_STEALING_TASK_NAME).newInstance(), 1);
 
-            System.out.println("Result: " + res);
+            info("Result: " + res);
 
             int count = testCountLdr.count;
 
@@ -151,7 +151,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
      */
     @Test
     public void testRestartPrivateMode() throws Exception {
-        executeP2PTaskWithResatrtMaster(DeploymentMode.PRIVATE);
+        executeP2PTaskWithRestartMaster(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -159,7 +159,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
      */
     @Test
     public void testRestartIsolatedMode() throws Exception {
-        executeP2PTaskWithResatrtMaster(DeploymentMode.ISOLATED);
+        executeP2PTaskWithRestartMaster(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -167,7 +167,7 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
      */
     @Test
     public void testRestartSharedMode() throws Exception {
-        executeP2PTaskWithResatrtMaster(DeploymentMode.SHARED);
+        executeP2PTaskWithRestartMaster(DeploymentMode.SHARED);
     }
 
     /**
