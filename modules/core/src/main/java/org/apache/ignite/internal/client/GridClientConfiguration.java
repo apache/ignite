@@ -125,7 +125,7 @@ public class GridClientConfiguration {
     private boolean daemon;
 
     /** User attributes. */
-    private Map<String, Object> userAttrs;
+    private Map<String, String> userAttrs;
 
     /**
      * Creates default configuration.
@@ -917,21 +917,16 @@ public class GridClientConfiguration {
     /**
      * @return User attributes.
      */
-    public Map<String, Object> getUserAttributes() {
+    public Map<String, String> getUserAttributes() {
         return userAttrs;
     }
 
     /**
      * User attributes can be used in custom authenticator to authenticate clients by checking attributes.
-     * <p></p>
-     * <b>WARNING!</b> Peer classloading doesn't work for user attributes. If you want to put custom classes,
-     * you should name these classes in {@code META-INF/classnames.properties} and have them on both server and client.
-     * <br>
-     * Same for some JDK classes (like {@code javax.} package).
      *
      * @param userAttrs User attributes.
      */
-    public GridClientConfiguration setUserAttributes(Map<String, Object> userAttrs) {
+    public GridClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
         this.userAttrs = userAttrs;
 
         return this;

@@ -402,14 +402,14 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Client handshake. */
-    private void handshake(String user, String pwd, Map<String, Object> userAttrs)
+    private void handshake(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
         handshakeReq(user, pwd, userAttrs);
         handshakeRes(user, pwd, userAttrs);
     }
 
     /** Send handshake request. */
-    private void handshakeReq(String user, String pwd, Map<String, Object> userAttrs)
+    private void handshakeReq(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
         BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null);
@@ -437,7 +437,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Receive and handle handshake response. */
-    private void handshakeRes(String user, String pwd, Map<String, Object> userAttrs)
+    private void handshakeRes(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
         int resSize = dataInput.readInt();
 

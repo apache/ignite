@@ -53,7 +53,7 @@ public class GridRestRequest {
     private AuthorizationContext authCtx;
 
     /** User attributes. */
-    Map<String, Object> userAttrs;
+    Map<String, String> userAttrs;
 
     /**
      * @return Destination ID.
@@ -170,7 +170,7 @@ public class GridRestRequest {
      *
      * @return User attributes.
      */
-    public Map<String, Object> userAttributes() {
+    public Map<String, String> userAttributes() {
         return userAttrs;
     }
 
@@ -179,7 +179,7 @@ public class GridRestRequest {
      *
      * @param userAttrs User attributes.
      */
-    public void userAttributes(Map<String, Object> userAttrs) {
+    public void userAttributes(Map<String, String> userAttrs) {
         this.userAttrs = userAttrs;
     }
 

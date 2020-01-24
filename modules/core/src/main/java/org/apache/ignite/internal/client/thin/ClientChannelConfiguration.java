@@ -90,7 +90,7 @@ final class ClientChannelConfiguration {
     private final int reconnectThrottlingRetries;
 
     /** User attributes. */
-    private Map<String, Object> userAttrs;
+    private Map<String, String> userAttrs;
 
     /**
      * Constructor.
@@ -262,7 +262,7 @@ final class ClientChannelConfiguration {
     /**
      * @return User attributes.
      */
-    public Map<String, Object> getUserAttributes() {
+    public Map<String, String> getUserAttributes() {
         return userAttrs;
     }
 }

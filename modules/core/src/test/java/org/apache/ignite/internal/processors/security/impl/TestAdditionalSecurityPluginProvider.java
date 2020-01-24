@@ -26,27 +26,30 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 /**
  *
  */
-public class TestSslSecurityPluginProvider extends TestSecurityPluginProvider {
-    /** Security certificates attribute name. Attribute is not available via public API. */
-    public static final String ATTR_SECURITY_CERTIFICATES = "attr.security.certs";
+public class TestAdditionalSecurityPluginProvider extends TestSecurityPluginProvider {
+    /** Security additional attribute name. */
+    public static final String ADDITIONAL_SECURITY_PASSWORD_ATTR = "add.sec.pass";
+
+    /** Security additional attribute value. */
+    public static final String ADDITIONAL_SECURITY_PASSWORD = "secret_password";
 
     /** Check ssl certificates. */
-    protected final boolean checkSslCerts;
+    protected final boolean checkAddPass;
 
     /** */
-    public TestSslSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        boolean globalAuth, boolean checkSslCerts, TestSecurityData... clientData) {
+    public TestAdditionalSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+        boolean globalAuth, boolean checkAddPass, TestSecurityData... clientData) {
         super(login, pwd, perms, globalAuth, clientData);
 
-        this.checkSslCerts = checkSslCerts;
+        this.checkAddPass = checkAddPass;
     }
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-        return new TestSslSecurityProcessor(ctx,
+        return new TestAdditionalSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms, new Permissions()),
             Arrays.asList(clientData),
             globalAuth,
-            checkSslCerts);
+            checkAddPass);
     }
 }

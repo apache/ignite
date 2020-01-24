@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -27,9 +29,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.UUID;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
@@ -50,7 +49,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     private AuthorizationContext authCtx;
 
     /** User attributes. */
-    protected Map<String, Object> userAttrs;
+    protected Map<String, String> userAttrs;
 
     /**
      * Constructor.

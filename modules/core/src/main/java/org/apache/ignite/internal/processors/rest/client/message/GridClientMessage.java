@@ -86,12 +86,12 @@ public interface GridClientMessage extends Serializable {
      *
      * @return User attributes.
      */
-    public Map<String, Object> userAttributes();
+    public Map<String, String> userAttributes();
 
     /**
      * Gets user attributes.
      *
      * @param userAttrs User attributes.
      */
-    public void userAttributes(Map<String, Object> userAttrs);
+    public void userAttributes(Map<String, String> userAttrs);
 }

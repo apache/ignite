@@ -164,7 +164,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     private final GridClientMarshaller marsh;
 
     /** User attributes. */
-    Map<String, Object> userAttrs;
+    Map<String, String> userAttrs;
 
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
@@ -198,7 +198,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         Byte marshId,
         GridClientTopology top,
         SecurityCredentials cred,
-        Map<String, Object> userAttrs
+        Map<String, String> userAttrs
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 

@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.configuration.Factory;
+
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.
+    ADDITIONAL_SECURITY_PASSWORD;
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.
+    ADDITIONAL_SECURITY_PASSWORD_ATTR;
 
 /**
- *
+ * Creates user attributes for thin clients.
  */
-public class SslClientNodeAttributesFactory extends SslAbstractNodeAttributesFactory {
-    /**
-     * Default constructor.
-     */
-    public SslClientNodeAttributesFactory() {
-        jksPath = U.getIgniteHome() + "/modules/clients/src/test/keystore/client.jks";
-        alias = "client";
+public class UserAttributesFactory implements Factory<Map<String, String>> {
+    /** {@inheritDoc} */
+    @Override public Map<String, String> create() {
+        HashMap<String, String> map = new HashMap<>();
+
+        map.put(ADDITIONAL_SECURITY_PASSWORD_ATTR, ADDITIONAL_SECURITY_PASSWORD);
+
+        return map;
     }
 }

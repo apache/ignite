@@ -243,7 +243,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /**
      * @return User attributes.
      */
-    protected Map<String, Object> userAttributres() {
+    protected Map<String, String> userAttributres() {
         return null;
     }
 }

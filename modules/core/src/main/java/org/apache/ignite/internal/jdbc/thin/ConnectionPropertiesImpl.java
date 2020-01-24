@@ -176,9 +176,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
-    /** SSL: Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;. */
+    /** Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;. */
     private StringProperty userAttrsFactory = new StringProperty("userAttributesFactory",
-        "Custom class name that implements Factory<Map<String, Object>> (user attributes)", null, null, false, null);
+        "Custom class name that implements Factory<Map<String, String>> (user attributes)", null, null, false, null);
 
     /** User name to authenticate the client on the server side. */
     private StringProperty user = new StringProperty(

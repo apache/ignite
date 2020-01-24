@@ -52,7 +52,7 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     private String pwd;
 
     /** User attributes. */
-    Map<String, Object> userAttrs;
+    Map<String, String> userAttrs;
 
     /** {@inheritDoc} */
     @Override public long requestId() {
@@ -127,12 +127,12 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> userAttributes() {
+    @Override public Map<String, String> userAttributes() {
         return userAttrs;
     }
 
     /** {@inheritDoc} */
-    @Override public void userAttributes(Map<String, Object> userAttrs) {
+    @Override public void userAttributes(Map<String, String> userAttrs) {
         this.userAttrs = userAttrs;
     }
 

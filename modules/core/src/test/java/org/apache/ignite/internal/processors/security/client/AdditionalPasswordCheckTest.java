@@ -35,11 +35,9 @@ import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.SslAbstractNodeAttributesFactory;
-import org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory;
-import org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory;
+import org.apache.ignite.internal.processors.security.UserAttributesFactory;
+import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
@@ -54,7 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -63,7 +61,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-public class SslCertificatesCheckTest extends AbstractSecurityTest {
+public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
 
@@ -99,7 +97,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         boolean isClient = instanceName.endsWith("2");
         String name = isClient ? "client_" + instanceName : "srv_" + instanceName;
 
-        cfg.setPluginProviders(new TestSslSecurityPluginProvider(name, null, ALLOW_ALL,
+        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
             globalAuth, true, clientData()));
 
         SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
@@ -123,12 +121,8 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         if (isClient)
             cfg.setClientMode(true);
 
-        SslAbstractNodeAttributesFactory factory = isClient ?
-                new SslClientNodeAttributesFactory() :
-                new SslServerNodeAttributesFactory();
-
         if (!fail) {
-            Map<String, Object> attrs = factory.create();
+            Map<String, String> attrs = new UserAttributesFactory().create();
 
             cfg.setUserAttributes(attrs);
         }
@@ -140,7 +134,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      * @return Grid client configuration.
      */
     protected GridClientConfiguration getGridClientConfiguration() {
-        Map<String, Object> userAttrs = new SslClientNodeAttributesFactory().create();
+        Map<String, String> userAttrs = new UserAttributesFactory().create();
 
         if (fail)
             userAttrs.clear();
@@ -162,7 +156,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             .setAddresses(Config.SERVER)
             .setUserName(CLIENT)
             .setUserPassword("")
-            .setUserAttributes(fail ? null : new SslClientNodeAttributesFactory().create())
+            .setUserAttributes(fail ? null : new UserAttributesFactory().create())
             .setSslMode(SslMode.REQUIRED);
     }
 
@@ -173,7 +167,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
         SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
 
         sslFactory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.client.path"))
-                .getAbsolutePath());
+            .getAbsolutePath());
 
         return sslFactory;
     }
@@ -182,7 +176,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testSslCertificates() throws Exception {
+    public void testAdditionalPassword() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -209,7 +203,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testSslCertificatesGridClientFail() throws Exception {
+    public void testAdditionalPasswordGridClientFail() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -228,7 +222,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
                     return null;
                 },
                 GridClientAuthenticationException.class,
-                "SSL certificates are not found.");
+                "Additional password is not found.");
         }
     }
 
@@ -236,7 +230,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testSslCertificatesIgniteClientFail() throws Exception {
+    public void testAdditionalPasswordIgniteClientFail() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -251,7 +245,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
             fail();
         }
         catch (ClientAuthenticationException e) {
-            assertTrue(e.getMessage().contains("SSL certificates are not found"));
+            assertTrue(e.getMessage().contains("Additional password is not found"));
         }
     }
 
@@ -259,7 +253,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testSslCertificatesClientFail() throws Exception {
+    public void testAdditionalPasswordClientFail() throws Exception {
         Ignite ignite = startGrids(1);
 
         assertEquals(1, ignite.cluster().topologyVersion());
@@ -281,7 +275,7 @@ public class SslCertificatesCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testSslCertificatesServerFail() throws Exception {
+    public void testAdditionalPasswordServerFail() throws Exception {
         Ignite ignite = startGrid(0);
 
         fail = true;

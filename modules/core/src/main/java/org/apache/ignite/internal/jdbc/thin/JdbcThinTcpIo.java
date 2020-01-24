@@ -274,10 +274,10 @@ public class JdbcThinTcpIo {
                 writer.writeMap(null);
             else {
                 try {
-                    Class<Factory<Map<String, Object>>> cls = (Class<Factory<Map<String, Object>>>)
+                    Class<Factory<Map<String, String>>> cls = (Class<Factory<Map<String, String>>>)
                         JdbcThinSSLUtil.class.getClassLoader().loadClass(userAttrs);
 
-                    Map<String, Object> attrs = cls.newInstance().create();
+                    Map<String, String> attrs = cls.newInstance().create();
 
                     writer.writeMap(attrs);
                 }

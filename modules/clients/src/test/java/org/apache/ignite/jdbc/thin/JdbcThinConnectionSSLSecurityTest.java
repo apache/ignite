@@ -29,15 +29,15 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSslSecurityProcessor.CLIENT;
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -74,7 +74,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setPluginProviders(new TestSslSecurityPluginProvider("srv_" + igniteInstanceName, null, ALLOW_ALL,
+        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider("srv_" + igniteInstanceName, null, ALLOW_ALL,
             false, true, clientData()));
 
         cfg.setClientConnectorConfiguration(
@@ -121,7 +121,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                 "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456" +
                 "&userAttributesFactory=" +
-                "org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory")) {
+                "org.apache.ignite.internal.processors.security.UserAttributesFactory")) {
                 checkConnection(conn);
             }
         }
@@ -134,7 +134,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testConnectionNoCertificate() throws Exception {
+    public void testConnectionNoAdditionalPassword() throws Exception {
         setSslCtxFactoryToIgnite = true;
         sslCtxFactory = getTestSslContextFactory();
 
@@ -153,39 +153,7 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
 
                     return null;
                 }
-            }, SQLException.class, "SSL certificates are not found.");
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConnectionWrongCertificate() throws Exception {
-        setSslCtxFactoryToIgnite = true;
-        sslCtxFactory = getTestSslContextFactory();
-
-        startGrids(1);
-
-        try {
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                        "&user=client_admin_oper" +
-                        "&password=pwd" +
-                        "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                        "&sslClientCertificateKeyStorePassword=123456" +
-                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
-                        "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.SslServerNodeAttributesFactory");
-
-                    return null;
-                }
-            }, SQLException.class, "Client certificate not found.");
+            }, SQLException.class, "Additional password is not found.");
         }
         finally {
             stopAllGrids();
@@ -213,11 +181,11 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
                         "&userAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
+                        "org.apache.ignite.internal.processors.security.UserAttributesFactory");
 
                     return null;
                 }
-            }, SQLException.class, "Client certificate doesn't correspond with login");
+            }, SQLException.class, "Additional password doesn't correspond with login");
         }
         finally {
             stopAllGrids();
@@ -243,11 +211,11 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
                         "&userAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory");
+                        "org.apache.ignite.internal.processors.security.UserAttributesFactory");
 
                     return null;
                 }
-            }, SQLException.class, "Client certificate doesn't correspond with login");
+            }, SQLException.class, "Additional password doesn't correspond with login");
         }
         finally {
             stopAllGrids();

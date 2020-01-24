@@ -227,12 +227,12 @@ public class GridRedisMessage implements GridClientMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Object> userAttributes() {
+    @Override public Map<String, String> userAttributes() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void userAttributes(Map<String, Object> userAttrs) {
+    @Override public void userAttributes(Map<String, String> userAttrs) {
         // No-op.
     }
 }

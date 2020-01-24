@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.security.client;
 
 import java.util.Map;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
-import org.apache.ignite.internal.processors.security.SslClientNodeAttributesFactory;
+import org.apache.ignite.internal.processors.security.UserAttributesFactory;
+import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.processors.security.impl.TestSslSecurityPluginProvider;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -35,11 +35,18 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
     /** {@inheritDoc} */
     @Override protected AbstractTestSecurityPluginProvider securityPluginProvider(String instanceName,
         TestSecurityData... clientData) {
-        return new TestSslSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, false, true, clientData);
+        return new TestAdditionalSecurityPluginProvider(
+            "srv_" + instanceName,
+            null,
+            ALLOW_ALL,
+            false,
+            true,
+            clientData
+        );
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, Object> userAttributres() {
-        return new SslClientNodeAttributesFactory().create();
+    @Override protected Map<String, String> userAttributres() {
+        return new UserAttributesFactory().create();
     }
 }
