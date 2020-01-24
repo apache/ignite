@@ -1399,8 +1399,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to ||
-                                    entry.partitionCounter() == to && grp.hasAtomicCaches())
+                                if (++rebalancedCntrs[idx] == to)
                                     donePart = entry.partitionId();
 
                                 next = entry;
@@ -1441,8 +1440,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Partition done [partId=" + donePart +
-                                        " from=" + from + " to=" + to + ']');
+                                    log.debug("Partition done [grpId=" + grp.groupId() +
+                                        ", partId=" + donePart +
+                                        ", from=" + from +
+                                        ", to=" + to + ']');
                                 }
 
                                 doneParts.add(rbRec.partitionId()); // Add to done set immediately.
