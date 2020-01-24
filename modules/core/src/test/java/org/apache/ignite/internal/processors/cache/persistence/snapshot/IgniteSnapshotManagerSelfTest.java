@@ -740,7 +740,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         fut.listen(f -> stop.set(true));
 
-        loadFut.get();
+        fut.get();
     }
 
     // todo check exception on cache stop during snapshot operation in progress

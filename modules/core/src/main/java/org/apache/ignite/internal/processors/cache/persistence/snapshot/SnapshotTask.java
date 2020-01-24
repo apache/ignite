@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -455,20 +454,18 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
         // Process binary meta.
         futs.add(CompletableFuture.runAsync(
-            wrapExceptionally(() ->
+            wrapExceptionIfStarted(() ->
                     snpSndr.sendBinaryMeta(cctx.kernalContext()
                         .cacheObjects()
-                        .metadataTypes()),
-                s -> s == SnapshotState.STARTED),
+                        .metadataTypes())),
             exec));
 
         // Process marshaller meta.
         futs.add(CompletableFuture.runAsync(
-            wrapExceptionally(() ->
+            wrapExceptionIfStarted(() ->
                     snpSndr.sendMarshallerMeta(cctx.kernalContext()
                         .marshallerContext()
-                        .getCachedMappings()),
-                s -> s == SnapshotState.STARTED),
+                        .getCachedMappings())),
             exec));
 
         // Process cache group configuration files.
@@ -477,7 +474,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             .collect(Collectors.toSet())
             .forEach(grpId ->
                 futs.add(CompletableFuture.runAsync(() ->
-                        wrapExceptionally(() -> {
+                        wrapExceptionIfStarted(() -> {
                                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
                                 if (gctx == null) {
@@ -492,8 +489,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
                                 for (File ccfg0 : ccfgs)
                                     snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
-                            },
-                            s -> s == SnapshotState.STARTED),
+                            }),
                     exec)
                 )
             );
@@ -515,7 +511,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             Long partLen = partFileLengths.get(pair);
 
             CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                wrapExceptionally(() -> {
+                wrapExceptionIfStarted(() -> {
                         snpSndr.sendPart(
                             getPartitionFile(storeMgr.workDir(), cacheDirName, pair.getPartitionId()),
                             cacheDirName,
@@ -524,12 +520,11 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
                         // Stop partition writer.
                         partDeltaWriters.get(pair).markPartitionProcessed();
-                    },
-                    s -> s == SnapshotState.STARTED),
+                    }),
                 exec)
                 // Wait for the completion of both futures - checkpoint end, copy partition.
                 .runAfterBothAsync(cpEndFut,
-                    wrapExceptionally(() -> {
+                    wrapExceptionIfStarted(() -> {
                             File delta = getPartionDeltaFile(cacheWorkDir(nodeSnpDir, cacheDirName),
                                 pair.getPartitionId());
 
@@ -538,8 +533,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                             boolean deleted = delta.delete();
 
                             assert deleted;
-                        },
-                        s -> s == SnapshotState.STARTED),
+                        }),
                     exec);
 
             futs.add(fut0);
@@ -558,13 +552,12 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /**
      * @param exec Runnable task to execute.
-     * @param cond Condition when task must be executed.
      * @return Wrapped task.
      */
-    private Runnable wrapExceptionally(IgniteThrowableRunner exec, Predicate<SnapshotState> cond) {
+    private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
             try {
-                if (cond.test(state))
+                if (state == SnapshotState.STARTED)
                     exec.run();
             }
             catch (Throwable t) {
