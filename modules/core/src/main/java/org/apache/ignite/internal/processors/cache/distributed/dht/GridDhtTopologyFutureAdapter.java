@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TopologyValidator;
@@ -28,13 +29,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jetbrains.annotations.Nullable;
-
-import static java.lang.String.format;
-import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
-import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
-import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 
 /**
  *
@@ -94,10 +88,18 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
 
         CacheGroupContext grp = cctx.group();
 
-        if (cctx.shared().readOnlyMode() && !read && !isSystemCache(cctx.name())) {
-            return new CacheInvalidStateException(new IgniteClusterReadOnlyException(
-                format(CLUSTER_READ_ONLY_MODE_ERROR_MSG_FORMAT, "cache", cctx.group().name(), cctx.name())
-            ));
+        PartitionLossPolicy lossPlc = grp.config().getPartitionLossPolicy();
+
+        if (cctx.shared().readOnlyMode() && opType == WRITE && !isSystemCache(cctx.name())
+            && !VOLATILE_DATA_REGION_NAME.equals(cctx.group().dataRegion().config().getName())) {
+            return new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in " +
+                "read-only mode) [cacheGrp=" + cctx.group().name() + ", cache=" + cctx.name() + ']');
+        }
+
+        if (grp.needsRecovery() && !recovery) {
+            if (opType == WRITE && (lossPlc == READ_ONLY_SAFE || lossPlc == READ_ONLY_ALL))
+                return new IgniteCheckedException(
+                    "Failed to write to cache (cache is moved to a read-only state): " + cctx.name());
         }
 
         CacheGroupValidation validation = grpValidRes.get(grp.groupId());

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -143,6 +143,14 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             && stateProcessor.clusterState().active()
             && baselineConfiguration.isBaselineAutoAdjustEnabled()
             && (isPersistenceEnabled || cluster.baselineAutoAdjustTimeout() != 0L);
+    }
+
+    /**
+     * @return {@code True} if all nodes in the cluster support auto-adjust baseline.
+     * @see IgniteFeatures#BASELINE_AUTO_ADJUSTMENT
+     */
+    public static boolean isSupported(GridKernalContext ctx) {
+        return IgniteFeatures.allNodesSupport(ctx, BASELINE_AUTO_ADJUSTMENT);
     }
 
     /**
