@@ -1101,16 +1101,22 @@ public interface IgniteCacheOffheapManager {
         public PartitionMetaStorage<SimpleDataRow> partStorage();
 
         /**
-         * Change current cache data store mode.
-         *
-         * @param readOnly Read-only mode flag.
-         * @return {@code True} if partition mode was changed, otherwise partition already in the specified mode.
+         * @return {@code True} if data store is in active mode and is processing updates.
          */
-        public boolean readOnly(boolean readOnly);
+        public boolean active();
 
         /**
-         * @return {@code True} if current mode is read-only.
+         * Change current cache data store mode.to enable updates.
+         *
+         * @return {@code True} if partition mode was changed.
          */
-        public boolean readOnly();
+        public boolean enable();
+
+        /**
+         * Change current cache data store mode.to disable updates.
+         *
+         * @return {@code True} if partition mode was changed.
+         */
+        public boolean disable();
     }
 }

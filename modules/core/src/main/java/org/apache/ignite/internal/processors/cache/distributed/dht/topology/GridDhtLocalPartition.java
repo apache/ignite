@@ -449,30 +449,46 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Change read-only mode for the corresponding local partition storage.
-     *
-     * @param readOnlyMode Read-only mode flag.
+     * @return {@code True} if data store is in active mode and is processing updates.
      */
-    public void readOnly(boolean readOnlyMode) {
+    public boolean active() {
+        return store.active();
+    }
+
+    /**
+     * Change current cache data store mode.to enable updates on current partition.
+     *
+     * @return {@code True} if partition mode was changed, otherwise updates already enabled.
+     */
+    public boolean enable() {
         if (state() != MOVING)
             throw new IgniteException("Expected MIVING partition, actual state is " + state());
 
-        if (store.readOnly(readOnlyMode) && !readOnlyMode) {
-            // Clear all on-heap entries when switching into normal mode.
+        if (store.enable()) {
+            // Clear all on-heap entries before start processing updates.
             if (grp.sharedGroup()) {
                 for (GridCacheContext ctx : grp.caches())
                     entriesMap(ctx).map.clear();
             }
             else
                 entriesMap(null).map.clear();
+
+            return true;
         }
+
+        return false;
     }
 
     /**
-     * @return The currently active storage mode.
+     * Change current cache data store mode.to disable updates on current partition.
+     *
+     * @return {@code True} if partition mode was changed, otherwise updates already disabled.
      */
-    public boolean readOnly() {
-        return store.readOnly();
+    public boolean disable() {
+        if (state() != MOVING)
+            throw new IgniteException("Expected MIVING partition, actual state is " + state());
+
+        return store.disable();
     }
 
     /**
@@ -786,7 +802,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * This enforces clearing happens before sending demand requests.
      */
     public void clearAsync() {
-        assert !dataStore().readOnly() : "grp=" + grp.cacheOrGroupName() + ", p=" + id;
+        assert active() : "grp=" + grp.cacheOrGroupName() + ", p=" + id;
 
         GridDhtPartitionState state0 = state();
 

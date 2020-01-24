@@ -308,8 +308,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean beforeDestroy,
         boolean savePagesCount
     ) throws IgniteCheckedException {
-        if (store.readOnly()) {
-            assert !savePagesCount : "You should not request partition while store is read-only: " + store;
+        if (!store.active()) {
+            assert !savePagesCount : "You should not request partition while store is inactive: " + store;
 
             return;
         }
@@ -1623,10 +1623,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final Lock initLock = new ReentrantLock();
 
         /** Currently used data storage state. */
-        private final AtomicBoolean readOnlyMode = new AtomicBoolean();
+        private final AtomicBoolean active = new AtomicBoolean(true);
 
-        /** Update counter for read-only mode. */
-        private volatile PartitionUpdateCounter readModeCntr;
+        /** Update counter used when data store does not process updates. */
+        private volatile PartitionUpdateCounter noopModeCntr;
 
         /**
          * @param partId Partition.
@@ -2029,7 +2029,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public boolean init() {
-            assert !readOnly() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
+            assert active() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
             try {
                 return init0(true) != null;
@@ -2041,7 +2041,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void reinit() {
-            assert readOnly() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
+            assert !active() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
             try {
                 close();
@@ -2078,7 +2078,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long fullSize() {
-            if (readOnly())
+            if (!active())
                 return 0;
 
             try {
@@ -2142,7 +2142,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
-            if (readOnly())
+            if (!active())
                 return 0;
 
             try {
@@ -2157,8 +2157,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long reservedCounter() {
-            if (readOnly())
-                return readModeCntr.reserved();
+            if (!active())
+                return noopModeCntr.reserved();
 
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -2183,16 +2183,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
-         * @return Update counter for read-only mode.
+         * @return Update counter for inactive mode.
          */
-        public PartitionUpdateCounter readOnlyPartUpdateCounter() {
-            return readModeCntr;
+        public PartitionUpdateCounter inactivePartUpdateCounter() {
+            return noopModeCntr;
         }
 
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
-            if (readOnly())
-                return readModeCntr.reserve(delta);
+            if (!active())
+                return noopModeCntr.reserve(delta);
 
             try {
                 CacheDataStore delegate0 = init0(false);
@@ -2206,8 +2206,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long reserve(long delta) {
-            if (readOnly())
-                return readModeCntr.reserve(delta);
+            if (!active())
+                return noopModeCntr.reserve(delta);
 
             try {
                 CacheDataStore delegate0 = init0(false);
@@ -2224,9 +2224,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            if (readOnly()) {
+            if (!active()) {
                 try {
-                    readModeCntr.update(val);
+                    noopModeCntr.update(val);
 
                     return;
                 }
@@ -2254,8 +2254,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public boolean updateCounter(long start, long delta) {
-            if (readOnly())
-                return readModeCntr.update(start, delta);
+            if (!active())
+                return noopModeCntr.update(start, delta);
 
             try {
                 CacheDataStore delegate0 = init0(false);
@@ -2269,8 +2269,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public GridLongList finalizeUpdateCounters() {
-            if (readOnly())
-                return readModeCntr.finalizeUpdateCounters();
+            if (!active())
+                return noopModeCntr.finalizeUpdateCounters();
 
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -2284,8 +2284,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            if (readOnly())
-                return readModeCntr.next();
+            if (!active())
+                return noopModeCntr.next();
 
             try {
                 CacheDataStore delegate0 = init0(false);
@@ -2303,7 +2303,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public long initialUpdateCounter() {
             //todo can be removed?
-            if (readOnly())
+            if (!active())
                 return 0;
 
             try {
@@ -2319,8 +2319,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void updateInitialCounter(long start, long delta) {
             // todo can be removed?
-            if (readOnly())
-                readModeCntr.updateInitial(start, delta);
+            if (!active())
+                noopModeCntr.updateInitial(start, delta);
 
             try {
                 CacheDataStore delegate0 = init0(false);
@@ -2357,7 +2357,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
-            if (readOnly())
+            if (!active())
                 return;
 
             CacheDataStore delegate = init0(false);
@@ -2490,7 +2490,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
-            if (readOnly()) {
+            if (!active()) {
                 assert oldRow == null;
 
                 if (key.partition() < 0)
@@ -2507,7 +2507,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void insertRows(Collection<DataRowCacheAware> rows,
             IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
-            if (readOnly())
+            if (!active())
                 return;
 
             CacheDataStore delegate = init0(false);
@@ -2525,7 +2525,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row) throws IgniteCheckedException {
-            if (readOnly())
+            if (!active())
                 return;
 
             CacheDataStore delegate = init0(false);
@@ -2538,7 +2538,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
-            if (readOnly()) {
+            if (!active()) {
                 // Assume we've performed an invoke operation on the B+ Tree and find nothing.
                 // Emulating that always inserting/removing a new value.
                 c.call(null);
@@ -2556,7 +2556,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
-            if (readOnly())
+            if (!active())
                 return;
 
             CacheDataStore delegate = init0(false);
@@ -2566,7 +2566,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            if (readOnly())
+            if (!active())
                 return null;
 
             CacheDataStore delegate = init0(true);
@@ -2712,7 +2712,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
-            assert !readOnlyMode.get() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
+            assert active.get() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
             CacheDataStore delegate0 = init0(true);
 
@@ -2913,18 +2913,38 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readOnly(boolean readOnly) {
-            if (readOnlyMode.compareAndSet(!readOnly, readOnly)) {
+        @Override public boolean active() {
+            return active.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean enable() {
+            return changeMode(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean disable() {
+            return changeMode(false);
+        }
+
+        /**
+         * Change current cache data store mode.
+         *
+         * @param activeMode Active mode flag.
+         * @return {@code True} if partition mode was changed, otherwise partition already in the specified mode.
+         */
+        private boolean changeMode(boolean activeMode) {
+            if (active.compareAndSet(!activeMode, activeMode)) {
                 if (log.isInfoEnabled()) {
-                    log.info("Partition mode changed [grp=" + grp.cacheOrGroupName() +
+                    log.info("Partition data store mode changed [grp=" + grp.cacheOrGroupName() +
                         ", p=" + partId() +
                         ", cntr=" + updateCounter() +
                         ", size=" + fullSize() +
-                        ", mode=" + (readOnly ? "READ-ONLY" : "FULL") + "]");
+                        ", mode=" + (activeMode ? "ACTIVE" : "DISABLED") + "]");
                 }
 
-                if (readOnly)
-                    initReadModeCounter();
+                if (!activeMode)
+                    initInactiveModeCounter();
 
                 return true;
             }
@@ -2932,15 +2952,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             return false;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean readOnly() {
-            return readOnlyMode.get();
-        }
-
         /**
-         * Initialize partition update counter for read-only mode.
+         * Initialize partition update counter for inactive mode.
          */
-        private void initReadModeCounter() {
+        private void initInactiveModeCounter() {
             PartitionUpdateCounter readCntr0;
 
             if (grp.mvccEnabled())
@@ -2955,7 +2970,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (cntr0 != null)
                 readCntr0.init(cntr0.get(), cntr0.getBytes());
 
-            readModeCntr = readCntr0;
+            noopModeCntr = readCntr0;
         }
     }
 

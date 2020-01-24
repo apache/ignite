@@ -3035,13 +3035,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readOnly(boolean readOnly) {
+        @Override public boolean enable() {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readOnly() {
-            return false;
+        @Override public boolean disable() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean active() {
+            return true;
         }
 
         /**

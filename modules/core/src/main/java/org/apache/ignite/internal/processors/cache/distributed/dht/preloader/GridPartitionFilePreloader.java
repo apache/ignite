@@ -168,32 +168,32 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         boolean locJoinBaselineChange = isLocalBaselineChange(exchFut);
 
         // At this point, cache updates are queued, and we can safely
-        // switch partitions to read-only mode and vice versa.
+        // switch partitions to inactive mode and vice versa.
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (!supports(grp))
                 continue;
 
-            boolean hasReadOnlyParttition = false;
+            boolean hasIdleParttition = false;
 
             if (!locJoinBaselineChange && !required(grp)) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
-                if (!(hasReadOnlyParttition = hasReadOnlyParttition(grp)))
+                if (!(hasIdleParttition = hasIdleParttition(grp)))
                     continue;
             }
 
-            boolean toReadOnly = !hasReadOnlyParttition && fileRebalanceApplicable(grp, exchFut);
+            boolean disable = !hasIdleParttition && fileRebalanceApplicable(grp, exchFut);
 
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (part.dataStore().readOnly(toReadOnly)) {
-                    if (toReadOnly)
+                if (disable ? part.dataStore().disable() : part.dataStore().enable()) {
+                    if (disable)
                         ((GridCacheDataStore)part.dataStore()).close();
                 }
 
                 // If file rebalancing for cache group was incomplete partition can't be rebalanced using
                 // historical rebalancing, because we didn't create an index for this partition.
-                if (hasReadOnlyParttition)
+                if (hasIdleParttition)
                     exchFut.addClearingPartition(grp, part.id());
             }
         }
@@ -333,12 +333,12 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
         boolean required = false;
 
-        // File rebalancing should start only if all partitions are in read-only mode.
+        // File rebalancing should start only if all partitions are in inactive mode.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.readOnly())
-                required = true;
-            else
+            if (part.active())
                 return false;
+
+            required = true;
         }
 
         return required;
@@ -346,11 +346,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /**
      * @param grp Cache group.
-     * @return {@code True} if cache group has at least one read-only partition.
+     * @return {@code True} if cache group has at least one inactive partition.
      */
-    private boolean hasReadOnlyParttition(CacheGroupContext grp) {
+    private boolean hasIdleParttition(CacheGroupContext grp) {
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.readOnly())
+            if (!part.active())
                 return true;
         }
 

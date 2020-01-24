@@ -235,7 +235,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                         Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
 
                         for (Integer partId : entry.getValue()) {
-                            assert grp.topology().localPartition(partId).dataStore().readOnly() :
+                            assert !grp.topology().localPartition(partId).active() :
                                 "cache=" + grp.cacheOrGroupName() + " p=" + partId;
 
                             long grpAndPart = uniquePartId(grpId, partId);
@@ -514,16 +514,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
-                assert part.dataStore().readOnly() : "grpId=" + grpId + " p=" + partId;
+                assert !part.active() : "grpId=" + grpId + " p=" + partId;
 
                 // Save current counter.
-                PartitionUpdateCounter readCntr =
-                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).readOnlyPartUpdateCounter();
+                PartitionUpdateCounter cntr =
+                    ((GridCacheOffheapManager.GridCacheDataStore)part.dataStore()).inactivePartUpdateCounter();
 
                 // Save current update counter.
                 PartitionUpdateCounter snapshotCntr = part.dataStore().partUpdateCounter();
 
-                part.readOnly(false);
+                part.enable();
 
                 AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
 
@@ -533,7 +533,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 // These operations can update the old update counter or the new update counter, so the maximum applied
                 // counter is used after all updates are completed.
                 partReleaseFut.listen(c -> {
-                        long hwm = Math.max(readCntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
+                        long hwm = Math.max(cntr.highestAppliedCounter(), snapshotCntr.highestAppliedCounter());
 
                         cctx.kernalContext().getSystemExecutorService().submit(() -> endFut.onDone(hwm));
                     }

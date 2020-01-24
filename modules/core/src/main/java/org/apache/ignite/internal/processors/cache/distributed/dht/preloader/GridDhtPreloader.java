@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -281,8 +280,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 else {
                     // If for some reason (for example if supplier fails and new supplier is elected) partition is
                     // assigned for full rebalance force clearing if not yet set.
-                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p) &&
-                        !part.dataStore().readOnly())
+                    if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p) && part.active())
                         part.clearAsync();
 
                     List<ClusterNode> picked = remoteOwners(p, topVer);
