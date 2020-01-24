@@ -47,13 +47,16 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Permissions. */
-    private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+    public static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
 
     /** Users security data. */
     private final Collection<TestSecurityData> predefinedAuthData;
+
+    /** Global authentication. */
+    private final boolean globalAuth;
 
     /** Authorize records. */
     private final List<AuthorizeRecord> authorizeRecords = new ArrayList<>();
@@ -110,17 +113,21 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
      * Constructor.
      */
     public TestSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
-        Collection<TestSecurityData> predefinedAuthData) {
+        Collection<TestSecurityData> predefinedAuthData, boolean globalAuth) {
         super(ctx);
 
         this.nodeSecData = nodeSecData;
         this.predefinedAuthData = predefinedAuthData.isEmpty()
             ? Collections.emptyList()
             : new ArrayList<>(predefinedAuthData);
+        this.globalAuth = globalAuth;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+        if (!PERMS.containsKey(cred))
+            return null;
+
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
@@ -133,11 +140,14 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public boolean isGlobalNodeAuthentication() {
-        return false;
+        return globalAuth;
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext ctx) {
+        if (!PERMS.containsKey(ctx.credentials()))
+            return null;
+
         return new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
