@@ -501,6 +501,8 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             if (gctx == null) {
                 acceptException(new IgniteCheckedException("Cache group context has not found " +
                     "due to the cache group is stopped: " + pair));
+
+                break;
             }
 
             CacheConfiguration ccfg = gctx.config();
@@ -542,7 +544,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         int futsSize = futs.size();
 
         CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
-            .whenComplete((res, t) -> {
+            .whenCompleteAsync((res, t) -> {
                 assert t == null : "Excepction must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
