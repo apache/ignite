@@ -77,9 +77,9 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     private final Lock lock = new ReentrantLock();
 
     /** Checkpoint listener. */
-    private final CheckpointListener cpLsnr = new CheckpointListener();
+    private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
-    /** File rebalance routine. */
+    /** Partition File rebalancing routine. */
     private volatile FileRebalanceRoutine fileRebalanceRoutine = new FileRebalanceRoutine();
 
     /**
@@ -91,7 +91,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(cpLsnr);
+        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
 
         cctx.snapshotMgr().addSnapshotListener(new PartitionSnapshotListener());
     }
@@ -101,7 +101,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         lock.lock();
 
         try {
-            ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(cpLsnr);
+            ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
             fileRebalanceRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
@@ -173,30 +173,28 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             if (!supports(grp))
                 continue;
 
+            boolean hasReadOnlyParttition = false;
+
             if (!locJoinBaselineChange && !required(grp)) {
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
-                if (hasReadOnlyParttition(grp)) {
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        part.readOnly(false);
-
-                        exchFut.addClearingPartition(grp, part.id());
-                    }
-                }
-
-                continue;
+                if (!(hasReadOnlyParttition = hasReadOnlyParttition(grp)))
+                    continue;
             }
 
-            boolean toReadOnly = fileRebalanceApplicable(grp, exchFut);
+            boolean toReadOnly = !hasReadOnlyParttition && fileRebalanceApplicable(grp, exchFut);
 
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 if (part.dataStore().readOnly(toReadOnly)) {
-                    ((GridCacheDataStore)part.dataStore()).close();
-
-                    if (!toReadOnly)
-                        exchFut.addClearingPartition(grp, part.id());
+                    if (toReadOnly)
+                        ((GridCacheDataStore)part.dataStore()).close();
                 }
+
+                // If file rebalancing for cache group was incomplete partition can't be rebalanced using
+                // historical rebalancing, because we didn't create an index for this partition.
+                if (hasReadOnlyParttition)
+                    exchFut.addClearingPartition(grp, part.id());
             }
         }
     }
@@ -244,18 +242,18 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             // Start new rebalance session.
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
-                exchFut.exchangeId(), rebalanceId, cpLsnr::schedule);
+                exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
             rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                 @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
                     if (fut0.error() != null) {
-                        log.error("File rebalance failed.", fut0.error());
+                        log.error("File rebalance failed [topVer=" + topVer + "]", fut0.error());
 
                         return;
                     }
 
                     if (fut0.isCancelled()) {
-                        U.log(log, "File rebalance canceled [topVer=" + topVer + "]");
+                        U.log(log, "File rebalance cancelled [topVer=" + topVer + "]");
 
                         return;
                     }

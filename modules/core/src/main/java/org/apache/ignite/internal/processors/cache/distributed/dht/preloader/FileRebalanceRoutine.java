@@ -63,7 +63,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
 /**
- * File rebalance routine.
+ * Partition File rebalancing routine.
  */
 public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Rebalance topology version. */
