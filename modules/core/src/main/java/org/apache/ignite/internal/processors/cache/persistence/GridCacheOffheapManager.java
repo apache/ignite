@@ -2043,22 +2043,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public void reinit() {
             assert !active() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
+            initLock.lock();
+
             try {
-                close();
+                delegate = null;
 
                 CacheDataStore store = init0(false);
 
                 assert store != null;
             } catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
-            }
-        }
-
-        public void close() {
-            initLock.lock();
-
-            try {
-                delegate = null;
             } finally {
                 initLock.unlock();
             }
@@ -2943,34 +2937,36 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         ", mode=" + (activeMode ? "ACTIVE" : "DISABLED") + "]");
                 }
 
-                if (!activeMode)
-                    initInactiveModeCounter();
+                if (!activeMode) {
+                    initLock.lock();
+
+                    try {
+                        PartitionUpdateCounter readCntr0;
+
+                        if (grp.mvccEnabled())
+                            readCntr0 = new PartitionMvccTxUpdateCounterImpl();
+                        else if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
+                            readCntr0 = new PartitionAtomicUpdateCounterImpl();
+                        else
+                            readCntr0 = new PartitionTxUpdateCounterImpl();
+
+                        PartitionUpdateCounter cntr0 = delegate.partUpdateCounter();
+
+                        if (cntr0 != null)
+                            readCntr0.init(cntr0.get(), cntr0.getBytes());
+
+                        noopModeCntr = readCntr0;
+
+                        delegate = null;
+                    } finally {
+                        initLock.unlock();
+                    }
+                }
 
                 return true;
             }
 
             return false;
-        }
-
-        /**
-         * Initialize partition update counter for inactive mode.
-         */
-        private void initInactiveModeCounter() {
-            PartitionUpdateCounter readCntr0;
-
-            if (grp.mvccEnabled())
-                readCntr0 = new PartitionMvccTxUpdateCounterImpl();
-            else if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
-                readCntr0 = new PartitionAtomicUpdateCounterImpl();
-            else
-                readCntr0 = new PartitionTxUpdateCounterImpl();
-
-            PartitionUpdateCounter cntr0 = delegate.partUpdateCounter();
-
-            if (cntr0 != null)
-                readCntr0.init(cntr0.get(), cntr0.getBytes());
-
-            noopModeCntr = readCntr0;
         }
     }
 

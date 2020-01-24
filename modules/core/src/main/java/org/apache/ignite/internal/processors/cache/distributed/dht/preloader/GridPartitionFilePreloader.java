@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.GridCacheDataStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -186,10 +185,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             boolean disable = !hasIdleParttition && fileRebalanceApplicable(grp, exchFut);
 
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (disable ? part.dataStore().disable() : part.dataStore().enable()) {
-                    if (disable)
-                        ((GridCacheDataStore)part.dataStore()).close();
-                }
+                if (disable)
+                    part.disable();
+                else
+                    part.enable();
 
                 // If file rebalancing for cache group was incomplete partition can't be rebalanced using
                 // historical rebalancing, because we didn't create an index for this partition.
