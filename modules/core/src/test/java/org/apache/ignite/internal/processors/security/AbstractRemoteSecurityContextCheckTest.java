@@ -39,7 +39,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 
-import static org.apache.ignite.Ignition.localIgnite;
+import static org.apache.ignite.internal.IgnitionEx.localIgnite;
 
 /**
  *
@@ -226,22 +226,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * @param opName Operation name.
          */
         public void register(String opName) {
-            register((IgniteEx)localIgnite(), opName);
-        }
-
-        /**
-         * Registers a security subject referred for the passed {@code ignite} with the passed operation name and
-         * increments invoke counter.
-         *
-         * @param ignite Instance of ignite.
-         * @param opName Operation name.
-         */
-        public void register(IgniteEx ignite, String opName) {
             if (expSecSubjId == null) {
                 error("SubjectId cannot be null.");
 
                 return;
             }
+
+            IgniteEx ignite = localIgnite();
 
             UUID actualSubjId = secSubjectId(ignite);
 

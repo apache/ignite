@@ -24,7 +24,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -33,11 +32,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -115,7 +112,7 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
             //Checks the case when IgniteFuture#cancel is called.
             checkCancel(initator, rmt, IgniteFuture::cancel);
             //Checks the case when rmt node leaves the cluster.
-            checkCancel(initator, rmt, f -> IgnitionEx.stop(rmt.name(), true, false));
+            checkCancel(initator, rmt, f -> stopGrid(rmt.name(), true));
         }
         finally {
             G.stopAll(true);
@@ -154,11 +151,8 @@ public class ComputeTaskCancelRemoteSecurityContextCheckTest extends AbstractRem
             Integer arg) throws IgniteException {
             return Collections.singletonMap(
                 new ComputeJob() {
-                    @IgniteInstanceResource
-                    private Ignite loc;
-
                     @Override public void cancel() {
-                        VERIFIER.register((IgniteEx)loc, OPERATION_START);
+                        VERIFIER.register(OPERATION_START);
 
                         CANCELED.set(true);
                     }

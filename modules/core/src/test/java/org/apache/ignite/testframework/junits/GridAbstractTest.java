@@ -1223,8 +1223,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
-            if (!isRemoteJvm(igniteInstanceName))
-                G.stop(igniteInstanceName, cancel);
+            if (!isRemoteJvm(igniteInstanceName)) {
+                IgniteUtils.setCurrentIgniteName(igniteInstanceName);
+
+                try {
+                    G.stop(igniteInstanceName, cancel);
+                }
+                finally {
+                    IgniteUtils.setCurrentIgniteName(null);
+                }
+            }
             else
                 IgniteProcessProxy.stop(igniteInstanceName, cancel);
 
