@@ -141,17 +141,17 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         startGrids(2);
 
         try {
-            UUID node0Id = grid(0).localNode().id();
-            UUID node1Id = grid(1).localNode().id();
+            Object node0consistentId = grid(0).localNode().consistentId();
+            Object node1consistentId = grid(1).localNode().consistentId();
 
             String node0regName = MetricUtils.metricName(
                 COMMUNICATION_METRICS_GROUP_NAME,
-                node0Id.toString()
+                node0consistentId.toString()
             );
 
             String node1regName = MetricUtils.metricName(
                 COMMUNICATION_METRICS_GROUP_NAME,
-                node1Id.toString()
+                node1consistentId.toString()
             );
 
             // Send custom message from node0 to node1.

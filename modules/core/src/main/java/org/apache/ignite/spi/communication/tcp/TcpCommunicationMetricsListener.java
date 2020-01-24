@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -82,10 +83,22 @@ class TcpCommunicationMetricsListener {
     private final Function<Short, LongAdderMetric> rcvdMsgsCntByTypeMetricFactory;
 
     /** Function to be used in {@link Map#computeIfAbsent(Object, Function)} of {@code sentMsgsMetricsByNodeId}. */
-    private final Function<UUID, LongAdderMetric> sentMsgsCntByNodeIdMetricFactory;
+    private final Function<UUID, AtomicLong> sentMsgsCntByNodeIdMetricFactory;
 
     /** Function to be used in {@link Map#computeIfAbsent(Object, Function)} of {@code rcvdMsgsMetricsByNodeId}. */
-    private final Function<UUID, LongAdderMetric> rcvdMsgsCntByNodeIdMetricFactory;
+    private final Function<UUID, AtomicLong> rcvdMsgsCntByNodeIdMetricFactory;
+
+    /** Function to be used in {@link Map#computeIfAbsent(Object, Function)} of {@code #sentMsgsMetricsByConsistentId}. */
+    private final Function<Object, LongAdderMetric> sentMsgsCntByConsistentIdMetricFactory;
+
+    /** Function to be used in {@link Map#computeIfAbsent(Object, Function)} of {@code #rcvdMsgsMetricsByConsistentId}. */
+    private final Function<Object, LongAdderMetric> rcvdMsgsCntByConsistentIdMetricFactory;
+
+    /** All sent messages count metrics grouped by message node id. */
+    public volatile Map<UUID, AtomicLong> allSentMsgsMetricsByNodeId = new ConcurrentHashMap<>();
+
+    /** Received messages metrics count grouped by message node id. */
+    public volatile Map<UUID, AtomicLong> allRcvdMsgsMetricsByNodeId = new HashMap<>();
 
     /** Sent bytes count metric.*/
     private final LongAdderMetric sentBytesMetric;
@@ -121,11 +134,17 @@ class TcpCommunicationMetricsListener {
         );
 
         sentMsgsCntByNodeIdMetricFactory = nodeId ->
-            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
-                .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+            allSentMsgsMetricsByNodeId.computeIfAbsent(nodeId, k -> new AtomicLong());
 
         rcvdMsgsCntByNodeIdMetricFactory = nodeId ->
-            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()))
+            allRcvdMsgsMetricsByNodeId.computeIfAbsent(nodeId, k -> new AtomicLong());
+
+        sentMsgsCntByConsistentIdMetricFactory = consistentId ->
+            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, consistentId.toString()))
+                .findMetric(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+
+        rcvdMsgsCntByConsistentIdMetricFactory = consistentId ->
+            mmgr.registry(metricName(COMMUNICATION_METRICS_GROUP_NAME, consistentId.toString()))
                 .findMetric(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
 
         sentBytesMetric = mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
@@ -154,9 +173,10 @@ class TcpCommunicationMetricsListener {
      * Collects statistics for message sent by SPI.
      *
      * @param msg Sent message.
+     * @param consistentId Receiver node consistent id.
      * @param nodeId Receiver node id.
      */
-    public void onMessageSent(Message msg, UUID nodeId) {
+    public void onMessageSent(Message msg, Object consistentId, UUID nodeId) {
         assert msg != null;
         assert nodeId != null;
 
@@ -167,7 +187,7 @@ class TcpCommunicationMetricsListener {
 
             sentMsgsMetric.increment();
 
-            threadMetrics.get().onMessageSent(msg, nodeId);
+            threadMetrics.get().onMessageSent(msg, consistentId, nodeId);
         }
     }
 
@@ -175,9 +195,10 @@ class TcpCommunicationMetricsListener {
      * Collects statistics for message received by SPI.
      *
      * @param msg Received message.
+     * @param consistentId Sender node consistent id.
      * @param nodeId Sender node id.
      */
-    public void onMessageReceived(Message msg, UUID nodeId) {
+    public void onMessageReceived(Message msg, Object consistentId, UUID nodeId) {
         assert msg != null;
         assert nodeId != null;
 
@@ -188,7 +209,7 @@ class TcpCommunicationMetricsListener {
 
             rcvdMsgsMetric.increment();
 
-            threadMetrics.get().onMessageReceived(msg, nodeId);
+            threadMetrics.get().onMessageReceived(msg, consistentId, nodeId);
         }
     }
 
@@ -247,7 +268,7 @@ class TcpCommunicationMetricsListener {
      * @return Map containing sender nodes and respective counts.
      */
     public Map<UUID, Long> receivedMessagesByNode() {
-        return collectMessagesCountByNodeId(RECEIVED_MESSAGES_BY_NODE_ID_METRIC_NAME);
+        return collectMessagesCountByNodeId(allRcvdMsgsMetricsByNodeId);
     }
 
     /**
@@ -265,7 +286,7 @@ class TcpCommunicationMetricsListener {
      * @return Map containing receiver nodes and respective counts.
      */
     public Map<UUID, Long> sentMessagesByNode() {
-        return collectMessagesCountByNodeId(SENT_MESSAGES_BY_NODE_ID_METRIC_NAME);
+        return collectMessagesCountByNodeId(allSentMsgsMetricsByNodeId);
     }
 
     /** */
@@ -293,20 +314,11 @@ class TcpCommunicationMetricsListener {
     }
 
     /** */
-    protected Map<UUID, Long> collectMessagesCountByNodeId(String metricName) {
+    protected Map<UUID, Long> collectMessagesCountByNodeId(Map<UUID, AtomicLong> map) {
         Map<UUID, Long> res = new HashMap<>();
 
-        String mregPrefix = COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR;
-
-        for (ReadOnlyMetricRegistry mreg : mmgr) {
-            if (mreg.name().startsWith(mregPrefix)) {
-                String nodeIdStr = mreg.name().substring(mregPrefix.length());
-
-                UUID nodeId = UUID.fromString(nodeIdStr);
-
-                res.put(nodeId, mreg.<LongMetric>findMetric(metricName).value());
-            }
-        }
+        for (Map.Entry<UUID, AtomicLong> entry : map.entrySet())
+            res.put(entry.getKey(), entry.getValue().longValue());
 
         return res;
     }
@@ -338,15 +350,22 @@ class TcpCommunicationMetricsListener {
     }
 
     /**
+     * @param consistentId Consistent id of the node.
      * @param nodeId Left node id.
      */
-    public void onNodeLeft(UUID nodeId) {
+    public void onNodeLeft(Object consistentId, UUID nodeId) {
         for (ThreadMetrics threadMetrics : allMetrics) {
             threadMetrics.rcvdMsgsMetricsByNodeId = new HashMap<>();
             threadMetrics.sentMsgsMetricsByNodeId = new HashMap<>();
+
+            threadMetrics.sentMsgsMetricsByConsistentId = new HashMap<>();
+            threadMetrics.rcvdMsgsMetricsByConsistentId = new HashMap<>();
         }
 
-        mmgr.remove(metricName(COMMUNICATION_METRICS_GROUP_NAME, nodeId.toString()));
+        allSentMsgsMetricsByNodeId.remove(nodeId);
+        allRcvdMsgsMetricsByNodeId.remove(nodeId);
+
+        mmgr.remove(metricName(COMMUNICATION_METRICS_GROUP_NAME, consistentId.toString()));
     }
 
     /**
@@ -404,36 +423,50 @@ class TcpCommunicationMetricsListener {
         /**
          * Sent messages count metrics grouped by message node id.
          */
-        public volatile Map<UUID, LongAdderMetric> sentMsgsMetricsByNodeId = new HashMap<>();
+        public volatile Map<UUID, AtomicLong> sentMsgsMetricsByNodeId = new HashMap<>();
 
         /**
          * Received messages metrics count grouped by message node id.
          */
-        public volatile Map<UUID, LongAdderMetric> rcvdMsgsMetricsByNodeId = new HashMap<>();
+        public volatile Map<UUID, AtomicLong> rcvdMsgsMetricsByNodeId = new HashMap<>();
+
+        /**
+         * Sent messages count metrics grouped by message node consistent id.
+         */
+        public volatile Map<Object, LongAdderMetric> sentMsgsMetricsByConsistentId = new HashMap<>();
+
+        /**
+         * Received messages metrics count grouped by message node consistent id.
+         */
+        public volatile Map<Object, LongAdderMetric> rcvdMsgsMetricsByConsistentId = new HashMap<>();
 
 
         /**
          * Collects statistics for message sent by SPI.
-         *
-         * @param msg Sent message.
+         *  @param msg Sent message.
+         * @param consistentId Receiver node consistent id.
          * @param nodeId Receiver node id.
          */
-        private void onMessageSent(Message msg, UUID nodeId) {
+        private void onMessageSent(Message msg, Object consistentId, UUID nodeId) {
             sentMsgsMetricsByType.computeIfAbsent(msg.directType(), sentMsgsCntByTypeMetricFactory).increment();
 
-            sentMsgsMetricsByNodeId.computeIfAbsent(nodeId, sentMsgsCntByNodeIdMetricFactory).increment();
+            sentMsgsMetricsByConsistentId.computeIfAbsent(consistentId, sentMsgsCntByConsistentIdMetricFactory).increment();
+
+            sentMsgsMetricsByNodeId.computeIfAbsent(nodeId, sentMsgsCntByNodeIdMetricFactory).incrementAndGet();
         }
 
         /**
          * Collects statistics for message received by SPI.
-         *
-         * @param msg Received message.
+         *  @param msg Received message.
+         * @param consistentId Sender node consistent id.
          * @param nodeId Sender node id.
          */
-        private void onMessageReceived(Message msg, UUID nodeId) {
+        private void onMessageReceived(Message msg, Object consistentId, UUID nodeId) {
             rcvdMsgsMetricsByType.computeIfAbsent(msg.directType(), rcvdMsgsCntByTypeMetricFactory).increment();
 
-            rcvdMsgsMetricsByNodeId.computeIfAbsent(nodeId, rcvdMsgsCntByNodeIdMetricFactory).increment();
+            rcvdMsgsMetricsByConsistentId.computeIfAbsent(consistentId, rcvdMsgsCntByConsistentIdMetricFactory).increment();
+
+            rcvdMsgsMetricsByNodeId.computeIfAbsent(nodeId, rcvdMsgsCntByNodeIdMetricFactory).incrementAndGet();
         }
     }
 }
