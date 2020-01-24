@@ -465,7 +465,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             .map(GroupPartitionId::getGroupId)
             .collect(Collectors.toSet())
             .forEach(grpId ->
-                futs.add(CompletableFuture.runAsync(() ->
+                futs.add(CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
                                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
