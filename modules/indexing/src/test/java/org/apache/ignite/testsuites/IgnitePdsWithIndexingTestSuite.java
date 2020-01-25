@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQuery
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
+import org.apache.ignite.internal.processors.database.RebuildIndexTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
 
@@ -53,6 +54,7 @@ public class IgnitePdsWithIndexingTestSuite {
         suite.addTest(new JUnit4TestAdapter(IgniteTwoRegionsRebuildIndexTest.class));
         suite.addTest(new JUnit4TestAdapter(IgniteTcBotInitNewPageTest.class));
         suite.addTest(new JUnit4TestAdapter(IndexingMultithreadedLoadContinuousRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(RebuildIndexTest.class));
 
         return suite;
     }
