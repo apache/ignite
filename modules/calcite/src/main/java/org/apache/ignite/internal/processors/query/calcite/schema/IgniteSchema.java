@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 
 /**
  * Ignite schema.
@@ -59,35 +55,10 @@ public class IgniteSchema extends AbstractSchema {
     }
 
     /**
-     * Callback method.
-     *
-     * @param typeDesc Query type descriptor.
-     * @param cacheInfo Cache info.
-     */
-    public void onSqlTypeCreate(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?,?> cacheInfo) {
-        Object identityKey = cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
-            cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
-
-        TableDescriptorImpl desc = new TableDescriptorImpl(cacheInfo.name(), typeDesc, identityKey);
-
-        addTable(new IgniteTable(ImmutableList.of(schemaName, typeDesc.tableName()), desc));
-    }
-
-    /**
-     * Callback method.
-     *
-     * @param typeDesc Query type descriptor.
-     * @param cacheInfo Cache info.
-     */
-    public void onSqlTypeDrop(GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?,?> cacheInfo) {
-        removeTable(typeDesc.tableName());
-    }
-
-    /**
      * @param table Table.
      */
-    public void addTable(IgniteTable table) {
-        tableMap.put(table.name(), table);
+    public void addTable(String tableName, Table table) {
+        tableMap.put(tableName, table);
     }
 
     /**

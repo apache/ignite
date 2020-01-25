@@ -15,36 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.internal.processors.query.QueryContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface MessageService {
+public interface ExecutionService {
     /**
-     * Sends a message to given nodes.
+     * Executes a query.
      *
-     * @param nodeIds Nodes IDs.
-     * @param msg Message.
+     * @param ctx Query external context, contains flags and connection settings like a locale or a timezone.
+     * @param schema Schema name.
+     * @param query Query.
+     * @param params Query parameters.
+     * @return Query cursor.
      */
-    void send(Collection<UUID> nodeIds, CalciteMessage msg);
+    FieldsQueryCursor<List<?>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params);
 
     /**
-     * Sends a message to given node.
+     * Cancels a running query.
      *
-     * @param nodeId Node ID.
-     * @param msg Message.
+     * @param queryId Query ID.
      */
-    void send(UUID nodeId, CalciteMessage msg);
-
-    /**
-     * Registers a listener for messages of a given type.
-     *
-     * @param lsnr Listener.
-     * @param type Message type.
-     */
-    void register(MessageListener lsnr, MessageType type);
+    void cancelQuery(UUID queryId);
 }

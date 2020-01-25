@@ -162,17 +162,12 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public MessageType type() {
         return MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 4;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
     }
 }

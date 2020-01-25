@@ -36,12 +36,5 @@ public interface MappingService {
      * @param nodeFilter Node filter.
      * @return Nodes mapping for intermediate fragments.
      */
-    NodesMapping intermediateMapping(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter);
-
-    /**
-     * @param cacheId Cache ID.
-     * @param topVer Topology version.
-     * @return Nodes mapping for particular table, depends on underlying cache distribution.
-     */
-    NodesMapping cacheMapping(int cacheId, @NotNull AffinityTopologyVersion topVer);
+    NodesMapping mapBalanced(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter);
 }

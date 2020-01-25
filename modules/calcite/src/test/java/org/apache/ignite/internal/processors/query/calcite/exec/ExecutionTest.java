@@ -20,13 +20,24 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
  *
  */
 public class ExecutionTest extends AbstractExecutionTest {
+    /**
+     * @throws Exception If failed.
+     */
+    @Before
+    @Override public void setup() throws Exception {
+        nodesCount = 1;
+        super.setup();
+    }
+
     @Test
     public void testSimpleExecution() throws Exception {
         // SELECT P.ID, P.NAME, PR.NAME AS PROJECT
@@ -35,7 +46,7 @@ public class ExecutionTest extends AbstractExecutionTest {
         // ON P.ID = PR.RESP_ID
         // WHERE P.ID >= 2
 
-        ExecutionContext ctx = executionContext(UUID.randomUUID(), UUID.randomUUID(), 0);
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
         ScanNode persons = new ScanNode(ctx, Arrays.asList(
             new Object[]{0, "Igor", "Seliverstov"},

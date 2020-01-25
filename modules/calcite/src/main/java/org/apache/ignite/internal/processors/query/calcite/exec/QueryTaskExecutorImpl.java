@@ -21,26 +21,21 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
-import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /**
  * TODO use {@link org.apache.ignite.internal.util.StripedExecutor}, registered in core pols.
  */
-public class QueryTaskExecutorImpl implements QueryTaskExecutor, LifecycleAware {
-    /** */
-    private final IgniteLogger log;
-
+public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskExecutor {
     /** */
     private IgniteStripedThreadPoolExecutor srvc;
 
     /** */
     public QueryTaskExecutorImpl(GridKernalContext ctx) {
-        log = ctx.log(MessageServiceImpl.class);
+        super(ctx);
     }
 
     /** {@inheritDoc} */

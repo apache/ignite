@@ -21,140 +21,151 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 
 /**
  *
  */
-public class ExchangeServiceImpl implements ExchangeService, LifecycleAware {
+public class ExchangeServiceImpl extends AbstractService implements ExchangeService {
     /** */
-    private final IgniteLogger log;
+    private QueryTaskExecutor taskExecutor;
 
     /** */
-    private CalciteQueryProcessor proc;
+    private MailboxRegistry mailboxRegistry;
+
+    /** */
+    private MessageService messageService;
 
     /**
      * @param ctx Kernal context.
      */
     public ExchangeServiceImpl(GridKernalContext ctx) {
-        log = ctx.log(ExchangeServiceImpl.class);
+        super(ctx);
+    }
+
+    /**
+     * @param taskExecutor Task executor.
+     */
+    public void taskExecutor(QueryTaskExecutor taskExecutor) {
+        this.taskExecutor = taskExecutor;
+    }
+
+    /**
+     * @param mailboxRegistry Mailbox registry.
+     */
+    public void mailboxRegistry(MailboxRegistry mailboxRegistry) {
+        this.mailboxRegistry = mailboxRegistry;
+    }
+
+    /**
+     * @param messageService Message service.
+     */
+    public void messageService(MessageService messageService) {
+        this.messageService = messageService;
     }
 
     /** {@inheritDoc} */
     @Override public void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
-        messageService().send(nodeId, new QueryBatchMessage(queryId, fragmentId, exchangeId, batchId, rows));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onBatchReceived(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
-        Inbox<?> inbox = mailboxRegistry().inbox(queryId, exchangeId);
-
-        if (inbox == null && batchId == 0)
-            // first message sent before a fragment is built
-            // note that an inbox source fragment id is also used as an exchange id
-            inbox = mailboxRegistry().register(new Inbox<>(baseInboxContext(queryId, fragmentId), exchangeId, exchangeId));
-
-        if (inbox != null)
-            inbox.onBatchReceived(nodeId, batchId, rows);
-        else if (log.isDebugEnabled()){
-             log.debug("Stale batch message received: [" +
-                 "caller=" + caller + ", " +
-                 "nodeId=" + nodeId + ", " +
-                 "queryId=" + queryId + ", " +
-                 "fragmentId=" + fragmentId + ", " +
-                 "exchangeId=" + exchangeId + ", " +
-                 "batchId=" + batchId + "]");
-        }
+        messageService.send(nodeId, new QueryBatchMessage(queryId, fragmentId, exchangeId, batchId, rows));
     }
 
     /** {@inheritDoc} */
     @Override public void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        messageService().send(nodeId, new QueryBatchAcknowledgeMessage(queryId, fragmentId, exchangeId, batchId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAcknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        Outbox<?> outbox = mailboxRegistry().outbox(queryId, exchangeId);
-
-        if (outbox != null)
-            outbox.onAcknowledge(nodeId, batchId);
-        else if (log.isDebugEnabled()) {
-            log.debug("Stale acknowledge message received: [" +
-                "caller=" + caller + ", " +
-                "nodeId=" + nodeId + ", " +
-                "queryId=" + queryId + ", " +
-                "fragmentId=" + fragmentId + ", " +
-                "exchangeId=" + exchangeId + ", " +
-                "batchId=" + batchId + "]");
-        }
+        messageService.send(nodeId, new QueryBatchAcknowledgeMessage(queryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */
     @Override public void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        messageService().send(nodeId, new InboxCancelMessage(queryId, fragmentId, exchangeId, batchId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onCancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        Inbox<?> inbox = mailboxRegistry().inbox(queryId, exchangeId);
-
-        if (inbox != null)
-            inbox.cancel();
-        else if (log.isDebugEnabled()) {
-            log.debug("Stale cancel message received: [" +
-                "caller=" + caller + ", " +
-                "nodeId=" + nodeId + ", " +
-                "queryId=" + queryId + ", " +
-                "fragmentId=" + fragmentId + ", " +
-                "exchangeId=" + exchangeId + ", " +
-                "batchId=" + batchId + "]");
-        }
+        messageService.send(nodeId, new InboxCancelMessage(queryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+
+        taskExecutor(proc.taskExecutor());
+        mailboxRegistry(proc.mailboxRegistry());
+        messageService(proc.messageService());
+
+        registerListeners();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onStop() {
-        proc = null;
-    }
-
-    /** */
-    private QueryTaskExecutor taskExecutor() {
-        return proc.taskExecutor();
-    }
-
-    /** */
-    private MailboxRegistry mailboxRegistry() {
-        return proc;
-    }
-
-    /** */
-    private MessageService messageService() {
-        return proc.messageService();
+    /**
+     * For tests purpose.
+     */
+    public void registerListeners() {
+        messageService.register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
+        messageService.register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
+        messageService.register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
     /**
      * @return Minimal execution context to meet Inbox needs.
      */
     private ExecutionContext baseInboxContext(UUID queryId, long fragmentId) {
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
-            .logger(log)                        // need to log errors
-            .taskExecutor(taskExecutor())       // need to put rows into an inbox buffer
-            .mailboxRegistry(mailboxRegistry()) // need to unregister inbox on cancel
-            .build();
+        IgniteCalciteContext ctx = IgniteCalciteContext.builder().logger(log).build();
+        return new ExecutionContext(taskExecutor, ctx, queryId, fragmentId, null, ImmutableMap.of());
+    }
 
-        return new ExecutionContext(ctx, queryId, fragmentId, null, ImmutableMap.of());
+    /** */
+    private void onMessage(UUID nodeId, InboxCancelMessage msg) {
+        Inbox<?> inbox = mailboxRegistry.inbox(msg.queryId(), msg.exchangeId());
+
+        if (inbox != null)
+            inbox.cancel();
+        else if (log.isDebugEnabled()) {
+            log.debug("Stale cancel message received: [" +
+                "nodeId=" + nodeId + ", " +
+                "queryId=" + msg.queryId() + ", " +
+                "fragmentId=" + msg.fragmentId() + ", " +
+                "exchangeId=" + msg.exchangeId() + ", " +
+                "batchId=" + msg.batchId() + "]");
+        }
+    }
+
+    /** */
+    private void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
+        Outbox<?> outbox = mailboxRegistry.outbox(msg.queryId(), msg.exchangeId());
+
+        if (outbox != null)
+            outbox.onAcknowledge(nodeId, msg.batchId());
+        else if (log.isDebugEnabled()) {
+            log.debug("Stale acknowledge message received: [" +
+                "nodeId=" + nodeId + ", " +
+                "queryId=" + msg.queryId() + ", " +
+                "fragmentId=" + msg.fragmentId() + ", " +
+                "exchangeId=" + msg.exchangeId() + ", " +
+                "batchId=" + msg.batchId() + "]");
+        }
+    }
+
+    /** */
+    private void onMessage(UUID nodeId, QueryBatchMessage msg) {
+        Inbox<?> inbox = mailboxRegistry.inbox(msg.queryId(), msg.exchangeId());
+
+        if (inbox == null && msg.batchId() == 0)
+            // first message sent before a fragment is built
+            // note that an inbox source fragment id is also used as an exchange id
+            inbox = mailboxRegistry.register(new Inbox<>(this, mailboxRegistry, baseInboxContext(msg.queryId(), msg.fragmentId()), msg.exchangeId(), msg.exchangeId()));
+
+        if (inbox != null)
+            inbox.onBatchReceived(nodeId, msg.batchId(), msg.rows());
+        else if (log.isDebugEnabled()){
+            log.debug("Stale batch message received: [" +
+                "nodeId=" + nodeId + ", " +
+                "queryId=" + msg.queryId() + ", " +
+                "fragmentId=" + msg.fragmentId() + ", " +
+                "exchangeId=" + msg.exchangeId() + ", " +
+                "batchId=" + msg.batchId() + "]");
+        }
     }
 }

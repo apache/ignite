@@ -19,17 +19,21 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
-public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener {
+public class SchemaHolderImpl extends AbstractService implements SchemaHolder, SchemaChangeListener {
     /** */
     private final Map<String, IgniteSchema> schemas = new HashMap<>();
 
@@ -40,7 +44,9 @@ public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener {
      * @param ctx Kernal context.
      */
     public SchemaHolderImpl(GridKernalContext ctx) {
-        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
+        super(ctx);
+
+        Optional.ofNullable(ctx.internalSubscriptionProcessor()).ifPresent(this::registerListeners);
     }
 
     /**
@@ -69,15 +75,35 @@ public class SchemaHolderImpl implements SchemaHolder, SchemaChangeListener {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-        schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeCreate(typeDescriptor, cacheInfo);
+    @Override public synchronized void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+        IgniteSchema schema = schemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        String tableName = typeDescriptor.tableName();
+        TableDescriptorImpl desc = new TableDescriptorImpl(cacheInfo.cacheContext(), typeDescriptor, affinityIdentity(cacheInfo));
+
+        schema.addTable(tableName, new IgniteTable(tableName, desc));
+
         rebuild();
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
-        schemas.computeIfAbsent(schemaName, IgniteSchema::new).onSqlTypeDrop(typeDescriptor, cacheInfo);
+    @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
+        IgniteSchema schema = schemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.removeTable(typeDescriptor.tableName());
+
         rebuild();
+    }
+
+    /** */
+    private void registerListeners(GridInternalSubscriptionProcessor prc) {
+        prc.registerSchemaChangeListener(this);
+    }
+
+    /** */
+    private Object affinityIdentity(GridCacheContextInfo<?, ?> cacheInfo) {
+        return cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
+            cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
     }
 
     /** */

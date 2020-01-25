@@ -17,31 +17,74 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import java.util.function.Supplier;
+
 /**
  *
  */
-public final class MessageType {
-    /** */
-    public static final short QUERY_START_REQUEST = 300;
+public enum MessageType {
+    QUERY_START_REQUEST(300, QueryStartRequest::new),
+    QUERY_START_RESPONSE(301, QueryStartResponse::new),
+    QUERY_CANCEL_REQUEST(302, QueryCancelRequest::new),
+    QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
+    QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
+    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCancelMessage::new),
+    GENERIC_ROW_MESSAGE(306, GenericRowMessage::new);
 
     /** */
-    public static final short QUERY_START_RESPONSE = 301;
+    private final int directType;
 
     /** */
-    public static final short QUERY_CANCEL_REQUEST = 302;
+    private final Supplier<CalciteMessage> factory;
+
+    /**
+     * @param directType Message direct type.
+     */
+    MessageType(int directType, Supplier<CalciteMessage> factory) {
+        this.directType = directType;
+        this.factory = factory;
+    }
+
+    /**
+     * @return Message direct type;
+     */
+    public short directType() {
+        return (short) directType;
+    }
 
     /** */
-    public static final short QUERY_BATCH_MESSAGE = 303;
+    private CalciteMessage newMessage() {
+        CalciteMessage msg = factory.get();
 
-    /** */
-    public static final short QUERY_ACKNOWLEDGE_MESSAGE = 304;
+        assert msg.type() == this;
 
-    /** */
-    public static final short QUERY_INBOX_CANCEL_MESSAGE = 305;
+        return msg;
+    }
 
-    /** */
-    public static final short GENERIC_ROW_MESSAGE = 306;
-
-    /** */
-    private MessageType() {}
+    /**
+     * Message factory method.
+     *
+     * @param directType Message direct type.
+     * @return new message or {@code null} in case of unknown message direct type.
+     */
+    public static CalciteMessage newMessage(short directType) {
+        switch (directType) {
+            case 300:
+                return QUERY_START_REQUEST.newMessage();
+            case 301:
+                return QUERY_START_RESPONSE.newMessage();
+            case 302:
+                return QUERY_CANCEL_REQUEST.newMessage();
+            case 303:
+                return QUERY_BATCH_MESSAGE.newMessage();
+            case 304:
+                return QUERY_ACKNOWLEDGE_MESSAGE.newMessage();
+            case 305:
+                return QUERY_INBOX_CANCEL_MESSAGE.newMessage();
+            case 306:
+                return GENERIC_ROW_MESSAGE.newMessage();
+            default:
+                return null;
+        }
+    }
 }

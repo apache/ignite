@@ -23,9 +23,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -40,6 +39,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     @Parameter(0)
     public int rowsCount;
 
+    /** */
     @Parameter(1)
     public int remoteFragmentsCount;
 
@@ -60,15 +60,23 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
+    @Before
+    @Override public void setup() throws Exception {
+        nodesCount = remoteFragmentsCount + 1;
+        super.setup();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testContinuousExecution() throws Exception {
         UUID queryId = UUID.randomUUID();
 
-        List<UUID> nodes = IntStream.range(0, remoteFragmentsCount + 1)
-            .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
+        List<UUID> nodes = nodes();
 
         for (int i = 1; i < nodes.size(); i++) {
-            ExecutionContext ctx = executionContext(nodes.get(i), queryId, 0);
+            UUID localNodeId = nodes.get(i);
 
             Iterable<Object[]> iterable = () -> new Iterator<Object[]>() {
                 /** */
@@ -98,24 +106,36 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
                 }
             };
 
-            ScanNode scan = new ScanNode(ctx, iterable);
-            ProjectNode project = new ProjectNode(ctx, scan, r -> new Object[]{r[0], r[1], r[5]});
-            FilterNode filter = new FilterNode(ctx, project, r -> (Integer) r[0] >= 2);
+            ExecutionContext ectx = executionContext(localNodeId, queryId, 0);
 
-            Outbox<Object[]> outbox = new Outbox<>(ctx, 1, ctx.fragmentId(), filter, new AllNodes(nodes.subList(0, 1)));
+            ScanNode scan = new ScanNode(ectx, iterable);
+            ProjectNode project = new ProjectNode(ectx, scan, r -> new Object[]{r[0], r[1], r[5]});
+            FilterNode filter = new FilterNode(ectx, project, r -> (Integer) r[0] >= 2);
 
-            ctx.mailboxRegistry().register(outbox);
+            MailboxRegistry registry = mailboxRegistry(localNodeId);
+
+            Outbox<Object[]> outbox = new Outbox<>(
+                exchangeService(localNodeId),
+                registry,
+                ectx,1,0, filter, new AllNodes(nodes.subList(0, 1)));
+
+            registry.register(outbox);
 
             outbox.context().execute(outbox::request);
         }
 
-        ExecutionContext ctx = executionContext(nodes.get(0), queryId, 1);
+        UUID localNodeId = nodes.get(0);
 
-        Inbox<Object[]> inbox = (Inbox<Object[]>) ctx.mailboxRegistry().register(new Inbox<Object[]>(ctx, 0, 0));
+        ExecutionContext ectx = executionContext(localNodeId, queryId, 1);
 
-        inbox.init(ctx, nodes.subList(1, nodes.size()), null);
+        MailboxRegistry registry = mailboxRegistry(localNodeId);
 
-        ConsumerNode node = new ConsumerNode(ctx, inbox);
+        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(
+            new Inbox<Object[]>(exchangeService(localNodeId), registry, ectx, 0, 0));
+
+        inbox.init(ectx, nodes.subList(1, nodes.size()), null);
+
+        ConsumerNode node = new ConsumerNode(ectx, inbox);
 
         while (node.hasNext()) {
             Object[] row = node.next();

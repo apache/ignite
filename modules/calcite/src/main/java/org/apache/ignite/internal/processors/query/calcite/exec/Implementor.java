@@ -22,6 +22,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.schema.ScannableTable;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
@@ -47,15 +50,32 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     private final ExecutionContext ctx;
 
     /** */
-    private final ScalarFactory factory;
+    private final PartitionService partitionService;
+
+    /** */
+    private final ExchangeService exchangeService;
+
+    /** */
+    private final MailboxRegistry mailboxRegistry;
+
+    /** */
+    private final ScalarFactory scalarFactory;
 
     /**
+     * @param partitionService Affinity service.
+     * @param mailboxRegistry Mailbox registry.
+     * @param exchangeService Exchange service.
+     * @param failure Failure processor.
      * @param ctx Root context.
+     * @param log Logger.
      */
-    public Implementor(ExecutionContext ctx) {
+    public Implementor(PartitionService partitionService, MailboxRegistry mailboxRegistry, ExchangeService exchangeService, FailureProcessor failure, ExecutionContext ctx, IgniteLogger log) {
+        this.partitionService = partitionService;
+        this.mailboxRegistry = mailboxRegistry;
+        this.exchangeService = exchangeService;
         this.ctx = ctx;
 
-        factory = new ScalarFactory(ctx);
+        scalarFactory = new ScalarFactory(ctx.getTypeFactory(), failure, log);
     }
 
     /** {@inheritDoc} */
@@ -63,52 +83,49 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         RelTarget target = rel.target();
         long targetFragmentId = target.fragmentId();
         IgniteDistribution distribution = target.distribution();
-        DestinationFunction function = distribution.function().toDestination(ctx.parent(), target.mapping(), distribution.getKeys());
-        MailboxRegistry registry = ctx.mailboxRegistry();
+        DestinationFunction function = distribution.function().toDestination(partitionService, target.mapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(ctx, targetFragmentId, ctx.fragmentId(), visit(rel.getInput()), function);
+        Outbox<Object[]> outbox = new Outbox<>(exchangeService, mailboxRegistry, ctx, targetFragmentId, ctx.fragmentId(), visit(rel.getInput()), function);
 
-        registry.register(outbox);
+        mailboxRegistry.register(outbox);
 
         return outbox;
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
-        Predicate<Object[]> predicate = factory.filterPredicate(ctx, rel.getCondition(), rel.getRowType());
+        Predicate<Object[]> predicate = scalarFactory.filterPredicate(ctx, rel.getCondition(), rel.getRowType());
         return new FilterNode(ctx, visit(rel.getInput()), predicate);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteProject rel) {
-        Function<Object[], Object[]> projection = factory.projectExpression(ctx, rel.getProjects(), rel.getInput().getRowType());
+        Function<Object[], Object[]> projection = scalarFactory.projectExpression(ctx, rel.getProjects(), rel.getInput().getRowType());
         return new ProjectNode(ctx, visit(rel.getInput()), projection);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteJoin rel) {
-        BiFunction<Object[], Object[], Object[]> expression = factory.joinExpression(ctx, rel.getCondition(), rel.getLeft().getRowType(), rel.getRight().getRowType());
+        BiFunction<Object[], Object[], Object[]> expression = scalarFactory.joinExpression(ctx, rel.getCondition(), rel.getLeft().getRowType(), rel.getRight().getRowType());
         return new JoinNode(ctx, visit(rel.getLeft()), visit(rel.getRight()), expression);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTableScan rel) {
-        Iterable<Object[]> source = rel.getTable().unwrap(ScannableTable.class).scan(ctx);
-        return new ScanNode(ctx, source);
+        return new ScanNode(ctx, rel.getTable().unwrap(ScannableTable.class).scan(ctx));
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
         RelSource source = rel.source();
-        MailboxRegistry registry = ctx.mailboxRegistry();
 
         // Corresponding outbox fragment ID is used as exchange ID as well.
-        Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(new Inbox<>(ctx, source.fragmentId(), source.fragmentId()));
+        Inbox<Object[]> inbox = (Inbox<Object[]>) mailboxRegistry.register(new Inbox<>(exchangeService, mailboxRegistry, ctx, source.fragmentId(), source.fragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, source.mapping().nodes(), factory.comparator(ctx, rel.collations(), rel.getRowType()));
+        inbox.init(ctx, source.mapping().nodes(), scalarFactory.comparator(ctx, rel.collations(), rel.getRowType()));
 
         return inbox;
     }

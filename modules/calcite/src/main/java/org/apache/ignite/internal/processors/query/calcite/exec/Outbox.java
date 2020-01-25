@@ -30,7 +30,13 @@ import org.apache.ignite.internal.util.typedef.F;
  */
 public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>, AutoCloseable {
     /** */
+    private final ExchangeService exchange;
+
+    /** */
     private final long exchangeId;
+
+    /** */
+    private final MailboxRegistry registry;
 
     /** */
     private final long targetFragmentId;
@@ -45,13 +51,18 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     private boolean cancelled;
 
     /**
-     * @param ctx        Execution context.
+     * @param exchange Exchange service.
+     * @param registry Mailbox registry.
+     * @param ctx Execution context.
+     * @param targetFragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
-     * @param input      Input node.
-     * @param function   Destination function.
+     * @param input Input node.
+     * @param function Destination function.
      */
-    public Outbox(ExecutionContext ctx, long targetFragmentId, long exchangeId, Node<T> input, DestinationFunction function) {
+    public Outbox(ExchangeService exchange, MailboxRegistry registry, ExecutionContext ctx, long targetFragmentId, long exchangeId, Node<T> input, DestinationFunction function) {
         super(ctx, input);
+        this.exchange = exchange;
+        this.registry = registry;
         this.targetFragmentId = targetFragmentId;
         this.exchangeId = exchangeId;
         this.function = function;
@@ -163,17 +174,17 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void close() {
-        context().mailboxRegistry().unregister(this);
+        registry.unregister(this);
     }
 
     /** */
     private void sendBatch(UUID nodeId, int batchId, List<?> rows) {
-        context().exchange().sendBatch(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
+        exchange.sendBatch(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
     }
 
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
-        context().exchange().cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+        exchange.cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
     }
 
     /** */

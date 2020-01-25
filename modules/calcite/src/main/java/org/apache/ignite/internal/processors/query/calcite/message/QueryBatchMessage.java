@@ -235,17 +235,12 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public MessageType type() {
         return MessageType.QUERY_BATCH_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
     }
 }

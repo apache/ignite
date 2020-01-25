@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
@@ -56,16 +57,17 @@ public class QueryPlan {
     /**
      * Inits query fragments.
      *
+     * @param mappingService Mapping service.
      * @param ctx Planner context.
      */
-    public void init(IgniteCalciteContext ctx) {
+    public void init(MappingService mappingService, IgniteCalciteContext ctx) {
         int i = 0;
 
         RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
 
         while (true) {
             try {
-                F.first(fragments).init(ctx, mq);
+                F.first(fragments).init(mappingService, ctx, mq);
 
                 break;
             }

@@ -34,13 +34,13 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetada
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
 import org.apache.ignite.internal.processors.query.calcite.splitter.Edge;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
- * Implementation class for {@link RelMetadataQueryEx#getFragmentLocation(RelNode)} method call.
+ * Implementation class for {@link RelMetadataQueryEx#getFragmentInfo(RelNode)} method call.
  */
 public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
     /**
@@ -136,7 +136,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
      */
     public FragmentInfo getFragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
-        return rel.getTable().unwrap(IgniteTable.class).fragmentInfo(Commons.context(rel));
+        return new FragmentInfo(rel.getTable().unwrap(DistributedTable.class).mapping(Commons.context(rel)));
     }
 
     /**
@@ -146,7 +146,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * @return Fragment meta information.
      */
     public static FragmentInfo fragmentInfo(RelNode rel, RelMetadataQuery mq) {
-        return RelMetadataQueryEx.wrap(mq).getFragmentLocation(rel);
+        return RelMetadataQueryEx.wrap(mq).getFragmentInfo(rel);
     }
 
     /** */

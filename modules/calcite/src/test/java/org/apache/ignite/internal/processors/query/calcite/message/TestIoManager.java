@@ -17,34 +17,29 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  */
-public interface MessageService {
-    /**
-     * Sends a message to given nodes.
-     *
-     * @param nodeIds Nodes IDs.
-     * @param msg Message.
-     */
-    void send(Collection<UUID> nodeIds, CalciteMessage msg);
+public class TestIoManager {
+    /** */
+    private final Map<UUID, TestMessageService> srvcMap = new ConcurrentHashMap<>();
 
-    /**
-     * Sends a message to given node.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    void send(UUID nodeId, CalciteMessage msg);
+    /** */
+    protected void send(UUID senderId, UUID nodeId, CalciteMessage msg) {
+        TestMessageService target = srvcMap.get(nodeId);
 
-    /**
-     * Registers a listener for messages of a given type.
-     *
-     * @param lsnr Listener.
-     * @param type Message type.
-     */
-    void register(MessageListener lsnr, MessageType type);
+        assert target != null;
+
+        target.onMessage(senderId, msg, true);
+    }
+
+    /** */
+    public void register(TestMessageService service) {
+        srvcMap.put(service.localNodeId, service);
+        service.mgr = this;
+    }
 }

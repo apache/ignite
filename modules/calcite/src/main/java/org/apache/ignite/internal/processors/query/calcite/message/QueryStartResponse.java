@@ -163,17 +163,12 @@ public class QueryStartResponse implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public MessageType type() {
         return MessageType.QUERY_START_RESPONSE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
     }
 }

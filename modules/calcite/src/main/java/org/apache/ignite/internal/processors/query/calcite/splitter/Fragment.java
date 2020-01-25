@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
@@ -72,13 +74,14 @@ public class Fragment implements RelSource {
     /**
      * Inits fragment and its dependencies. Mainly init process consists of data location calculation.
      *
+     * @param mappingService Mapping service.
      * @param ctx Planner context.
      * @param mq Metadata query used for data location calculation.
      */
-    public void init(IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    public void init(MappingService mappingService, IgniteCalciteContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
-        mapping = fragmentMapping(ctx, info, mq);
+        mapping = fragmentMapping(mappingService, ctx, info, mq);
 
         ImmutableList<Pair<IgniteReceiver, RelSource>> sources = info.sources();
 
@@ -87,7 +90,7 @@ public class Fragment implements RelSource {
                 IgniteReceiver receiver = input.left;
                 RelSource source = input.right;
 
-                source.bindToTarget(new RelTargetImpl(id, fragmentMapping(ctx, info, mq), receiver.distribution()), ctx, mq);
+                source.bindToTarget(new RelTargetImpl(id, fragmentMapping(mappingService, ctx, info, mq), receiver.distribution()), mappingService, ctx, mq);
             }
         }
     }
@@ -110,12 +113,12 @@ public class Fragment implements RelSource {
     }
 
     /** {@inheritDoc} */
-    @Override public void bindToTarget(RelTarget target, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    @Override public void bindToTarget(RelTarget target, MappingService mappingService, IgniteCalciteContext ctx, RelMetadataQuery mq) {
         assert !local();
 
         ((IgniteSender) root).target(target);
 
-        init(ctx, mq);
+        init(mappingService, ctx, mq);
     }
 
     /** */
@@ -124,21 +127,21 @@ public class Fragment implements RelSource {
     }
 
     /** */
-    private NodesMapping fragmentMapping(IgniteCalciteContext ctx, FragmentInfo info, RelMetadataQuery mq) {
+    private NodesMapping fragmentMapping(MappingService mappingService, IgniteCalciteContext ctx, FragmentInfo info, RelMetadataQuery mq) {
         NodesMapping mapping;
 
         try {
             if (info.mapped())
-                mapping = local() ? ctx.mapForLocal().mergeWith(info.mapping()) : info.mapping();
+                mapping = local() ? localMapping(ctx).mergeWith(info.mapping()) : info.mapping();
             else if (local())
-                mapping = ctx.mapForLocal();
+                mapping = localMapping(ctx);
             else {
                 RelDistribution.Type type = IgniteMdDistribution._distribution(root, mq).getType();
 
                 boolean single = type == SINGLETON || type == BROADCAST_DISTRIBUTED;
 
                 // TODO selection strategy.
-                mapping = ctx.mapForIntermediate(single ? 1 : 0, null);
+                mapping = mappingService.mapBalanced(ctx.topologyVersion(), single ? 1 : 0, null);
             }
         }
         catch (LocationMappingException e) {
@@ -146,5 +149,10 @@ public class Fragment implements RelSource {
         }
 
         return mapping.deduplicate();
+    }
+
+    /** */
+    private NodesMapping localMapping(IgniteCalciteContext ctx) {
+        return new NodesMapping(Collections.singletonList(ctx.localNodeId()), null, (byte) (NodesMapping.CLIENT | NodesMapping.DEDUPLICATED));
     }
 }

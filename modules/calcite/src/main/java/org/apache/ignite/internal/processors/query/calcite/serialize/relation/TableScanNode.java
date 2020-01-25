@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 
 /**
  * Describes {@link IgniteTableScan}.
@@ -48,8 +47,7 @@ public class TableScanNode extends RelGraphNode {
      * @return TableScanNode.
      */
     public static TableScanNode create(IgniteTableScan rel) {
-        IgniteTable table = rel.getTable().unwrap(IgniteTable.class);
-        return new TableScanNode(rel.getTraitSet(), table.fullName());
+        return new TableScanNode(rel.getTraitSet(), rel.getTable().getQualifiedName());
     }
 
     /** {@inheritDoc} */

@@ -15,36 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import java.util.Collection;
-import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 
 /**
  *
  */
-public interface MessageService {
-    /**
-     * Sends a message to given nodes.
-     *
-     * @param nodeIds Nodes IDs.
-     * @param msg Message.
-     */
-    void send(Collection<UUID> nodeIds, CalciteMessage msg);
+public abstract class AbstractService implements LifecycleAware {
+    /** */
+    protected final GridKernalContext ctx;
+
+    /** */
+    protected final IgniteLogger log;
 
     /**
-     * Sends a message to given node.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
+     * @param ctx Kernal.
      */
-    void send(UUID nodeId, CalciteMessage msg);
+    protected AbstractService(GridKernalContext ctx) {
+        this.ctx = ctx;
+        log = ctx.log(getClass());
+    }
 
-    /**
-     * Registers a listener for messages of a given type.
-     *
-     * @param lsnr Listener.
-     * @param type Message type.
-     */
-    void register(MessageListener lsnr, MessageType type);
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        // No-op;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStop() {
+        // No-op;
+    }
 }

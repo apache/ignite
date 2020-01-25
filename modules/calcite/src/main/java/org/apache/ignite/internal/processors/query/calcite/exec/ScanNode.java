@@ -48,8 +48,8 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
         try {
             requestInternal();
         }
-        catch (Throwable e) {
-            Commons.close(it);
+        catch (Exception e) {
+            Commons.close(it, e);
 
             throw e;
         }

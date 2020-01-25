@@ -17,34 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.Collection;
 import java.util.UUID;
 
 /**
  *
  */
-public interface MessageService {
+public interface MessageListener {
     /**
-     * Sends a message to given nodes.
-     *
-     * @param nodeIds Nodes IDs.
+     * @param nodeId Sender node ID.
      * @param msg Message.
      */
-    void send(Collection<UUID> nodeIds, CalciteMessage msg);
-
-    /**
-     * Sends a message to given node.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    void send(UUID nodeId, CalciteMessage msg);
-
-    /**
-     * Registers a listener for messages of a given type.
-     *
-     * @param lsnr Listener.
-     * @param type Message type.
-     */
-    void register(MessageListener lsnr, MessageType type);
+    void onMessage(UUID nodeId, CalciteMessage msg);
 }

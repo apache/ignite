@@ -24,6 +24,7 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 
 /**
@@ -46,6 +47,9 @@ public class ExecutionContext implements DataContext {
     private final Map<String, Object> params;
 
     /** */
+    private final QueryTaskExecutor executor;
+
+    /** */
     private volatile boolean cancelled;
 
     /**
@@ -55,12 +59,20 @@ public class ExecutionContext implements DataContext {
      * @param parts Partitions.
      * @param params Parameters.
      */
-    public ExecutionContext(IgniteCalciteContext ctx, UUID queryId, long fragmentId, int[] parts, Map<String, Object> params) {
+    public ExecutionContext(QueryTaskExecutor executor, IgniteCalciteContext ctx, UUID queryId, long fragmentId, int[] parts, Map<String, Object> params) {
+        this.executor = executor;
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.parts = parts;
         this.params = params;
         this.ctx = ctx;
+    }
+
+    /**
+     * @return Parent context.
+     */
+    public IgniteCalciteContext parent() {
+        return ctx;
     }
 
     /**
@@ -85,10 +97,17 @@ public class ExecutionContext implements DataContext {
     }
 
     /**
-     * @return Parent context.
+     * @return Keep binary flag.
      */
-    public IgniteCalciteContext parent() {
-        return ctx;
+    public boolean keepBinary() {
+        return false; // TODO
+    }
+
+    /**
+     * @return MVCC snapshot.
+     */
+    public MvccSnapshot mvccSnapshot() {
+        return null; // TODO
     }
 
     /**
@@ -96,6 +115,26 @@ public class ExecutionContext implements DataContext {
      */
     public boolean cancelled() {
         return cancelled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SchemaPlus getRootSchema() {
+        return ctx.schema();
+    }
+
+    /** {@inheritDoc} */
+    @Override public JavaTypeFactory getTypeFactory() {
+        return ctx.typeFactory();
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryProvider getQueryProvider() {
+        return null; // TODO
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object get(String name) {
+        return params.get(name);
     }
 
     /**
@@ -112,47 +151,6 @@ public class ExecutionContext implements DataContext {
      * @return Task future.
      */
     public Future<Void> execute(Runnable task) {
-        return ctx.execute(queryId, fragmentId, task);
-    }
-
-    /** {@inheritDoc} */
-    @Override public SchemaPlus getRootSchema() {
-        return ctx.schema();
-    }
-
-    /** {@inheritDoc} */
-    @Override public JavaTypeFactory getTypeFactory() {
-        return ctx.typeFactory();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryProvider getQueryProvider() {
-        return ctx.queryProvider();
-    }
-
-    /**
-     * @return Keep binary flag.
-     */
-    public boolean keepBinary() {
-        return ctx.keepBinary();
-    }
-
-    /**
-     * @return Exchange service.
-     */
-    public ExchangeService exchange() {
-        return ctx.exchangeService();
-    }
-
-    /**
-     * @return Mailbox registry.
-     */
-    public MailboxRegistry mailboxRegistry() {
-        return ctx.mailboxRegistry();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object get(String name) {
-        return params.get(name);
+        return executor.execute(queryId, fragmentId, task);
     }
 }

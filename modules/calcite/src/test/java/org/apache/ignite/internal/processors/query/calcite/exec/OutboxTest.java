@@ -53,25 +53,24 @@ public class OutboxTest extends GridCommonAbstractTest {
     /** */
     @BeforeClass
     public static void setupClass() {
-        nodeId = UUID.randomUUID();
-        func = new AllNodes(Collections.singletonList(nodeId));
+        func = new AllNodes(Collections.singletonList(nodeId = UUID.randomUUID()));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         exch = new TestExchangeService();
 
         IgniteCalciteContext ctx = IgniteCalciteContext.builder()
-            .mailboxRegistry(new TestRegistry())
             .localNodeId(nodeId)
-            .exchangeService(exch)
             .build();
 
-        ExecutionContext ectx = new ExecutionContext(ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
+        ExecutionContext ectx = new ExecutionContext(null, ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
 
         input = new TestNode(ectx);
-        outbox = new Outbox<>(ectx, 0, ectx.fragmentId(), input, func);
+        outbox = new Outbox<>(exch, new MailboxRegistryImpl(newContext()), ectx, 0, ectx.fragmentId(), input, func);
     }
 
     /**
@@ -145,21 +144,6 @@ public class OutboxTest extends GridCommonAbstractTest {
         @Override public void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
-
-        /** {@inheritDoc} */
-        @Override public void onCancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAcknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onBatchReceived(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
-            throw new AssertionError();
-        }
     }
 
     /** */
@@ -189,39 +173,6 @@ public class OutboxTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Sink<Object[]> sink(int idx) {
-            throw new AssertionError();
-        }
-    }
-
-    /** */
-    private static class TestRegistry implements MailboxRegistry {
-        /** {@inheritDoc} */
-        @Override public Inbox<?> register(Inbox<?> inbox) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unregister(Inbox<?> inbox) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void register(Outbox<?> outbox) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unregister(Outbox<?> outbox) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Outbox<?> outbox(UUID queryId, long exchangeId) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Inbox<?> inbox(UUID queryId, long exchangeId) {
             throw new AssertionError();
         }
     }

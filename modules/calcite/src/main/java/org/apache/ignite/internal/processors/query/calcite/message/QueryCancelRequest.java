@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class QueryCancelRequest implements Message {
+public class QueryCancelRequest implements CalciteMessage {
     /** */
     private UUID queryId;
 
@@ -90,17 +89,12 @@ public class QueryCancelRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public MessageType type() {
         return MessageType.QUERY_CANCEL_REQUEST;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
     }
 }

@@ -35,6 +35,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoCloseable {
     /** */
+    private final ExchangeService exchange;
+
+    /** */
+    private final MailboxRegistry registry;
+
+    /** */
     private final long exchangeId;
 
     /** */
@@ -59,11 +65,16 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     private volatile boolean initDone;
 
     /**
+     * @param exchange Exchange service.
+     * @param registry Mailbox registry.
      * @param ctx Execution context.
+     * @param sourceFragmentId Source fragment ID.
      * @param exchangeId Exchange ID.
      */
-    public Inbox(ExecutionContext ctx, long sourceFragmentId, long exchangeId) {
+    public Inbox(ExchangeService exchange, MailboxRegistry registry, ExecutionContext ctx, long sourceFragmentId, long exchangeId) {
         super(ctx);
+        this.exchange = exchange;
+        this.registry = registry;
 
         this.sourceFragmentId = sourceFragmentId;
         this.exchangeId = exchangeId;
@@ -116,7 +127,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** {@inheritDoc} */
     @Override public void close() {
-        context().mailboxRegistry().unregister(this);
+        registry.unregister(this);
     }
 
     /**
@@ -276,7 +287,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) {
-        context().exchange().acknowledge(this, nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
+        exchange.acknowledge(this, nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
     }
 
     /** */

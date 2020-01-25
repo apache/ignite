@@ -17,37 +17,38 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
+import java.util.UUID;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.jetbrains.annotations.Nullable;
 
-/**
- * Message factory.
- */
-public class CalciteMessageFactory implements MessageFactory {
+/** */
+public class TestMessageService extends MessageServiceImpl {
+    /** */
+    protected final UUID localNodeId;
+
+    /** */
+    protected TestIoManager mgr;
+
+    /** */
+    public TestMessageService(UUID localNodeId, GridKernalContext ctx) {
+        super(ctx);
+        this.localNodeId = localNodeId;
+    }
+
     /** {@inheritDoc} */
-    @Override public @Nullable Message create(short type) {
-        return MessageType.newMessage(type);
+    @Override public void send(UUID nodeId, CalciteMessage msg) {
+        assert mgr != null;
+
+        mgr.send(localNodeId, nodeId, msg);
     }
 
-    /**
-     * Produces a row message.
-     *
-     * TODO In future a row is expected to implement Message interface.
-     */
-    public static Message asMessage(Object row) {
-        return new GenericRowMessage(row);
+    /** {@inheritDoc} */
+    @Override protected boolean prepareMarshal(Message msg) {
+        return true;
     }
 
-    /**
-     * Produces a row from a message.
-     *
-     * TODO In future a row is expected to implement Message interface.
-     */
-    public static Object asRow(Message mRow) {
-        if (mRow instanceof GenericRowMessage)
-            return ((GenericRowMessage) mRow).row();
-
-        throw new AssertionError("Unexpected message type. [message=" + mRow + "]");
+    /** {@inheritDoc} */
+    @Override protected boolean prepareUnmarshal(Message msg) {
+        return true;
     }
 }

@@ -18,18 +18,21 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 
 /**
  *
  */
-public class QueryCacheImpl implements QueryCache, SchemaChangeListener {
+public class QueryCacheImpl extends AbstractService implements QueryCache, SchemaChangeListener {
     /** */
     private static final int CACHE_SIZE = 1024;
 
@@ -40,8 +43,10 @@ public class QueryCacheImpl implements QueryCache, SchemaChangeListener {
      * @param ctx Kernal context.
      */
     public QueryCacheImpl(GridKernalContext ctx) {
+        super(ctx);
+
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
-        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(this);
+        Optional.ofNullable(ctx.internalSubscriptionProcessor()).ifPresent(this::registerListeners);
     }
 
     /** {@inheritDoc} */
@@ -85,5 +90,11 @@ public class QueryCacheImpl implements QueryCache, SchemaChangeListener {
     /** {@inheritDoc} */
     @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
         // No-op
+    }
+
+    /** */
+    private void registerListeners(GridInternalSubscriptionProcessor prc) {
+        prc.registerSchemaChangeListener(this);
+
     }
 }

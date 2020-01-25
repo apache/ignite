@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.InterpreterUtils;
 import org.apache.calcite.interpreter.JaninoRexCompiler;
@@ -57,7 +58,7 @@ public class ScalarFactory {
     private static final Map<String, Scalar> CACHE = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
 
     /** */
-    private final ExecutionContext ctx;
+    private final JavaTypeFactory typeFactory;
 
     /** */
     private final JaninoRexCompiler rexCompiler;
@@ -65,13 +66,16 @@ public class ScalarFactory {
     /** */
     private final ExceptionHandler handler;
 
-    /** */
-    public ScalarFactory(ExecutionContext ctx) {
-        this.ctx = ctx;
-        rexCompiler = new JaninoRexCompiler(new RexBuilder(ctx.getTypeFactory()));
-        handler = new ExceptionHandler(
-            ctx.parent().kernal().failure(),
-            ctx.parent().logger().getLogger(ScalarFactory.class));
+    /**
+     * @param typeFactory Type factory.
+     * @param failure Failure processor.
+     * @param log Logger.
+     */
+    public ScalarFactory(JavaTypeFactory typeFactory, FailureProcessor failure, IgniteLogger log) {
+        this.typeFactory = typeFactory;
+
+        rexCompiler = new JaninoRexCompiler(new RexBuilder(typeFactory));
+        handler = new ExceptionHandler(failure, log.getLogger(ScalarFactory.class));
     }
 
     /**
@@ -139,7 +143,7 @@ public class ScalarFactory {
 
     /** */
     private RelDataType combinedType(RelDataType... types) {
-        RelDataTypeFactory.Builder typeBuilder = new RelDataTypeFactory.Builder(ctx.getTypeFactory());
+        RelDataTypeFactory.Builder typeBuilder = new RelDataTypeFactory.Builder(typeFactory);
 
         for (RelDataType type : types)
             typeBuilder.addAll(type.getFieldList());
@@ -197,7 +201,7 @@ public class ScalarFactory {
                 scalar.execute(ctx, vals);
                 return (Boolean) vals[0];
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 handler.onException(e);
 
                 throw e;
@@ -252,7 +256,7 @@ public class ScalarFactory {
 
                 return null;
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 handler.onException(e);
 
                 throw e;
@@ -295,7 +299,7 @@ public class ScalarFactory {
 
                 return (T) res;
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 handler.onException(e);
 
                 throw e;

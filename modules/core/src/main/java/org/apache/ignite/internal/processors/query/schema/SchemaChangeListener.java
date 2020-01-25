@@ -24,12 +24,35 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
  *
  */
 public interface SchemaChangeListener {
-
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     */
     void onSchemaCreate(String schemaName);
 
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     */
     void onSchemaDrop(String schemaName);
 
-    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo);
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     * @param typeDescriptor type descriptor.
+     * @param cacheInfo Cache info.
+     */
+    void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo);
 
-    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo);
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     * @param typeDescriptor type descriptor.
+     * @param cacheInfo Cache info.
+     */
+    void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo);
 }

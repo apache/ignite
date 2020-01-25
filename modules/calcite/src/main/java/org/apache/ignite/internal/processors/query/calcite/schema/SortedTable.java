@@ -15,36 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Collection;
-import java.util.UUID;
+import java.util.List;
+import org.apache.calcite.rel.RelCollation;
 
 /**
  *
  */
-public interface MessageService {
+public interface SortedTable {
     /**
-     * Sends a message to given nodes.
-     *
-     * @param nodeIds Nodes IDs.
-     * @param msg Message.
+     * @return The table collations.
      */
-    void send(Collection<UUID> nodeIds, CalciteMessage msg);
-
-    /**
-     * Sends a message to given node.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    void send(UUID nodeId, CalciteMessage msg);
-
-    /**
-     * Registers a listener for messages of a given type.
-     *
-     * @param lsnr Listener.
-     * @param type Message type.
-     */
-    void register(MessageListener lsnr, MessageType type);
+    List<RelCollation> collations();
 }

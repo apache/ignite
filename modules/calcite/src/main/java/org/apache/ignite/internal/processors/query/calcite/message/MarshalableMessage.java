@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public interface MarshalableMessage extends Message {
+public interface MarshalableMessage extends CalciteMessage {
     /**
      * Prepares the message before sending.
      *

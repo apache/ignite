@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -40,8 +40,6 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFINED_CACHE_ID;
 
 /** */
 public class TableScan implements Iterable<Object[]> {
@@ -59,24 +57,20 @@ public class TableScan implements Iterable<Object[]> {
 
     /** {@inheritDoc} */
     @Override public Iterator<Object[]> iterator() {
-        return new IteratorImpl(ectx, desc).init();
+        try {
+            return new IteratorImpl().init();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
      * Table scan iterator.
      */
-    public static class IteratorImpl extends GridCloseableIteratorAdapter<Object[]> {
+    public class IteratorImpl extends GridCloseableIteratorAdapter<Object[]> {
         /** */
-        private final ExecutionContext ectx;
-
-        /** */
-        private final TableDescriptor desc;
-
-        /** */
-        private int cacheId = UNDEFINED_CACHE_ID;
-
-        /** */
-        private GridCacheContext<?,?> cctx;
+        private int cacheId;
 
         /** */
         private Queue<GridDhtLocalPartition> parts;
@@ -89,12 +83,6 @@ public class TableScan implements Iterable<Object[]> {
 
         /** */
         private Object[] next;
-
-        /** */
-        public IteratorImpl(ExecutionContext ectx, TableDescriptor desc) {
-            this.ectx = ectx;
-            this.desc = desc;
-        }
 
         /** {@inheritDoc} */
         @Override protected Object[] onNext() {
@@ -110,7 +98,7 @@ public class TableScan implements Iterable<Object[]> {
 
         /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            assert cctx != null && parts != null;
+            assert parts != null;
 
             if (next != null)
                 return true;
@@ -120,19 +108,16 @@ public class TableScan implements Iterable<Object[]> {
                     if ((part = parts.poll()) == null)
                         break;
 
-                    IgniteCacheOffheapManager.CacheDataStore ds = part.dataStore();
-
-                    // TODO introduce MvccSnapshot to the table iterator.
-                    cur = cacheId == UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId, null);
+                    cur = part.dataStore().cursor(cacheId, ectx.mvccSnapshot());
                 }
 
                 if (cur.next()) {
                     CacheDataRow row = cur.get();
 
-                    if (!desc.matchType(row))
+                    if (!desc.match(row))
                         continue;
 
-                    next = desc.toRow(ectx, cctx, row);
+                    next = desc.toRow(ectx, row);
 
                     break;
                 } else {
@@ -160,38 +145,50 @@ public class TableScan implements Iterable<Object[]> {
         }
 
         /** */
-        public Iterator<Object[]> init() {
+        public Iterator<Object[]> init() throws IgniteCheckedException {
             if (isClosed())
                 return Collections.emptyIterator();
 
-            cctx = ectx.parent().kernal().cache().context().cacheContext(cacheId = desc.cacheId());
+            GridCacheContext<?, ?> cctx = desc.cacheContext();
 
-            if (!cctx.group().sharedGroup())
-                cacheId = UNDEFINED_CACHE_ID;
+            if (!cctx.gate().enterIfNotStopped()) {
+                close();
 
-            GridDhtPartitionTopology top = cctx.topology();
-            top.readLock();
-            try {
-                GridDhtTopologyFuture fut = top.topologyVersionFuture();
-                AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
-                if (!fut.isDone() || fut.topologyVersion().compareTo(topVer) != 0)
-                    throw new ClusterTopologyException("Failed to execute query. Retry on stable topology.");
-
-                if (cctx.isPartitioned())
-                    reservePartitioned(top);
-                else
-                    reserveReplicated(top);
+                throw new CacheStoppedException(cctx.name());
             }
-            catch (Throwable e) {
-                U.closeQuiet(this);
+
+            try {
+                GridDhtPartitionTopology top = cctx.topology();
+
+                top.readLock();
+                try {
+                    GridDhtTopologyFuture fut = top.topologyVersionFuture();
+                    AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
+
+                    if (!fut.isDone() || fut.topologyVersion().compareTo(topVer) != 0)
+                        throw new ClusterTopologyCheckedException("Failed to execute query. Retry on stable topology.");
+
+                    if (cctx.isPartitioned())
+                        reservePartitioned(top);
+                    else
+                        reserveReplicated(top);
+                }
+                finally {
+                    top.readUnlock();
+                }
+
+                cacheId = cctx.cacheId();
+
+                return this;
+            }
+            catch (Exception e) {
+                Commons.close(this, e);
 
                 throw e;
             }
             finally {
-                top.readUnlock();
+                cctx.gate().leave();
             }
-
-            return this;
         }
 
         /** */

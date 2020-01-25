@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -71,4 +72,20 @@ public interface MailboxRegistry {
      * @return Registered inbox. May be {@code null} if execution was cancelled.
      */
     Inbox<?> inbox(UUID queryId, long exchangeId);
+
+    /**
+     * Returns all registered inboxes for provided query ID.
+     *
+     * @param queryId Query ID.
+     * @return Registered inboxes.
+     */
+    List<Inbox<?>> inboxes(UUID queryId);
+
+    /**
+     * Returns all registered outboxes for provided query ID.
+     *
+     * @param queryId Query ID.
+     * @return Registered outboxes.
+     */
+    List<Outbox<?>> outboxes(UUID queryId);
 }

@@ -107,17 +107,12 @@ public class GenericRowMessage implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public MessageType type() {
         return MessageType.GENERIC_ROW_MESSAGE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
     }
 }

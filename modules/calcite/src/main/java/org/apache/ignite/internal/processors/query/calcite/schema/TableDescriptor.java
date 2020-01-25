@@ -31,9 +31,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public interface TableDescriptor extends RelProtoDataType {
     /**
-     * @return Underlying cache ID.
+     * @return Underlying cache context.
      */
-    int cacheId();
+    GridCacheContext<?,?> cacheContext();
 
     /**
      * @return Distribution.
@@ -46,21 +46,20 @@ public interface TableDescriptor extends RelProtoDataType {
     List<RelCollation> collations();
 
     /**
-     * Checks whether a provided cache row matches a defined query type.
+     * Checks whether a provided cache row belongs to described table.
      *
      * @param row Cache row.
      * @return {@code True} If a provided cache row matches a defined query type.
      */
-    boolean matchType(CacheDataRow row);
+    boolean match(CacheDataRow row);
 
     /**
      * Converts a cache row to relational node row.
      *
      * @param ectx Execution context.
-     * @param cctx Cache context.
      * @param row Cache row.
      * @return Relational node row.
      * @throws IgniteCheckedException If failed.
      */
-    <T> T toRow(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow row) throws IgniteCheckedException;
+    <T> T toRow(ExecutionContext ectx, CacheDataRow row) throws IgniteCheckedException;
 }

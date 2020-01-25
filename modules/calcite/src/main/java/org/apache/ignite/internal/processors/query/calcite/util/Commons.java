@@ -181,4 +181,18 @@ public final class Commons {
         if (o instanceof AutoCloseable)
             U.closeQuiet((AutoCloseable) o);
     }
+
+    /**
+     * @param o Object to close.
+     * @param e Exception, what causes close.
+     */
+    public static void close(Object o, @Nullable Exception e) {
+        if (!(o instanceof AutoCloseable))
+            return;
+
+        if (e != null)
+            U.closeWithSuppressingException((AutoCloseable) o, e);
+        else
+            U.closeQuiet((AutoCloseable) o);
+    }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.util.List;
 import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -105,7 +106,11 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(LogicalTableScan rel, RelMetadataQuery mq) {
-        return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+        RelDistribution distr = rel.getTable().getDistribution();
+
+        assert distr instanceof IgniteDistribution : distr;
+
+        return (IgniteDistribution) distr;
     }
 
     /**

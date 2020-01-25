@@ -18,61 +18,84 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
-import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_BATCH_MESSAGE;
-import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_CANCEL_REQUEST;
-import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_INBOX_CANCEL_MESSAGE;
-import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_START_REQUEST;
-import static org.apache.ignite.internal.processors.query.calcite.message.MessageType.QUERY_START_RESPONSE;
-
 /**
  *
  */
-public class MessageServiceImpl implements MessageService, LifecycleAware {
+public class MessageServiceImpl extends AbstractService implements MessageService {
     /** */
-    private final IgniteLogger log;
+    private final GridMessageListener msgLsnr;
 
     /** */
-    private final GridKernalContext ctx;
+    protected QueryTaskExecutor taskExecutor;
 
     /** */
-    private CalciteQueryProcessor proc;
-
-    /** */
-    private GridMessageListener msgLsnr;
+    protected FailureProcessor failureProcessor;
 
     /** */
     private Marshaller marsh;
 
     /** */
-    public MessageServiceImpl(GridKernalContext ctx) {
-        this.ctx = ctx;
+    private EnumMap<MessageType, MessageListener> lsnrs;
 
-        log = ctx.log(MessageServiceImpl.class);
+    /** */
+    public MessageServiceImpl(GridKernalContext ctx) {
+        super(ctx);
+
+        msgLsnr = this::onMessage;
+    }
+
+    /**
+     * @param taskExecutor Task executor.
+     */
+    public void taskExecutor(QueryTaskExecutor taskExecutor) {
+        this.taskExecutor = taskExecutor;
+    }
+
+    /**
+     * @param marsh Marshaller.
+     */
+    public void marshaller(Marshaller marsh) {
+        this.marsh = marsh;
+    }
+
+    /**
+     * @param failureProcessor Failure processor.
+     */
+    public void failureProcessor(FailureProcessor failureProcessor) {
+        this.failureProcessor = failureProcessor;
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+
+        taskExecutor(proc.taskExecutor());
+        failureProcessor(proc.failureProcessor());
 
         @SuppressWarnings("deprecation")
         Marshaller marsh0 = ctx.config().getMarshaller();
@@ -80,108 +103,72 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
         if (marsh0 == null) // Stubbed context doesn't have a marshaller
             marsh0 = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
-        marsh = marsh0;
+        marshaller(marsh0);
 
-        msgLsnr = (node, msg, plc) -> onMessage(node, msg);
-
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, msgLsnr);
+        Optional.ofNullable(ctx.io()).ifPresent(this::registerListener);
     }
 
     /** {@inheritDoc} */
     @Override public void onStop() {
-        ctx.io().removeMessageListener(GridTopic.TOPIC_QUERY, msgLsnr);
+        Optional.ofNullable(ctx.io()).ifPresent(this::unregisterListener);
 
-        msgLsnr = null;
-        marsh = null;
-        proc = null;
+        lsnrs = null;
     }
 
     /** {@inheritDoc} */
-    @Override public void send(Collection<UUID> nodeIds, Message msg) {
+    @Override public void send(Collection<UUID> nodeIds, CalciteMessage msg) {
         for (UUID nodeId : nodeIds)
             send(nodeId, msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void send(UUID nodeId, Message msg) {
-        byte plc = msg instanceof ExecutionContextAware ?
-            ((ExecutionContextAware) msg).ioPolicy() : GridIoPolicy.QUERY_POOL;
+    @Override public void send(UUID nodeId, CalciteMessage msg) {
+        if (ctx.localNodeId().equals(nodeId))
+            onMessage(nodeId, msg, true);
+        else {
+            byte plc = msg instanceof ExecutionContextAware ?
+                ((ExecutionContextAware) msg).ioPolicy() : GridIoPolicy.QUERY_POOL;
 
-        if (ctx.localNodeId().equals(nodeId)) {
-            ctx.closure().runLocalSafe(() -> onMessage(nodeId, msg), plc);
+            if (!prepareMarshal(msg))
+                return;
 
-            return;
-        }
-
-        if (!prepareMarshal(msg))
-            return;
-
-        try {
-            ctx.io().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, plc);
-        }
-        catch (ClusterTopologyCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message, node failed: " + nodeId);
-        }
-        catch (IgniteCheckedException e) {
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            try {
+                ctx.io().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, plc);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send message, node failed: " + nodeId);
+            }
+            catch (IgniteCheckedException e) {
+                failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessage(UUID nodeId, Object msg) {
-        if (!(msg instanceof Message)) {
-            log.warning("Unexpected message type:" + msg);
+    @Override public void register(MessageListener lsnr, MessageType type) {
+        if (lsnrs == null)
+            lsnrs = new EnumMap<>(MessageType.class);
 
-            return;
-        }
+        MessageListener old = lsnrs.put(type, lsnr);
 
-        Message msg0 = (Message) msg;
-
-        if (!(msg0 instanceof ExecutionContextAware))
-            onMessageInternal(nodeId, msg0);
-        else {
-            ExecutionContextAware contextAware = (ExecutionContextAware) msg0;
-
-            proc.taskExecutor().execute(contextAware.queryId(), contextAware.fragmentId(), () -> onMessageInternal(nodeId, msg0));
-        }
+        assert old == null : old;
     }
 
     /** */
-    private void onMessageInternal(UUID nodeId, Message msg) {
-        if (!prepareUnmarshal(msg))
-            return;
-
-        switch (msg.directType()) {
-            case QUERY_ACKNOWLEDGE_MESSAGE:
-                processMessage(nodeId, (QueryBatchAcknowledgeMessage) msg);
-
-                break;
-            case QUERY_BATCH_MESSAGE:
-                processMessage(nodeId, (QueryBatchMessage) msg);
-
-                break;
-            case QUERY_CANCEL_REQUEST:
-                processMessage(nodeId, (QueryCancelRequest) msg);
-
-                break;
-            case QUERY_INBOX_CANCEL_MESSAGE:
-                processMessage(nodeId, (InboxCancelMessage) msg);
-
-                break;
-            case QUERY_START_REQUEST:
-                processMessage(nodeId, (QueryStartRequest) msg);
-
-                break;
-            case QUERY_START_RESPONSE:
-                processMessage(nodeId, (QueryStartResponse) msg);
-
-                break;
+    protected void onMessage(UUID nodeId, CalciteMessage msg, boolean async) {
+        if (msg instanceof ExecutionContextAware) {
+            ExecutionContextAware msg0 = (ExecutionContextAware) msg;
+            taskExecutor.execute(msg0.queryId(), msg0.fragmentId(), () -> onMessageInternal(nodeId, msg));
         }
+        else if (async)
+            taskExecutor.execute(IgniteUuid.VM_ID, ThreadLocalRandom.current().nextLong(1024), () -> onMessageInternal(nodeId, msg));
+        else
+            onMessageInternal(nodeId, msg);
     }
 
     /** */
-    private boolean prepareMarshal(Message msg) {
+    protected boolean prepareMarshal(Message msg) {
         try {
             if (msg instanceof MarshalableMessage)
                 ((MarshalableMessage) msg).prepareMarshal(marsh);
@@ -189,14 +176,14 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
             return true;
         }
         catch (IgniteCheckedException e) {
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
 
         return false;
     }
 
     /** */
-    private boolean prepareUnmarshal(Message msg) {
+    protected boolean prepareUnmarshal(Message msg) {
         try {
             if (msg instanceof MarshalableMessage)
                 ((MarshalableMessage) msg).prepareUnmarshal(marsh, U.resolveClassLoader(ctx.config()));
@@ -204,39 +191,34 @@ public class MessageServiceImpl implements MessageService, LifecycleAware {
             return true;
         }
         catch (IgniteCheckedException e) {
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
 
         return false;
     }
 
     /** */
-    private void processMessage(UUID nodeId, InboxCancelMessage msg) {
-        proc.exchangeService().cancel(this, nodeId, msg.queryId(), msg.fragmentId(), msg.exchangeId(), msg.batchId());
+    private void onMessage(UUID nodeId, Object msg, byte plc) {
+        if (msg instanceof CalciteMessage)
+            onMessage(nodeId, (CalciteMessage) msg, false);
     }
 
     /** */
-    private void processMessage(UUID nodeId, QueryCancelRequest msg) {
-        proc.cancel(msg.queryId());
+    private void onMessageInternal(UUID nodeId, CalciteMessage msg) {
+        if (!prepareUnmarshal(msg))
+            return;
+
+        MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.type()));
+        lsnr.onMessage(nodeId, msg);
     }
 
     /** */
-    private void processMessage(UUID nodeId, QueryBatchMessage msg) {
-        proc.exchangeService().onBatchReceived(this, nodeId, msg.queryId(), msg.fragmentId(), msg.exchangeId(), msg.batchId(), msg.rows());
+    private void registerListener(GridIoManager mgr) {
+        mgr.addMessageListener(GridTopic.TOPIC_QUERY, msgLsnr);
     }
 
     /** */
-    private void processMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
-        proc.exchangeService().onAcknowledge(this, nodeId, msg.queryId(), msg.fragmentId(), msg.exchangeId(), msg.batchId());
-    }
-
-    /** */
-    private void processMessage(UUID nodeId, QueryStartRequest msg) {
-        proc.executeFragment(nodeId, msg.queryId(), msg.fragmentId(), msg.schema(), msg.topologyVersion(), msg.plan(), msg.partitions(), msg.parameters());
-    }
-
-    /** */
-    private void processMessage(UUID nodeId, QueryStartResponse msg) {
-        proc.onQueryStarted(nodeId, msg.queryId(), msg.fragmentId(), msg.error());
+    private void unregisterListener(GridIoManager mgr) {
+        mgr.removeMessageListener(GridTopic.TOPIC_QUERY, msgLsnr);
     }
 }

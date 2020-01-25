@@ -15,36 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.message;
+package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.util.Collection;
-import java.util.UUID;
+import java.util.function.ToIntFunction;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+
 
 /**
  *
  */
-public interface MessageService {
+public class PartitionServiceImpl extends AbstractService implements PartitionService {
     /**
-     * Sends a message to given nodes.
-     *
-     * @param nodeIds Nodes IDs.
-     * @param msg Message.
+     * @param ctx Kernal.
      */
-    void send(Collection<UUID> nodeIds, CalciteMessage msg);
+    public PartitionServiceImpl(GridKernalContext ctx) {
+        super(ctx);
+    }
 
-    /**
-     * Sends a message to given node.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    void send(UUID nodeId, CalciteMessage msg);
+    /** {@inheritDoc} */
+    @Override public ToIntFunction<Object> partitionFunction(int cacheId) {
+        if (cacheId == CU.UNDEFINED_CACHE_ID)
+            return k -> k == null ? 0 : k.hashCode();
 
-    /**
-     * Registers a listener for messages of a given type.
-     *
-     * @param lsnr Listener.
-     * @param type Message type.
-     */
-    void register(MessageListener lsnr, MessageType type);
+        return ctx.cache().context().cacheContext(cacheId).group().affinityFunction()::partition;
+    }
 }

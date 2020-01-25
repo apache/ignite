@@ -23,23 +23,23 @@ import java.util.Map;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
  */
 public class TableDescriptorImpl implements TableDescriptor {
+    /** */
+    private final GridCacheContext<?, ?> cctx;
+
     /** */
     private final GridQueryTypeDescriptor typeDesc;
 
@@ -50,12 +50,8 @@ public class TableDescriptorImpl implements TableDescriptor {
     private final int affinityFieldIdx;
 
     /** */
-    private final int cacheId;
-
-    /** */
-    public TableDescriptorImpl(String cacheName, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
-        cacheId = CU.cacheId(cacheName);
-
+    public TableDescriptorImpl(GridCacheContext<?,?> cctx, GridQueryTypeDescriptor typeDesc, Object affinityIdentity) {
+        this.cctx = cctx;
         this.typeDesc = typeDesc;
         this.affinityIdentity = affinityIdentity;
 
@@ -78,13 +74,16 @@ public class TableDescriptorImpl implements TableDescriptor {
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheContext<?, ?> cacheContext() {
+        return cctx;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteDistribution distribution() {
         if (affinityIdentity == null)
             return IgniteDistributions.broadcast();
 
-        return IgniteDistributions.hash(
-            ImmutableIntList.of(affinityFieldIdx),
-            new DistributionFunction.AffinityDistribution(cacheId, affinityIdentity));
+        return IgniteDistributions.affinity(affinityFieldIdx, cctx.cacheId(), affinityIdentity);
     }
 
     /** {@inheritDoc} */
@@ -93,17 +92,12 @@ public class TableDescriptorImpl implements TableDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public int cacheId() {
-        return cacheId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean matchType(CacheDataRow row) {
+    @Override public boolean match(CacheDataRow row) {
         return typeDesc.matchType(row.value());
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T toRow(ExecutionContext ectx, GridCacheContext<?, ?> cctx, CacheDataRow row) throws IgniteCheckedException {
+    @Override public <T> T toRow(ExecutionContext ectx, CacheDataRow row) throws IgniteCheckedException {
         Object[] res = new Object[typeDesc.fields().size() + 2];
 
         int i = 0;
@@ -118,7 +112,7 @@ public class TableDescriptorImpl implements TableDescriptor {
     }
 
     /** */
-    private int lookupAffinityIndex(GridQueryTypeDescriptor queryTypeDesc) {
+    private static int lookupAffinityIndex(GridQueryTypeDescriptor queryTypeDesc) {
         if (queryTypeDesc.affinityKey() != null) {
             int idx = 2;
 
