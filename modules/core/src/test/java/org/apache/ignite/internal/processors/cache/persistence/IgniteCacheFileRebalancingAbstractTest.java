@@ -287,7 +287,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-    public void testHistoricalNotStartsOnFilesPreloadingInterruption() throws Exception {
+    public void testConsistencyOnFilesPreloadingInterruption() throws Exception {
         assert backups() > 0 : backups();
 
         checkEvts = true;

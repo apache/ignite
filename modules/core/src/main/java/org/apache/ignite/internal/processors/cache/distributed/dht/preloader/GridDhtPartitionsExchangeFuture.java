@@ -3192,7 +3192,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             assert nodeCntrs != null;
 
             if (nodeCntrs.isEmpty()) {
-                // We should search the supplier for file rebalancing even if the counter was not sent.
+                // We should provide the supplier for file rebalancing even if the counters were not sent.
                 for (int p = 0; p < top.partitions(); p++) {
                     GridDhtPartitionState state = top.partitionState(e.getKey(), p);
 

@@ -257,10 +257,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                // todo investigate partition clearing and initial update counter
-                // todo should not start historical rebalance for partition that was cleared
-                if (histSupplier != null && !exchFut.isClearingPartition(grp, p) && !part.isEmpty() && !part.isClearing()) {
+                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
                     assert !part.isEmpty() : "grp=" + grp.cacheOrGroupName() + ", p=" + p;
+                    assert !part.isClearing() : "grp=" + grp.cacheOrGroupName() + ", p=" + p;
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 

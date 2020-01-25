@@ -35,7 +35,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -47,9 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
-import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -242,24 +239,6 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             // Start new rebalance session.
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
                 exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
-
-            rebRoutine.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
-                @Override public void applyx(IgniteInternalFuture<Boolean> fut0) throws IgniteCheckedException {
-                    if (fut0.error() != null) {
-                        log.error("File rebalance failed [topVer=" + topVer + "]", fut0.error());
-
-                        return;
-                    }
-
-                    if (fut0.isCancelled()) {
-                        U.log(log, "File rebalance cancelled [topVer=" + topVer + "]");
-
-                        return;
-                    }
-
-                    U.log(log, "The final persistence rebalance is done [result=" + fut0.get() + ']');
-                }
-            });
 
             return rebRoutine::requestPartitionsSnapshot;
         }
