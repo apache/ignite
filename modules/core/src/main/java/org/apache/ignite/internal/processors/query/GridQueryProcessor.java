@@ -1913,7 +1913,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If type check failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Nullable private QueryTypeDescriptorImpl typeByValue(String cacheName,
+    @Nullable public QueryTypeDescriptorImpl typeByValue(String cacheName,
         CacheObjectContext coctx,
         KeyCacheObject key,
         CacheObject val,
@@ -1958,6 +1958,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         return desc;
     }
+
+    /**
+     * Gets type descriptor by type name.
+     *
+     * @param name Type name.
+     * @return Type descriptor.
+     */
+    public QueryTypeDescriptorImpl typeByName(String name) {
+        for (QueryTypeDescriptorImpl descriptor : types.values()) {
+            if (descriptor.name().equals(name))
+                return descriptor;
+        }
+
+        return null;
+    }
+
 
     /**
      * Gets type descriptor for cache by given object's type.
