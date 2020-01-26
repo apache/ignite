@@ -59,6 +59,11 @@ public class AtomicPartitionCounterStateConsistencyTest extends TxPartitionCount
     }
 
     /** {@inheritDoc} */
+    @Override public int failoverTestsMaxDuration() {
+        return 30_000; // Limit max duration for new tests to avoid bot complaints.
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<?> doRandomUpdates(Random r, Ignite near, List<Integer> primaryKeys,
         IgniteCache<Object, Object> cache, BooleanSupplier stopClo) throws Exception {
         LongAdder puts = new LongAdder();

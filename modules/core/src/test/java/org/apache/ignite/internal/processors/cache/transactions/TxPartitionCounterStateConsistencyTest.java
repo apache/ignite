@@ -170,7 +170,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         List<Integer> primaryKeys = primaryKeys(prim.cache(DEFAULT_CACHE_NAME), 10_000);
 
-        long stop = U.currentTimeMillis() + 60_000;
+        long stop = U.currentTimeMillis() + failoverTestsMaxDuration();
 
         Random r = new Random();
 
@@ -221,7 +221,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertFalse(backups.contains(prim));
 
-        long stop = U.currentTimeMillis() + 2 * 60_000;
+        long stop = U.currentTimeMillis() + failoverTestsMaxDuration();
 
         long seed = System.nanoTime();
 
@@ -1202,5 +1202,12 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      */
     @Override protected long getPartitionMapExchangeTimeout() {
         return getTestTimeout();
+    }
+
+    /**
+     * @return Duration.
+     */
+    protected int failoverTestsMaxDuration() {
+        return 2 * 60_000;
     }
 }
