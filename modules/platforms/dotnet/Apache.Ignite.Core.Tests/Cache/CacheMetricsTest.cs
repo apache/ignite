@@ -100,6 +100,43 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
+        /// Tests 
+        /// </summary>
+        [Test]
+        public void TestEnableStatistics()
+        {
+            var cacheName = "TestEnableStatistics.Cache";
+            var ignite = Ignition.GetIgnite();
+            var cache = ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = false
+            });
+
+            var key = 1;
+
+            cache.EnableStatistics(true);
+            cache.Put(key, 1);
+            cache.Get(key);
+
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+
+            var metrics = cache.GetMetrics();
+
+            Assert.AreEqual(1, metrics.Size);
+            Assert.AreEqual(1, metrics.CacheSize);
+            Assert.AreEqual(1, metrics.CacheGets);
+            Assert.AreEqual(1, metrics.CachePuts);
+            
+            cache.EnableStatistics(false);
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            metrics = cache.GetMetrics();
+            Assert.AreEqual(0, metrics.Size);
+            Assert.AreEqual(0, metrics.CacheSize);
+            Assert.AreEqual(0, metrics.CacheGets);
+            Assert.AreEqual(0, metrics.CachePuts);
+        }
+
+        /// <summary>
         /// Tests the cluster group metrics.
         /// </summary>
         [Test]
