@@ -233,7 +233,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             while (U.currentTimeMillis() < stop) {
-                doSleep(5_000);
+                doSleep(2_000);
 
                 Ignite restartNode = grid(1 + r.nextInt(backups.size()));
 
@@ -246,7 +246,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 try {
                     waitForTopology(SERVER_NODES);
 
-                    doSleep(15_000);
+                    doSleep(5_000);
 
                     startGrid(name);
 
