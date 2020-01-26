@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -56,11 +57,11 @@ public class QueryCacheImpl extends AbstractService implements QueryCache, Schem
         QueryPlan template = cache.get(key);
 
         if (template != null)
-            return QueryPlan.fromTemplate(template, ctx);
+            return template.clone(ctx.createCluster());
 
         QueryPlan plan = factory.apply(ctx);
 
-        cache.putIfAbsent(key, plan.template());
+        cache.putIfAbsent(key, plan.clone(Commons.EMPTY_CLUSTER));
 
         return plan;
     }
