@@ -29,9 +29,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -52,7 +51,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  * Super class for all communication self tests.
  * @param <T> Type of communication SPI.
  */
-public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
+public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationSpi<Message>> extends GridSpiAbstractTest<T> {
     /** */
     private static long msgId = 1;
 
@@ -75,17 +74,13 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     private static GridTimeoutProcessor timeoutProcessor;
 
     /** */
-    protected boolean useSsl = false;
+    protected boolean useSsl;
 
     /**
      *
      */
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
+        IgniteMessageFactoryImpl.registerCustom(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
     }
 
     /** */
@@ -162,7 +157,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(entry.getKey()))
-                        msgDestMap.put(entry.getKey(), new HashSet<UUID>());
+                        msgDestMap.put(entry.getKey(), new HashSet<>());
 
                     msgDestMap.get(entry.getKey()).add(node.id());
                 }
@@ -208,7 +203,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(sndId))
-                        msgDestMap.put(sndId, new HashSet<UUID>());
+                        msgDestMap.put(sndId, new HashSet<>());
 
                     msgDestMap.get(sndId).add(node.id());
                 }

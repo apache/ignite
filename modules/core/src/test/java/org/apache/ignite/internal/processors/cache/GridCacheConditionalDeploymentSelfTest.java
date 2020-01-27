@@ -22,10 +22,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.CO;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -42,11 +40,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      *
      */
     static {
-        GridIoMessageFactory.registerCustom(TestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new TestMessage();
-            }
-        });
+        IgniteMessageFactoryImpl.registerCustom(TestMessage.DIRECT_TYPE, TestMessage::new);
     }
 
     /** {@inheritDoc} */
@@ -62,8 +56,8 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected CacheConfiguration cacheConfiguration() throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration<?, ?> cacheConfiguration() throws Exception {
+        CacheConfiguration<?, ?> cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -113,7 +107,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testAddedDeploymentInfo() throws Exception {
-        GridCacheContext ctx = cacheContext();
+        GridCacheContext<?, ?> ctx = cacheContext();
 
         if (grid(0).configuration().getMarshaller() instanceof BinaryMarshaller)
             assertFalse(ctx.deploymentEnabled());
@@ -137,7 +131,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testAddedDeploymentInfo2() throws Exception {
-        GridCacheContext ctx = cacheContext();
+        GridCacheContext<?, ?> ctx = cacheContext();
 
         if (grid(0).configuration().getMarshaller() instanceof BinaryMarshaller)
             assertFalse(ctx.deploymentEnabled());
@@ -161,8 +155,8 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @return Cache context.
      */
-    protected GridCacheContext cacheContext() {
-        return ((IgniteCacheProxy)grid(0).cache(DEFAULT_CACHE_NAME)).context();
+    protected GridCacheContext<?, ?> cacheContext() {
+        return ((IgniteCacheProxy<?, ?>)grid(0).cache(DEFAULT_CACHE_NAME)).context();
     }
 
     /**
