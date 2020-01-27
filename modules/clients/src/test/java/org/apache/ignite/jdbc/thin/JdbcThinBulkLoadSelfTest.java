@@ -17,20 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.UnsupportedCharsetException;
-import java.sql.BatchUpdateException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -43,15 +29,30 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.UnsupportedCharsetException;
+import java.sql.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * COPY statement tests.
  */
-public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+@RunWith(Parameterized.class)
+public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+
     /** Subdirectory with CSV files */
     private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
 
@@ -88,6 +89,31 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /** JDBC statement. */
     private Statement stmt;
+
+    /** Parametrized run param : cacheMode */
+    @Parameterized.Parameter(0)
+    public CacheMode cacheMode;
+
+    /** Parametrized run param : atomicity */
+    @Parameterized.Parameter(1)
+    public CacheAtomicityMode atomicityMode;
+
+    /** Parametrized run param : near mode */
+    @Parameterized.Parameter(2)
+    public Boolean isNear;
+
+    /** Test run configurations: Cache mode, atomicity type, is near */
+    @Parameterized.Parameters
+    public static Collection<Object[]> runConfig() {
+        return Arrays.asList(new Object[][] {
+                { PARTITIONED, CacheAtomicityMode.ATOMIC, true },
+                { PARTITIONED, CacheAtomicityMode.ATOMIC, false },
+                { PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true },
+                { PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, false },
+                { REPLICATED, CacheAtomicityMode.ATOMIC, false },
+                { REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false },
+        });
+    }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -154,21 +180,21 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @return true if we are testing near cache.
      */
-    protected abstract boolean nearCache();
+    protected boolean nearCache(){ return isNear; }
 
     /**
      * Returns cache atomicity mode we are testing.
      *
      * @return The cache atomicity mode we are testing.
      */
-    protected abstract CacheAtomicityMode atomicityMode();
+    protected CacheAtomicityMode atomicityMode(){ return atomicityMode; }
 
     /**
      * Returns cache mode we are testing.
      *
      * @return The cache mode we are testing.
      */
-    protected abstract CacheMode cacheMode();
+    protected CacheMode cacheMode(){ return cacheMode; }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -182,6 +208,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        dropTables();
+
         if (stmt != null && !stmt.isClosed())
             stmt.close();
 
@@ -574,9 +602,9 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
 
         int updatesCnt = stmt.executeUpdate(
-            "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "' into " + tblName +
-                "(_key, age, firstName, lastName)" +
-                " format csv");
+                "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "' into " + tblName +
+                        "(_key, age, firstName, lastName)" +
+                        " format csv");
 
         assertEquals(2, updatesCnt);
 
