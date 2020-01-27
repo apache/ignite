@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,10 +40,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.PartitionAtomicUpdateCounterImpl;
-import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterVolatileImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -103,7 +105,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             Collections.shuffle(tmp);
 
-            PartitionUpdateCounter pc0 = new PartitionTxUpdateCounterImpl();
+            PartitionUpdateCounter pc0 = new PartitionUpdateCounterTrackingImpl(null);
 
             for (int[] pair : tmp)
                 pc0.update(pair[0], pair[1]);
@@ -125,7 +127,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      * This information is used for logging rollback records only once.
      */
     public void testStaleUpdate() {
-        PartitionUpdateCounter pc = new PartitionTxUpdateCounterImpl();
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         assertTrue(pc.update(0, 1));
         assertFalse(pc.update(0, 1));
@@ -143,7 +145,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMixedModeMultithreaded() throws Exception {
-        PartitionUpdateCounter pc = new PartitionTxUpdateCounterImpl();
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -192,10 +194,10 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      * Test logic for handling gaps limit.
      */
     public void testMaxGaps() {
-        PartitionUpdateCounter pc = new PartitionTxUpdateCounterImpl();
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         int i;
-        for (i = 1; i <= PartitionTxUpdateCounterImpl.MAX_MISSED_UPDATES; i++)
+        for (i = 1; i <= PartitionUpdateCounterTrackingImpl.MAX_MISSED_UPDATES; i++)
             pc.update(i * 3, i * 3 + 1);
 
         i++;
@@ -213,7 +215,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     public void testFoldIntermediateUpdates() {
-        PartitionUpdateCounter pc = new PartitionTxUpdateCounterImpl();
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         pc.update(0, 59);
 
@@ -238,7 +240,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     public void testOutOfOrderUpdatesIterator() {
-        PartitionUpdateCounter pc = new PartitionTxUpdateCounterImpl();
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         pc.update(67, 3);
 
@@ -270,7 +272,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     public void testOverlap() {
-        PartitionUpdateCounter pc = new PartitionTxUpdateCounterImpl();
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         assertTrue(pc.update(13, 3));
 
@@ -293,7 +295,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
     /** */
     public void testAtomicUpdateCounterMultithreaded() throws Exception {
-        PartitionUpdateCounter cntr = new PartitionAtomicUpdateCounterImpl();
+        PartitionUpdateCounter cntr = new PartitionUpdateCounterVolatileImpl(null);
 
         AtomicInteger id = new AtomicInteger();
 
@@ -334,6 +336,28 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testGapsSerialization() {
+        PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
+
+        Random r = new Random();
+
+        for (int c = 1; c < 500; c++)
+            pc.update(c * 4, r.nextInt(3) + 1);
+
+        final byte[] bytes = pc.getBytes();
+
+        PartitionUpdateCounter pc2 = new PartitionUpdateCounterTrackingImpl(null);
+        pc2.init(0, bytes);
+
+        NavigableMap q0 = U.field(pc, "queue");
+        NavigableMap q1 = U.field(pc2, "queue");
+
+        assertEquals(q0, q1);
+    }
+
+    /**
      * @param mode Mode.
      */
     private void testWithPersistentNode(CacheAtomicityMode mode) throws Exception {
@@ -365,18 +389,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
             PartitionUpdateCounter cntr = counter(0, grid0.name());
 
-            switch (mode) {
-                case ATOMIC:
-                    assertTrue(cntr instanceof PartitionAtomicUpdateCounterImpl);
-                    break;
-
-                case TRANSACTIONAL:
-                    assertTrue(cntr instanceof PartitionTxUpdateCounterImpl);
-                    break;
-
-                default:
-                    fail(mode.toString());
-            }
+            assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
 
             assertEquals(cntr.initial(), cntr.get());
         }
