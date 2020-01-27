@@ -35,7 +35,7 @@ import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
-import org.apache.ignite.internal.processors.security.UserAttributesFactory;
+import org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -122,7 +122,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
             cfg.setClientMode(true);
 
         if (!fail) {
-            Map<String, String> attrs = new UserAttributesFactory().create();
+            Map<String, String> attrs = new AuthenticationAttributesFactory().create();
 
             cfg.setUserAttributes(attrs);
         }
@@ -134,7 +134,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
      * @return Grid client configuration.
      */
     protected GridClientConfiguration getGridClientConfiguration() {
-        Map<String, String> userAttrs = new UserAttributesFactory().create();
+        Map<String, String> userAttrs = new AuthenticationAttributesFactory().create();
 
         if (fail)
             userAttrs.clear();
@@ -144,7 +144,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
             .setRouters(Collections.singletonList("127.0.0.1:11211"))
             .setSecurityCredentialsProvider(
                 new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
-            .setUserAttributes(userAttrs);
+            .setAuthenticationAttributes(userAttrs);
     }
 
     /**
@@ -156,7 +156,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
             .setAddresses(Config.SERVER)
             .setUserName(CLIENT)
             .setUserPassword("")
-            .setUserAttributes(fail ? null : new UserAttributesFactory().create())
+            .setAuthenticationAttributes(fail ? null : new AuthenticationAttributesFactory().create())
             .setSslMode(SslMode.REQUIRED);
     }
 

@@ -268,21 +268,21 @@ public class JdbcThinTcpIo {
 
             JdbcUtils.writeNullableInteger(writer, connProps.getUpdateBatchSize());
 
-            String userAttrs = connProps.getUserAttributesFactory();
+            String authAttrs = connProps.getAuthenticationAttributesFactory();
 
-            if (F.isEmpty(userAttrs))
+            if (F.isEmpty(authAttrs))
                 writer.writeMap(null);
             else {
                 try {
                     Class<Factory<Map<String, String>>> cls = (Class<Factory<Map<String, String>>>)
-                        JdbcThinSSLUtil.class.getClassLoader().loadClass(userAttrs);
+                        JdbcThinSSLUtil.class.getClassLoader().loadClass(authAttrs);
 
                     Map<String, String> attrs = cls.newInstance().create();
 
                     writer.writeMap(attrs);
                 }
                 catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                    throw new SQLException("Could not found user attributes factory class: " + userAttrs,
+                    throw new SQLException("Could not found authentication attributes factory class: " + authAttrs,
                         SqlStateCode.CLIENT_CONNECTION_FAILED, e);
                 }
             }

@@ -236,14 +236,14 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             new ClientConfiguration().setAddresses(Config.SERVER)
                 .setUserName(userName)
                 .setUserPassword("")
-                .setUserAttributes(userAttributres())
+                .setAuthenticationAttributes(authenticationAttributres())
         );
     }
 
     /**
-     * @return User attributes.
+     * @return Authentication attributes.
      */
-    protected Map<String, String> userAttributres() {
+    protected Map<String, String> authenticationAttributres() {
         return null;
     }
 }

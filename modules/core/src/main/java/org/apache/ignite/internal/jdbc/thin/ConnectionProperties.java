@@ -489,22 +489,16 @@ public interface ConnectionProperties {
     public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
 
     /**
-     * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
-     * <p></p>
-     * User attributes can be used in custom authenticator to authenticate clients by checking attributes.
-     * <p></p>
-     * <b>WARNING!</b> Peer classloading doesn't work for user attributes. If you want to put custom classes,
-     * you should name these classes in {@code META-INF/classnames.properties} and have them on both server and client.
-     * <br>
-     * Same for some JDK classes (like {@code javax.} package).
-     * @return Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
+     * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * @return Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
      */
-    public String getUserAttributesFactory();
+    public String getAuthenticationAttributesFactory();
 
     /**
      * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
      *
      * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
      */
-    public void setUserAttributesFactory(String sslFactory);
+    public void setAuthenticationAttributesFactory(String sslFactory);
 }

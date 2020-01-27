@@ -89,8 +89,8 @@ final class ClientChannelConfiguration {
     /** Reconnect retries within period (for throttling). */
     private final int reconnectThrottlingRetries;
 
-    /** User attributes. */
-    private Map<String, String> userAttrs;
+    /** Authentication attributes. */
+    private Map<String, String> authAttrs;
 
     /**
      * Constructor.
@@ -116,7 +116,7 @@ final class ClientChannelConfiguration {
         this.reconnectThrottlingPeriod = cfg.getReconnectThrottlingPeriod();
         this.reconnectThrottlingRetries = cfg.getReconnectThrottlingRetries();
         this.addr = addr;
-        this.userAttrs = cfg.getUserAttributes();
+        this.authAttrs = cfg.getAuthenticationAttributes();
     }
 
     /**
@@ -260,9 +260,9 @@ final class ClientChannelConfiguration {
     }
 
     /**
-     * @return User attributes.
+     * @return Authentication attributes.
      */
     public Map<String, String> getUserAttributes() {
-        return userAttrs;
+        return authAttrs;
     }
 }

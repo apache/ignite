@@ -45,7 +45,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * SSL connection test with security plugin.
  */
 @SuppressWarnings("ThrowableNotThrown")
-public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest {
+public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSelfTest {
     /** Client key store path. */
     private static final String CLI_KEY_STORE_PATH = U.getIgniteHome() +
         "/modules/clients/src/test/keystore/client.jks";
@@ -120,8 +120,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                 "&sslClientCertificateKeyStorePassword=123456" +
                 "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456" +
-                "&userAttributesFactory=" +
-                "org.apache.ignite.internal.processors.security.UserAttributesFactory")) {
+                "&authenticationAttributesFactory=" +
+                "org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory")) {
                 checkConnection(conn);
             }
         }
@@ -180,8 +180,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.UserAttributesFactory");
+                        "&authenticationAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory");
 
                     return null;
                 }
@@ -210,8 +210,8 @@ public class JdbcThinConnectionSSLSecurityTest extends JdbcThinAbstractSelfTest 
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&userAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.UserAttributesFactory");
+                        "&authenticationAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory");
 
                     return null;
                 }

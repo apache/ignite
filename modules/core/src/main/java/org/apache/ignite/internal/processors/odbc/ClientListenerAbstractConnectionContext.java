@@ -48,8 +48,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /** Authorization context. */
     private AuthorizationContext authCtx;
 
-    /** User attributes. */
-    protected Map<String, String> userAttrs;
+    /** Authentication attributes. */
+    protected Map<String, String> authAttrs;
 
     /**
      * Constructor.
@@ -120,7 +120,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(UUID.randomUUID());
-        authCtx.nodeAttributes(F.isEmpty(userAttrs) ? Collections.emptyMap() : userAttrs);
+        authCtx.nodeAttributes(F.isEmpty(authAttrs) ? Collections.emptyMap() : authAttrs);
         authCtx.credentials(cred);
 
         secCtx = ctx.security().authenticate(authCtx);
