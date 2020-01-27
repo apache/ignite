@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
+import org.apache.ignite.internal.processors.cache.transactions.AtomicPartitionCounterStateConsistencyHistoryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.transactions.AtomicPartitionCounterStateConsistencyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionIntegrityWithPrimaryIndexCorruptionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapOnInvalidTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCachePartitionConsistencyTest;
@@ -132,6 +134,9 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
 
         suite.addTestSuite(TxRecoveryWithConcurrentRollbackTest.class);
+
+        suite.addTestSuite(AtomicPartitionCounterStateConsistencyTest.class);
+        suite.addTestSuite(AtomicPartitionCounterStateConsistencyHistoryRebalanceTest.class);
 
         return suite;
     }

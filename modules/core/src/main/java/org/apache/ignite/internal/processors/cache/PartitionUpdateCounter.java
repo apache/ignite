@@ -129,4 +129,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();
+
+    /**
+     * @return Cache group context.
+     */
+    public CacheGroupContext context();
 }
