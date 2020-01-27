@@ -34,15 +34,14 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -164,6 +163,8 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        System.setProperty(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, "true");
     }
 
     /** {@inheritDoc} */
@@ -173,9 +174,13 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING);
     }
 
-    @Test
+    /**
+     * @throws Exception if failed.
+     */
     public void testRebuildIndex() throws Exception {
         IgniteEx node1 = startGrid(0);
         startGrid(1);
@@ -196,9 +201,8 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         final IgniteCacheDatabaseSharedManager db = node2.context().cache().context().database();
-        while (IdleVerifyUtility.isCheckpointNow(db)){
+        while (IdleVerifyUtility.isCheckpointNow(db))
             doSleep(500);
-        }
 
         // Validate indexes on start.
         ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0);

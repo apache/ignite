@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -45,8 +45,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.thread.IgniteThread;
 
-import java.util.List;
-
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.IgniteSystemProperties.INDEX_REBUILDING_PARALLELISM;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -63,6 +62,10 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;
+
+    /** Is extra index rebuild logging enabled. */
+    private static final boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
+        IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -168,19 +171,30 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             stat0.types.addAll(st.types);
         }
 
+        printIndexStats(stat0);
+    }
+
+    /**
+     * Prints index cache stats to log.
+     *
+     * @param stat Index cache stats.
+     * @throws IgniteCheckedException if failed to get index size.
+     */
+    private void printIndexStats(SchemaIndexCacheStat stat) throws IgniteCheckedException {
+        if (!IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED)
+            return;
+
         StringBuilder res = new StringBuilder();
 
         res.append("Details for cache rebuilding [name=" + cctx.cache().name()
             + ", grpName=" + cctx.group().name() + ']');
         res.append(U.nl());
-        res.append("   Scanned rows " + stat0.scanned + ", visited types " + stat0.types);
+        res.append("   Scanned rows " + stat.scanned + ", visited types " + stat.types);
         res.append(U.nl());
-
-        Collection<GridQueryTypeDescriptor> types = cctx.kernalContext().query().types(cctx.cache().name());
 
         final GridQueryIndexing idx = cctx.kernalContext().query().getIndexing();
 
-        for (String type0 : stat0.types) {
+        for (String type0 : stat.types) {
             final QueryTypeDescriptorImpl type = cctx.kernalContext().query().typeByName(type0);
 
             res.append("        Type name=" + type.name());

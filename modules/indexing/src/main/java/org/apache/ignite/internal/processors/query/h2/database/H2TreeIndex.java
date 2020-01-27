@@ -71,6 +71,7 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
@@ -80,6 +81,10 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 public class H2TreeIndex extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+
+    /** Is extra index rebuild logging enabled. */
+    private static final boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
+        IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** */
     private final H2Tree[] segments;
@@ -227,15 +232,17 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cctx.kernalContext().failure(),
                         log);
 
-                    log.info("DBG: H2Tree [cacheName=" + cctx.name() +
-                        ", cacheId=" + cctx.cacheId() +
-                        ", grpName=" + cctx.group().name() +
-                        ", grpId=" + cctx.groupId() +
-                        ", segment=" + i +
-                        ", size=" + segments[i].size() +
-                        ", pageId=" + page.pageId().pageId() +
-                        ", allocated=" + page.isAllocated() +
-                        ", tree=" + segments[i] + ']');
+                    if (IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED) {
+                        log.info("DBG: H2Tree [cacheName=" + cctx.name() +
+                            ", cacheId=" + cctx.cacheId() +
+                            ", grpName=" + cctx.group().name() +
+                            ", grpId=" + cctx.groupId() +
+                            ", segment=" + i +
+                            ", size=" + segments[i].size() +
+                            ", pageId=" + page.pageId().pageId() +
+                            ", allocated=" + page.isAllocated() +
+                            ", tree=" + segments[i] + ']');
+                    }
                 }
                 finally {
                     db.checkpointReadUnlock();
