@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -107,6 +108,9 @@ public class AtomicPartitionCounterStateConsistencyTest extends TxPartitionCount
 
                     if (batch) {
                         cache.putAll(insertedKeys.stream().collect(toMap(k -> k, v -> v, (k, v) -> v, LinkedHashMap::new)));
+
+                        Collections.sort(rmvKeys);
+
                         cache.removeAll(new LinkedHashSet<>(rmvKeys));
                     }
                 }
