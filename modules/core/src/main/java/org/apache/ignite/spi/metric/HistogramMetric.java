@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+package org.apache.ignite.spi.metric;
 
 /**
- * Checkpoint futures.
+ * Histogram metric calculates counts of measurements that gets into each bounds interval.
+ * Note, that {@link #value()} will return array length of {@code bounds.length + 1}.
+ * Last element will contains count of measurements bigger then most right value of bounds.
  */
-public interface CheckpointFuture {
-    /**
-     * @return Begin future.
-     */
-    public GridFutureAdapter beginFuture();
-
-    /**
-     * @return Finish future.
-     */
-    public GridFutureAdapter<Object> finishFuture();
+public interface HistogramMetric extends ObjectMetric<long[]> {
+    /** @return Bounds of this histogram. */
+    public long[] bounds();
 }

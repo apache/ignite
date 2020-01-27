@@ -20,15 +20,13 @@ package org.apache.ignite.internal.processors.metric.impl;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Histogram metric that will calculate counts of measurements that gets into each bounds interval.
- * Note, that {@link #value()} will return array length of {@code bounds.length + 1}.
- * Last element will contains count of measurements bigger then most right value of bounds.
+ * Histogram metric implementation.
  */
-public class HistogramMetric extends AbstractMetric implements ObjectMetric<long[]> {
+public class HistogramMetricImpl extends AbstractMetric implements HistogramMetric {
     /** Holder of measurements. */
     private volatile HistogramHolder holder;
 
@@ -37,7 +35,7 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
      * @param desc Description.
      * @param bounds Bounds.
      */
-    public HistogramMetric(String name, @Nullable String desc, long[] bounds) {
+    public HistogramMetricImpl(String name, @Nullable String desc, long[] bounds) {
         super(name, desc);
 
         holder = new HistogramHolder(bounds);
@@ -91,8 +89,8 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
         return res;
     }
 
-    /** @return Bounds of this histogram. */
-    public long[] bounds() {
+    /** {@inheritDoc} */
+    @Override public long[] bounds() {
         return holder.bounds;
     }
 

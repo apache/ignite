@@ -59,12 +59,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public int[] GetSchema(int typeId, int schemaId)
-        {
-            return GetBinaryType(typeId).Schema.Get(schemaId);
-        }
-
-        /** <inheritdoc /> */
         public void PutBinaryTypes(ICollection<BinaryType> types)
         {
             Debug.Assert(types != null);

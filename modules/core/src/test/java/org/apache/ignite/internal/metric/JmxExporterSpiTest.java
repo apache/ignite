@@ -71,7 +71,7 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -504,7 +504,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
+    public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
@@ -518,7 +518,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("test", null);
+        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
 
         createTestHistogram(mreg);
 
@@ -1000,7 +1000,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     private void createTestHistogram(MetricRegistry mreg) {
         long[] bounds = new long[] {50, 500};
 
-        HistogramMetric histogram = mreg.histogram("histogram", bounds, null);
+        HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
 
         histogram.value(10);
         histogram.value(51);

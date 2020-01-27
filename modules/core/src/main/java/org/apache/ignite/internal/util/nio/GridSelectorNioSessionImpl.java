@@ -28,11 +28,16 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME;
 
 /**
  * Session implementation bound to selector API and socket API.
@@ -81,6 +86,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     /** Close channel on session #close() called. */
     private volatile boolean closeSocket = true;
 
+    /** Outbound messages queue size metric. */
+    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+
     /**
      * Creates session instance.
      *
@@ -102,6 +110,7 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         InetSocketAddress rmtAddr,
         boolean accepted,
         int sndQueueLimit,
+        @Nullable MetricRegistry mreg,
         @Nullable ByteBuffer writeBuf,
         @Nullable ByteBuffer readBuf
     ) {
@@ -132,6 +141,11 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
             this.readBuf = readBuf;
         }
+
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        );
     }
 
     /** {@inheritDoc} */
@@ -295,6 +309,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert res : "Future was not added to queue";
 
+        if (outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.increment();
+
         return queue.sizex();
     }
 
@@ -320,6 +337,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
 
         assert res : "Future was not added to queue";
 
+        if (outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.increment();
+
         return queue.sizex();
     }
 
@@ -332,6 +352,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         boolean add = queue.addAll(futs);
 
         assert add;
+
+        if (outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.add(futs.size());
     }
 
     /**
@@ -341,6 +364,9 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         SessionWriteRequest last = queue.poll();
 
         if (last != null) {
+            if (outboundMessagesQueueSizeMetric != null)
+                outboundMessagesQueueSizeMetric.decrement();
+
             if (sem != null && !last.messageThread())
                 sem.release();
 
@@ -371,7 +397,12 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     boolean removeFuture(SessionWriteRequest fut) {
         assert closed();
 
-        return queue.removeLastOccurrence(fut);
+        boolean rmv = queue.removeLastOccurrence(fut);
+
+        if (rmv && outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.decrement();
+
+        return rmv;
     }
 
     /**

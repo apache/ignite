@@ -19,9 +19,12 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryWithTransformerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalPasswordCheckTest;
@@ -56,6 +59,7 @@ import org.junit.runners.Suite;
     ComputePermissionCheckTest.class,
     ThinClientPermissionCheckTest.class,
     ThinClientPermissionCheckSecurityTest.class,
+    ContinuousQueryPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -65,6 +69,8 @@ import org.junit.runners.Suite;
     EntryProcessorRemoteSecurityContextCheckTest.class,
     DataStreamerRemoteSecurityContextCheckTest.class,
     CacheLoadRemoteSecurityContextCheckTest.class,
+    ContinuousQueryRemoteSecurityContextCheckTest.class,
+    ContinuousQueryWithTransformerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
     AdditionalPasswordCheckTest.class,
