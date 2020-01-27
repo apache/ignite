@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -494,6 +495,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             histAssigns.put(node, msg);
+        }
+
+        try {
+            U.sleep(200);
+        }
+        catch (IgniteInterruptedCheckedException ignore) {
+            // No-op.
         }
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());

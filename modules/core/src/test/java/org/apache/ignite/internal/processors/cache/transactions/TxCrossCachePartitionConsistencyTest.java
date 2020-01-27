@@ -85,7 +85,7 @@ public class TxCrossCachePartitionConsistencyTest extends GridCommonAbstractTest
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
             setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).
-            setCheckpointFrequency(MILLISECONDS.convert(365, DAYS)).
+            //setCheckpointFrequency(MILLISECONDS.convert(365, DAYS)).
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistenceEnabled).
                 setInitialSize(100 * MB).setMaxSize(300 * MB)));
 

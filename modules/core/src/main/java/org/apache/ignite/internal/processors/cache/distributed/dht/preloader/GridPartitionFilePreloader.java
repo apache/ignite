@@ -68,7 +68,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
     /** */
     private final long fileRebalanceThreshold =
-        IgniteSystemProperties.getLong(IGNITE_PDS_FILE_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
+        IgniteSystemProperties.getLong(IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
 
     /** Lock. */
     private final Lock lock = new ReentrantLock();
