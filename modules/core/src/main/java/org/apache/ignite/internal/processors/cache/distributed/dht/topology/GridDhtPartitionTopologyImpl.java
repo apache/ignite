@@ -2422,7 +2422,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             part.moving();
 
         // Should not start clearing partition that can be rebalanced by files (prevent fast eviction too).
-        if (clear && part.updateCounter() != 0)
+        if (clear)
             exchFut.addClearingPartition(grp, part.id());
 
         assert part.state() == MOVING : part;

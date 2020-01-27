@@ -44,6 +44,9 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
@@ -58,6 +61,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
+
+    /** */
+    private final long walRebalanceThreshold =
+        getLong(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
     /** */
     private GridDhtPartitionTopology top;
@@ -250,7 +257,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 ClusterNode histSupplier = null;
 
                 if (grp.persistenceEnabled() && exchFut != null &&
-                    countersMap.updateCounter(p) != part.initialUpdateCounter()) {
+                    countersMap.updateCounter(p) != part.initialUpdateCounter() &&
+                    part.fullSize() > walRebalanceThreshold) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
                     if (nodeId != null)

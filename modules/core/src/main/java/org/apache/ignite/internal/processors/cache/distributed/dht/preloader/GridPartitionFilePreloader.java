@@ -39,6 +39,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -186,11 +187,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
                     part.disable();
                 else
                     part.enable();
+            }
 
-                // If file rebalancing for cache group was incomplete partition can't be rebalanced using
-                // historical rebalancing, because we didn't create an index for this partition.
-                if (hasIdleParttition)
-                    exchFut.addClearingPartition(grp, part.id());
+            if (hasIdleParttition && cctx.kernalContext().query().moduleEnabled()) {
+                for (GridCacheContext ctx : grp.caches())
+                    cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
             }
         }
     }
