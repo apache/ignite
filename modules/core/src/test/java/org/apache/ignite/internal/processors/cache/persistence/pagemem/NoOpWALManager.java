@@ -56,8 +56,8 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public WALPointer flush(WALPointer ptr, boolean explicitFsync) {
-        return null;
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) {
+
     }
 
     /** {@inheritDoc} */
