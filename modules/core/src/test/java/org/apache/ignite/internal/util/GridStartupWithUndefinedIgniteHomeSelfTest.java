@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.util;
 
 import junit.framework.TestCase;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -91,13 +92,14 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
             cfg.setDiscoverySpi(disc);
             cfg.setConnectorConfiguration(null);
 
-            try {
-                G.start(cfg);
+            try (Ignite ignite = G.start(cfg)) {
+                assert ignite != null;
 
-                fail("Starting should fail due to working directory is not defined");
-            }
-            catch (IgniteException e) {
-                assertTrue(e.getMessage().contains("Failed to resolve Ignite work directory"));
+                igniteHome0 = U.getIgniteHome();
+
+                assert igniteHome0 == null;
+
+                X.println("Stopping grid " + ignite.cluster().localNode().id());
             }
         }
     }
