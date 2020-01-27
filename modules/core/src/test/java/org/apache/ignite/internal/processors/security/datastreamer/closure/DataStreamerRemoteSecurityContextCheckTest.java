@@ -24,7 +24,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,17 +58,14 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
     /** */
     @Test
     public void testDataStreamer() {
-        IgniteRunnable op = () -> {
-            VERIFIER.register(OPERATION_START);
+        runAndCheck(() -> {
+                try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
+                    strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(OPERATION_CHECK, endpointIds())));
 
-            try (IgniteDataStreamer<Integer, Integer> strm = Ignition.localIgnite().dataStreamer(CACHE_NAME)) {
-                strm.receiver(StreamVisitor.from(new ExecRegisterAndForwardAdapter<>(endpointIds())));
-
-                strm.addData(primaryKey(grid(SRV_CHECK)), 100);
+                    strm.addData(primaryKey(grid(SRV_CHECK)), 100);
+                }
             }
-        };
-
-        runAndCheck(op);
+        );
     }
 
     /** {@inheritDoc} */

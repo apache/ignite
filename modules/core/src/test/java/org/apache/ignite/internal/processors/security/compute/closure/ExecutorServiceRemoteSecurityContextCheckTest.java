@@ -62,18 +62,15 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
     /** */
     @Test
     public void test() {
-        IgniteRunnableX operation = () -> {
-            VERIFIER.register(OPERATION_START);
+        runAndCheck((IgniteRunnableX)() -> {
+                Ignite loc = Ignition.localIgnite();
 
-            Ignite loc = Ignition.localIgnite();
+                for (UUID nodeId : nodesToCheckIds()) {
+                    ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
-            for (UUID nodeId : nodesToCheckIds()) {
-                ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
-
-                svc.submit((Runnable) createRunner()).get();
+                    svc.submit((Runnable)createRunner(OPERATION_CHECK)).get();
+                }
             }
-        };
-
-        runAndCheck(operation);
+        );
     }
 }

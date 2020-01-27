@@ -79,15 +79,15 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     private Stream<IgniteRunnable> operations() {
         final Integer key = primaryKey(grid(SRV_CHECK));
 
-        return Stream.<IgniteRunnable>of(
-            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invoke(key, createRunner()),
+        return Stream.of(
+            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invoke(key, createRunner(OPERATION_CHECK)),
 
-            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAll(singleton(key), createRunner()),
+            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAll(singleton(key), createRunner(OPERATION_CHECK)),
 
-            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAsync(key, createRunner()).get(),
+            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAsync(key, createRunner(OPERATION_CHECK)).get(),
 
             () -> localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAllAsync(singleton(key), createRunner()).get()
-        ).map(this::createRunner);
+                .invokeAllAsync(singleton(key), createRunner(OPERATION_CHECK)).get()
+        );
     }
 }

@@ -91,7 +91,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /**
      * @return Collection of initiator nodes names.
      */
-    private Collection<IgniteEx> initiators() {
+    protected Collection<IgniteEx> initiators() {
         return Arrays.asList(grid(SRV_INITIATOR), grid(CLNT_INITIATOR));
     }
 
@@ -178,7 +178,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
                     setupVerifier(VERIFIER);
 
-                    compute(initiator, nodesToRunIds()).broadcast(r);
+                    compute(initiator, nodesToRunIds()).broadcast((IgniteRunnable)createRunner(OPERATION_START, r));
 
                     VERIFIER.checkResult();
                 }
@@ -300,10 +300,11 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private RegisterExecAndForward<K, V> instance;
 
         /**
+         * @param opName Operation name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        public ExecRegisterAndForwardAdapter(Collection<UUID> endpoints) {
-            instance = new RegisterExecAndForward<>(endpoints);
+        public ExecRegisterAndForwardAdapter(String opName, Collection<UUID> endpoints) {
+            instance = new RegisterExecAndForward<>(null, opName, endpoints);
         }
 
         /** {@inheritDoc} */
@@ -313,18 +314,18 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner(String srvName) {
-        return new RegisterExecAndForward<>(srvName, endpointIds());
+    protected <K, V> RegisterExecAndForward<K, V> createRunner(String srvName, String opName) {
+        return new RegisterExecAndForward<>(srvName, opName, endpointIds());
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner(IgniteRunnable r) {
-        return new RegisterExecAndForward<>(OPERATION_START, r, endpointIds());
+    protected <K, V> RegisterExecAndForward<K, V> createRunner(String opName, IgniteRunnable r) {
+        return new RegisterExecAndForward<>(opName, r, endpointIds());
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner() {
-        return new RegisterExecAndForward<>(endpointIds());
+    protected <K, V> RegisterExecAndForward<K, V> createRunner(String opName) {
+        return new RegisterExecAndForward<>(null, opName, endpointIds());
     }
 
     /** */
@@ -344,17 +345,11 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
         /**
          * @param node Expected local node name.
+         * @param opName Operation name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        private RegisterExecAndForward(String node, Collection<UUID> endpoints) {
-            this(node, OPERATION_CHECK, null, endpoints);
-        }
-
-        /**
-         * @param endpoints Collection of endpont nodes ids.
-         */
-        private RegisterExecAndForward(Collection<UUID> endpoints) {
-            this(null, OPERATION_CHECK, null, endpoints);
+        private RegisterExecAndForward(String node, String opName, Collection<UUID> endpoints) {
+            this(node, opName, null, endpoints);
         }
 
         /** */

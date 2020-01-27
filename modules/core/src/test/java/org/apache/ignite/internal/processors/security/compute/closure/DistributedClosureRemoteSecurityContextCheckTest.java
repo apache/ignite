@@ -75,33 +75,33 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
      * @return Stream of check cases.
      */
     private Stream<IgniteRunnable> operations() {
-        return Stream.<IgniteRunnable>of(
-            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) createRunner()),
-            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) createRunner()).get(),
+        return Stream.of(
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) createRunner(OPERATION_CHECK)),
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) createRunner(OPERATION_CHECK)).get(),
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).call(createRunner());
+                    compute(id).call(createRunner(OPERATION_CHECK));
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).callAsync(createRunner()).get();
+                    compute(id).callAsync(createRunner(OPERATION_CHECK)).get();
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).run(createRunner());
+                    compute(id).run(createRunner(OPERATION_CHECK));
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).runAsync(createRunner()).get();
+                    compute(id).runAsync(createRunner(OPERATION_CHECK)).get();
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).apply(createRunner(), new Object());
+                    compute(id).apply(createRunner(OPERATION_CHECK), new Object());
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).applyAsync(createRunner(), new Object()).get();
+                    compute(id).applyAsync(createRunner(OPERATION_CHECK), new Object()).get();
             }
-        ).map(this::createRunner);
+        );
     }
 }

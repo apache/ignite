@@ -79,16 +79,8 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
      */
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
-            () -> {
-                VERIFIER.register(OPERATION_START);
-
-                localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0);
-            },
-            () -> {
-                VERIFIER.register(OPERATION_START);
-
-                localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0).get();
-            }
+            () -> localIgnite().compute().execute(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0),
+            () -> localIgnite().compute().executeAsync(new ComputeTaskClosure(nodesToCheckIds(), endpointIds()), 0).get()
         );
     }
 

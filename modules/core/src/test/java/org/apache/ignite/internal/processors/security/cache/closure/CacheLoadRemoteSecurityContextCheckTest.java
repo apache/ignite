@@ -24,7 +24,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -77,13 +76,8 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
     /** */
     @Test
     public void test() {
-        IgniteRunnable operation = () -> {
-            VERIFIER.register(OPERATION_START);
-
-            localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(createRunner(SRV_CHECK));
-        };
-
-        runAndCheck(operation);
+        runAndCheck(() ->
+            localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(createRunner(SRV_CHECK, OPERATION_CHECK)));
     }
 
     /** {@inheritDoc} */
