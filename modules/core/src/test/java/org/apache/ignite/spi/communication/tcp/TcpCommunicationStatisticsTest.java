@@ -32,12 +32,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -63,11 +62,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
+        IgniteMessageFactoryImpl.registerCustom(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
     }
 
     /**
@@ -121,10 +116,10 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "SPIs",
             SynchronizedCommunicationSpi.class.getSimpleName());
 
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
-        if (mbeanServer.isRegistered(mbeanName))
-            return MBeanServerInvocationHandler.newProxyInstance(mbeanServer, mbeanName, TcpCommunicationSpiMBean.class,
+        if (mbeanSrv.isRegistered(mbeanName))
+            return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TcpCommunicationSpiMBean.class,
                 true);
         else
             fail("MBean is not registered: " + mbeanName.getCanonicalName());
@@ -159,10 +154,10 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
             latch.await(10, TimeUnit.SECONDS);
 
-            ClusterGroup clusterGroupNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
+            ClusterGroup clusterGrpNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
 
             // Send job from node0 to node1.
-            grid(0).compute(clusterGroupNode1).call(new IgniteCallable<Boolean>() {
+            grid(0).compute(clusterGrpNode1).call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return Boolean.TRUE;
                 }

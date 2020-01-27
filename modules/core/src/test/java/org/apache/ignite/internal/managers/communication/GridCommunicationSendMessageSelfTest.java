@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -46,20 +45,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /** */
     private static final short DIRECT_TYPE_OVER_BYTE = 1000;
 
-    /** */
-    private int bufSize;
-
     static {
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new TestMessage();
-            }
-        });
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE_OVER_BYTE, new CO<Message>() {
-            @Override public Message apply() {
-                return new TestOverByteIdMessage();
-            }
-        });
+        IgniteMessageFactoryImpl.registerCustom(DIRECT_TYPE, TestMessage::new);
+
+        IgniteMessageFactoryImpl.registerCustom(DIRECT_TYPE_OVER_BYTE, TestOverByteIdMessage::new);
     }
 
     /** {@inheritDoc} */
@@ -108,8 +97,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
      */
     @Test
     public void testSendMessageWithBuffer() throws Exception {
-        bufSize = 8192;
-
         try {
             startGridsMultiThreaded(2);
 

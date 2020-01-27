@@ -17,28 +17,30 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.Extension;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Factory for communication messages.
+ * Provider of communication message factories.
  * <p>
- * A plugin can provide his own message factory as an extension
- * if it uses any custom messages (all message must extend
- * {@link Message} class).
- *
- * @deprecated Use {@link MessageFactoryProvider} instead.
+ * Implementation of this interface is responsible for registration of all message factories in
+ * {@link #registerAll} method.
+ * <p>
+ * {@link #registerAll} method's call is responsibility of {@link IgniteMessageFactory} implementation.
  */
-@Deprecated
-public interface MessageFactory extends Extension {
+public interface MessageFactoryProvider extends MessageFactory {
     /**
-     * Creates new message instance of provided type.
-     * <p>
-     * This method should return {@code null} if provided message type
-     * is unknown to this factory.
+     * Registers all messages factories. See {@link IgniteMessageFactory#register}.
      *
-     * @param type Message type.
-     * @return Message instance.
+     * @param factory {@link IgniteMessageFactory} implementation.
      */
-    @Nullable public Message create(short type);
+    public void registerAll(IgniteMessageFactory factory);
+
+    /**
+     * Always throws {@link UnsupportedOperationException}.
+     * @param type Message direct type.
+     * @throws UnsupportedOperationException On any invocation.
+     */
+    @Override @Nullable public default Message create(short type) {
+        throw new UnsupportedOperationException();
+    }
 }
