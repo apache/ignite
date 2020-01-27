@@ -262,7 +262,7 @@ final class ClientChannelConfiguration {
     /**
      * @return Authentication attributes.
      */
-    public Map<String, String> getUserAttributes() {
+    public Map<String, String> getAuthenticationAttributes() {
         return authAttrs;
     }
 }

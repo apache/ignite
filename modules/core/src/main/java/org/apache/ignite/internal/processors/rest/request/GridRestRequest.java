@@ -177,10 +177,10 @@ public class GridRestRequest {
     /**
      * Gets authentication attributes.
      *
-     * @param userAttrs Authentication attributes.
+     * @param authAttrs Authentication attributes.
      */
-    public void authAttributes(Map<String, String> userAttrs) {
-        this.authAttrs = userAttrs;
+    public void authAttributes(Map<String, String> authAttrs) {
+        this.authAttrs = authAttrs;
     }
 
     /** {@inheritDoc} */

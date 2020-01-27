@@ -134,17 +134,17 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
      * @return Grid client configuration.
      */
     protected GridClientConfiguration getGridClientConfiguration() {
-        Map<String, String> userAttrs = new AuthenticationAttributesFactory().create();
+        Map<String, String> authAttrs = new AuthenticationAttributesFactory().create();
 
         if (fail)
-            userAttrs.clear();
+            authAttrs.clear();
 
         return new GridClientConfiguration()
             .setSslContextFactory(getClientSslContextFactory()::create)
             .setRouters(Collections.singletonList("127.0.0.1:11211"))
             .setSecurityCredentialsProvider(
                 new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
-            .setAuthenticationAttributes(userAttrs);
+            .setAuthenticationAttributes(authAttrs);
     }
 
     /**
