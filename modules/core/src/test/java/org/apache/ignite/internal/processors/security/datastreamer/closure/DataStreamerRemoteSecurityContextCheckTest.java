@@ -69,8 +69,7 @@ public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOpe
             }
         };
 
-        runAndCheck(grid(SRV_INITIATOR), op);
-        runAndCheck(grid(CLNT_INITIATOR), op);
+        runAndCheck(op);
     }
 
     /** {@inheritDoc} */

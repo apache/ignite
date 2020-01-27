@@ -61,8 +61,7 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
     /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /** */

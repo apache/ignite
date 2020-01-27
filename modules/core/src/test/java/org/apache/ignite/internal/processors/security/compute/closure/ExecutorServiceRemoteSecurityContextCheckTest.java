@@ -74,7 +74,6 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
             }
         };
 
-        runAndCheck(grid(SRV_INITIATOR), operation);
-        runAndCheck(grid(CLNT_INITIATOR), operation);
+        runAndCheck(operation);
     }
 }

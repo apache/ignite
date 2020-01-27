@@ -71,8 +71,7 @@ public class ComputeTaskRemoteSecurityContextCheckTest extends AbstractRemoteSec
     /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /**

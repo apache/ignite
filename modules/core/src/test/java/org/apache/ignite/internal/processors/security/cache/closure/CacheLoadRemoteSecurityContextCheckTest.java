@@ -83,8 +83,7 @@ public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperat
             localIgnite().<Integer, Integer>cache(CACHE_NAME).loadCache(createRunner(SRV_CHECK));
         };
 
-        runAndCheck(grid(SRV_INITIATOR), operation);
-        runAndCheck(grid(CLNT_INITIATOR), operation);
+        runAndCheck(operation);
     }
 
     /** {@inheritDoc} */

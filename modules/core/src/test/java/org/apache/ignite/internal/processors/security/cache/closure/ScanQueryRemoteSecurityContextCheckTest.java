@@ -67,8 +67,7 @@ public class ScanQueryRemoteSecurityContextCheckTest extends AbstractCacheOperat
 
         awaitPartitionMapExchange();
 
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /** {@inheritDoc} */

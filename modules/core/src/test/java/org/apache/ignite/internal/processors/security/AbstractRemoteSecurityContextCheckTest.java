@@ -89,6 +89,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /**
+     * @return Collection of initiator nodes names.
+     */
+    private Collection<IgniteEx> initiators() {
+        return Arrays.asList(grid(SRV_INITIATOR), grid(CLNT_INITIATOR));
+    }
+
+    /**
      * @return Collection of feature call nodes ids.
      */
     protected final Collection<UUID> nodesToRunIds() {
@@ -152,29 +159,31 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /**
-     * @param initiator Node that initiates an execution.
      * @param op Operation.
      */
-    protected void runAndCheck(IgniteEx initiator, IgniteRunnable op) {
-        runAndCheck(initiator, Stream.of(op));
+    protected void runAndCheck(IgniteRunnable op) {
+        runAndCheck(Stream.of(op));
     }
 
     /**
      * Sets up VERIFIER, performs the runnable and checks the result.
      *
-     * @param initiator Node that initiates an execution.
      * @param ops Operations.
      */
-    protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> ops) {
-        ops.forEach(r -> {
-            VERIFIER.initiator(initiator);
+    protected void runAndCheck(Stream<IgniteRunnable> ops) {
+        ops.forEach(
+            r -> initiators().forEach(
+                initiator -> {
+                    VERIFIER.initiator(initiator);
 
-            setupVerifier(VERIFIER);
+                    setupVerifier(VERIFIER);
 
-            compute(initiator, nodesToRunIds()).broadcast(r);
+                    compute(initiator, nodesToRunIds()).broadcast(r);
 
-            VERIFIER.checkResult();
-        });
+                    VERIFIER.checkResult();
+                }
+            )
+        );
     }
 
     /**

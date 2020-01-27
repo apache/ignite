@@ -60,8 +60,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
     /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /** {@inheritDoc} */
