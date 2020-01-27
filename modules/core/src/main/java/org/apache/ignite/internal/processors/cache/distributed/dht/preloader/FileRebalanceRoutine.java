@@ -437,6 +437,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 return true;
             }
 
+            if (nodeIsStopping)
+                return true;
+
             // Should await until off-heap cleanup is finished.
             for (IgniteInternalFuture fut : memCleanupTasks.values()) {
                 if (!fut.isDone())
