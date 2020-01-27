@@ -512,9 +512,9 @@ public interface ConnectionProperties {
     public String getAuthenticationAttributesFactory();
 
     /**
-     * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, Object&gt;&gt;.
+     * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
      *
-     * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, Object&gt;&gt;.
+     * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
      */
     public void setAuthenticationAttributesFactory(String sslFactory);
 }
