@@ -28,7 +28,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -65,7 +64,6 @@ public class InvalidServerTest extends AbstractSecurityTest {
     }
 
     /** */
-    @Test
     public void testInvalidServer() throws Exception {
         globalAuth = true;
 
