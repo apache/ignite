@@ -73,7 +73,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
-        grid = startGrid(GRID_CNT - 1);
+        grid = startClientGrid(GRID_CNT - 1);
 
         grid.cache(DEFAULT_CACHE_NAME);
     }
@@ -90,7 +90,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (getTestIgniteInstanceIndex(igniteInstanceName) != GRID_CNT - 1) {
+        if (getTestIgniteInstanceIndex(igniteInstanceName) < GRID_CNT - 2) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);

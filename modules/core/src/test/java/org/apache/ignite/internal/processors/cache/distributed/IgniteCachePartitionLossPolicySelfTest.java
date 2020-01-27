@@ -633,7 +633,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         boolean safe
     ) throws Exception {
         try {
-            IgniteEx cl = startClientGrid("newNode");
+            IgniteEx cl = client ? startClientGrid("newNode") : startGrid("newNode");
 
             CacheGroupContext grpCtx = cl.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 

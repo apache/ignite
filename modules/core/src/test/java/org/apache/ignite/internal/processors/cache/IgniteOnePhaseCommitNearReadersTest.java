@@ -103,7 +103,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
 
         Integer key = primaryKey(srv.cache(DEFAULT_CACHE_NAME));
 
-        Ignite client2 = startGrid(SRVS + 1);
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         IgniteCache<Object, Object> cache2 = client2.cache(DEFAULT_CACHE_NAME);
 

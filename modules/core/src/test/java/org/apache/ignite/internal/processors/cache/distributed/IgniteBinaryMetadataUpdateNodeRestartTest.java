@@ -120,7 +120,7 @@ public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstrac
                         while (!stop.get()) {
                             log.info("Start node.");
 
-                            startGrid(SRVS + CLIENTS);
+                            startClientGrid(SRVS + CLIENTS);
 
                             log.info("Stop node.");
 
