@@ -90,7 +90,7 @@ public class Fragment implements RelSource {
                 IgniteReceiver receiver = input.left;
                 RelSource source = input.right;
 
-                source.bindToTarget(new RelTargetImpl(id, fragmentMapping(mappingService, ctx, info, mq), receiver.distribution()), mappingService, ctx, mq);
+                source.bindToTarget(new RelTargetImpl(id, mapping, receiver.distribution()), mappingService, ctx, mq);
             }
         }
     }
