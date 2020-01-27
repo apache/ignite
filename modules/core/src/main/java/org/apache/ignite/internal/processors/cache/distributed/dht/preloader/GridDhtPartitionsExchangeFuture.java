@@ -769,7 +769,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             boolean crdNode = crd != null && crd.isLocal();
 
-            exchCtx = new ExchangeContext(crdNode, this);
+            exchCtx = new ExchangeContext(cctx, crdNode, this);
 
             cctx.exchange().exchangerBlockingSectionBegin();
 
