@@ -25,6 +25,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 
@@ -69,7 +70,7 @@ public class JoinNode extends RelGraphNode {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         assert children.size() == 2;
 
         RelNode left = children.get(0);

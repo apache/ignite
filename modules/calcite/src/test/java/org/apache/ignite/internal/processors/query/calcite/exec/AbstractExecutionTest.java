@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.message.TestMessageService;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -120,7 +120,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     protected ExecutionContext executionContext(UUID nodeId, UUID queryId, long fragmentId) {
         return new ExecutionContext(
             taskExecutor(nodeId),
-            IgniteCalciteContext.builder().localNodeId(nodeId).logger(log()).build(),
+            PlanningContext.builder().localNodeId(nodeId).logger(log()).build(),
             queryId, fragmentId, null, ImmutableMap.of());
     }
 

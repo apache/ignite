@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 
 /**
@@ -51,7 +51,7 @@ public class TableScanNode extends RelGraphNode {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         RelOptCluster cluster = ctx.getCluster();
         RelOptTable table = ctx.getSchema().getTableForMember(tableName);
         RelTraitSet traits = traitSet(cluster);

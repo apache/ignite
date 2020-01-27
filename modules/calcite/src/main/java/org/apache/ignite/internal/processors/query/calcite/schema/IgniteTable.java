@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -108,7 +108,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     }
 
     /** {@inheritDoc} */
-    @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+    @Override public NodesMapping mapping(PlanningContext ctx) {
         GridCacheContext<?, ?> cctx = desc.cacheContext();
 
         assert cctx != null;

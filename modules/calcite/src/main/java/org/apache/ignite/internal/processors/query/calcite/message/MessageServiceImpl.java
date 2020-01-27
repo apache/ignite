@@ -51,10 +51,10 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     private final GridMessageListener msgLsnr;
 
     /** */
-    protected QueryTaskExecutor taskExecutor;
+    private QueryTaskExecutor taskExecutor;
 
     /** */
-    protected FailureProcessor failureProcessor;
+    private FailureProcessor failureProcessor;
 
     /** */
     private Marshaller marsh;

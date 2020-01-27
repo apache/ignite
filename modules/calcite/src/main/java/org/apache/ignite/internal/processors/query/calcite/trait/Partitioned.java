@@ -22,7 +22,7 @@ import java.util.UUID;
 import java.util.function.ToIntFunction;
 
 /** */
-public final class Partitioned implements DestinationFunction {
+public final class Partitioned implements Destination {
     /** */
     private final List<UUID> nodes;
 
@@ -40,7 +40,7 @@ public final class Partitioned implements DestinationFunction {
     }
 
     /** {@inheritDoc} */
-    @Override public List<UUID> destination(Object row) {
+    @Override public List<UUID> targets(Object row) {
         return assignments.get(partFun.applyAsInt(row) % assignments.size());
     }
 

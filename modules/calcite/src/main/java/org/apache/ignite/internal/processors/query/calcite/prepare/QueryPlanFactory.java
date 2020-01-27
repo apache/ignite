@@ -15,35 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 
-/** */
-public final class RandomNode implements Destination {
-    /** */
-    private final Random random;
-
-    /** */
-    private final List<UUID> nodes;
-
-    /** */
-    public RandomNode(List<UUID> nodes) {
-        this.nodes = nodes;
-
-        random = new Random();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<UUID> targets(Object row) {
-        return Collections.singletonList(nodes.get(random.nextInt(nodes.size())));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<UUID> targets() {
-        return nodes;
-    }
+/**
+ *
+ */
+public interface QueryPlanFactory {
+    /**
+     * @param ctx Planning context.
+     * @return Query plan.
+     */
+    QueryPlan create(PlanningContext ctx);
 }

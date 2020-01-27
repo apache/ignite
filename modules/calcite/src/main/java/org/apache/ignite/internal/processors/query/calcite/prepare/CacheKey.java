@@ -61,7 +61,7 @@ public class CacheKey {
 
         CacheKey cacheKey = (CacheKey) o;
 
-        if (!Objects.equals(schemaName, cacheKey.schemaName))
+        if (!schemaName.equals(cacheKey.schemaName))
             return false;
         if (!query.equals(cacheKey.query))
             return false;
@@ -70,7 +70,7 @@ public class CacheKey {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = schemaName != null ? schemaName.hashCode() : 0;
+        int result = schemaName.hashCode();
         result = 31 * result + query.hashCode();
         result = 31 * result + (contextKey != null ? contextKey.hashCode() : 0);
         return result;

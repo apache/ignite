@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 /** */
-public final class AllNodes implements DestinationFunction {
+public final class AllNodes implements Destination {
     /** */
     private final List<UUID> nodes;
 
@@ -31,7 +31,7 @@ public final class AllNodes implements DestinationFunction {
     }
 
     /** {@inheritDoc} */
-    @Override public List<UUID> destination(Object row) {
+    @Override public List<UUID> targets(Object row) {
         return nodes;
     }
 

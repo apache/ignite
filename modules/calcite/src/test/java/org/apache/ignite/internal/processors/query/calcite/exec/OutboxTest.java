@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
@@ -39,7 +39,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     private static UUID nodeId;
 
     /** */
-    private static DestinationFunction func;
+    private static Destination destination;
 
     /** */
     private Outbox<Object[]> outbox;
@@ -53,7 +53,7 @@ public class OutboxTest extends GridCommonAbstractTest {
     /** */
     @BeforeClass
     public static void setupClass() {
-        func = new AllNodes(Collections.singletonList(nodeId = UUID.randomUUID()));
+        destination = new AllNodes(Collections.singletonList(nodeId = UUID.randomUUID()));
     }
 
     /**
@@ -63,14 +63,14 @@ public class OutboxTest extends GridCommonAbstractTest {
     public void setUp() throws Exception {
         exch = new TestExchangeService();
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(nodeId)
             .build();
 
         ExecutionContext ectx = new ExecutionContext(null, ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
 
         input = new TestNode(ectx);
-        outbox = new Outbox<>(exch, new MailboxRegistryImpl(newContext()), ectx, 0, ectx.fragmentId(), input, func);
+        outbox = new Outbox<>(exch, new MailboxRegistryImpl(newContext()), ectx, 0, ectx.fragmentId(), input, destination);
     }
 
     /**

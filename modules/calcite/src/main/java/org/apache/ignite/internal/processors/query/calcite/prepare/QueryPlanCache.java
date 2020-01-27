@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.trait;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
-import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
 
 /**
- * Determines where to send a row to.
+ *
  */
-public interface DestinationFunction {
+public interface QueryPlanCache {
     /**
-     * @param row Row.
-     * @return Target nodes list.
+     * @param ctx Context.
+     * @param key Cache key.
+     * @param factory Factory method to generate a plan on cache miss.
+     * @return Query plan.
      */
-    List<UUID> destination(Object row);
-
-    /**
-     * @return All target nodes.
-     */
-    List<UUID> targets();
+    QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
 }

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -75,29 +74,29 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteSender rel) {
-        IgniteRel input = visit(rel.getInput());
+        IgniteRel input = visit((IgniteRel) rel.getInput());
 
         return new IgniteSender(cluster, rel.getTraitSet(), input);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteFilter rel) {
-        RelNode input = visit(rel.getInput());
+        RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteFilter(cluster, rel.getTraitSet(), input, rel.getCondition());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteProject rel) {
-        RelNode input = visit(rel.getInput());
+        RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteProject(cluster, rel.getTraitSet(), input, rel.getProjects(), rel.getRowType());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteJoin rel) {
-        RelNode left = visit(rel.getLeft());
-        RelNode right = visit(rel.getRight());
+        RelNode left = visit((IgniteRel) rel.getLeft());
+        RelNode right = visit((IgniteRel) rel.getRight());
 
         return new IgniteJoin(cluster, rel.getTraitSet(), left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
@@ -117,7 +116,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteExchange rel) {
-        RelNode input = visit(rel.getInput());
+        RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteExchange(cluster, rel.getTraitSet(), input, rel.getDistribution());
     }
@@ -125,10 +124,5 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteRel rel) {
         return rel.accept(this);
-    }
-
-    /** */
-    private IgniteRel visit(RelNode rel) {
-        return visit(Commons.igniteRel(rel));
     }
 }

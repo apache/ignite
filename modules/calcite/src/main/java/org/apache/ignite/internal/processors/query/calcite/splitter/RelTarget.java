@@ -34,7 +34,7 @@ public interface RelTarget {
 
     /**
      * Returns target mapping. It's used in calculation a nodes list, where to send a particular row to.
-     * See {@link DistributionFunction#toDestination(PartitionService, NodesMapping, ImmutableIntList)}
+     * See {@link DistributionFunction#destination(PartitionService, NodesMapping, ImmutableIntList)}
      *
      * @return Target mapping.
      */

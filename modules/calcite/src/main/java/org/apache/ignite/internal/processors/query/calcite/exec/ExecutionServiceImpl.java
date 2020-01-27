@@ -62,12 +62,11 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -89,7 +88,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.igniteRel;
 
 /**
  *
@@ -99,7 +97,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private final DiscoveryEventListener discoLsnr;
 
     /** */
-    private QueryCache queryCache;
+    private QueryPlanCache queryPlanCache;
 
     /** */
     private SchemaHolder schemaHolder;
@@ -139,10 +137,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
-     * @param queryCache Query cache.
+     * @param queryPlanCache Query cache.
      */
-    public void queryCache(QueryCache queryCache) {
-        this.queryCache = queryCache;
+    public void queryPlanCache(QueryPlanCache queryPlanCache) {
+        this.queryPlanCache = queryPlanCache;
     }
 
     /**
@@ -205,11 +203,9 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     @Override public FieldsQueryCursor<List<?>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params) {
         UUID queryId = UUID.randomUUID();
 
-        IgniteCalciteContext cctx = createContext(ctx, schema, query, params);
+        PlanningContext pctx = createContext(ctx, schema, query, params);
 
-        QueryPlan plan = queryCache.queryPlan(cctx, new CacheKey(schema, query), this::prepare);
-
-        plan.init(mappingService, cctx);
+        QueryPlan plan = prepare(pctx);
 
         // Local execution
         Fragment local = F.first(plan.fragments());
@@ -223,14 +219,14 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             List<UUID> nodes = mapping.nodes();
 
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(cctx.localNodeId());
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
         }
 
         ExecutionContext ectx = new ExecutionContext(
-            taskExecutor, cctx, queryId, local.fragmentId(), local.mapping().partitions(cctx.localNodeId()), Commons.parametersMap(params)
+            taskExecutor, pctx, queryId, local.fragmentId(), local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(params)
         );
 
-        Node<Object[]> node = new Implementor(partitionService, mailboxRegistry, exchangeService, failureProcessor, ectx, log).go(igniteRel(local.root()));
+        Node<Object[]> node = new Implementor(partitionService, mailboxRegistry, exchangeService, failureProcessor, ectx, log).go(local.root());
 
         assert !(node instanceof SenderNode);
 
@@ -246,7 +242,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             for (Fragment remote : plan.fragments().subList(1, plan.fragments().size())) {
                 long id = remote.fragmentId();
                 NodesMapping mapping = remote.mapping();
-                RelGraph graph = converter.go(igniteRel(remote.root()));
+                RelGraph graph = converter.go(remote.root());
 
                 for (UUID nodeId : mapping.nodes()) {
                     info.addFragment(nodeId, id);
@@ -256,7 +252,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                         id,
                         schema,
                         graph,
-                        cctx.topologyVersion(),
+                        pctx.topologyVersion(),
                         mapping.partitions(nodeId),
                         params);
 
@@ -294,7 +290,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     @Override public void onStart(GridKernalContext ctx) {
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
-        queryCache(proc.queryCache());
+        queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
         taskExecutor(proc.taskExecutor());
         failureProcessor(proc.failureProcessor());
@@ -335,16 +331,27 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private QueryPlan prepare(IgniteCalciteContext ctx) {
+    private QueryPlan prepare(PlanningContext ctx) {
+        CacheKey cacheKey = new CacheKey(ctx.schema().getName(), ctx.query());
+
+        QueryPlan plan = queryPlanCache.queryPlan(ctx, cacheKey, this::prepare0);
+
+        plan.init(mappingService, ctx);
+
+        return plan;
+    }
+
+    /** */
+    private QueryPlan prepare0(PlanningContext ctx) {
         IgnitePlanner planner = ctx.planner();
 
         try {
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assert query != null;
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -360,10 +367,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            IgniteRel igniteRel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
 
             // Split query plan to multi-step one.
-            return new Splitter().go(igniteRel(rel));
+            return new Splitter().go(igniteRel);
         }
         catch (SqlParseException e) {
             IgniteSQLException ex = new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
@@ -383,14 +390,14 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private IgniteCalciteContext createContext(@Nullable QueryContext qryCtx, @Nullable String schemaName, String query, Object[] params) {
+    private PlanningContext createContext(@Nullable QueryContext qryCtx, @Nullable String schemaName, String query, Object[] params) {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE
             , DistributionTraitDef.INSTANCE
             //, RelCollationTraitDef.INSTANCE TODO
         };
 
-        return IgniteCalciteContext.builder()
+        return PlanningContext.builder()
             .localNodeId(ctx.localNodeId())
             .parentContext(Commons.convert(qryCtx)) // TODO Connection config on the basis of query context
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
@@ -399,14 +406,15 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                     : schemaHolder.schema())
                 .traitDefs(traitDefs)
                 .build())
-            .query(new Query(query, params))
+            .query(query)
+            .parameters(params)
             .topologyVersion(currentTopologyVersion())
             .logger(log)
             .build();
     }
 
     /** */
-    private IgniteCalciteContext createContext(@Nullable String schemaName, UUID originatingNodeId, AffinityTopologyVersion topVer) {
+    private PlanningContext createContext(@Nullable String schemaName, UUID originatingNodeId, AffinityTopologyVersion topVer) {
         // TODO pass to context user locale and timezone.
 
         RelTraitDef<?>[] traitDefs = {
@@ -414,7 +422,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             //, RelCollationTraitDef.INSTANCE TODO
         };
 
-        return IgniteCalciteContext.builder()
+        return PlanningContext.builder()
             .localNodeId(ctx.localNodeId())
             .originatingNodeId(originatingNodeId)
             .parentContext(Contexts.empty())
@@ -438,10 +446,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
-        IgniteCalciteContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
+        PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
 
         try (IgnitePlanner planner = ctx.planner()) {
-            RelNode root = planner.convert(msg.plan());
+            IgniteRel root = planner.convert(msg.plan());
 
             assert root instanceof IgniteSender : root;
 
@@ -455,7 +463,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 Commons.parametersMap(msg.parameters())
             );
 
-            Node<Object[]> node = new Implementor(partitionService, mailboxRegistry, exchangeService, failureProcessor, execCtx, log).go(igniteRel(root));
+            Node<Object[]> node = new Implementor(partitionService, mailboxRegistry, exchangeService, failureProcessor, execCtx, log).go(root);
 
             assert node instanceof Outbox : node;
 

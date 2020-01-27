@@ -33,9 +33,7 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -113,25 +111,15 @@ public final class Commons {
     /**
      * Extracts planner context.
      */
-    public static IgniteCalciteContext context(RelNode rel) {
+    public static PlanningContext context(RelNode rel) {
         return context(rel.getCluster().getPlanner().getContext());
     }
 
     /**
      * Extracts planner context.
      */
-    public static IgniteCalciteContext context(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(IgniteCalciteContext.class));
-    }
-
-    /**
-     * Casts a given rel to IgniteRel.
-     */
-    public static IgniteRel igniteRel(RelNode rel) {
-        if (rel.getConvention() != IgniteConvention.INSTANCE)
-            throw new AssertionError("Unexpected node: " + rel);
-
-        return (IgniteRel) rel;
+    public static PlanningContext context(Context ctx) {
+        return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
     }
 
     /**

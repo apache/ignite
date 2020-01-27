@@ -49,14 +49,14 @@ public abstract class DistributionFunction implements Serializable {
     public abstract RelDistribution.Type type();
 
     /**
-     * Creates a destination function based on this function algorithm, given nodes mapping and given distribution keys.
+     * Creates a destination based on this function algorithm, given nodes mapping and given distribution keys.
      *
      * @param partitionService Affinity function source.
      * @param mapping Target mapping.
      * @param keys Distribution keys.
      * @return Destination function.
      */
-    public abstract DestinationFunction toDestination(PartitionService partitionService, NodesMapping mapping, ImmutableIntList keys);
+    public abstract Destination destination(PartitionService partitionService, NodesMapping mapping, ImmutableIntList keys);
 
     /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
@@ -105,7 +105,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             throw new AssertionError();
         }
 
@@ -126,7 +126,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
             return new AllNodes(m.nodes());
@@ -149,7 +149,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
             return new RandomNode(m.nodes());
@@ -173,7 +173,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && m.nodes() != null && m.nodes().size() == 1;
 
             return new AllNodes(Collections
@@ -198,7 +198,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && !k.isEmpty();
 
             List<List<UUID>> assignments = m.assignments();
@@ -243,7 +243,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && k.size() == 1;
 
             List<List<UUID>> assignments = m.assignments();

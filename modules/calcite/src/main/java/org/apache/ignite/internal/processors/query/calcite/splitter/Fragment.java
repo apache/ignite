@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.rel.RelDistribution;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
@@ -31,8 +30,9 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -50,7 +50,7 @@ public class Fragment implements RelSource {
     private final long id;
 
     /** */
-    private final RelNode root;
+    private final IgniteRel root;
 
     /** */
     private NodesMapping mapping;
@@ -58,7 +58,7 @@ public class Fragment implements RelSource {
     /**
      * @param root Root node of the fragment.
      */
-    public Fragment(RelNode root) {
+    public Fragment(IgniteRel root) {
         this(ID_GEN.getAndIncrement(), root);
     }
 
@@ -66,7 +66,7 @@ public class Fragment implements RelSource {
      * @param id Fragment id.
      * @param root Root node of the fragment.
      */
-    public Fragment(long id, RelNode root){
+    public Fragment(long id, IgniteRel root){
         this.id = id;
         this.root = root;
     }
@@ -78,7 +78,7 @@ public class Fragment implements RelSource {
      * @param ctx Planner context.
      * @param mq Metadata query used for data location calculation.
      */
-    public void init(MappingService mappingService, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
         mapping = fragmentMapping(mappingService, ctx, info, mq);
@@ -98,7 +98,7 @@ public class Fragment implements RelSource {
     /**
      * @return Root node.
      */
-    public RelNode root() {
+    public IgniteRel root() {
         return root;
     }
 
@@ -113,7 +113,7 @@ public class Fragment implements RelSource {
     }
 
     /** {@inheritDoc} */
-    @Override public void bindToTarget(RelTarget target, MappingService mappingService, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    @Override public void bindToTarget(RelTarget target, MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
         assert !local();
 
         ((IgniteSender) root).target(target);
@@ -127,7 +127,7 @@ public class Fragment implements RelSource {
     }
 
     /** */
-    private NodesMapping fragmentMapping(MappingService mappingService, IgniteCalciteContext ctx, FragmentInfo info, RelMetadataQuery mq) {
+    private NodesMapping fragmentMapping(MappingService mappingService, PlanningContext ctx, FragmentInfo info, RelMetadataQuery mq) {
         NodesMapping mapping;
 
         try {
@@ -152,7 +152,7 @@ public class Fragment implements RelSource {
     }
 
     /** */
-    private NodesMapping localMapping(IgniteCalciteContext ctx) {
+    private NodesMapping localMapping(PlanningContext ctx) {
         return new NodesMapping(Collections.singletonList(ctx.localNodeId()), null, (byte) (NodesMapping.CLIENT | NodesMapping.DEDUPLICATED));
     }
 }

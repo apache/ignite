@@ -34,10 +34,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
- * Planner context, encapsulates services, kernal context, query string and its flags and parameters and helper methods
- * to work with them.
+ * Planning context.
  */
-public final class IgniteCalciteContext implements Context {
+public final class PlanningContext implements Context {
     /** */
     private final FrameworkConfig frameworkConfig;
 
@@ -51,7 +50,10 @@ public final class IgniteCalciteContext implements Context {
     private final UUID originatingNodeId;
 
     /** */
-    private final Query query;
+    private final String query;
+
+    /** */
+    private final Object[] parameters;
 
     /** */
     private final AffinityTopologyVersion topologyVersion;
@@ -71,10 +73,11 @@ public final class IgniteCalciteContext implements Context {
     /**
      * Private constructor, used by a builder.
      */
-    private IgniteCalciteContext(FrameworkConfig config, Context parentContext, UUID localNodeId,
-        UUID originatingNodeId, Query query, AffinityTopologyVersion topologyVersion, IgniteLogger logger) {
+    private PlanningContext(FrameworkConfig config, Context parentContext, UUID localNodeId, UUID originatingNodeId,
+        String query, Object[] parameters, AffinityTopologyVersion topologyVersion, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.localNodeId = localNodeId;
+        this.parameters = parameters;
         this.originatingNodeId = originatingNodeId == null ? localNodeId : originatingNodeId;
         this.query = query;
         this.topologyVersion = topologyVersion;
@@ -109,10 +112,17 @@ public final class IgniteCalciteContext implements Context {
     }
 
     /**
-     * @return Query and its parameters.
+     * @return Query.
      */
-    public Query query() {
+    public String query() {
         return query;
+    }
+
+    /**
+     * @return Query parameters.
+     */
+    public Object[] parameters() {
+        return parameters;
     }
 
     /**
@@ -207,11 +217,12 @@ public final class IgniteCalciteContext implements Context {
     /**
      * @return Context builder.
      */
-    public static Builder builder(IgniteCalciteContext template) {
+    public static Builder builder(PlanningContext template) {
         return new Builder()
             .logger(template.logger)
             .topologyVersion(template.topologyVersion)
             .query(template.query)
+            .parameters(template.parameters)
             .parentContext(template.parentContext)
             .frameworkConfig(template.frameworkConfig)
             .originatingNodeId(template.originatingNodeId)
@@ -235,7 +246,10 @@ public final class IgniteCalciteContext implements Context {
         private Context parentContext;
 
         /** */
-        private Query query;
+        private String query;
+
+        /** */
+        private Object[] parameters;
 
         /** */
         private AffinityTopologyVersion topologyVersion;
@@ -283,8 +297,17 @@ public final class IgniteCalciteContext implements Context {
          * @param query Query.
          * @return Builder for chaining.
          */
-        public Builder query(Query query) {
+        public Builder query(String query) {
             this.query = query;
+            return this;
+        }
+
+        /**
+         * @param parameters Query parameters.
+         * @return Builder for chaining.
+         */
+        public Builder parameters(Object[] parameters) {
+            this.parameters = parameters;
             return this;
         }
 
@@ -311,9 +334,9 @@ public final class IgniteCalciteContext implements Context {
          *
          * @return Planner context.
          */
-        public IgniteCalciteContext build() {
-            return new IgniteCalciteContext(frameworkConfig, parentContext, localNodeId, originatingNodeId, query,
-                topologyVersion, logger);
+        public PlanningContext build() {
+            return new PlanningContext(frameworkConfig, parentContext, localNodeId, originatingNodeId, query,
+                parameters, topologyVersion, logger);
         }
     }
 }

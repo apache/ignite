@@ -23,8 +23,8 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
 /**
  * A superclass of all relational nodes representations.
@@ -81,11 +81,11 @@ public abstract class RelGraphNode implements Serializable {
     }
 
     /**
-     * Converts representation to particular RelNode.
+     * Converts representation to particular IgniteRel.
      *
      * @param ctx Conversion context.
      * @param children Input rels.
      * @return RelNode.
      */
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
+    public abstract IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children);
 }

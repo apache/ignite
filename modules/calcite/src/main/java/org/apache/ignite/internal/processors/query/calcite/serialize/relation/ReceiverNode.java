@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import java.util.List;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelSource;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelSourceImpl;
@@ -60,7 +60,7 @@ public class ReceiverNode extends RelGraphNode {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         return new IgniteReceiver(ctx.getCluster(),
             traitSet(ctx.getCluster()),
             dataType.toRelDataType(ctx.getTypeFactory()),

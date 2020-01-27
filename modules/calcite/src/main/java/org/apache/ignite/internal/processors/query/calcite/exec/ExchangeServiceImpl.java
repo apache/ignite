@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -112,7 +112,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
      * @return Minimal execution context to meet Inbox needs.
      */
     private ExecutionContext baseInboxContext(UUID queryId, long fragmentId) {
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder().logger(log).build();
+        PlanningContext ctx = PlanningContext.builder().logger(log).build();
         return new ExecutionContext(taskExecutor, ctx, queryId, fragmentId, null, ImmutableMap.of());
     }
 

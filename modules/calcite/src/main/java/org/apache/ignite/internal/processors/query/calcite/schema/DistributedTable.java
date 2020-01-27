@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
@@ -31,7 +31,7 @@ public interface DistributedTable extends Table {
      * @param ctx Context.
      * @return Nodes mapping.
      */
-    NodesMapping mapping(IgniteCalciteContext ctx);
+    NodesMapping mapping(PlanningContext ctx);
 
     /**
      * @return Distribution of the table.

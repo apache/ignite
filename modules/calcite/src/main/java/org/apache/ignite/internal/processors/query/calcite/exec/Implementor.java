@@ -37,10 +37,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelSource;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.igniteRel;
 
 /**
  * Implements a query plan.
@@ -83,10 +81,10 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         RelTarget target = rel.target();
         long targetFragmentId = target.fragmentId();
         IgniteDistribution distribution = target.distribution();
-        DestinationFunction function = distribution.function().toDestination(partitionService, target.mapping(), distribution.getKeys());
+        Destination destination = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(exchangeService, mailboxRegistry, ctx, targetFragmentId, ctx.fragmentId(), visit(rel.getInput()), function);
+        Outbox<Object[]> outbox = new Outbox<>(exchangeService, mailboxRegistry, ctx, targetFragmentId, ctx.fragmentId(), visit(rel.getInput()), destination);
 
         mailboxRegistry.register(outbox);
 
@@ -142,7 +140,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
 
     /** */
     private Node<Object[]> visit(RelNode rel) {
-        return visit(igniteRel(rel));
+        return visit((IgniteRel) rel);
     }
 
     /** {@inheritDoc} */

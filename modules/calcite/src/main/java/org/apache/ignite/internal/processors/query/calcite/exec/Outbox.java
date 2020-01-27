@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.trait.DestinationFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -45,7 +45,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     private final Map<UUID, Buffer> perNodeBuffers = new HashMap<>();
 
     /** */
-    private final DestinationFunction function;
+    private final Destination destination;
 
     /** */
     private boolean cancelled;
@@ -57,15 +57,15 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
      * @param targetFragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param input Input node.
-     * @param function Destination function.
+     * @param destination Destination.
      */
-    public Outbox(ExchangeService exchange, MailboxRegistry registry, ExecutionContext ctx, long targetFragmentId, long exchangeId, Node<T> input, DestinationFunction function) {
+    public Outbox(ExchangeService exchange, MailboxRegistry registry, ExecutionContext ctx, long targetFragmentId, long exchangeId, Node<T> input, Destination destination) {
         super(ctx, input);
         this.exchange = exchange;
         this.registry = registry;
         this.targetFragmentId = targetFragmentId;
         this.exchangeId = exchangeId;
-        this.function = function;
+        this.destination = destination;
 
         link();
     }
@@ -142,10 +142,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public boolean push(T row) {
-        List<UUID> nodes = function.destination(row);
+        List<UUID> nodes = destination.targets(row);
 
-        if (F.isEmpty(nodes))
-            return true;
+        assert !F.isEmpty(nodes);
 
         List<Buffer> buffers = new ArrayList<>(nodes.size());
 
@@ -166,7 +165,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
 
     /** {@inheritDoc} */
     @Override public void end() {
-        for (UUID node : function.targets())
+        for (UUID node : destination.targets())
             perNodeBuffers.computeIfAbsent(node, this::createBuffer).end();
 
         close();

@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
@@ -62,7 +63,7 @@ public class ProjectNode extends RelGraphNode {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
         List<RexNode> projects = ctx.getExpressionTranslator().translate(this.projects);

@@ -47,8 +47,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionServiceImpl;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryCache;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryCacheImpl;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
@@ -79,7 +79,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .build();
 
     /** */
-    private final QueryCache queryCache;
+    private final QueryPlanCache queryPlanCache;
 
     /** */
     private final QueryTaskExecutor taskExecutor;
@@ -116,7 +116,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             ctx,
             ctx.failure(),
             new SchemaHolderImpl(ctx),
-            new QueryCacheImpl(ctx),
+            new QueryPlanCacheImpl(ctx),
             new MailboxRegistryImpl(ctx),
             new QueryTaskExecutorImpl(ctx),
             new ExecutionServiceImpl(ctx),
@@ -131,7 +131,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      * @param ctx Kernal context.
      * @param failureProcessor Failure processor.
      * @param schemaHolder Schema holder.
-     * @param queryCache Query cache;
+     * @param queryPlanCache Query cache;
      * @param mailboxRegistry Mailbox registry.
      * @param taskExecutor Task executor.
      * @param executionService Execution service.
@@ -140,13 +140,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
      * @param mappingService Mapping service.
      * @param exchangeService Exchange service.
      */
-    CalciteQueryProcessor(GridKernalContext ctx, FailureProcessor failureProcessor, SchemaHolder schemaHolder, QueryCache queryCache, MailboxRegistry mailboxRegistry, QueryTaskExecutor taskExecutor, ExecutionService executionService, PartitionService partitionService, MessageService messageService,
+    CalciteQueryProcessor(GridKernalContext ctx, FailureProcessor failureProcessor, SchemaHolder schemaHolder, QueryPlanCache queryPlanCache, MailboxRegistry mailboxRegistry, QueryTaskExecutor taskExecutor, ExecutionService executionService, PartitionService partitionService, MessageService messageService,
         MappingService mappingService, ExchangeService exchangeService) {
         super(ctx);
 
         this.failureProcessor = failureProcessor;
         this.schemaHolder = schemaHolder;
-        this.queryCache = queryCache;
+        this.queryPlanCache = queryPlanCache;
         this.mailboxRegistry = mailboxRegistry;
         this.taskExecutor = taskExecutor;
         this.executionService = executionService;
@@ -163,8 +163,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /**
      * @return Query cache.
      */
-    public QueryCache queryCache() {
-        return queryCache;
+    public QueryPlanCache queryPlanCache() {
+        return queryPlanCache;
     }
 
     /**
@@ -226,7 +226,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             messageService,
             taskExecutor,
             mappingService,
-            queryCache,
+            queryPlanCache,
             exchangeService
         );
     }
@@ -241,7 +241,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             messageService,
             taskExecutor,
             mappingService,
-            queryCache,
+            queryPlanCache,
             exchangeService
         );
     }

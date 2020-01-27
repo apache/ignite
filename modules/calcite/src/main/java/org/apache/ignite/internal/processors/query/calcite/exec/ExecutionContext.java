@@ -25,7 +25,7 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 
 /**
  * Runtime context allowing access to the tables in a database.
@@ -38,7 +38,7 @@ public class ExecutionContext implements DataContext {
     private final long fragmentId;
 
     /** */
-    private final IgniteCalciteContext ctx;
+    private final PlanningContext ctx;
 
     /** */
     private final int[] parts;
@@ -59,7 +59,7 @@ public class ExecutionContext implements DataContext {
      * @param parts Partitions.
      * @param params Parameters.
      */
-    public ExecutionContext(QueryTaskExecutor executor, IgniteCalciteContext ctx, UUID queryId, long fragmentId, int[] parts, Map<String, Object> params) {
+    public ExecutionContext(QueryTaskExecutor executor, PlanningContext ctx, UUID queryId, long fragmentId, int[] parts, Map<String, Object> params) {
         this.executor = executor;
         this.queryId = queryId;
         this.fragmentId = fragmentId;
@@ -71,7 +71,7 @@ public class ExecutionContext implements DataContext {
     /**
      * @return Parent context.
      */
-    public IgniteCalciteContext parent() {
+    public PlanningContext parent() {
         return ctx;
     }
 

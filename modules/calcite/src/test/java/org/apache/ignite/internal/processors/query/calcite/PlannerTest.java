@@ -59,12 +59,12 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.message.TestMessageService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Query;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -97,7 +97,6 @@ import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryPr
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.HAS_REPLICATED_CACHES;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.PARTIALLY_REPLICATED;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.igniteRel;
 
 /**
  *
@@ -172,7 +171,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -181,7 +180,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -190,12 +190,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(query);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -249,7 +249,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -258,7 +258,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -267,12 +268,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(query);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -322,7 +323,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -331,7 +332,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -340,12 +342,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(query);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -377,7 +379,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 ));
             }
 
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -405,7 +407,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 ));
             }
 
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -439,7 +441,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -448,7 +450,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -457,12 +460,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(query);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -530,7 +533,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -539,7 +542,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -548,12 +552,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(query);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -590,7 +594,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -611,7 +615,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -646,7 +650,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -655,7 +659,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -664,12 +669,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -689,7 +694,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(rel);
 
-            QueryPlan plan = new Splitter().go(igniteRel(rel));
+            QueryPlan plan = new Splitter().go((IgniteRel) rel);
 
             assertNotNull(plan);
 
@@ -697,7 +702,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             plan.init(this::intermediateMapping, ctx);
 
-            RelGraph graph = new RelToGraphConverter().go(igniteRel(plan.fragments().get(1).root()));
+            RelGraph graph = new RelToGraphConverter().go(plan.fragments().get(1).root());
 
             convertedBytes = new JdkMarshaller().marshal(graph);
 
@@ -730,7 +735,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -751,7 +756,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0, 1),
                     select(nodes, 1, 2),
@@ -786,7 +791,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -795,7 +800,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -806,12 +812,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -836,7 +842,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go(igniteRel(relRoot.rel));
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
         assertNotNull(plan);
 
@@ -869,7 +875,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 ));
             }
 
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -891,7 +897,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 ));
             }
 
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -920,7 +926,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -929,19 +935,20 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{-10}))
+            .query(sql)
+            .parameters(new Object[]{-10})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -962,7 +969,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(phys);
 
-            QueryPlan plan = new Splitter().go(igniteRel(phys));
+            QueryPlan plan = new Splitter().go((IgniteRel) phys);
 
             assertNotNull(plan);
 
@@ -1005,10 +1012,10 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.mailboxRegistry(mailboxRegistry);
             exchangeService.registerListeners();
 
-            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(query.parameters()));
+            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
 
             exec = new Implementor(c1 -> r1 -> 0, mailboxRegistry, exchangeService,
-                new TestFailureProcessor(kernal), ectx, log()).go(igniteRel(fragment.root()));
+                new TestFailureProcessor(kernal), ectx, log()).go(fragment.root());
 
             ConsumerNode consumer = new ConsumerNode(ectx, exec);
 
@@ -1038,7 +1045,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             ectx = new ExecutionContext(
                 taskExecutor,
-                IgniteCalciteContext.builder()
+                PlanningContext.builder()
                     .localNodeId(nodes.get(1))
                     .originatingNodeId(nodes.get(0))
                     .parentContext(Contexts.empty())
@@ -1051,10 +1058,10 @@ public class PlannerTest extends GridCommonAbstractTest {
                 queryId,
                 fragment.fragmentId(),
                 null,
-                Commons.parametersMap(query.parameters()));
+                Commons.parametersMap(ctx.parameters()));
 
             exec = new Implementor(c -> r -> 0, mailboxRegistry, exchangeService,
-                new TestFailureProcessor(kernal), ectx, log()).go(igniteRel(fragment.root()));
+                new TestFailureProcessor(kernal), ectx, log()).go(fragment.root());
 
             //// Start execution
 
@@ -1085,7 +1092,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 0,1,2,3), null, HAS_REPLICATED_CACHES);
             }
 
@@ -1100,7 +1107,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 0,1,2,3), null, HAS_REPLICATED_CACHES);
             }
 
@@ -1129,7 +1136,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1138,7 +1145,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -1147,12 +1155,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1177,7 +1185,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go(igniteRel(relRoot.rel));
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
         assertNotNull(plan);
 
@@ -1201,7 +1209,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 0), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -1216,7 +1224,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 1,2),
                     select(nodes, 2,3),
@@ -1250,7 +1258,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1259,7 +1267,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -1268,12 +1277,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1298,7 +1307,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go(igniteRel(relRoot.rel));
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
         assertNotNull(plan);
 
@@ -1322,7 +1331,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 1,2,3), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -1337,7 +1346,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 0),
                     select(nodes, 1),
@@ -1370,7 +1379,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1379,7 +1388,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -1388,12 +1398,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1418,7 +1428,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go(igniteRel(relRoot.rel));
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
         assertNotNull(plan);
 
@@ -1442,7 +1452,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 0), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -1457,7 +1467,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(null, Arrays.asList(
                     select(nodes, 1),
                     select(nodes, 2),
@@ -1490,7 +1500,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1499,7 +1509,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -1508,12 +1519,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1538,7 +1549,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go(igniteRel(relRoot.rel));
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
         assertNotNull(plan);
 
@@ -1563,7 +1574,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 2), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -1578,7 +1589,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+            @Override public NodesMapping mapping(PlanningContext ctx) {
                 return new NodesMapping(select(nodes, 0,1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
             }
 
@@ -1607,7 +1618,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             ConventionTraitDef.INSTANCE
         };
 
-        IgniteCalciteContext ctx = IgniteCalciteContext.builder()
+        PlanningContext ctx = PlanningContext.builder()
             .localNodeId(F.first(nodes))
             .originatingNodeId(F.first(nodes))
             .parentContext(Contexts.empty())
@@ -1616,7 +1627,8 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .traitDefs(traitDefs)
                 .build())
             .logger(log)
-            .query(new Query(sql, new Object[]{2}))
+            .query(sql)
+            .parameters(new Object[]{2})
             .topologyVersion(AffinityTopologyVersion.NONE)
             .build();
 
@@ -1625,12 +1637,12 @@ public class PlannerTest extends GridCommonAbstractTest {
         try (IgnitePlanner planner = ctx.planner()){
             assertNotNull(planner);
 
-            Query query = ctx.query();
+            String query = ctx.query();
 
             assertNotNull(planner);
 
             // Parse
-            SqlNode sqlNode = planner.parse(query.sql());
+            SqlNode sqlNode = planner.parse(query);
 
             // Validate
             sqlNode = planner.validate(sqlNode);
@@ -1655,7 +1667,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go(igniteRel(relRoot.rel));
+        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
 
         assertNotNull(plan);
 
@@ -1714,7 +1726,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public NodesMapping mapping(IgniteCalciteContext ctx) {
+        @Override public NodesMapping mapping(PlanningContext ctx) {
             throw new AssertionError();
         }
 

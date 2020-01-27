@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -33,7 +32,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 /**
  *
  */
-public class QueryCacheImpl extends AbstractService implements QueryCache, SchemaChangeListener {
+public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCache, SchemaChangeListener {
     /** */
     private static final int CACHE_SIZE = 1024;
 
@@ -43,7 +42,7 @@ public class QueryCacheImpl extends AbstractService implements QueryCache, Schem
     /**
      * @param ctx Kernal context.
      */
-    public QueryCacheImpl(GridKernalContext ctx) {
+    public QueryPlanCacheImpl(GridKernalContext ctx) {
         super(ctx);
 
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
@@ -51,7 +50,7 @@ public class QueryCacheImpl extends AbstractService implements QueryCache, Schem
     }
 
     /** {@inheritDoc} */
-    @Override public QueryPlan queryPlan(IgniteCalciteContext ctx, CacheKey key, Function<IgniteCalciteContext, QueryPlan> factory) {
+    @Override public QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
         Map<CacheKey, QueryPlan> cache = this.cache;
 
         QueryPlan template = cache.get(key);
@@ -59,7 +58,7 @@ public class QueryCacheImpl extends AbstractService implements QueryCache, Schem
         if (template != null)
             return template.clone(ctx.createCluster());
 
-        QueryPlan plan = factory.apply(ctx);
+        QueryPlan plan = factory.create(ctx);
 
         cache.putIfAbsent(key, plan.clone(Commons.EMPTY_CLUSTER));
 
@@ -79,7 +78,7 @@ public class QueryCacheImpl extends AbstractService implements QueryCache, Schem
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
+    @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
         clear();
     }
 
@@ -89,7 +88,7 @@ public class QueryCacheImpl extends AbstractService implements QueryCache, Schem
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
+    @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
         // No-op
     }
 

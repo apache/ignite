@@ -84,7 +84,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final FrameworkConfig frameworkConfig;
 
     /** */
-    private final IgniteCalciteContext ctx;
+    private final PlanningContext ctx;
 
     /** */
     private final CalciteConnectionConfig connectionConfig;
@@ -126,7 +126,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /**
      * @param ctx Planner context.
      */
-    IgnitePlanner(IgniteCalciteContext ctx) {
+    IgnitePlanner(PlanningContext ctx) {
         this.ctx = ctx;
 
         frameworkConfig = ctx.frameworkConfig();
@@ -169,7 +169,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /**
      * @return Planner context.
      */
-    public IgniteCalciteContext context() {
+    public PlanningContext context() {
         return ctx;
     }
 
@@ -228,7 +228,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param graph Relational nodes tree representation.
      * @return Root node of relational tree.
      */
-    public RelNode convert(RelGraph graph) {
+    public IgniteRel convert(RelGraph graph) {
         ready();
 
         RelOptCluster cluster = createCluster();
@@ -342,7 +342,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param targetTraits Target traits.
      * @return The root of the new RelNode tree.
      */
-    public RelNode transform(PlannerType plannerType, PlannerPhase plannerPhase, RelNode input, RelTraitSet targetTraits)  {
+    public <T extends RelNode> T transform(PlannerType plannerType, PlannerPhase plannerPhase, RelNode input, RelTraitSet targetTraits)  {
         ready();
 
         RelTraitSet toTraits = targetTraits.simplify();
@@ -379,7 +379,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 throw new AssertionError("Unknown planner type: " + plannerType);
         }
 
-        return output;
+        return (T) output;
     }
 
     /** {@inheritDoc} */

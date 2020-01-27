@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteCalciteContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 
 /**
  *
@@ -47,7 +47,7 @@ public interface RelSource {
      * @param ctx Context.
      * @param mq Metadata query instance.
      */
-    default void bindToTarget(RelTarget target, MappingService mappingService, IgniteCalciteContext ctx, RelMetadataQuery mq) {
+    default void bindToTarget(RelTarget target, MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
         // No-op
     }
 }
