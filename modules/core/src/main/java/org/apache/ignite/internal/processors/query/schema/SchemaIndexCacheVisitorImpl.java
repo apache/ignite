@@ -63,8 +63,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;
 
+    //TODO: field is not final for testability. This should be fixed.
     /** Is extra index rebuild logging enabled. */
-    private static final boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
+    private static boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
         IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** Cache context. */

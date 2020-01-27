@@ -82,8 +82,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
     public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
 
+    //TODO: field is not final for testability. This should be fixed.
     /** Is extra index rebuild logging enabled. */
-    private static final boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
+    private static boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
         IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** */
@@ -233,7 +234,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                         log);
 
                     if (IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED) {
-                        log.info("DBG: H2Tree [cacheName=" + cctx.name() +
+                        log.info("H2Tree created [cacheName=" + cctx.name() +
                             ", cacheId=" + cctx.cacheId() +
                             ", grpName=" + cctx.group().name() +
                             ", grpId=" + cctx.groupId() +
