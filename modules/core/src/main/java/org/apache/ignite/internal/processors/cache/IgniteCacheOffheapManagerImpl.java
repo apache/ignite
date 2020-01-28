@@ -295,8 +295,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (grp.sharedGroup()) {
                 assert cacheId != CU.UNDEFINED_CACHE_ID;
 
-                for (CacheDataStore store : cacheDataStores())
+                for (CacheDataStore store : cacheDataStores()) {
                     store.clear(cacheId);
+                }
 
                 // Clear non-persistent pending tree if needed.
                 if (pendingEntries != null) {
@@ -2993,6 +2994,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             if (ex != null)
                 throw new IgniteCheckedException("Fail destroy store", ex);
+
+            // Allow checkpointer to progress if a partition contains less than BATCH_SIZE keys.
+            ctx.database().checkpointReadUnlock();
+
+            ctx.database().checkpointReadLock();
         }
 
         /** {@inheritDoc} */
