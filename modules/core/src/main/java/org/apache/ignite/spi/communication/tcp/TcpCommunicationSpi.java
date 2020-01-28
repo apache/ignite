@@ -357,6 +357,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Connection index meta for session. */
     public static final int CONN_IDX_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Node consistent id meta for session. */
+    public static final int CONSISTENT_ID_META = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Message tracker meta for session. */
     private static final int TRACKER_META = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -629,7 +632,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     return;
                 }
 
-                ConnectionKey connKey = new ConnectionKey(rmtNode.consistentId(), sndId, connIdx, connCnt);
+                ConnectionKey connKey = new ConnectionKey(sndId, connIdx, connCnt);
+
+                ses.addMeta(CONSISTENT_ID_META, rmtNode.consistentId());
 
                 final ConnectionKey old = ses.addMeta(CONN_IDX_META, connKey);
 
@@ -794,10 +799,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             @Override public void onMessageSent(GridNioSession ses, Message msg) {
-                ConnectionKey connKey = ses.meta(CONN_IDX_META);
+                Object consistentId = ses.meta(CONSISTENT_ID_META);
 
-                if (connKey != null)
-                    metricsLsnr.onMessageSent(msg, connKey.consistentId());
+                if (consistentId != null)
+                    metricsLsnr.onMessageSent(msg, consistentId);
             }
 
             private void onChannelCreate(
@@ -865,6 +870,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
+                    Object consistentId = ses.meta(CONSISTENT_ID_META);
+
+                    assert consistentId != null;
+
                     if (isChannelConnIdx(connKey.connectionIndex())) {
                         if (ses.meta(CHANNEL_FUT_META) == null)
                             onChannelCreate((GridSelectorNioSessionImpl)ses, connKey, msg);
@@ -889,7 +898,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
 
                     if (msg instanceof RecoveryLastReceivedMessage) {
-                        metricsLsnr.onMessageReceived(msg, connKey.consistentId());
+                        metricsLsnr.onMessageReceived(msg, consistentId);
 
                         GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
 
@@ -940,7 +949,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
                     }
 
-                    metricsLsnr.onMessageReceived(msg, connKey.consistentId());
+                    metricsLsnr.onMessageReceived(msg, consistentId);
 
                     IgniteRunnable c;
 
@@ -3046,7 +3055,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 // Do not allow concurrent connects.
                 GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
 
-                ConnectionKey connKey = new ConnectionKey(node.consistentId(), nodeId, connIdx, -1);
+                ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
                 GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
 
@@ -3528,7 +3537,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (sockSndBuf > 0)
                         ch.socket().setSendBufferSize(sockSndBuf);
 
-                    ConnectionKey connKey = new ConnectionKey(node.consistentId(), node.id(), connIdx, -1);
+                    ConnectionKey connKey = new ConnectionKey(node.id(), connIdx, -1);
 
                     GridNioRecoveryDescriptor recoveryDesc = outRecoveryDescriptor(node, connKey);
 
@@ -4421,7 +4430,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         assert nodeSupports(remote, CHANNEL_COMMUNICATION) : "Node doesn't support direct connection over socket channel " +
                 "[nodeId=" + remote.id() + ']';
 
-        ConnectionKey key = new ConnectionKey(remote.consistentId(), remote.id(), chConnPlc.connectionIndex());
+        ConnectionKey key = new ConnectionKey(remote.id(), chConnPlc.connectionIndex());
 
         GridFutureAdapter<Channel> chFut = new GridFutureAdapter<>();
 
@@ -4707,7 +4716,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (!usePairedConnections(node) && client instanceof GridTcpNioCommunicationClient) {
                         recovery = recoveryDescs.get(new ConnectionKey(
-                            node.consistentId(), node.id(), client.connectionIndex(), -1)
+                            node.id(), client.connectionIndex(), -1)
                         );
 
                         if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
@@ -4735,7 +4744,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (idleTime >= idleConnTimeout) {
                         if (recovery == null && usePairedConnections(node))
                             recovery = outRecDescs.get(new ConnectionKey(
-                                node.consistentId(), node.id(), client.connectionIndex(), -1)
+                                node.id(), client.connectionIndex(), -1)
                             );
 
                         if (recovery != null &&
