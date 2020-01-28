@@ -61,6 +61,7 @@ import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -139,6 +140,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
+     * <b>This is an experimental API.</b>
+     * <p>
      * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
      * <p>
      * Read Repair means that each backup node will be checked to have the same entry as primary node has,
@@ -185,6 +188,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </ul>
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */
+    @IgniteExperimental
     public IgniteCache<K, V> withReadRepair();
 
     /**

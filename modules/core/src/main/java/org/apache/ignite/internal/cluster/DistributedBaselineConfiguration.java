@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.cluster;
 
+import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.format;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
-import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 
 /**
  * Distributed baseline configuration.
@@ -50,10 +51,6 @@ public class DistributedBaselineConfiguration {
     /** Message of baseline auto-adjust configuration. */
     private static final String AUTO_ADJUST_CONFIGURED_MESSAGE = "Baseline auto-adjust is '%s' with timeout='%d' ms";
 
-    /** Message of baseline auto-adjust parameter was changed from default. */
-    private static final String DEFAULT_PROPERTY_UPDATE_MESSAGE =
-        "Baseline parameter '%s' was changed from default value='%s' to '%s'";
-
     /** Message of baseline auto-adjust parameter was changed. */
     private static final String PROPERTY_UPDATE_MESSAGE =
         "Baseline parameter '%s' was changed from '%s' to '%s'";
@@ -65,19 +62,16 @@ public class DistributedBaselineConfiguration {
     private volatile boolean dfltEnabled;
 
     /** */
-    private final GridKernalContext ctx;
-
-    /** */
     private final IgniteLogger log;
 
     /** Value of manual baseline control or auto adjusting baseline. */
-    private final DistributedBooleanProperty baselineAutoAdjustEnabled =
+    private final DistributedChangeableProperty<Boolean> baselineAutoAdjustEnabled =
         detachedBooleanProperty("baselineAutoAdjustEnabled");
 
     /**
      * Value of time which we would wait before the actual topology change since last discovery event(node join/exit).
      */
-    private final DistributedLongProperty baselineAutoAdjustTimeout =
+    private final DistributedChangeableProperty<Long> baselineAutoAdjustTimeout =
         detachedLongProperty("baselineAutoAdjustTimeout");
 
     /**
@@ -88,70 +82,71 @@ public class DistributedBaselineConfiguration {
         GridInternalSubscriptionProcessor isp,
         GridKernalContext ctx,
         IgniteLogger log) {
-        this.ctx = ctx;
         this.log = log;
 
         boolean persistenceEnabled = ctx.config() != null && CU.isPersistenceEnabled(ctx.config());
 
         dfltTimeout = persistenceEnabled ? DEFAULT_PERSISTENCE_TIMEOUT : DEFAULT_IN_MEMORY_TIMEOUT;
-        dfltEnabled = getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, !persistenceEnabled);
+        dfltEnabled = !persistenceEnabled;
 
         isp.registerDistributedConfigurationListener(
-            dispatcher -> {
-                baselineAutoAdjustEnabled.addListener(makeUpdateListener(dfltEnabled));
-                baselineAutoAdjustTimeout.addListener(makeUpdateListener(dfltTimeout));
+            new DistributedConfigurationLifecycleListener() {
+                @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                    baselineAutoAdjustEnabled.addListener(makeUpdateListener());
+                    baselineAutoAdjustTimeout.addListener(makeUpdateListener());
 
-                dispatcher.registerProperty(baselineAutoAdjustEnabled);
-                dispatcher.registerProperty(baselineAutoAdjustTimeout);
+                    dispatcher.registerProperties(baselineAutoAdjustEnabled, baselineAutoAdjustTimeout);
+                }
+
+                @Override public void onReadyToWrite() {
+                    setDefaultValue(baselineAutoAdjustEnabled, dfltEnabled, log);
+                    setDefaultValue(baselineAutoAdjustTimeout, dfltTimeout, log);
+                }
             }
         );
     }
 
     /**
-     * @param defaultVal Default value from which property can be changed in first time.
+     * @param property Property which value should be set.
+     * @param value Default value.
+     * @param log Logger.
+     * @param <T> Property type.
+     */
+    private <T extends Serializable> void setDefaultValue(DistributedProperty<T> property, T value, IgniteLogger log) {
+        if (property.get() == null) {
+            try {
+                property.propagateAsync(null, value)
+                    .listen((IgniteInClosure<IgniteInternalFuture<?>>)future -> {
+                        if (future.error() != null)
+                            log.error("Cannot set default value of '" + property.getName() + '\'', future.error());
+                    });
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Cannot initiate setting default value of '" + property.getName() + '\'', e);
+            }
+        }
+    }
+
+    /**
      * @param <T> Type of property value.
      * @return Update property listener.
      */
-    @NotNull private <T> DistributePropertyListener<T> makeUpdateListener(Object defaultVal) {
+    @NotNull private <T> DistributePropertyListener<T> makeUpdateListener() {
         return (name, oldVal, newVal) -> {
-            if (!Objects.equals(oldVal, newVal)) {
-                if (oldVal == null)
-                    log.info(format(DEFAULT_PROPERTY_UPDATE_MESSAGE, name, defaultVal, newVal));
-                else
-                    log.info(format(PROPERTY_UPDATE_MESSAGE, name, oldVal, newVal));
-            }
+            if (!Objects.equals(oldVal, newVal))
+                log.info(format(PROPERTY_UPDATE_MESSAGE, name, oldVal, newVal));
         };
     }
 
     /**
      * Called when cluster performing activation.
-     *
-     * @throws IgniteCheckedException If failed.
      */
     public void onActivate() throws IgniteCheckedException {
-        if (baselineAutoAdjustEnabled.get() == null && isLocalNodeCoordinator(ctx.discovery())) {
-            boolean dfltEnableVal = getBoolean(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, isCurrentBaselineNew());
-
-            //Set default enable flag to cluster only if it is true.
-            if (dfltEnableVal)
-                baselineAutoAdjustEnabled.propagate(dfltEnableVal);
-        }
-
-        if (isLocalNodeCoordinator(ctx.discovery())) {
+        if (log.isInfoEnabled())
             log.info(format(AUTO_ADJUST_CONFIGURED_MESSAGE,
                 (isBaselineAutoAdjustEnabled() ? "enabled" : "disabled"),
                 getBaselineAutoAdjustTimeout()
             ));
-        }
-    }
-
-    /**
-     * @return {@code true} if current baseline is new.(It is first activation for cluster.)
-     */
-    private boolean isCurrentBaselineNew() {
-        BaselineTopology baselineTop = ctx.state().clusterState().baselineTopology();
-
-        return baselineTop != null && baselineTop.isNewTopology();
     }
 
     /**
@@ -167,7 +162,7 @@ public class DistributedBaselineConfiguration {
      */
     public GridFutureAdapter<?> updateBaselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled)
         throws IgniteCheckedException {
-        return this.baselineAutoAdjustEnabled.propagateAsync(baselineAutoAdjustEnabled);
+        return this.baselineAutoAdjustEnabled.propagateAsync(!baselineAutoAdjustEnabled, baselineAutoAdjustEnabled);
     }
 
     /**

@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import java.io.Serializable;
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.PluginValidationException;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -72,65 +64,10 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
     /**
      * Test implementation of {@link PluginProvider} for obtaining {@link TestGridRestProcessorImpl}.
      */
-    private static class TestRestProcessorProvider implements PluginProvider {
+    private static class TestRestProcessorProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
             return "TEST_REST_PROCESSOR";
-        }
-
-        /** {@inheritDoc} */
-        @Override public String version() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String copyright() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStart() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStop(boolean cancel) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -139,13 +76,6 @@ public class RestProcessorInitializationTest extends GridCommonAbstractTest {
                 return new TestGridRestProcessorImpl(((IgniteEx)ctx.grid()).context());
 
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgnitePlugin plugin() {
-            return new IgnitePlugin() {
-                // No-op.
-            };
         }
     }
 

@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -55,9 +55,11 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -69,12 +71,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
 
 /**
- * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricManager} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
  * @see MetricRegistry
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -197,13 +199,13 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
 
     /** Registered metrics registries. */
-    private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ReadOnlyMetricRegistry> registries = new ConcurrentHashMap<>();
 
     /** Metric registry creation listeners. */
-    private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<ReadOnlyMetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metric registry remove listeners. */
-    private final List<Consumer<MetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<ReadOnlyMetricRegistry>> metricRegRemoveLsnrs = new CopyOnWriteArrayList<>();
 
     /** Read-only metastorage. */
     private volatile ReadableDistributedMetaStorage roMetastorage;
@@ -325,7 +327,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @return Group of metrics.
      */
     public MetricRegistry registry(String name) {
-        return registries.computeIfAbsent(name, n -> {
+        return (MetricRegistry)registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name,
                 mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
                 mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
@@ -357,17 +359,17 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<MetricRegistry> iterator() {
+    @NotNull @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
         return registries.values().iterator();
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+    @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
         metricRegCreationLsnrs.add(lsnr);
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetricRegistryRemoveListener(Consumer<MetricRegistry> lsnr) {
+    @Override public void addMetricRegistryRemoveListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
         metricRegRemoveLsnrs.add(lsnr);
     }
 
@@ -377,7 +379,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
-        MetricRegistry mreg = registries.remove(regName);
+        ReadOnlyMetricRegistry mreg = registries.remove(regName);
 
         if (mreg == null)
             return;
@@ -444,7 +446,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rateTimeInterval.
-     * @see HistogramMetric#reset(long[])
+     * @see HistogramMetricImpl#reset(long[])
      */
     private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
         if (rateTimeInterval == null)
@@ -470,7 +472,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (bounds == null)
             return;
 
-        HistogramMetric m = find(name, HistogramMetric.class);
+        HistogramMetricImpl m = find(name, HistogramMetricImpl.class);
 
         if (m == null)
             return;
@@ -488,7 +490,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         T2<String, String> splitted = fromFullName(name);
 
-        MetricRegistry mreg = registries.get(splitted.get1());
+        MetricRegistry mreg = (MetricRegistry)registries.get(splitted.get1());
 
         if (mreg == null) {
             if (log.isInfoEnabled())
