@@ -71,7 +71,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     /** New value. */
     private String newVal = "newValue";
 
-    /** Cache perms. */
+    /** Cache permissions. */
     private Map<String, SecurityPermission[]> cachePerms = new HashMap<>();
 
     /** Security permission set. */
@@ -297,8 +297,9 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
         assertFalse(grid().cacheNames().contains(CACHE_NAME));
 
-        if (grid().cacheNames().contains(NEW_TEST_CACHE) &&
-            (dfltAllowAll || secPermSet.contains(CACHE_DESTROY))) {
+        boolean allowDestroy = dfltAllowAll || secPermSet.contains(CACHE_DESTROY);
+
+        if (grid().cacheNames().contains(NEW_TEST_CACHE) && allowDestroy) {
             cacheDestroy(NEW_TEST_CACHE);
 
             assertFalse(grid().cacheNames().contains(NEW_TEST_CACHE));
@@ -306,7 +307,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         else
             assertThrowsWithCause(() -> cacheDestroy(NEW_TEST_CACHE), SecurityException.class);
 
-        if (grid().cacheNames().contains(FORBIDDEN_CACHE_NAME) && secPermSet.contains(CACHE_DESTROY)) {
+        if (grid().cacheNames().contains(FORBIDDEN_CACHE_NAME) && allowDestroy) {
             cacheDestroy(FORBIDDEN_CACHE_NAME);
 
             assertFalse(grid().cacheNames().contains(FORBIDDEN_CACHE_NAME));
@@ -474,9 +475,6 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         secPermSet.clear();
-        secPermSet.add(JOIN_AS_SERVER);
-        secPermSet.add(CACHE_CREATE);
-        secPermSet.add(CACHE_DESTROY);
         dfltAllowAll = false;
 
         cachePerms.clear();
