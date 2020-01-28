@@ -4317,7 +4317,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testReconnectServersRestart_4() throws Exception {
         startGrid(0);
 
