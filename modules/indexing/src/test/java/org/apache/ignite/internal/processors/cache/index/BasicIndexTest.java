@@ -787,7 +787,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         assertTrue(lsnrIdx5.check());
 
-        LogListener lsnrIdx7 = LogListener.matches(msg1).andMatches("idx7").build();
+        LogListener lsnrIdx7 = LogListener.matches(msg1).andMatches("newIndexName=idx7").build();
 
         srvLog.registerListener(lsnrIdx7);
 

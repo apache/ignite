@@ -355,4 +355,13 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException On bean registration error.
      */
     void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
+
+    /**
+     * Return index size by schema name and index name.
+     *
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @return Index size (Number of elements).
+     */
+    long indexSize(String schemaName, String idxName) throws IgniteCheckedException;
 }

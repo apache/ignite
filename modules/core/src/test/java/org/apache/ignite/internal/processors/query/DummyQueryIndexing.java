@@ -270,4 +270,9 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
 
     }
+
+    /** {@inheritDoc} */
+    @Override public long indexSize(String schemaName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
 }
