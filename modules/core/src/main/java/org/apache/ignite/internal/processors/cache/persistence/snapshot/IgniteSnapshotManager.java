@@ -811,6 +811,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 "The cluster is inactive."));
         }
 
+        // todo check all of baseline nodes are alive (here and on start)
+
         synchronized (snpOpMux) {
             if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
