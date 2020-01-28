@@ -22,6 +22,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
 /**
@@ -156,6 +158,9 @@ public enum IgniteFeatures {
         final BitSet set = new BitSet();
 
         for (IgniteFeatures value : IgniteFeatures.values()) {
+            if (value == PME_FREE_SWITCH && getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
+                continue;
+
             final int featureId = value.getFeatureId();
 
             assert !set.get(featureId) : "Duplicate feature ID found for [" + value + "] having same ID ["
