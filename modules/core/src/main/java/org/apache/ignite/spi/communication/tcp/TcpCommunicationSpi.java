@@ -793,7 +793,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
                 if (connKey != null)
-                    metricsLsnr.onMessageSent(msg, connKey.consistentId(), connKey.nodeId());
+                    metricsLsnr.onMessageSent(msg, connKey.consistentId());
             }
 
             private void onChannelCreate(
@@ -885,7 +885,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
 
                     if (msg instanceof RecoveryLastReceivedMessage) {
-                        metricsLsnr.onMessageReceived(msg, connKey.consistentId(), connKey.nodeId());
+                        metricsLsnr.onMessageReceived(msg, connKey.consistentId());
 
                         GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
 
@@ -936,7 +936,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
                     }
 
-                    metricsLsnr.onMessageReceived(msg, connKey.consistentId(), connKey.nodeId());
+                    metricsLsnr.onMessageReceived(msg, connKey.consistentId());
 
                     IgniteRunnable c;
 

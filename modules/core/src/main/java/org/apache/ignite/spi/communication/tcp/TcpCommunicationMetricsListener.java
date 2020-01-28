@@ -162,11 +162,9 @@ class TcpCommunicationMetricsListener {
      *
      * @param msg Sent message.
      * @param consistentId Receiver node consistent id.
-     * @param nodeId Receiver node id.
      */
-    public void onMessageSent(Message msg, Object consistentId, UUID nodeId) {
+    public void onMessageSent(Message msg, Object consistentId) {
         assert msg != null;
-        assert nodeId != null;
 
         if (msg instanceof GridIoMessage) {
             msg = ((GridIoMessage) msg).message();
@@ -184,11 +182,9 @@ class TcpCommunicationMetricsListener {
      *
      * @param msg Received message.
      * @param consistentId Sender node consistent id.
-     * @param nodeId Sender node id.
      */
-    public void onMessageReceived(Message msg, Object consistentId, UUID nodeId) {
+    public void onMessageReceived(Message msg, Object consistentId) {
         assert msg != null;
-        assert nodeId != null;
 
         if (msg instanceof GridIoMessage) {
             msg = ((GridIoMessage) msg).message();
