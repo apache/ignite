@@ -149,7 +149,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
         List<Buffer> buffers = new ArrayList<>(nodes.size());
 
         for (UUID node : nodes) {
-            Buffer dest = perNodeBuffers.computeIfAbsent(node, this::createBuffer);
+            Buffer dest = getOrCreateBuffer(node);
 
             if (!dest.ready())
                 return false;
@@ -166,7 +166,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     /** {@inheritDoc} */
     @Override public void end() {
         for (UUID node : destination.targets())
-            perNodeBuffers.computeIfAbsent(node, this::createBuffer).end();
+            getOrCreateBuffer(node).end();
 
         close();
     }
@@ -184,6 +184,11 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
         exchange.cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+    }
+
+    /** */
+    private Buffer getOrCreateBuffer(UUID nodeId) {
+        return perNodeBuffers.computeIfAbsent(nodeId, this::createBuffer);
     }
 
     /** */
@@ -260,7 +265,8 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Sink<T>
          * @return {@code True} is it possible to add a row to a batch.
          */
         private boolean ready() {
-            assert curr != null;
+            if (curr == null)
+                throw new AssertionError();
 
             return hwm != Integer.MAX_VALUE
                 && hwm - lwm < ExchangeService.PER_NODE_BATCH_COUNT

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Future;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -148,9 +147,8 @@ public class ExecutionContext implements DataContext {
      * Executes a query task.
      *
      * @param task Query task.
-     * @return Task future.
      */
-    public Future<Void> execute(Runnable task) {
-        return executor.execute(queryId, fragmentId, task);
+    public void execute(Runnable task) {
+        executor.execute(queryId, fragmentId, task);
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
-import java.util.concurrent.Future;
 
 /**
  *
@@ -30,7 +29,6 @@ public interface QueryTaskExecutor {
      * @param queryId Query ID.
      * @param fragmentId Fragment ID.
      * @param queryTask Query task.
-     * @return Task execution future.
      */
-    Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask);
+    void execute(UUID queryId, long fragmentId, Runnable queryTask);
 }

@@ -80,12 +80,14 @@ public class JoinNode extends AbstractNode<Object[]> {
             input(0).request();
         if (!right.end)
             input(1).request();
-        if (left.end && right.end)
+        if (!end)
             tryFlush();
     }
 
     /** */
     public void tryFlush() {
+        assert !end;
+
         if (left.end && right.end) {
             for (int i = leftIdx; i < left.size(); i++) {
                 for (int j = rightIdx; j < right.size(); j++) {

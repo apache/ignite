@@ -35,14 +35,14 @@ public abstract class AbstractNode<T> implements Node<T> {
     private final ImmutableList<Node<T>> inputs;
 
     /** */
-    private final SinkProxy target;
+    private Sink<T> target;
 
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
      * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
      */
-    private volatile ExecutionContext ctx;
+    private ExecutionContext ctx;
 
     /**
      * @param ctx Execution context.
@@ -64,13 +64,11 @@ public abstract class AbstractNode<T> implements Node<T> {
     protected AbstractNode(ExecutionContext ctx, @NotNull List<Node<T>> inputs) {
         this.ctx = ctx;
         this.inputs = ImmutableList.copyOf(inputs);
-
-        target = new SinkProxy();
     }
 
     /** {@inheritDoc} */
     @Override public void target(Sink<T> sink) {
-        target.delegate(sink);
+        target = sink;
     }
 
     /** {@inheritDoc} */
@@ -132,64 +130,5 @@ public abstract class AbstractNode<T> implements Node<T> {
             thread = Thread.currentThread();
         else
             assert thread == Thread.currentThread();
-    }
-
-    /**
-     * Fixes a race when a first message from remote node received at the time an execution tree is being built.
-     */
-    private class SinkProxy implements Sink<T> {
-        /** */
-        private boolean isEnd;
-
-        /** */
-        private Sink<T> delegate;
-
-        /** {@inheritDoc} */
-        @Override public boolean push(T row) {
-            checkThread();
-
-            Sink<T> target;
-            boolean isEnd;
-
-            synchronized (this) {
-                target = delegate;
-                isEnd = this.isEnd;
-            }
-
-            return !isEnd && target != null && target.push(row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void end() {
-            checkThread();
-
-            Sink<T> target;
-
-            synchronized (this) {
-                if(isEnd)
-                    return;
-
-                isEnd = true;
-                target = delegate;
-            }
-
-            if (target != null)
-                target.end();
-        }
-
-        /** */
-        private void delegate(Sink<T> delegate){
-            boolean isEnd;
-
-            synchronized (this) {
-                assert this.delegate == null;
-
-                this.delegate = delegate;
-                isEnd = this.isEnd;
-            }
-
-            if (isEnd)
-                context().execute(delegate::end);
-        }
     }
 }

@@ -62,6 +62,9 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
     private Object cur;
 
     /** */
+    private boolean requested;
+
+    /** */
     private volatile State state = State.RUNNING;
 
     /**
@@ -168,8 +171,13 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
 
         lock.lock();
         try {
-            if (state != State.RUNNING || buff.size() == bufferSize)
+            if (state != State.RUNNING)
                 return false;
+
+            if (buff.size() == bufferSize) {
+                requested = false;
+                return false;
+            }
 
             buff.offer(row);
             cond.signalAll();
@@ -233,7 +241,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
             assert state == State.RUNNING;
 
             while (buff.isEmpty()) {
-                request();
+                requestIfNeeded();
 
                 cond.await();
 
@@ -262,5 +270,14 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
         onClose.accept(this);
         
         return null;
+    }
+
+    /** */
+    private void requestIfNeeded() {
+        if (requested)
+            return;
+
+        request();
+        requested = true;
     }
 }

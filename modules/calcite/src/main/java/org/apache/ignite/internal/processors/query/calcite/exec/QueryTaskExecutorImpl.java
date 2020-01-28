@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
 /**
  * TODO use {@link org.apache.ignite.internal.util.StripedExecutor}, registered in core pols.
@@ -39,21 +38,19 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     }
 
     /** {@inheritDoc} */
-    @Override public Future<Void> execute(UUID queryId, long fragmentId, Runnable queryTask) {
-        FutureTask<Void> res = new FutureTask<>(queryTask, null);
-        srvc.execute(queryTask, U.safeAbs(Objects.hash(queryId, fragmentId)));
-        return res;
+    @Override public void execute(UUID queryId, long fragmentId, Runnable queryTask) {
+        srvc.execute(queryTask, hash(queryId, fragmentId));
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         srvc = new IgniteStripedThreadPoolExecutor(
-            8,
+            ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
             "calciteQry",
             ctx.uncaughtExceptionHandler(),
             true,
-            10_000
+            DFLT_THREAD_KEEP_ALIVE_TIME
         );
     }
 
@@ -61,5 +58,11 @@ public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskE
     @Override public void onStop() {
         U.shutdownNow(getClass(), srvc, log);
         srvc = null;
+    }
+
+    /** */
+    private static int hash(UUID queryId, long fragmentId) {
+        // inlined Objects.hash(...)
+        return U.safeAbs(31 * (31 + (queryId != null ? queryId.hashCode() : 0)) + Long.hashCode(fragmentId));
     }
 }

@@ -61,9 +61,6 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     /** */
     private boolean end;
 
-    /** */
-    private volatile boolean initDone;
-
     /**
      * @param exchange Exchange service.
      * @param registry Mailbox registry.
@@ -108,13 +105,11 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         this.sources = sources;
 
         context(ctx);
-
-        initDone = true;
     }
 
     /** {@inheritDoc} */
     @Override public void request() {
-        checkThread();
+        prepare();
         pushInternal();
     }
 
@@ -139,8 +134,9 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
      */
     public void onBatchReceived(UUID source, int batchId, List<?> rows) {
         checkThread();
+        Buffer buffer = getOrCreateBuffer(source);
 
-        if (perNodeBuffers.computeIfAbsent(source, this::createBuffer).add(batchId, rows))
+        if (buffer.add(batchId, rows))
             pushInternal();
     }
 
@@ -155,31 +151,12 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
         if (context().cancelled())
             close();
-        else if (!end && prepareBuffers()) {
+        else if (!end && ready()) {
             if (comparator != null)
                 pushOrdered();
             else
                 pushUnordered();
         }
-    }
-
-    /** */
-    private boolean prepareBuffers() {
-        if (!initDone)
-            return false;
-
-        assert sources != null;
-
-        if (buffers != null)
-            return true;
-
-        // awaits till all sources sent a first bunch of batches
-        if (perNodeBuffers.size() != sources.size())
-            return false;
-
-        buffers = new ArrayList<>(perNodeBuffers.values());
-
-        return true;
     }
 
     /** */
@@ -288,6 +265,30 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     /** */
     private void acknowledge(UUID nodeId, int batchId) {
         exchange.acknowledge(this, nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
+    }
+
+    /** */
+    private void prepare() {
+        if (ready())
+            return;
+
+        assert sources != null;
+
+        sources.forEach(this::getOrCreateBuffer);
+
+        assert perNodeBuffers.size() == sources.size();
+
+        buffers = new ArrayList<>(perNodeBuffers.values());
+    }
+
+    /** */
+    private boolean ready() {
+        return buffers != null;
+    }
+
+    /** */
+    private Buffer getOrCreateBuffer(UUID nodeId) {
+        return perNodeBuffers.computeIfAbsent(nodeId, this::createBuffer);
     }
 
     /** */
