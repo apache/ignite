@@ -32,6 +32,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -44,14 +45,20 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.apache.ignite.cache.CacheMode;
+import java.util.Arrays;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
-public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
+@RunWith(Parameterized.class)
+public class IgniteTxStoreExceptionSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
     private static TestStore store;
 
@@ -67,10 +74,33 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /** */
     private static Integer lastKey;
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+    /** Parameterized run parameter : cache mode. */
+    @Parameterized.Parameter(0)
+    public CacheMode cacheMode;
+
+    /** Parameterized run parameter : near cache config. */
+    @Parameterized.Parameter(1)
+    public NearCacheConfiguration<?,?> nearCacheCfg;
+
+    /** Parameterized run parameter : grid count. */
+    @Parameterized.Parameter(2)
+    public int gridCnt;
+
+    /** Parameterized run parameter : additional before-launch-check of additional not supported feature. */
+    @Parameterized.Parameter(3)
+    public MvccFeatureChecker.Feature notSupportedFeatureCheck;
+
+    /** Test run configurations: Cache mode, near cache cfg, grid count, check of not supported feature. */
+    @Parameterized.Parameters
+    public static Collection<Object[]> parameterizedConfig() {
+        return Arrays.asList(new Object[][] {
+            {REPLICATED, null, 3, null},
+            {PARTITIONED, new NearCacheConfiguration<>(), 3, null},
+            {PARTITIONED, null, 3, null},
+            {LOCAL, new NearCacheConfiguration<>(), 1, MvccFeatureChecker.Feature.LOCAL_CACHE},
+        });
     }
+
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -98,6 +128,9 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (notSupportedFeatureCheck != null)
+            MvccFeatureChecker.skipIfNotSupported(notSupportedFeatureCheck);
+
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         store = new TestStore();
@@ -631,6 +664,15 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         throw new IllegalStateException("Failed to find key.");
     }
+
+    /** Supporting call not to bring parametrization in the parent classes. */
+    @Override protected CacheMode cacheMode() { return cacheMode; }
+
+    /** Supporting call not to bring parametrization in the parent classes. */
+    @Override protected NearCacheConfiguration nearConfiguration() { return nearCacheCfg; }
+
+    /** Supporting call not to bring parametrization in the parent classes. */
+    @Override protected int gridCount() { return gridCnt; }
 
     /**
      *
