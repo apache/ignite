@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import com.sun.istack.internal.NotNull;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * File WAL pointer.

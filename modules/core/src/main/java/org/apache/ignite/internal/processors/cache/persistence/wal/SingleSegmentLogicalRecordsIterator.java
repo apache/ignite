@@ -1,23 +1,24 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -29,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -92,14 +92,14 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractReadFileHandle advanceSegment(
+    @Override
+    protected AbstractReadFileHandle advanceSegment(
         @Nullable AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
         if (segmentInitialized) {
             closeCurrentWalSegment();
             // No advance as we iterate over single segment.
             return null;
-        }
-        else {
+        } else {
             segmentInitialized = true;
 
             FileDescriptor fd = new FileDescriptor(
@@ -107,15 +107,15 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
             try {
                 return initReadHandle(fd, null);
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 throw new IgniteCheckedException("Missing WAL segment in the archive", e);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void advance() throws IgniteCheckedException {
+    @Override
+    protected void advance() throws IgniteCheckedException {
         super.advance();
 
         if (curRec != null && advanceC != null)
@@ -123,7 +123,8 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractReadFileHandle createReadFileHandle(
+    @Override
+    protected AbstractReadFileHandle createReadFileHandle(
         SegmentIO fileIO,
         RecordSerializer ser, FileInput in) {
         return new FileWriteAheadLogManager.ReadFileHandle(fileIO, ser, in, null);
@@ -136,12 +137,58 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Records type to skip. */
-        private final Set<WALRecord.RecordType> skip = RecordTypes.DELTA_TYPE_SET;
+        /** Records types to skip. */
+        public static final Set<WALRecord.RecordType> deltaTypesSetToSkip = new HashSet<>();
+
+        /** Fills {@value deltaTypesSetToSkip} with {@value RecordType}-s, which have to be skipped. */
+        static {
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGE_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.INIT_NEW_PAGE_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.DATA_PAGE_INSERT_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.DATA_PAGE_REMOVE_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.DATA_PAGE_SET_FREE_LIST_PAGE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.MVCC_DATA_PAGE_MARK_UPDATED_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_META_PAGE_ADD_ROOT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_META_PAGE_CUT_ROOT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_INIT_NEW_ROOT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_PAGE_RECYCLE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_PAGE_INSERT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_FIX_LEFTMOST_CHILD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_FIX_COUNT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_PAGE_REPLACE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_PAGE_REMOVE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_PAGE_INNER_REPLACE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_FIX_REMOVE_ID);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_FORWARD_PAGE_SPLIT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_EXISTING_PAGE_SPLIT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_PAGE_MERGE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGES_LIST_SET_NEXT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGES_LIST_SET_PREVIOUS);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGES_LIST_ADD_PAGE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGES_LIST_REMOVE_PAGE);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.META_PAGE_INIT);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V2);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.TRACKING_PAGE_DELTA);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.META_PAGE_UPDATE_NEXT_SNAPSHOT_ID);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.META_PAGE_UPDATE_LAST_ALLOCATED_INDEX);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.PAGE_LIST_META_RESET_COUNT_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT2);
+            deltaTypesSetToSkip.add(WALRecord.RecordType.ROTATED_ID_PART_RECORD);
+        }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
-            return !skip.contains(type);
+        @Override
+        public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
+            return !deltaTypesSetToSkip.contains(type);
         }
     }
 }
