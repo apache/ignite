@@ -355,6 +355,9 @@ class TcpCommunicationMetricsListener {
      * @param consistentId Consistent id of the node.
      */
     public void onNodeLeft(Object consistentId) {
+        // Tricky part - these maps are not thread-safe. Ideally it's only required to delete one entry from each one
+        // of them, but this would lead to syncs in communication worker threads. Instead, we just "clean" them so they
+        // will be filled later lazily with the same data.
         for (ThreadMetrics threadMetrics : allMetrics) {
             threadMetrics.sentMsgsMetricsByConsistentId = new HashMap<>();
             threadMetrics.rcvdMsgsMetricsByConsistentId = new HashMap<>();
