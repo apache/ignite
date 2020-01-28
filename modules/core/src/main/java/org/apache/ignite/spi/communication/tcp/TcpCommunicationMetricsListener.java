@@ -353,9 +353,8 @@ class TcpCommunicationMetricsListener {
 
     /**
      * @param consistentId Consistent id of the node.
-     * @param nodeId Left node id.
      */
-    public void onNodeLeft(Object consistentId, UUID nodeId) {
+    public void onNodeLeft(Object consistentId) {
         for (ThreadMetrics threadMetrics : allMetrics) {
             threadMetrics.sentMsgsMetricsByConsistentId = new HashMap<>();
             threadMetrics.rcvdMsgsMetricsByConsistentId = new HashMap<>();

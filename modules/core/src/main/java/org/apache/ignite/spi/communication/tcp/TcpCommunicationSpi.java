@@ -2778,7 +2778,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     void onNodeLeft(Object consistentId, UUID nodeId) {
         assert nodeId != null;
 
-        metricsLsnr.onNodeLeft(consistentId, nodeId);
+        metricsLsnr.onNodeLeft(consistentId);
 
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
 
