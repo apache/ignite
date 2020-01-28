@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.util;
+package org.apache.ignite.examples.ml.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -68,7 +68,6 @@ public class SandboxMLCache {
         return cache;
     }
 
-
     /**
      * Loads dataset as a list of rows.
      *
@@ -95,10 +94,8 @@ public class SandboxMLCache {
             String row = scanner.nextLine();
             res.add(row);
         }
-
         return res;
     }
-
 
     /**
      * Fills cache with data and returns it.
@@ -108,7 +105,6 @@ public class SandboxMLCache {
      * @throws FileNotFoundException If file not found.
      */
     public IgniteCache<Integer, Vector> fillCacheWith(MLSandboxDatasets dataset) throws FileNotFoundException {
-
         IgniteCache<Integer, Vector> cache = getCache();
 
         String fileName = dataset.getFileName();
@@ -137,7 +133,7 @@ public class SandboxMLCache {
                 try{
                     if(cells[i].isEmpty()) data[i] = Double.NaN;
                     else data[i] = Double.valueOf(cells[i]);
-                } catch (java.lang.NumberFormatException e) {
+                } catch (NumberFormatException e) {
                     try {
                         data[i] = format.parse(cells[i]).doubleValue();
                     }
@@ -148,7 +144,6 @@ public class SandboxMLCache {
             cache.put(cnt++, VectorUtils.of(data));
         }
         return cache;
-
     }
 
     /**
@@ -159,7 +154,6 @@ public class SandboxMLCache {
      * @throws FileNotFoundException If file not found.
      */
     public IgniteCache<Integer, Object[]> fillObjectCacheWithDoubleLabels(MLSandboxDatasets dataset) throws FileNotFoundException {
-
         IgniteCache<Integer, Object[]> cache = getCache2();
 
         String fileName = dataset.getFileName();
@@ -190,7 +184,6 @@ public class SandboxMLCache {
             cache.put(cnt++, res);
         }
         return cache;
-
     }
 
     /**
@@ -201,7 +194,6 @@ public class SandboxMLCache {
      * @throws FileNotFoundException If file not found.
      */
     public IgniteCache<Integer, Object[]> fillObjectCacheWithCategoricalData(MLSandboxDatasets dataset) throws FileNotFoundException {
-
         IgniteCache<Integer, Object[]> cache = getCache2();
 
         String fileName = dataset.getFileName();
@@ -225,7 +217,6 @@ public class SandboxMLCache {
             cache.put(cnt++, cells);
         }
         return cache;
-
     }
 
     /**
@@ -234,7 +225,6 @@ public class SandboxMLCache {
      * @return Filled Ignite Cache.
      */
     private IgniteCache<Integer, Vector> getCache() {
-
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("ML_EXAMPLE_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
@@ -248,7 +238,6 @@ public class SandboxMLCache {
      * @return Filled Ignite Cache.
      */
     private IgniteCache<Integer, Object[]> getCache2() {
-
         CacheConfiguration<Integer, Object[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("ML_EXAMPLE_" + UUID.randomUUID());
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
