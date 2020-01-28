@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -55,9 +56,10 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -237,7 +239,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         TestRecordingCommunicationSpi recCommSpi = TestRecordingCommunicationSpi.spi(ignite1);
 
-        IgniteBiPredicate<ClusterNode, Message> msgPred =
+        P2<ClusterNode, Message> msgPred =
             (node, msg) -> (msg instanceof GridDhtPartitionDemandMessage) &&
                 ((GridCacheGroupIdMessage)msg).groupId() == cache.context().groupId() &&
                 ((GridDhtPartitionDemandMessage)msg).partitions().historicalSet().size() == totalPartitions;
@@ -506,13 +508,13 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testCoordinatorJoinsBaselineWithLoad() throws Exception {
         boolean checkRemoves = false;
 
-        IgniteEx node = startGrid(0, true);
+        startGrid(0, true);
 
         IgniteEx crd = startGrid(1);
 
         stopGrid(0);
 
-        node = startGrid(0);
+        IgniteEx node = startGrid(0);
 
         awaitPartitionMapExchange();
 
@@ -551,12 +553,136 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     }
 
     /**
+     * Check file rebalancing from multiple suppliers.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultipleSuppliers() throws Exception {
+        boolean checkRemoves = false;
+
+        int initGrids = Math.max(1, backups()) * 3;
+
+        IgniteEx node0 = (IgniteEx)startGridsMultiThreaded(initGrids);
+
+        node0.cluster().state(ClusterState.ACTIVE);
+        node0.cluster().baselineAutoAdjustEnabled(false);
+
+        List<ClusterNode> blt = new ArrayList<>(node0.context().discovery().aliveServerNodes());
+
+        node0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        DataLoader<TestValue> ldr = testValuesLoader(checkRemoves, DFLT_LOADER_THREADS);
+
+        ldr.loadData(node0);
+
+        forceCheckpoint();
+
+        ldr.start();
+
+        IgniteEx node = startGrid(initGrids);
+
+        Set<UUID> remotes = new GridConcurrentHashSet<>();
+
+        IgniteBiInClosure<ClusterNode, Message> c = (rmtNode, msg) -> {
+            if (msg instanceof SnapshotRequestMessage)
+                remotes.add(rmtNode.id());
+        };
+
+        TestRecordingCommunicationSpi.spi(node).closure(c);
+
+        blt.add(node.cluster().localNode());
+
+        node0.cluster().setBaselineTopology(blt);
+
+        awaitPartitionMapExchange();
+
+        ldr.stop();
+
+        int rmtCnt = remotes.size();
+
+        assertTrue("Snapshot was not requested from multiple nodes [count=" + rmtCnt + "]", rmtCnt > 1);
+
+        verifyCache(node, ldr);
+    }
+
+    /**
+     * Check that file rebalance can be supplied from the node that was previously rebalanced.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFileRebalanceCanChain() throws Exception {
+        IgniteEx node0 = startGrid(0, true);
+
+        List<ClusterNode> blt = new ArrayList<>(node0.context().discovery().aliveServerNodes());
+
+        DataLoader<TestValue> ldr = testValuesLoader(false, DFLT_LOADER_THREADS);
+
+        ldr.loadData(node0);
+
+        forceCheckpoint(node0);
+
+        IgniteEx node1 = startGrid(1);
+
+        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(node1);
+
+        P2<ClusterNode, Message> msgPred = (node, msg) -> (msg instanceof SnapshotRequestMessage);
+
+        spi1.blockMessages(msgPred);
+
+        blt.add(node1.cluster().localNode());
+
+        node0.cluster().setBaselineTopology(blt);
+
+        spi1.waitForBlocked();
+        spi1.stopBlock();
+
+        awaitPartitionMapExchange();
+
+        ClusterNode clusterNode0 = node0.cluster().localNode();
+
+        node0.close();
+
+        blt.remove(clusterNode0);
+
+        awaitPartitionMapExchange();
+
+        forceCheckpoint(node1);
+
+        ldr.loadData(node1);
+
+        forceCheckpoint(node1);
+
+        IgniteEx node2 = startGrid(2);
+
+        TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(node2);
+
+        spi2.blockMessages(msgPred);
+
+        blt.add(node2.cluster().localNode());
+
+        node1.cluster().setBaselineTopology(blt);
+
+        spi2.waitForBlocked();
+        spi2.stopBlock();
+
+        awaitPartitionMapExchange();
+
+        forceCheckpoint();
+
+        verifyCache(node2, ldr);
+    }
+
+    /**
      * Ensures that file rebalancing starts every time the baseline changes.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testContinuousBaselineChangeWithLoad() throws Exception {
+    public void testContinuousBaselineChangeUnstableTopology() throws Exception {
         boolean checkRemoves = false;
 
         IgniteEx crd = startGrid(0, true);
@@ -842,6 +968,9 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         private final AtomicInteger cntr;
 
         /** */
+        private final int loadCnt;
+
+        /** */
         private final boolean enableRmv;
 
         /** */
@@ -869,14 +998,22 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         private volatile IgniteInternalFuture ldrFut;
 
         /** */
-        public DataLoader(IgniteCache<Integer, V> cache, int initCnt, Function<Integer, V> valFunc, boolean enableRmv, int threadCnt) {
+        public DataLoader(
+            IgniteCache<Integer, V> cache,
+            int loadCnt,
+            Function<Integer, V> valFunc,
+            boolean enableRmv,
+            int threadCnt
+        ) {
             this.cache = cache;
             this.enableRmv = enableRmv;
             this.threadCnt = threadCnt;
             this.valFunc = valFunc;
+            this.loadCnt = loadCnt;
 
             pauseBarrier = new CyclicBarrier(threadCnt + 1); // +1 waiter (suspend originator)
-            cntr = new AtomicInteger(initCnt);
+            cntr = new AtomicInteger();
+
         }
 
         /** {@inheritDoc} */
@@ -957,14 +1094,16 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
          * @return Data loader instance.
          */
         public DataLoader<V> loadData(Ignite node) {
-            int size = cntr.get();
+            int start = cntr.addAndGet(loadCnt) - loadCnt;
 
             try (IgniteDataStreamer<Integer, V> streamer = node.dataStreamer(cache.getName())) {
-                for (int i = 0; i < size; i++) {
-                    if ((i + 1) % (size / 10) == 0)
-                        log.info("Prepared " + (i + 1) * 100 / (size) + "% entries.");
+                for (int i = 0; i < loadCnt; i++) {
+                    if ((i + 1) % (loadCnt / 10) == 0)
+                        log.info("Prepared " + ((i + 1) * 100 / loadCnt) + "% entries.");
 
-                    streamer.addData(i, valFunc.apply(i));
+                    int v = i + start;
+
+                    streamer.addData(v, valFunc.apply(v));
                 }
             }
 
