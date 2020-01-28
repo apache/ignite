@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.RebalanceAfterResettingLostPartitionTest;
+import org.apache.ignite.cache.RebalanceCompleteDuringExchangeTest;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
@@ -63,6 +64,8 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(IgnitePdsStartWIthEmptyArchiveWALFsync.class);
 
         suite.addTestSuite(CorruptedTreeFailureHandlingTest.class);
+
+        suite.addTestSuite(RebalanceCompleteDuringExchangeTest.class);
 
         // Page lock tracker tests.
         suite.addTestSuite(PageLockTrackerManagerTest.class);
