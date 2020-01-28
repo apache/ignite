@@ -386,7 +386,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
-
         DistributedMetaStorage metastorage0 = metastorage;
 
         if (metastorage0 == null)
