@@ -319,6 +319,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
                 // Set dummy key to identify connection-check outgoing connection.
                 ConnectionKey connKey = new ConnectionKey(consistentId, rmtNodeId, -1, -1, true);
+
                 sesMeta.put(TcpCommunicationSpi.CONN_IDX_META, connKey);
                 sesMeta.put(SES_FUT_META, this);
 

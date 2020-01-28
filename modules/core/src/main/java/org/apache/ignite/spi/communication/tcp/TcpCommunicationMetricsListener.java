@@ -165,6 +165,7 @@ class TcpCommunicationMetricsListener {
      */
     public void onMessageSent(Message msg, Object consistentId) {
         assert msg != null;
+        assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
             msg = ((GridIoMessage) msg).message();
@@ -185,6 +186,7 @@ class TcpCommunicationMetricsListener {
      */
     public void onMessageReceived(Message msg, Object consistentId) {
         assert msg != null;
+        assert consistentId != null;
 
         if (msg instanceof GridIoMessage) {
             msg = ((GridIoMessage) msg).message();

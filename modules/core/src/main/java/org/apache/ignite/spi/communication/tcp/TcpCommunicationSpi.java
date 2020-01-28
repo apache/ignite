@@ -421,25 +421,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     public static final String SENT_MESSAGES_BY_TYPE_METRIC_NAME = "sentMessagesByType";
 
     /** */
-    public static final String SENT_MESSAGES_BY_TYPE_METRIC_DESC = "Total number of messages with given type sent by current node";
+    public static final String SENT_MESSAGES_BY_TYPE_METRIC_DESC =
+        "Total number of messages with given type sent by current node";
 
     /** */
     public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_NAME = "receivedMessagesByType";
 
     /** */
-    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC = "Total number of messages with given type received by current node";
+    public static final String RECEIVED_MESSAGES_BY_TYPE_METRIC_DESC =
+        "Total number of messages with given type received by current node";
 
     /** */
     public static final String SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME = "sentMessagesToNode";
 
     /** */
-    public static final String SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC = "Total number of messages sent by current node to the given node";
+    public static final String SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC =
+        "Total number of messages sent by current node to the given node";
 
     /** */
     public static final String RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME = "receivedMessagesFromNode";
 
     /** */
-    public static final String RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC = "Total number of messages received by current node from the given node";
+    public static final String RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_DESC =
+        "Total number of messages received by current node from the given node";
 
     /** */
     private ConnectGateway connectGate;
