@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
@@ -360,9 +359,6 @@ class TcpCommunicationMetricsListener {
      */
     public void onNodeLeft(Object consistentId, UUID nodeId) {
         for (ThreadMetrics threadMetrics : allMetrics) {
-            threadMetrics.rcvdMsgsMetricsByNodeId = new HashMap<>();
-            threadMetrics.sentMsgsMetricsByNodeId = new HashMap<>();
-
             threadMetrics.sentMsgsMetricsByConsistentId = new HashMap<>();
             threadMetrics.rcvdMsgsMetricsByConsistentId = new HashMap<>();
         }
@@ -421,16 +417,6 @@ class TcpCommunicationMetricsListener {
 
         /** Received messages count metrics grouped by message type. */
         private final Map<Short, LongAdderMetric> rcvdMsgsMetricsByType = new HashMap<>();
-
-        /**
-         * Sent messages count metrics grouped by message node id.
-         */
-        public volatile Map<UUID, AtomicLong> sentMsgsMetricsByNodeId = new HashMap<>();
-
-        /**
-         * Received messages metrics count grouped by message node id.
-         */
-        public volatile Map<UUID, AtomicLong> rcvdMsgsMetricsByNodeId = new HashMap<>();
 
         /**
          * Sent messages count metrics grouped by message node consistent id.
