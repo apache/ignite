@@ -186,8 +186,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         }
 
         /** {@inheritDoc} */
-        @Override
-        public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
+        @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
             return !deltaTypesSetToSkip.contains(type);
         }
     }
