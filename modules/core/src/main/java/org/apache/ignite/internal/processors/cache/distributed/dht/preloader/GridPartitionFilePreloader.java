@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -190,8 +192,16 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             }
 
             if (hasIdleParttition && cctx.kernalContext().query().moduleEnabled()) {
-                for (GridCacheContext ctx : grp.caches())
-                    cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
+                for (GridCacheContext ctx : grp.caches()) {
+                    IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
+
+                    if (fut != null) {
+                        U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
+
+                        fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
+                            ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
+                    }
+                }
             }
         }
     }

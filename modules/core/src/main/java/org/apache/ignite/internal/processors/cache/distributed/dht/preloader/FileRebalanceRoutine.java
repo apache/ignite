@@ -379,10 +379,16 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
         if (qryProc.moduleEnabled()) {
-            U.log(log,"Starting index rebuild [grp=" + grpName + "]");
+            for (GridCacheContext ctx : grp.caches()) {
+                IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
 
-            for (GridCacheContext ctx : grp.caches())
-                qryProc.rebuildIndexesFromHash(ctx);
+                if (fut != null) {
+                    U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
+
+                    fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
+                        ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
+                }
+            }
         }
 
         // Cache group file rebalancing is finished, historical rebalancing will send separate events.
