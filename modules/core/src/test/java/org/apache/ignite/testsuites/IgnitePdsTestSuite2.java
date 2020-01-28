@@ -90,7 +90,7 @@ public class IgnitePdsTestSuite2 {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        for (int i=0; i<500; i++) {
+        for (int i=0; i<250; i++) {
             suite.add(LocalWalModeChangeDuringRebalancingSelfTest.class);
         }
 /*
