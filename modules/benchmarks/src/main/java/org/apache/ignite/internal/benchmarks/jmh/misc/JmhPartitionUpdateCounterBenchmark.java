@@ -38,7 +38,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * Benchmarks {@link PartitionTxUpdateCounterImpl} class.
+ * Benchmarks {@link PartitionUpdateCounterTrackingImpl} class.
  */
 @State(Scope.Benchmark)
 @Fork(1)
@@ -64,7 +64,7 @@ public class JmhPartitionUpdateCounterBenchmark {
     private final AtomicLong reservedCntr = new AtomicLong();
 
     /** Partition update counter. */
-    private final PartitionUpdateCounterTrackingImpl partCntr = new PartitionUpdateCounterTrackingImpl();
+    private final PartitionUpdateCounterTrackingImpl partCntr = new PartitionUpdateCounterTrackingImpl(null);
 
     /**
      * Setup.
