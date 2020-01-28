@@ -178,7 +178,8 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
                     setupVerifier(VERIFIER);
 
-                    compute(initiator, nodesToRunIds()).broadcast((IgniteRunnable)createRunner(OPERATION_START, r));
+                    compute(initiator, nodesToRunIds())
+                        .broadcast((IgniteRunnable)new RegisterExecAndForward<>(OPERATION_START, r, endpointIds()));
 
                     VERIFIER.checkResult();
                 }
@@ -204,6 +205,11 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
          * Expected security subject id.
          */
         private UUID expSecSubjId;
+
+        /** */
+        private Verifier() {
+            // No-op.
+        }
 
         /** */
         private void clear() {
@@ -314,18 +320,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner(String srvName, String opName) {
-        return new RegisterExecAndForward<>(srvName, opName, endpointIds());
+    protected <K, V> RegisterExecAndForward<K, V> operationCheck(String srvName) {
+        return new RegisterExecAndForward<>(srvName, OPERATION_CHECK, endpointIds());
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner(String opName, IgniteRunnable r) {
-        return new RegisterExecAndForward<>(opName, r, endpointIds());
-    }
-
-    /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner(String opName) {
-        return new RegisterExecAndForward<>(null, opName, endpointIds());
+    protected <K, V> RegisterExecAndForward<K, V> operationCheck() {
+        return new RegisterExecAndForward<>(null, OPERATION_CHECK, endpointIds());
     }
 
     /** */

@@ -68,7 +68,7 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
                 for (UUID nodeId : nodesToCheckIds()) {
                     ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
-                    svc.submit((Runnable)createRunner(OPERATION_CHECK)).get();
+                    svc.submit((Runnable)operationCheck()).get();
                 }
             }
         );

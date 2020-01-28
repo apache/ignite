@@ -76,31 +76,31 @@ public class DistributedClosureRemoteSecurityContextCheckTest extends AbstractRe
      */
     private Stream<IgniteRunnable> operations() {
         return Stream.of(
-            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) createRunner(OPERATION_CHECK)),
-            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) createRunner(OPERATION_CHECK)).get(),
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcast((IgniteRunnable) operationCheck()),
+            () -> compute(localIgnite(), nodesToCheckIds()).broadcastAsync((IgniteRunnable) operationCheck()).get(),
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).call(createRunner(OPERATION_CHECK));
+                    compute(id).call(operationCheck());
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).callAsync(createRunner(OPERATION_CHECK)).get();
+                    compute(id).callAsync(operationCheck()).get();
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).run(createRunner(OPERATION_CHECK));
+                    compute(id).run(operationCheck());
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).runAsync(createRunner(OPERATION_CHECK)).get();
+                    compute(id).runAsync(operationCheck()).get();
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).apply(createRunner(OPERATION_CHECK), new Object());
+                    compute(id).apply(operationCheck(), new Object());
             },
             () -> {
                 for (UUID id : nodesToCheckIds())
-                    compute(id).applyAsync(createRunner(OPERATION_CHECK), new Object()).get();
+                    compute(id).applyAsync(operationCheck(), new Object()).get();
             }
         );
     }
