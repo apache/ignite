@@ -134,6 +134,8 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
 
     /** {@inheritDoc} */
     @Override public void cancel() {
+        context().setCancelled();
+
         if (state != State.RUNNING)
             return;
 
@@ -150,7 +152,6 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
             lock.unlock();
         }
         
-        context().setCancelled();
         context().execute(input()::cancel);
         onClose.accept(this);
     }
