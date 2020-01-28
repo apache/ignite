@@ -1364,7 +1364,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to)
+                                if (++rebalancedCntrs[idx] == to ||
+                                    entry.partitionCounter() == to && grp.hasAtomicCaches())
                                     donePart = entry.partitionId();
 
                                 next = entry;
