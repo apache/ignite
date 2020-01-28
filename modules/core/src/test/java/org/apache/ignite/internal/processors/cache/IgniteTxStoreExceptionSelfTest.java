@@ -32,7 +32,6 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -49,10 +48,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.apache.ignite.cache.CacheMode;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
@@ -74,33 +75,47 @@ public class IgniteTxStoreExceptionSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static Integer lastKey;
 
-    /** Parameterized run parameter : cache mode. */
+    /**
+     * Number/id of parametrized run cycle. Involved by specific lifecycle of parametrized test.
+     * It interferes with existing initialilation of the grid.
+     * The test is instanced several times as separate runs while before-test events is triggered once.
+     * Moreover, parameters injection is activated after before-test event and are empty in the test initialization.
+     * */
+    private static final AtomicInteger prevRunCycle = new AtomicInteger(Integer.MIN_VALUE);
+
+    /** Parameterized run parameter : number/id of run cycle. */
     @Parameterized.Parameter(0)
+    public int runCycleId;
+
+    /** Parameterized run parameter : cache mode. */
+    @Parameterized.Parameter(1)
     public CacheMode cacheMode;
 
     /** Parameterized run parameter : near cache config. */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public NearCacheConfiguration<?,?> nearCacheCfg;
 
     /** Parameterized run parameter : grid count. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public int gridCnt;
 
     /** Parameterized run parameter : additional before-launch-check of additional not supported feature. */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(4)
     public MvccFeatureChecker.Feature notSupportedFeatureCheck;
 
-    /** Test run configurations: Cache mode, near cache cfg, grid count, check of not supported feature. */
+    /**
+     * Test run configurations: Run number (keep different values to detect change of run cycle),
+     * Cache mode, near cache cfg, Grid count, Check of not supported feature.
+     * */
     @Parameterized.Parameters
     public static Collection<Object[]> parameterizedConfig() {
         return Arrays.asList(new Object[][] {
-            {REPLICATED, null, 3, null},
-            {PARTITIONED, new NearCacheConfiguration<>(), 3, null},
-            {PARTITIONED, null, 3, null},
-            {LOCAL, new NearCacheConfiguration<>(), 1, MvccFeatureChecker.Feature.LOCAL_CACHE},
+            {1, REPLICATED, null, 3, null},
+            {2, PARTITIONED, new NearCacheConfiguration<>(), 3, null},
+            {3, PARTITIONED, null, 3, null},
+            {4, LOCAL, new NearCacheConfiguration<>(), 1, MvccFeatureChecker.Feature.LOCAL_CACHE},
         });
     }
-
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -126,23 +141,47 @@ public class IgniteTxStoreExceptionSelfTest extends GridCacheAbstractSelfTest {
         return ccfg;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * A stub to prevent call of parent before-start which launched grid not waiting for the parametrization.
+     * */
     @Override protected void beforeTestsStarted() throws Exception {
-        if (notSupportedFeatureCheck != null)
-            MvccFeatureChecker.skipIfNotSupported(notSupportedFeatureCheck);
-
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
         store = new TestStore();
+    }
 
-        super.beforeTestsStarted();
+    /**
+     * Invocation event using actually to determine new cycle of parametrized run and first initialization.
+     * Actual before-test call is here because it requires pthe parameters being assinged after before-tests
+     */
+    @Override protected void beforeTest() throws Exception {
+        int lastRunCycle = prevRunCycle.get();
+        //Check id of the run cycle. It might change so we enter new test ruquiring new initialization.
+        if (lastRunCycle != runCycleId && prevRunCycle.compareAndSet(lastRunCycle, runCycleId)) {
+            //Check if there was a run cycle before and shutdown grid.
+            if (lastRunCycle >= 0) {
+                super.afterTestsStopped();
+                stopAllGrids();
+            }
 
-        lastKey = 0;
+            if (notSupportedFeatureCheck != null)
+                MvccFeatureChecker.skipIfNotSupported(notSupportedFeatureCheck);
+
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+            store = new TestStore();
+
+            super.beforeTestsStarted();
+
+            lastKey = 0;
+        }
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
+        prevRunCycle.set(Integer.MIN_VALUE);
 
         store = null;
     }
