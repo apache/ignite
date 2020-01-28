@@ -569,13 +569,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
              */
             private void onFirstMessage(final GridNioSession ses, Message msg) {
                 UUID sndId;
-                int connIdx;
-                long connCnt;
+
+                ConnectionKey connKey;
 
                 if (msg instanceof NodeIdMessage) {
                     sndId = U.bytesToUuid(((NodeIdMessage)msg).nodeIdBytes(), 0);
-                    connIdx = 0;
-                    connCnt = -1;
+                    connKey = new ConnectionKey(sndId, 0, -1);
                 }
                 else {
                     assert msg instanceof HandshakeMessage : msg;
@@ -583,8 +582,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     HandshakeMessage msg0 = (HandshakeMessage)msg;
 
                     sndId = ((HandshakeMessage)msg).nodeId();
-                    connIdx = msg0.connectionIndex();
-                    connCnt = msg0.connectCount();
+                    connKey = new ConnectionKey(sndId, msg0.connectionIndex(), msg0.connectCount());
                 }
 
                 if (log.isDebugEnabled())
@@ -631,8 +629,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     return;
                 }
-
-                ConnectionKey connKey = new ConnectionKey(sndId, connIdx, connCnt);
 
                 ses.addMeta(CONSISTENT_ID_META, rmtNode.consistentId());
 
