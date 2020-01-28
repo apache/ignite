@@ -31,8 +31,6 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.recommendation.ObjectSubjectRatingTriplet;
 import org.apache.ignite.ml.recommendation.RecommendationModel;
 import org.apache.ignite.ml.recommendation.RecommendationTrainer;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of recommendation system based on MovieLens dataset (see https://grouplens.org/datasets/movielens/).
