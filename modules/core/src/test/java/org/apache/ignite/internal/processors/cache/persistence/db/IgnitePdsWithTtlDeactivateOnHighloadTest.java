@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
@@ -38,12 +41,17 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForAllFutures;
 
 /**
  * Test TTL worker with persistence enabled
@@ -143,7 +151,67 @@ public class IgnitePdsWithTtlDeactivateOnHighloadTest extends GridCommonAbstract
      * @throws Exception if failed.
      */
     @Test
-    public void shouldNotBeProblemToPutInExpiredCacheConcurrently() throws Exception {
+    public void shouldNotBeProblemToPutToExpiredCacheConcurrentlyWithCheckpoint() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig0.getOrCreateCache(CACHE_NAME);
+
+        AtomicBoolean timeoutReached = new AtomicBoolean(false);
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+
+        IgniteInternalFuture ldrFut = runMultiThreadedAsync(() -> {
+            while (!timeoutReached.get()) {
+                Map map = new TreeMap();
+
+                for (int i = 0; i < ENTRIES; i++)
+                    map.put(i, i);
+
+                cache.putAll(map);
+            }
+        }, WORKLOAD_THREADS_CNT, "loader");
+
+        IgniteInternalFuture updaterFut = runMultiThreadedAsync(() -> {
+            while (!timeoutReached.get()) {
+                for (int i = 0; i < ENTRIES; i++)
+                    cache.put(i, i * 10);
+            }
+        }, WORKLOAD_THREADS_CNT, "updater");
+
+        IgniteInternalFuture cpWriteLockUnlockFut = runAsync(() -> {
+            ReentrantReadWriteLock lock = U.field(db, "checkpointLock");
+
+            while (!timeoutReached.get()) {
+                try {
+                    lock.writeLock().lockInterruptibly();
+
+                    doSleep(30);
+                }
+                catch (InterruptedException ignored) {
+                    break;
+                }
+                finally {
+                    lock.writeLock().unlock();
+                }
+
+                doSleep(30);
+            }
+        }, "cp-write-lock-holder");
+
+        doSleep(10_000);
+
+        timeoutReached.set(true);
+
+        waitForAllFutures(cpWriteLockUnlockFut, ldrFut, updaterFut);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void shouldNotBeProblemToPutToExpiredCacheConcurrently() throws Exception {
         final AtomicBoolean end = new AtomicBoolean();
 
         final IgniteEx srv = startGrid(0);
@@ -151,7 +219,7 @@ public class IgnitePdsWithTtlDeactivateOnHighloadTest extends GridCommonAbstract
         srv.cluster().active(true);
 
         // Start high workload
-        IgniteInternalFuture loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+        IgniteInternalFuture loadFut = runMultiThreadedAsync(() -> {
             while (!end.get() && !fail) {
                 IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
 
@@ -190,4 +258,3 @@ public class IgnitePdsWithTtlDeactivateOnHighloadTest extends GridCommonAbstract
             cache.get(i); // touch entries
     }
 }
-
