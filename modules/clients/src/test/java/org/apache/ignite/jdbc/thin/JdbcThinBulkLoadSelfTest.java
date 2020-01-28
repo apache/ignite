@@ -59,13 +59,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 @RunWith(Parameterized.class)
 public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
-    /** Subdirectory with CSV files */
+    /** Subdirectory with CSV files. */
     private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
 
     /** Default table name. */
     private static final String TBL_NAME = "Person";
 
-    /** A CSV file with zero records */
+    /** A CSV file with zero records. */
     private static final String BULKLOAD_EMPTY_CSV_FILE =
         Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload0.csv"))
             .getAbsolutePath();
@@ -96,19 +96,19 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     /** JDBC statement. */
     private Statement stmt;
 
-    /** Parametrized run param : cacheMode */
+    /** Parametrized run param : cacheMode. */
     @Parameterized.Parameter(0)
     public CacheMode cacheMode;
 
-    /** Parametrized run param : atomicity */
+    /** Parametrized run param : atomicity. */
     @Parameterized.Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
-    /** Parametrized run param : near mode */
+    /** Parametrized run param : near mode. */
     @Parameterized.Parameter(2)
     public Boolean isNear;
 
-    /** Test run configurations: Cache mode, atomicity type, is near */
+    /** Test run configurations: Cache mode, atomicity type, is near. */
     @Parameterized.Parameters
     public static Collection<Object[]> runConfig() {
         return Arrays.asList(new Object[][] {
