@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
-import java.util.List;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -163,19 +162,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         cache.setQueryEntities(Collections.singletonList(e));
 
         return cache;
-    }
-
-    /** Clean tables to avoid DDL errors in repeated test runs.  */
-    protected void dropTables() throws SQLException {
-        List<List<?>> tablesLeft = execute(conn, "select CACHE_NAME, TABLE_NAME, SCHEMA_NAME from SYS.TABLES");
-        for( List<?> resultRecord : tablesLeft ){
-            String cacheName = resultRecord.get(0).toString();
-            if(cacheName.startsWith("SQL_")){
-                String tableName = resultRecord.get(1).toString();
-                String schemaName = resultRecord.get(2).toString();
-                execute(conn, "drop table "+schemaName+".\""+tableName+"\"");
-            }
-        }
     }
 
     /**

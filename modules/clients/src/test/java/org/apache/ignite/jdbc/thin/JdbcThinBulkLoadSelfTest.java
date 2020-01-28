@@ -51,6 +51,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * COPY statement tests.
@@ -110,12 +112,12 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     @Parameterized.Parameters
     public static Collection<Object[]> runConfig() {
         return Arrays.asList(new Object[][] {
-            { PARTITIONED, CacheAtomicityMode.ATOMIC, true },
-            { PARTITIONED, CacheAtomicityMode.ATOMIC, false },
-            { PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, true },
-            { PARTITIONED, CacheAtomicityMode.TRANSACTIONAL, false },
-            { REPLICATED, CacheAtomicityMode.ATOMIC, false },
-            { REPLICATED, CacheAtomicityMode.TRANSACTIONAL, false },
+            {PARTITIONED, ATOMIC, true},
+            {PARTITIONED, ATOMIC, false},
+            {PARTITIONED, TRANSACTIONAL, true},
+            {PARTITIONED, TRANSACTIONAL, false},
+            {REPLICATED, ATOMIC, false},
+            {REPLICATED, TRANSACTIONAL, false},
         });
     }
 
@@ -134,14 +136,14 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     private CacheConfiguration cacheConfigWithIndexedTypes() {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
-        cache.setCacheMode(cacheMode());
-        cache.setAtomicityMode(atomicityMode());
+        cache.setCacheMode(cacheMode);
+        cache.setAtomicityMode(atomicityMode);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
-        if (cacheMode() == PARTITIONED)
+        if (cacheMode == PARTITIONED)
             cache.setBackups(1);
 
-        if (nearCache())
+        if (isNear)
             cache.setNearConfiguration(new NearCacheConfiguration());
 
         cache.setIndexedTypes(
@@ -179,27 +181,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         return cache;
     }
 
-    /**
-     * Returns true if we are testing near cache.
-     *
-     * @return true if we are testing near cache.
-     */
-    protected boolean nearCache(){ return isNear; };
-
-    /**
-     * Returns cache atomicity mode we are testing.
-     *
-     * @return The cache atomicity mode we are testing.
-     */
-    protected CacheAtomicityMode atomicityMode(){ return atomicityMode; };
-
-    /**
-     * Returns cache mode we are testing.
-     *
-     * @return The cache mode we are testing.
-     */
-    protected CacheMode cacheMode(){ return cacheMode; };
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -212,8 +193,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        dropTables();
-
         if (stmt != null && !stmt.isClosed())
             stmt.close();
 
@@ -605,14 +584,19 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         execute(conn, "create table " + tblName +
             " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
 
-        int updatesCnt = stmt.executeUpdate(
-            "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "' into " + tblName +
-                "(_key, age, firstName, lastName)" +
-                " format csv");
+        try {
+            int updatesCnt = stmt.executeUpdate(
+                "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "' into " + tblName +
+                    "(_key, age, firstName, lastName)" +
+                    " format csv");
 
-        assertEquals(2, updatesCnt);
+            assertEquals(2, updatesCnt);
 
-        checkCacheContents(tblName, true, 2);
+            checkCacheContents(tblName, true, 2);
+        }
+        finally {
+            execute(conn, "drop table " + tblName);
+        }
     }
 
     /**
