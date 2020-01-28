@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.handlers.cache;
+package org.apache.ignite.internal.processors.rest.security.handlers.cache;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -114,9 +115,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         return cfg;
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheCreate() throws Exception {
         cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
@@ -152,9 +151,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCachePut() throws Exception {
         cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT});
@@ -191,9 +188,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheRead() throws Exception {
         cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT, CACHE_READ});
@@ -221,9 +216,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheRemove() throws Exception {
         cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT, CACHE_READ, CACHE_REMOVE});
@@ -263,9 +256,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheRemoveDflAllTrue() throws Exception {
         dfltAllowAll = true;
@@ -273,9 +264,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         testCacheRemove();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheRemoveSysPermCreateCache() throws Exception {
         secPermSet.add(CACHE_CREATE);
@@ -283,9 +272,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         testCacheRemove();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheDestroy() throws Exception {
         cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_DESTROY});
@@ -316,9 +303,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
             assertThrowsWithCause(() -> cacheDestroy(FORBIDDEN_CACHE_NAME), SecurityException.class);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheDestroyDflAllTrue() throws Exception {
         dfltAllowAll = true;
@@ -326,9 +311,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         testCacheDestroy();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCacheDestroySysPermCreateCache() throws Exception {
         secPermSet.add(CACHE_CREATE);
@@ -336,138 +319,102 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         testCacheDestroy();
     }
 
-    /**
-     *
-     */
+    /** */
     private GridRestResponse cacheCreate(String cacheName) throws IgniteCheckedException {
         return handle(new GridRestCacheRequest().cacheName(cacheName).command(GridRestCommand.GET_OR_CREATE_CACHE))
             .get();
     }
 
-    /**
-     *
-     */
+    /** */
     private GridRestResponse cacheDestroy(String cacheName) throws IgniteCheckedException {
         return handle(new GridRestCacheRequest().cacheName(cacheName).command(GridRestCommand.DESTROY_CACHE))
             .get();
     }
 
-    /**
-     *
-     */
+    /** */
     private IgniteInternalFuture<GridRestResponse> handle(GridRestRequest req) {
         return hnd.handleAsync(req);
     }
 
-    /**
-     *
-     */
+    /** */
     private Object cacheRestKey(String cacheName, GridRestCommand cmd,
         String key) throws IgniteCheckedException {
         return handle(new GridRestCacheRequest().cacheName(cacheName).key(key).command(cmd))
             .get().getResponse();
     }
 
-    /**
-     *
-     */
+    /** */
     private Object cacheRestKeyValue(String cacheName, GridRestCommand cmd, String key,
         String val) throws IgniteCheckedException {
         return handle(new GridRestCacheRequest().cacheName(cacheName).key(key).value(val).command(cmd))
             .get().getResponse();
     }
 
-    /**
-     *
-     */
+    /** */
     private Object cacheRestMap(String cacheName, GridRestCommand cmd, Map map) throws IgniteCheckedException {
         return handle(new GridRestCacheRequest().cacheName(cacheName).values(map).command(cmd))
             .get().getResponse();
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cachePut(String cacheName, String key, String val) throws IgniteCheckedException {
         return (boolean)cacheRestKeyValue(cacheName, GridRestCommand.CACHE_PUT, key, val);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cachePutIfAbsent(String cacheName, String key, String val) throws IgniteCheckedException {
         return (boolean)cacheRestKeyValue(cacheName, GridRestCommand.CACHE_PUT_IF_ABSENT, key, val);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cacheReplace(String cacheName, String key, String val) throws IgniteCheckedException {
         return (boolean)cacheRestKeyValue(cacheName, GridRestCommand.CACHE_REPLACE, key, val);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cachePutAll(String cacheName, Map map) throws IgniteCheckedException {
         return (boolean)cacheRestMap(cacheName, GridRestCommand.CACHE_PUT_ALL, map);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cacheContainsKey(String cacheName, String key) throws IgniteCheckedException {
         return (boolean)cacheRestKey(cacheName, GridRestCommand.CACHE_CONTAINS_KEY, key);
     }
 
-    /**
-     *
-     */
+    /** */
     private Object cacheGet(String cacheName, String key) throws IgniteCheckedException {
         return cacheRestKey(cacheName, GridRestCommand.CACHE_GET, key);
     }
 
-    /**
-     *
-     */
+    /** */
     private Map cacheGetAll(String cacheName, Map map) throws IgniteCheckedException {
         return (Map)cacheRestMap(cacheName, GridRestCommand.CACHE_GET_ALL, map);
     }
 
-    /**
-     *
-     */
+    /** */
     private Object cacheGetAndPut(String cacheName, String key, String newVal)
         throws IgniteCheckedException {
         return cacheRestKeyValue(cacheName, GridRestCommand.CACHE_GET_AND_PUT, key, newVal);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cacheRemove(String cacheName, String key)
         throws IgniteCheckedException {
         return (boolean)cacheRestKey(cacheName, GridRestCommand.CACHE_REMOVE, key);
     }
 
-    /**
-     *
-     */
+    /** */
     private Object cacheGetAndRemove(String cacheName, String key)
         throws IgniteCheckedException {
         return cacheRestKey(cacheName, GridRestCommand.CACHE_GET_AND_REMOVE, key);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cacheRemoveAll(String cacheName, Map map) throws IgniteCheckedException {
         return (boolean)cacheRestMap(cacheName, GridRestCommand.CACHE_REMOVE_ALL, map);
     }
 
-    /**
-     *
-     */
+    /** */
     private boolean cachePermsContains(String cacheName, SecurityPermission permission) {
         return Arrays.asList(cachePerms.get(cacheName)).contains(permission);
     }

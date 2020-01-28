@@ -19,12 +19,12 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.rest.RestProcessorInitializationTest;
 import org.apache.ignite.internal.processors.rest.RestProtocolStartTest;
-import org.apache.ignite.internal.processors.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomicCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
+import org.apache.ignite.internal.processors.rest.security.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
