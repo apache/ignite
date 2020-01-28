@@ -125,7 +125,8 @@ public class RandomForestRegressionExample {
                 }
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

@@ -69,7 +69,8 @@ public class EvaluatorExample {
                 System.out.println(Evaluator.evaluateBinaryClassification(dataCache, mdl, vectorizer));
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

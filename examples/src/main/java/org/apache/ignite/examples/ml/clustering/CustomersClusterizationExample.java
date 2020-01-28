@@ -88,7 +88,8 @@ public class CustomersClusterizationExample {
                 }
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

@@ -78,7 +78,8 @@ public class SVMBinaryClassificationExample {
                 System.out.println(">>> SVM Binary classification model over cache based dataset usage example completed.");
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

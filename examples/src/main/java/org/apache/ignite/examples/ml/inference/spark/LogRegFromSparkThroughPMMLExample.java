@@ -81,8 +81,9 @@ public class LogRegFromSparkThroughPMMLExample {
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
-            } finally {
-                dataCache.destroy();
+            }    finally {
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
     }

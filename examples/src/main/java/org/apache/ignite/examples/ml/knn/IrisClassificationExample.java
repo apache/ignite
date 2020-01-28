@@ -87,7 +87,8 @@ public class IrisClassificationExample {
                 System.out.println(">> Model accuracy: " + accuracy);
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

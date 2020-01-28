@@ -78,7 +78,8 @@ public class RegressionMetricExample {
                 System.out.println("\n>>> Mae " + mae);
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

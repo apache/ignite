@@ -79,7 +79,8 @@ public class FraudDetectionExample {
                 );
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

@@ -84,7 +84,8 @@ public class KNNRegressionExample {
                 System.out.println("\n>>> Rmse = " + rmse);
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {
