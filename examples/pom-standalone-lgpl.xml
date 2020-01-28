@@ -155,6 +155,12 @@
                     <artifactId>ignite-spark</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml-mleap-model-parser</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
             </dependencies>
 
             <build>
@@ -240,6 +246,12 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-spark-2.4</artifactId>
+                    <version>to_be_replaced_by_ignite_version</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml-mleap-model-parser</artifactId>
                     <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
             </dependencies>
