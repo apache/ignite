@@ -18,14 +18,14 @@
 package org.apache.ignite.spi.systemview;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
  * Read only system view registry.
  *
- * @see GridMetricManager
+ * @see GridSystemViewManager
  * @see SystemView
  * @see MetricExporterSpi
  */

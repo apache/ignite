@@ -75,7 +75,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * from latest to oldest (see {@link WALRecord#previous()}) Records from chain are saved into buffer in reverse
      * order
      */
-    private final AtomicReference<WALRecord> head = new AtomicReference<>();
+    final AtomicReference<WALRecord> head = new AtomicReference<>();
 
     /**
      * Position in current file after the end of last written record (incremented after file channel write operation)
@@ -640,7 +640,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
                         int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                        if (rollOver && written < (maxSegmentSize - switchSegmentRecSize)) {
+                        if (rollOver && written + switchSegmentRecSize < maxSegmentSize) {
                             final ByteBuffer buf = ByteBuffer.allocate(switchSegmentRecSize);
 
                             segmentRecord.position(new FileWALPointer(getSegmentId(), (int)written, switchSegmentRecSize));
@@ -839,7 +839,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
      * Fake record is zero-sized record, which is not stored into file. Fake record is used for storing position in file
      * {@link WALRecord#position()}. Fake record is allowed to have no previous record.
      */
-    private static final class FakeRecord extends WALRecord {
+    static final class FakeRecord extends WALRecord {
         /** */
         private final boolean stop;
 

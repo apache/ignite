@@ -89,7 +89,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
@@ -1339,17 +1338,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * Cancels async tasks.
          */
         public void awaitAsyncTaskCompletion(boolean cancel) {
-            for (GridWorker worker : workers) {
-                try {
-                    if (cancel)
-                        worker.cancel();
-
-                    worker.join();
-                }
-                catch (Exception e) {
-                    log.warning(format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
-                }
-            }
+            U.awaitForWorkersStop(workers, cancel, log);
         }
     }
 
