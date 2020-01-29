@@ -660,12 +660,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Stops this cache. Child classes should override this method
      * to provide custom stop behavior.
      */
-    public void stop() {
+    public void stop(boolean destroy) {
         // Nulling thread local reference to ensure values will be eventually GCed
         // no matter what references these futures are holding.
         lastFut = null;
 
-        if (!ctx.kernalContext().isStopping())
+        if (!ctx.kernalContext().isStopping() && destroy)
             ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()));
     }
 
