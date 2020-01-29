@@ -202,7 +202,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      */
     private void updatePackageAccessProperty() {
         synchronized (SANDBOXED_NODES_COUNTER) {
-            if (SANDBOXED_NODES_COUNTER.incrementAndGet() == 1) {
+            if (SANDBOXED_NODES_COUNTER.getAndIncrement() == 0) {
                 String packAccess = Security.getProperty("package.access");
 
                 if (!F.isEmpty(packAccess)) {
@@ -225,11 +225,17 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /**
      *
      */
-    private synchronized void clearPackageAccessProperty() {
+    private void clearPackageAccessProperty() {
         if (hasSecurityManager() && secPrc.sandboxEnabled()) {
             synchronized (SANDBOXED_NODES_COUNTER) {
-                if (SANDBOXED_NODES_COUNTER.decrementAndGet() == 0)
-                    SecurityUtils.removeIgnitePackageFromPackageAccessProperty();
+                if (SANDBOXED_NODES_COUNTER.decrementAndGet() == 0) {
+                    String packAccess = Security.getProperty("package.access");
+
+                    if (packAccess.equals(IGNITE_INTERNAL_PACKAGE))
+                        Security.setProperty("package.access", null);
+                    else if (packAccess.contains(',' + IGNITE_INTERNAL_PACKAGE))
+                        Security.setProperty("package.access", packAccess.replace(',' + IGNITE_INTERNAL_PACKAGE, ""));
+                }
             }
         }
     }

@@ -25,7 +25,6 @@ import java.security.AllPermission;
 import java.security.Permissions;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -181,18 +180,6 @@ public class SecurityUtils {
 
         return ctx.getClass().getClassLoader() == cls.getClassLoader()
             && ctx.marshallerContext().isSystemType(cls.getName());
-    }
-
-    /**
-     * Removes the ignite package from the access package property.
-     */
-    public static void removeIgnitePackageFromPackageAccessProperty() {
-        String packAccess = Security.getProperty("package.access");
-
-        if (packAccess.equals(IGNITE_INTERNAL_PACKAGE))
-            Security.setProperty("package.access", null);
-        else if (packAccess.contains(',' + IGNITE_INTERNAL_PACKAGE))
-            Security.setProperty("package.access", packAccess.replace(',' + IGNITE_INTERNAL_PACKAGE, ""));
     }
 
     /**

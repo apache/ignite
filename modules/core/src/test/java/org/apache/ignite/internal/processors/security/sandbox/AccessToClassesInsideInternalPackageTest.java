@@ -24,12 +24,10 @@ import java.security.Permissions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -139,14 +137,6 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
     @After
     public void tearDown() {
         U.delete(srcTmpDir);
-    }
-
-    /**
-     *
-     */
-    @AfterClass
-    public static void afterClass() {
-        SecurityUtils.removeIgnitePackageFromPackageAccessProperty();
     }
 
     /**
