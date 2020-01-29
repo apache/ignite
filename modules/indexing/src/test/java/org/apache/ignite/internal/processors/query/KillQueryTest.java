@@ -1310,10 +1310,10 @@ public class KillQueryTest extends GridCommonAbstractTest {
             setMapper(new ReducePartitionMapper(ctx, ctx.log(GridReduceQueryExecutor.class)) {
                 /** {@inheritDoc} */
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
-                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
 
                     return retryNodePartMapping ? RETRY_RESULT :
-                        super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+                        super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
                 }
             });
 
