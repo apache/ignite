@@ -104,28 +104,6 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
         GridCacheOffheapManager offheap = (GridCacheOffheapManager)cacheProc.cache(DEFAULT_CACHE_NAME).context().group()
             .offheap();
 
-        for (int i = 0; i < 5_000; i++) {
-            for (int p = 0; p < partCnt; p++) {
-                Integer key = i * partCnt + p;
-                cache.put(key, new byte[i + 1]);
-                cache.remove(key);
-            }
-        }
-
-        offheap.cacheDataStores().forEach(cacheData -> {
-            PagesList list = (PagesList)cacheData.rowStore().freeList();
-
-            AtomicLongArray bucketsSize = list.bucketsSize;
-
-            // All buckets except reuse bucket must be empty after puts and removes of the same key.
-            for (int i = 0; i < bucketsSize.length(); i++) {
-                if (list.isReuseBucket(i))
-                    assertTrue(bucketsSize.get(i) > 0);
-                else
-                    assertEquals(0, bucketsSize.get(i));
-            }
-        });
-
         for (int i = 0; i < 100; i++) {
             for (int p = 0; p < partCnt; p++)
                 cache.put(i * partCnt + p, new byte[(i + p) * 10]);
