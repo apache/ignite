@@ -3634,6 +3634,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         recoveryDesc.onHandshake(rcvCnt);
 
+                        meta.put(CONSISTENT_ID_META, node.consistentId());
                         meta.put(CONN_IDX_META, connKey);
                         meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
 
