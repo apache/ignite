@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -49,6 +50,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
@@ -238,14 +240,16 @@ public class WalScannerTest extends TestCase {
                 .findAllRecordsFor(groupAndPageIds)
                 .forEach(printToFile(targetFile));
 
-            actualRecords = Files.readAllLines(targetFile.toPath());
+            actualRecords = Files.readAllLines(targetFile.toPath()).stream()
+                .filter(it -> it.contains(DEFAULT_WAL_RECORD_PREFIX))
+                .collect(Collectors.toList());
         }
         finally {
             targetFile.delete();
         }
 
         // then: Should be find only expected value from file.
-        assertEquals(3, actualRecords.size());
+        assertEquals(actualRecords.toString(), 3, actualRecords.size());
 
         assertTrue(actualRecords.get(0), actualRecords.get(0).contains("PageSnapshot ["));
         assertTrue(actualRecords.get(1), actualRecords.get(1).contains("CheckpointRecord ["));
@@ -288,14 +292,16 @@ public class WalScannerTest extends TestCase {
                 .findAllRecordsFor(groupAndPageIds)
                 .forEach(printToLog(log).andThen(printToFile(targetFile)));
 
-            actualFileRecords = Files.readAllLines(targetFile.toPath());
+            actualFileRecords = Files.readAllLines(targetFile.toPath()).stream()
+                .filter(it -> it.contains(DEFAULT_WAL_RECORD_PREFIX))
+                .collect(Collectors.toList());
         }
         finally {
             targetFile.delete();
         }
 
         // then: Should be find only expected value from file.
-        assertEquals(actualFileRecords.size(), 3);
+        assertEquals(actualFileRecords.toString(), actualFileRecords.size(), 3);
 
         assertTrue(actualFileRecords.get(0), actualFileRecords.get(0).contains("PageSnapshot ["));
         assertTrue(actualFileRecords.get(1), actualFileRecords.get(1).contains("CheckpointRecord ["));
