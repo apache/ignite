@@ -1114,8 +1114,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeSet}. Using unordered map,
-     * such as {@link HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1135,8 +1135,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * If the key set is empty, the {@link CacheWriter} is not called.
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeSet}. Using unordered map,
-     * such as {@link HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys Keys set.
      * @return a Future representing pending completion of the operation.
@@ -1380,8 +1380,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * system behavior in crash scenarios for atomic caches.
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeSet}. Using unordered map,
-     * such as {@link HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1413,8 +1413,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * system behavior in crash scenarios for atomic caches.
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeSet}. Using unordered map,
-     * such as {@link HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
@@ -1450,8 +1450,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the same.
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeSet}. Using unordered map,
-     * such as {@link HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1498,8 +1498,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the same.
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeSet}. Using unordered map,
-     * such as {@link HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.

@@ -3097,7 +3097,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkKeysOrdered(m, "Put All");
+        checkKeysOrdered(m, "Put All Async");
 
         return putAllAsync0(m);
     }
@@ -5248,8 +5248,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private boolean curTxDeadlockDetecting() {
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
 
-        return tx != null && !tx.implicit() && tx.concurrency() == OPTIMISTIC &&
-            (tx.isolation() == SERIALIZABLE || ctx.tm().deadlockDetectionEnabled());
+        return tx != null && !tx.implicit() && (ctx.tm().deadlockDetectionEnabled() ||
+            (tx.concurrency() == OPTIMISTIC && tx.isolation() == SERIALIZABLE) ||
+            (tx.concurrency() == PESSIMISTIC && tx.isolation() != READ_COMMITTED));
     }
 
     /**
