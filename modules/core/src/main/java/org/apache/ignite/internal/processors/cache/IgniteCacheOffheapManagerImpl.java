@@ -2940,7 +2940,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                             ex.addSuppressed(e);
                     }
                 }
-            });
+            }, false);
 
             if (exception.get() != null)
                 throw new IgniteCheckedException("Failed to destroy store", exception.get());

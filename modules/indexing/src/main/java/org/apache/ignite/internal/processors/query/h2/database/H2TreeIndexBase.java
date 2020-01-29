@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -103,16 +102,17 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /**
      * @param inlineIdxs Inline index helpers.
      * @param cfgInlineSize Inline size from cache config.
-     * @param cacheConf Cache configuration.
+     * @param maxInlineSize Max inline size.
      * @return Inline size.
      */
-    protected int computeInlineSize(List<InlineIndexHelper> inlineIdxs, int cfgInlineSize,
-        CacheConfiguration<?, ?> cacheConf) {
-        int confSize = cacheConf.getSqlIndexMaxInlineSize();
-
-        int propSize = confSize == -1
+    protected static int computeInlineSize(
+        List<InlineIndexHelper> inlineIdxs,
+        int cfgInlineSize,
+        int maxInlineSize
+    ) {
+        int propSize = maxInlineSize == -1
             ? IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE, IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT)
-            : confSize;
+            : maxInlineSize;
 
         if (cfgInlineSize == 0)
             return 0;
