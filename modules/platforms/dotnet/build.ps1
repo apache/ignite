@@ -249,6 +249,7 @@ if ($asmDirs) {
         if ($projName.StartsWith("Apache.Ignite")) {
             $target = "$projName\bin\Release"
             Make-Dir($target)
+            Copy-Item -Force $_ $target
         }
     }    
 }
@@ -258,11 +259,12 @@ Make-Dir("bin")
 
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
+                     | where Name -NotLike "*DotNetCore*" `
                      | where Name -NotLike "*Benchmarks*" | % {
-    $binDir = if (($platform -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj") -or $IsLinux) `
-                {"bin\$configuration"} else {"bin\$platform\$configuration"}
-    $dir = join-path (split-path -parent $_) $binDir
-    Copy-Item -Force $dir\*.* bin
+    $projDir = split-path -parent $_.FullName 
+    $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
+    echo "Copying files to bin from '$dir'"
+    Copy-Item -Force -Recurse $dir bin
 }
 
 
