@@ -39,6 +39,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteFeatures.IGNITE_MESSAGING_SECURITY_AWARE;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+
 /**
  * {@link IgniteMessaging} implementation.
  */
@@ -207,7 +210,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         guard();
 
         try {
-            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, securityAwareBiPredicate(p));
 
             return saveOrGet(ctx.continuous().startRoutine(hnd,
                 false,
@@ -222,6 +225,22 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         finally {
             unguard();
         }
+    }
+
+    /**
+     * @param p Original IgniteBiPredicate.
+     * @return Security aware IgniteBiPredicate.
+     */
+    private IgniteBiPredicate<UUID, Object> securityAwareBiPredicate(IgniteBiPredicate<UUID, ?> p) {
+        IgniteBiPredicate<UUID, Object> res = (IgniteBiPredicate<UUID, Object>)p;
+
+        if (ctx.security().enabled() && allNodesSupports(ctx.discovery().allNodes(), IGNITE_MESSAGING_SECURITY_AWARE)) {
+            final UUID subjectId = ctx.security().securityContext().subject().id();
+
+            return new SecurityAwareBiPredicate<>(subjectId, res);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 
 /**
  * Security aware remote filter factory.

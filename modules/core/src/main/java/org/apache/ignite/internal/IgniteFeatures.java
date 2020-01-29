@@ -85,7 +85,10 @@ public enum IgniteFeatures {
     MASTER_KEY_CHANGE(20),
 
     /** ContinuousQuery with security subject id support. */
-    CONT_QRY_SECURITY_AWARE(21);
+    CONT_QRY_SECURITY_AWARE(21),
+
+    /** ContinuousQuery with security subject id support. */
+    IGNITE_MESSAGING_SECURITY_AWARE(22);
 
     /**
      * Unique feature identifier.

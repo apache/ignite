@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal.processors.security;
 
 import java.io.Externalizable;
 import java.io.IOException;

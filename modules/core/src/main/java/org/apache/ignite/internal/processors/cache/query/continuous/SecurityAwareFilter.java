@@ -23,6 +23,7 @@ import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
