@@ -118,7 +118,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
      * @param rel Relational node.
      * @return Fragment meta information.
      */
-    public FragmentInfo getFragmentLocation(RelNode rel) {
+    public FragmentInfo getFragmentInfo(RelNode rel) {
         for (;;) {
             try {
                 return sourceDistributionHandler.getFragmentInfo(rel, this);

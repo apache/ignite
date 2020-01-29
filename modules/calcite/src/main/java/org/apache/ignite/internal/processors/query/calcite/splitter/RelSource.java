@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 
 /**
  *
  */
 public interface RelSource {
     /**
-     * @return Exchange id, has to be unique in scope of query.
+     * @return ID of a fragment, where data comes from.
      */
-    long exchangeId();
+    long fragmentId();
 
     /**
      * Returns source mapping. The mapping contains nodes where data comes from.
@@ -41,14 +41,13 @@ public interface RelSource {
 
     /**
      * Binds a source to target and starts source data location calculation.
-     * After this method call the source know where to send data and the target knows where to expect data from.
-     *
-     * @param mapping Target mapping.
-     * @param distribution Target distribution.
+     * After this method call the source knows where to send data and the target knows where to expect data from.
+     * @param target Target.
+     * @param mappingService
      * @param ctx Context.
      * @param mq Metadata query instance.
      */
-    default void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
+    default void bindToTarget(RelTarget target, MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
         // No-op
     }
 }

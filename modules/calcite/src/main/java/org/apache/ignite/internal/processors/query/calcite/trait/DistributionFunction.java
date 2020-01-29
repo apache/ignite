@@ -22,16 +22,15 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.UUID;
 import java.util.function.ToIntFunction;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -50,14 +49,14 @@ public abstract class DistributionFunction implements Serializable {
     public abstract RelDistribution.Type type();
 
     /**
-     * Creates a destination function based on this function algorithm, given nodes mapping and given distribution keys.
+     * Creates a destination based on this function algorithm, given nodes mapping and given distribution keys.
      *
-     * @param ctx Planner context.
+     * @param partitionService Affinity function source.
      * @param mapping Target mapping.
      * @param keys Distribution keys.
      * @return Destination function.
      */
-    public abstract DestinationFunction toDestination(PlannerContext ctx, NodesMapping mapping, ImmutableIntList keys);
+    public abstract Destination destination(PartitionService partitionService, NodesMapping mapping, ImmutableIntList keys);
 
     /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
@@ -106,7 +105,7 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             throw new AssertionError();
         }
 
@@ -127,12 +126,10 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
-            List<UUID> nodes = m.nodes();
-
-            return new AllNodesFunction(nodes);
+            return new AllNodes(m.nodes());
         }
 
         /** */
@@ -152,12 +149,10 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.nodes());
 
-            List<UUID> nodes = m.nodes();
-
-            return new RandomNodeFunction(nodes);
+            return new RandomNode(m.nodes());
         }
 
         /** */
@@ -178,19 +173,19 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && m.nodes() != null && m.nodes().size() == 1;
 
-            List<UUID> nodes = Collections.singletonList(Objects.requireNonNull(F.first(m.nodes())));
-
-            return new AllNodesFunction(nodes);
+            return new AllNodes(Collections
+                .singletonList(Objects
+                    .requireNonNull(F
+                        .first(m.nodes()))));
         }
 
         /** */
         private Object readResolve() throws ObjectStreamException {
             return INSTANCE;
         }
-
     }
 
     /** */
@@ -203,36 +198,20 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
-            assert m != null && !F.isEmpty(m.assignments());
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
+            assert m != null && !F.isEmpty(m.assignments()) && !k.isEmpty();
 
             List<List<UUID>> assignments = m.assignments();
 
             if (U.assertionsEnabled()) {
-                for (List<UUID> assignment : assignments) {
+                for (List<UUID> assignment : assignments)
                     assert F.isEmpty(assignment) || assignment.size() == 1;
-                }
             }
 
-            int[] fields = k.toIntArray();
+            ToIntFunction<Object> rowToPart = DistributionFunction.rowToPart(
+                partitionService.partitionFunction(CU.UNDEFINED_CACHE_ID), k.toIntArray());
 
-            ToIntFunction<Object> rowToPart = r -> {
-                Object[] row = (Object[]) r;
-
-                if (row == null)
-                    return 0;
-
-                int hash = 1;
-
-                for (int i : fields)
-                    hash = 31 * hash + (row[i] == null ? 0 : row[i].hashCode());
-
-                return hash;
-            };
-
-            List<UUID> nodes = m.nodes();
-
-            return new PartitionFunction(nodes, assignments, rowToPart);
+            return new Partitioned(m.nodes(), assignments, rowToPart);
         }
 
         /** */
@@ -264,26 +243,20 @@ public abstract class DistributionFunction implements Serializable {
         }
 
         /** {@inheritDoc} */
-        @Override public DestinationFunction toDestination(PlannerContext ctx, NodesMapping m, ImmutableIntList k) {
+        @Override public Destination destination(PartitionService partitionService, NodesMapping m, ImmutableIntList k) {
             assert m != null && !F.isEmpty(m.assignments()) && k.size() == 1;
 
             List<List<UUID>> assignments = m.assignments();
 
             if (U.assertionsEnabled()) {
-                for (List<UUID> assignment : assignments) {
+                for (List<UUID> assignment : assignments)
                     assert F.isEmpty(assignment) || assignment.size() == 1;
-                }
             }
 
-            AffinityFunction affinity = ctx.affinityFunction(cacheId);
+            ToIntFunction<Object> rowToPart = DistributionFunction.rowToPart(
+                partitionService.partitionFunction(cacheId), k.toIntArray());
 
-            int field = k.getInt(0);
-
-            ToIntFunction<Object> rowToPart = row -> affinity.partition(((Object[]) row)[field]);
-
-            List<UUID> nodes = m.nodes();
-
-            return new PartitionFunction(nodes, assignments, rowToPart);
+            return new Partitioned(m.nodes(), assignments, rowToPart);
         }
 
         /** {@inheritDoc} */
@@ -293,78 +266,19 @@ public abstract class DistributionFunction implements Serializable {
     }
 
     /** */
-    private static class PartitionFunction implements DestinationFunction {
-        /** */
-        private final List<UUID> nodes;
+    private static ToIntFunction<Object> rowToPart(ToIntFunction<Object> keyToPart, int[] keys) {
+        return r -> {
+            Object[] row = (Object[]) r;
 
-        /** */
-        private final List<List<UUID>> assignments;
+            if (F.isEmpty(row))
+                return 0;
 
-        /** */
-        private final ToIntFunction<Object> partFun;
+            int hash = keyToPart.applyAsInt(row[keys[0]]);
 
-        /** */
-        private PartitionFunction(List<UUID> nodes, List<List<UUID>> assignments, ToIntFunction<Object> partFun) {
-            this.nodes = nodes;
-            this.assignments = assignments;
-            this.partFun = partFun;
-        }
+            for (int i = 1; i < keys.length; i++)
+                hash = 31 * hash + keyToPart.applyAsInt(row[keys[i]]);
 
-        /** {@inheritDoc} */
-        @Override public List<UUID> destination(Object row) {
-            return assignments.get(partFun.applyAsInt(row) % assignments.size());
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> targets() {
-            return nodes;
-        }
-    }
-
-    /** */
-    private static class AllNodesFunction implements DestinationFunction {
-        /** */
-        private final List<UUID> nodes;
-
-        /** */
-        private AllNodesFunction(List<UUID> nodes) {
-            this.nodes = nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> destination(Object row) {
-            return nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> targets() {
-            return nodes;
-        }
-    }
-
-    /** */
-    private static class RandomNodeFunction implements DestinationFunction {
-        /** */
-        private final Random random;
-
-        /** */
-        private final List<UUID> nodes;
-
-        /** */
-        private RandomNodeFunction(List<UUID> nodes) {
-            this.nodes = nodes;
-
-            random = new Random();
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> destination(Object row) {
-            return Collections.singletonList(nodes.get(random.nextInt(nodes.size())));
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<UUID> targets() {
-            return nodes;
-        }
+            return hash;
+        };
     }
 }

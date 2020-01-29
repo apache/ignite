@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.ExpToRexTranslator;
 
 /**
@@ -40,7 +40,7 @@ public interface ConversionContext extends RelOptTable.ToRelContext {
     /**
      * @return Planner context.
      */
-    PlannerContext getContext();
+    PlanningContext getContext();
 
     /**
      * @return Expression translator.

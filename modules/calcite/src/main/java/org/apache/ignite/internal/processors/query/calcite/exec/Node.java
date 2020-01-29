@@ -21,10 +21,20 @@ import java.util.List;
 
 /**
  * Represents a node of execution tree.
+ *
+ * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request()}, {@link Node#cancel()},
+ * {@link Node#reset()}, {@link Sink#push(Object)} and {@link Sink#end()} methods should be used from one single thread.
  */
-public interface Node<T> extends Source {
+public interface Node<T> {
     /**
-     * Requests a target sink of the node. The sink is used to push data into the node by its children.
+     * Returns runtime context allowing access to the tables in a database.
+     *
+     * @return Execution context.
+     */
+    ExecutionContext context();
+
+    /**
+     * Requests a sink of the node. The sink is used to push data into the node by its children.
      *
      * @param idx Sink index.
      * @return Sink object.
@@ -33,9 +43,42 @@ public interface Node<T> extends Source {
     Sink<T> sink(int idx);
 
     /**
-     * Registers sources of this node. Sources are used to notify children when the node is ready to consume data.
+     * Registers target sink.
      *
-     * @param sources Sources.
+     * @param sink Target sink.
      */
-    void sources(List<Source> sources);
+    void target(Sink<T> sink);
+
+    /**
+     * @return Registered target.
+     */
+    Sink<T> target();
+
+    /**
+     * @return Node inputs collection.
+     */
+    List<Node<T>> inputs();
+
+    /**
+     * @param idx Input index.
+     * @return Node input.
+     */
+    default Node<T> input(int idx) {
+        return inputs().get(idx);
+    }
+
+    /**
+     * Signals that consumer is ready to consume data.
+     */
+    void request();
+
+    /**
+     * Cancels execution.
+     */
+    void cancel();
+
+    /**
+     * Resets execution sub-tree to initial state.
+     */
+    void reset();
 }

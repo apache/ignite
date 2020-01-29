@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,21 +27,27 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.type.RowType;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility methods.
  */
 public final class Commons {
+    /** */
+    public static final RelOptCluster EMPTY_CLUSTER =
+        RelOptCluster.create(NoOpPlanner.INSTANCE, new RexBuilder(new IgniteTypeFactory()));
+
     /** */
     private Commons(){}
 
@@ -51,28 +58,6 @@ public final class Commons {
      */
     public static Context convert(QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
-    }
-
-    /**
-     * Creates a row type for a given type descriptor.
-     */
-    public static RowType rowType(GridQueryTypeDescriptor desc) {
-        RowType.Builder b = RowType.builder();
-
-        Map<String, Class<?>> fields = desc.fields();
-
-        b.key(desc.keyClass()).val(desc.valueClass());
-
-        for (Map.Entry<String, Class<?>> entry : fields.entrySet()) {
-            GridQueryProperty prop = desc.property(entry.getKey());
-
-            if (prop.key())
-                b.keyField(prop.name(), prop.type(), Objects.equals(desc.affinityKey(), prop.name()));
-            else
-                b.field(prop.name(), prop.type());
-        }
-
-        return b.build();
     }
 
     /**
@@ -126,24 +111,76 @@ public final class Commons {
     /**
      * Extracts planner context.
      */
-    public static PlannerContext plannerContext(RelNode rel) {
-        return plannerContext(rel.getCluster().getPlanner().getContext());
+    public static PlanningContext context(RelNode rel) {
+        return context(rel.getCluster().getPlanner().getContext());
     }
 
     /**
      * Extracts planner context.
      */
-    public static PlannerContext plannerContext(Context ctx) {
-        return Objects.requireNonNull(ctx.unwrap(PlannerContext.class));
+    public static PlanningContext context(Context ctx) {
+        return Objects.requireNonNull(ctx.unwrap(PlanningContext.class));
     }
 
     /**
-     * Casts a given rel to IgniteRel.
+     * @param params Parameters.
+     * @return Parameters map.
      */
-    public static IgniteRel igniteRel(RelNode rel) {
-        if (rel.getConvention() != IgniteConvention.INSTANCE)
-            throw new AssertionError("Unexpected node: " + rel);
+    public static Map<String, Object> parametersMap(@Nullable Object[] params) {
+        HashMap<String, Object> res = new HashMap<>();
 
-        return (IgniteRel) rel;
+        return params != null ? populateParameters(res, params) : res;
+    }
+
+    /**
+     * Populates a provided map with given parameters.
+     *
+     * @param dst Map to populate.
+     * @param params Parameters.
+     * @return Parameters map.
+     */
+    public static Map<String, Object> populateParameters(@NotNull Map<String, Object> dst, @Nullable Object[] params) {
+        if (!F.isEmpty(params)) {
+            for (int i = 0; i < params.length; i++) {
+                dst.put("?" + i, params[i]);
+            }
+        }
+        return dst;
+    }
+
+    /**
+     * Lookups a specific component in registered components list.
+     *
+     * @param ctx Kernal context.
+     * @param componentType Component type.
+     * @return Component instance or {@code null} if not found.
+     */
+    public static <T extends GridComponent> T lookupComponent(GridKernalContext ctx, Class<T> componentType) {
+        return ctx.components().stream()
+            .filter(componentType::isInstance)
+            .map(componentType::cast)
+            .findFirst().orElse(null);
+    }
+
+    /**
+     * @param o Object to close.
+     */
+    public static void close(Object o) {
+        if (o instanceof AutoCloseable)
+            U.closeQuiet((AutoCloseable) o);
+    }
+
+    /**
+     * @param o Object to close.
+     * @param e Exception, what causes close.
+     */
+    public static void close(Object o, @Nullable Exception e) {
+        if (!(o instanceof AutoCloseable))
+            return;
+
+        if (e != null)
+            U.closeWithSuppressingException((AutoCloseable) o, e);
+        else
+            U.closeQuiet((AutoCloseable) o);
     }
 }

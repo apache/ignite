@@ -19,20 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 /**
  * Represents an abstract data consumer.
+ *
+ * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request()}, {@link Node#cancel()},
+ * {@link Node#reset()}, {@link Sink#push(Object)} and {@link Sink#end()} methods should be used from one single thread.
  */
 public interface Sink<T> {
-    /** */
-    @SuppressWarnings("rawtypes")
-    Sink NO_OP = new Sink() {
-        /** {@inheritDoc} */
-        @Override public boolean push(Object row) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void end() {}
-    };
-
     /**
      * Pushes a row to consumer.
      * @param row Data row.
@@ -45,11 +36,4 @@ public interface Sink<T> {
      * Signals that data is over.
      */
     void end();
-
-    /**
-     * @return No-op sink object.
-     */
-    static <T> Sink<T> noOp() {
-        return (Sink<T>) NO_OP;
-    }
 }

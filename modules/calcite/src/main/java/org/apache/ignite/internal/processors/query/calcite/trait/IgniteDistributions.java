@@ -26,12 +26,14 @@ import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AnyDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.BroadcastDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.HashDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.RandomDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.SingletonDistribution;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -101,6 +103,26 @@ public class IgniteDistributions {
      */
     public static IgniteDistribution hash(List<Integer> keys, DistributionFunction function) {
         return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), function));
+    }
+
+    /**
+     * @param key Affinity key.
+     * @param cacheId Affinity cache ID.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(int key, int cacheId, Object identity) {
+        return canonize(new DistributionTrait(ImmutableIntList.of(key), new AffinityDistribution(cacheId, identity)));
+    }
+
+    /**
+     * @param key Affinity key.
+     * @param cacheName Affinity cache name.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(int key, String cacheName, Object identity) {
+        return affinity(key, CU.cacheId(cacheName), identity);
     }
 
     /**
@@ -193,7 +215,7 @@ public class IgniteDistributions {
 
         IgniteDistribution out, left, right;
 
-        if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.keys()))) {
+        if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
             HashSet<DistributionFunction> factories = U.newHashSet(3);
 
             if (leftIn.getKeys().equals(joinInfo.leftKeys))

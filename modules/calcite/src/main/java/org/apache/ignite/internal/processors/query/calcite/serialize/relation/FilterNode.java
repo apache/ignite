@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,11 +56,11 @@ public class FilterNode extends RelGraphNode {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
         RexNode condition = this.condition.implement(ctx.getExpressionTranslator());
 
-        return new IgniteFilter(cluster, traits.toTraitSet(cluster), input, condition);
+        return new IgniteFilter(cluster, traitSet(cluster), input, condition);
     }
 }

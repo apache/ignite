@@ -23,9 +23,11 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.Expression;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.Types;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -58,15 +60,15 @@ public class ProjectNode extends RelGraphNode {
      */
     public static ProjectNode create(IgniteProject rel, RexToExpTranslator rexTranslator) {
         return new ProjectNode(rel.getTraitSet(), rexTranslator.translate(rel.getProjects()),
-            DataType.fromType(rel.getRowType()));
+            Types.fromType(rel.getRowType()));
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
         List<RexNode> projects = ctx.getExpressionTranslator().translate(this.projects);
 
-        return new IgniteProject(cluster, traits.toTraitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
+        return new IgniteProject(cluster, traitSet(cluster), input, projects, dataType.toRelDataType(ctx.getTypeFactory()));
     }
 }

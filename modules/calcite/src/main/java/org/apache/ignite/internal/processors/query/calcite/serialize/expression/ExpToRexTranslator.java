@@ -81,7 +81,7 @@ public class ExpToRexTranslator implements ExpImplementor<RexNode> {
 
     /** {@inheritDoc} */
     @Override public RexNode implement(CallExpression exp) {
-        return builder.makeCall(op(exp.name(), exp.syntax()), translate(exp.operands()));
+        return builder.makeCall(exp.dataType().toRelDataType(builder.getTypeFactory()), op(exp.name(), exp.syntax()), translate(exp.operands()));
     }
 
     /** {@inheritDoc} */

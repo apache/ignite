@@ -19,56 +19,60 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
  *
  */
-public class ExecutionTest extends GridCommonAbstractTest {
+public class ExecutionTest extends AbstractExecutionTest {
+    /**
+     * @throws Exception If failed.
+     */
+    @Before
+    @Override public void setup() throws Exception {
+        nodesCount = 1;
+        super.setup();
+    }
+
     @Test
-    public void testSimpleExecution() {
+    public void testSimpleExecution() throws Exception {
         // SELECT P.ID, P.NAME, PR.NAME AS PROJECT
         // FROM PERSON P
         // INNER JOIN PROJECT PR
         // ON P.ID = PR.RESP_ID
         // WHERE P.ID >= 2
 
-        ConsumerNode node = new ConsumerNode();
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
 
-        FilterNode filter = new FilterNode(node.sink(), r -> (Integer) r[0] >= 2);
-        node.source(filter);
-
-        ProjectNode project = new ProjectNode(filter.sink(), r -> new Object[]{r[0], r[1], r[5]});
-        filter.source(project);
-
-        JoinNode join = new JoinNode(project.sink(), (r1, r2) -> r1[0] != r2[1] ? null : new Object[]{r1[0], r1[1], r1[2], r2[0], r2[1], r2[2]});
-        project.source(join);
-
-        ScanNode persons = new ScanNode(join.sink(0), Arrays.asList(
+        ScanNode persons = new ScanNode(ctx, Arrays.asList(
             new Object[]{0, "Igor", "Seliverstov"},
             new Object[]{1, "Roman", "Kondakov"},
             new Object[]{2, "Ivan", "Pavlukhin"},
             new Object[]{3, "Alexey", "Goncharuk"}
         ));
 
-        ScanNode projects = new ScanNode(join.sink(1), Arrays.asList(
+        ScanNode projects = new ScanNode(ctx, Arrays.asList(
             new Object[]{0, 2, "Calcite"},
             new Object[]{1, 1, "SQL"},
             new Object[]{2, 2, "Ignite"},
             new Object[]{3, 0, "Core"}
         ));
 
-        join.sources(Arrays.asList(persons, projects));
+        JoinNode join = new JoinNode(ctx, persons, projects, (r1, r2) -> r1[0] != r2[1] ? null : new Object[]{r1[0], r1[1], r1[2], r2[0], r2[1], r2[2]});
+        ProjectNode project = new ProjectNode(ctx, join, r -> new Object[]{r[0], r[1], r[5]});
+        FilterNode filter = new FilterNode(ctx, project, r -> (Integer) r[0] >= 2);
+        ConsumerNode node = new ConsumerNode(ctx, filter, 1);
 
         assert node.hasNext();
 
         ArrayList<Object[]> rows = new ArrayList<>();
 
-        while (node.hasNext()) {
+        while (node.hasNext())
             rows.add(node.next());
-        }
 
         assertEquals(2, rows.size());
 

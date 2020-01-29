@@ -18,18 +18,26 @@
 package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
+import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
+import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 
 /**
  * Fragment of distributed query
@@ -39,10 +47,10 @@ public class Fragment implements RelSource {
     private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */
-    private final long exchangeId = ID_GEN.getAndIncrement();
+    private final long id;
 
     /** */
-    private final RelNode root;
+    private final IgniteRel root;
 
     /** */
     private NodesMapping mapping;
@@ -50,23 +58,30 @@ public class Fragment implements RelSource {
     /**
      * @param root Root node of the fragment.
      */
-    public Fragment(RelNode root) {
+    public Fragment(IgniteRel root) {
+        this(ID_GEN.getAndIncrement(), root);
+    }
+
+    /**
+     * @param id Fragment id.
+     * @param root Root node of the fragment.
+     */
+    public Fragment(long id, IgniteRel root){
+        this.id = id;
         this.root = root;
     }
 
     /**
      * Inits fragment and its dependencies. Mainly init process consists of data location calculation.
      *
+     * @param mappingService Mapping service.
      * @param ctx Planner context.
      * @param mq Metadata query used for data location calculation.
      */
-    public void init(PlannerContext ctx, RelMetadataQuery mq) {
+    public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
         FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
 
-        if (info.mapping() == null)
-            mapping = remote() ? ctx.mapForRandom() : ctx.mapForLocal();
-        else
-            mapping = info.mapping().deduplicate();
+        mapping = fragmentMapping(mappingService, ctx, info, mq);
 
         ImmutableList<Pair<IgniteReceiver, RelSource>> sources = info.sources();
 
@@ -75,30 +90,21 @@ public class Fragment implements RelSource {
                 IgniteReceiver receiver = input.left;
                 RelSource source = input.right;
 
-                source.init(mapping, receiver.distribution(), ctx, mq);
+                source.bindToTarget(new RelTargetImpl(id, mapping, receiver.distribution()), mappingService, ctx, mq);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long exchangeId() {
-        return exchangeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void init(NodesMapping mapping, IgniteDistribution distribution, PlannerContext ctx, RelMetadataQuery mq) {
-        assert remote();
-
-        ((IgniteSender) root).target(new RelTargetImpl(exchangeId, mapping, distribution));
-
-        init(ctx, mq);
     }
 
     /**
      * @return Root node.
      */
-    public RelNode root() {
+    public IgniteRel root() {
         return root;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -106,8 +112,47 @@ public class Fragment implements RelSource {
         return mapping;
     }
 
+    /** {@inheritDoc} */
+    @Override public void bindToTarget(RelTarget target, MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
+        assert !local();
+
+        ((IgniteSender) root).target(target);
+
+        init(mappingService, ctx, mq);
+    }
+
     /** */
-    private boolean remote() {
-        return root instanceof IgniteSender;
+    public boolean local() {
+        return !(root instanceof IgniteSender);
+    }
+
+    /** */
+    private NodesMapping fragmentMapping(MappingService mappingService, PlanningContext ctx, FragmentInfo info, RelMetadataQuery mq) {
+        NodesMapping mapping;
+
+        try {
+            if (info.mapped())
+                mapping = local() ? localMapping(ctx).mergeWith(info.mapping()) : info.mapping();
+            else if (local())
+                mapping = localMapping(ctx);
+            else {
+                RelDistribution.Type type = IgniteMdDistribution._distribution(root, mq).getType();
+
+                boolean single = type == SINGLETON || type == BROADCAST_DISTRIBUTED;
+
+                // TODO selection strategy.
+                mapping = mappingService.mapBalanced(ctx.topologyVersion(), single ? 1 : 0, null);
+            }
+        }
+        catch (LocationMappingException e) {
+            throw new OptimisticPlanningException("Failed to calculate physical distribution", new Edge(null, root, -1));
+        }
+
+        return mapping.deduplicate();
+    }
+
+    /** */
+    private NodesMapping localMapping(PlanningContext ctx) {
+        return new NodesMapping(Collections.singletonList(ctx.localNodeId()), null, (byte) (NodesMapping.CLIENT | NodesMapping.DEDUPLICATED));
     }
 }

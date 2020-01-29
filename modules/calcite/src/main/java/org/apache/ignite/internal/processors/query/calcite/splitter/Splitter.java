@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
@@ -35,8 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
-
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.igniteRel;
 
 /**
  * Splits a query into a list of query fragments.
@@ -57,28 +53,13 @@ public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, Q
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteExchange rel) {
-        RelOptCluster cluster = rel.getCluster();
-        IgniteRel input = visit(igniteRel(rel.getInput()));
-
-        RelTraitSet inTraits = input.getTraitSet();
-        RelTraitSet outTraits = rel.getTraitSet();
-
-        Fragment fragment = new Fragment(new IgniteSender(cluster, inTraits, input));
-
-        fragments.add(fragment);
-
-        return new IgniteReceiver(cluster, outTraits, input.getRowType(), fragment);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteFilter rel) {
-        return visitChild(rel);
+        return visitChildren(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteProject rel) {
-        return visitChild(rel);
+        return visitChildren(rel);
     }
 
     /** {@inheritDoc} */
@@ -106,31 +87,40 @@ public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, Q
         throw new AssertionError("An attempt to split an already split task.");
     }
 
-    /**
-     * Visits all children of a parent.
-     */
-    private IgniteRel visitChildren(IgniteRel rel) {
-        for (Ord<RelNode> input : Ord.zip(rel.getInputs()))
-            visitChild(rel, input.i, igniteRel(input.e));
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteExchange rel) {
+        RelOptCluster cluster = rel.getCluster();
+        IgniteRel input = visit((IgniteRel) rel.getInput());
 
-        return rel;
+        RelTraitSet inTraits = input.getTraitSet();
+        RelTraitSet outTraits = rel.getTraitSet();
+
+        Fragment fragment = new Fragment(new IgniteSender(cluster, inTraits, input));
+
+        fragments.add(fragment);
+
+        return new IgniteReceiver(cluster, outTraits, input.getRowType(), fragment);
     }
 
     /**
-     * Visits a single child of a parent.
+     * Visits all children of a parent.
      */
-    private <T extends SingleRel & IgniteRel> IgniteRel visitChild(T rel) {
-        visitChild(rel, 0, igniteRel(rel.getInput()));
+    private <T extends RelNode> T visitChildren(RelNode rel) {
+        List<RelNode> inputs = rel.getInputs();
 
-        return rel;
+        for (int i = 0; i < inputs.size(); i++)
+            visitChild(rel, i, inputs.get(i));
+
+        return (T)rel;
     }
 
     /**
      * Visits a particular child of a parent and replaces the child if it was changed.
      */
-    private void visitChild(IgniteRel parent, int i, IgniteRel child) {
-        IgniteRel child2 = visit(child);
-        if (child2 != child)
-            parent.replaceInput(i, child2);
+    private void visitChild(RelNode parent, int i, RelNode child) {
+        IgniteRel newChild = visit((IgniteRel) child);
+
+        if (newChild != child)
+            parent.replaceInput(i, newChild);
     }
 }

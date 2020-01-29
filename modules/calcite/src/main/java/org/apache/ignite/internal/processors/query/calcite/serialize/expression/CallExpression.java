@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize.expression;
 
 import java.util.List;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSyntax;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.Types;
 
 /**
  * Describes {@link org.apache.calcite.rex.RexCall}.
@@ -32,15 +35,20 @@ public class CallExpression implements Expression {
     private final SqlSyntax opSyntax;
 
     /** */
+    private DataType type;
+
+    /** */
     private final List<Expression> operands;
 
     /**
      * @param op Sql operation.
+     * @param type Result type.
      * @param operands Operands.
      */
-    public CallExpression(SqlOperator op, List<Expression> operands) {
-        this.operands = operands;
+    public CallExpression(SqlOperator op, RelDataType type, List<Expression> operands) {
         opName = op.getName();
+        this.type = Types.fromType(type);
+        this.operands = operands;
         opSyntax = op.getSyntax();
     }
 
@@ -56,6 +64,13 @@ public class CallExpression implements Expression {
      */
     public SqlSyntax syntax() {
         return opSyntax;
+    }
+
+    /**
+     * @return Data type.
+     */
+    public DataType dataType() {
+        return type;
     }
 
     /**

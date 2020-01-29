@@ -38,7 +38,7 @@ public class StructType implements DataType {
         LinkedHashMap<String, DataType> fields = new LinkedHashMap<>();
 
         for (RelDataTypeField field : type.getFieldList())
-            fields.put(field.getName(), DataType.fromType(field.getType()));
+            fields.put(field.getName(), Types.fromType(field.getType()));
 
         return new StructType(fields);
     }

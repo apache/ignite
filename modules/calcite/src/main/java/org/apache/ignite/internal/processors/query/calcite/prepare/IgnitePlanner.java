@@ -20,13 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import java.util.List;
-import java.util.Properties;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.config.CalciteConnectionConfigImpl;
-import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -47,7 +43,6 @@ import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.schema.SchemaPlus;
@@ -73,10 +68,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
-import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
@@ -93,7 +84,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final FrameworkConfig frameworkConfig;
 
     /** */
-    private final Context context;
+    private final PlanningContext ctx;
 
     /** */
     private final CalciteConnectionConfig connectionConfig;
@@ -112,7 +103,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final SqlRexConvertletTable convertletTable;
 
     /** */
-    private final RexExecutor executor;
+    private final RexExecutor rexExecutor;
 
     /** */
     private final SchemaPlus defaultSchema;
@@ -133,42 +124,26 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private SqlValidator validator;
 
     /**
-     * @param config Framework config.
+     * @param ctx Planner context.
      */
-    public IgnitePlanner(FrameworkConfig config) {
-        frameworkConfig = config;
-        defaultSchema = config.getDefaultSchema();
-        operatorTable = config.getOperatorTable();
-        programs = config.getPrograms();
-        parserConfig = config.getParserConfig();
-        sqlToRelConverterConfig = config.getSqlToRelConverterConfig();
-        traitDefs = config.getTraitDefs();
-        convertletTable = config.getConvertletTable();
-        executor = config.getExecutor();
-        context = config.getContext();
-        connectionConfig = connConfig();
+    IgnitePlanner(PlanningContext ctx) {
+        this.ctx = ctx;
 
-        RelDataTypeSystem typeSystem = connectionConfig
-            .typeSystem(RelDataTypeSystem.class, IgniteTypeSystem.DEFAULT);
+        frameworkConfig = ctx.frameworkConfig();
+        connectionConfig = ctx.connectionConfig();
+        typeFactory = ctx.typeFactory();
 
-        typeFactory = new IgniteTypeFactory(typeSystem);
-
-        Commons.plannerContext(context).planner(this);
+        defaultSchema = frameworkConfig.getDefaultSchema();
+        operatorTable = frameworkConfig.getOperatorTable();
+        programs = frameworkConfig.getPrograms();
+        parserConfig = frameworkConfig.getParserConfig();
+        sqlToRelConverterConfig = frameworkConfig.getSqlToRelConverterConfig();
+        convertletTable = frameworkConfig.getConvertletTable();
+        rexExecutor = frameworkConfig.getExecutor();
+        traitDefs = frameworkConfig.getTraitDefs();
     }
 
-    /** */
-    private CalciteConnectionConfig connConfig() {
-        CalciteConnectionConfig unwrapped = context.unwrap(CalciteConnectionConfig.class);
-        if (unwrapped != null)
-            return unwrapped;
 
-        Properties properties = new Properties();
-        properties.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
-            String.valueOf(parserConfig.caseSensitive()));
-        properties.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
-            String.valueOf(frameworkConfig.getParserConfig().conformance()));
-        return new CalciteConnectionConfigImpl(properties);
-    }
 
     /** {@inheritDoc} */
     @Override public RelTraitSet getEmptyTraitSet() {
@@ -191,11 +166,18 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         open = false;
     }
 
+    /**
+     * @return Planner context.
+     */
+    public PlanningContext context() {
+        return ctx;
+    }
+
     /** */
     private void ready() {
         if (!open) {
-            planner = VolcanoUtils.impatient(new VolcanoPlanner(frameworkConfig.getCostFactory(), context));
-            planner.setExecutor(executor);
+            planner = VolcanoUtils.impatient(new VolcanoPlanner(frameworkConfig.getCostFactory(), ctx));
+            planner.setExecutor(rexExecutor);
             metadataProvider = new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner);
 
             validator = new IgniteSqlValidator(operatorTable(), createCatalogReader(), typeFactory, conformance());
@@ -246,21 +228,27 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param graph Relational nodes tree representation.
      * @return Root node of relational tree.
      */
-    public RelNode convert(RelGraph graph) {
+    public IgniteRel convert(RelGraph graph) {
         ready();
 
-        RelOptCluster cluster = createCluster(createRexBuilder());
+        RelOptCluster cluster = createCluster();
         RelBuilder relBuilder = createRelBuilder(cluster, createCatalogReader());
 
         return new GraphToRelConverter(this, relBuilder, operatorTable).convert(graph);
+    }
+
+    /** Creates a cluster. */
+    RelOptCluster createCluster() {
+        ready();
+
+        return createCluster(createRexBuilder());
     }
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
         ready();
 
-        RexBuilder rexBuilder = createRexBuilder();
-        RelOptCluster cluster = createCluster(rexBuilder);
+        RelOptCluster cluster = createCluster();
         SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
             .withConfig(sqlToRelConverterConfig)
             .withTrimUnusedFields(false)
@@ -273,20 +261,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         RelBuilder relBuilder = createRelBuilder(cluster, null);
         root = root.withRel(RelDecorrelator.decorrelateQuery(root.rel, relBuilder));
         return root;
-    }
-
-    /**
-     * Splits relational nodes tree into fragments and returns a query plan.
-     * @param rel Root node of relational tree.
-     * @return Query plan.
-     */
-    public QueryPlan plan(RelNode rel) {
-        ready();
-
-        if (rel.getConvention() != IgniteConvention.INSTANCE)
-            throw new IllegalArgumentException("Physical node is required.");
-
-        return new Splitter().go((IgniteRel) rel);
     }
 
     /**
@@ -323,8 +297,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlValidator validator = new IgniteSqlValidator(operatorTable(), catalogReader, typeFactory, conformance);
         validator.setIdentifierExpansion(true);
 
-        RexBuilder rexBuilder = createRexBuilder();
-        RelOptCluster cluster = createCluster(rexBuilder);
+        RelOptCluster cluster = createCluster();
         SqlToRelConverter.Config config = SqlToRelConverter
             .configBuilder()
             .withConfig(sqlToRelConverterConfig)
@@ -369,7 +342,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @param targetTraits Target traits.
      * @return The root of the new RelNode tree.
      */
-    public RelNode transform(PlannerType plannerType, PlannerPhase plannerPhase, RelNode input, RelTraitSet targetTraits)  {
+    public <T extends RelNode> T transform(PlannerType plannerType, PlannerPhase plannerPhase, RelNode input, RelTraitSet targetTraits)  {
         ready();
 
         RelTraitSet toTraits = targetTraits.simplify();
@@ -380,12 +353,12 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             case HEP:
                 final HepProgramBuilder programBuilder = new HepProgramBuilder();
 
-                for (RelOptRule rule : plannerPhase.getRules(Commons.plannerContext(context))) {
+                for (RelOptRule rule : plannerPhase.getRules(Commons.context(ctx))) {
                     programBuilder.addRuleInstance(rule);
                 }
 
                 final HepPlanner hepPlanner =
-                    new HepPlanner(programBuilder.build(), context, true, null, RelOptCostImpl.FACTORY);
+                    new HepPlanner(programBuilder.build(), ctx, true, null, RelOptCostImpl.FACTORY);
 
                 hepPlanner.setRoot(input);
 
@@ -396,7 +369,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
                 break;
             case VOLCANO:
-                Program program = Programs.of(plannerPhase.getRules(Commons.plannerContext(context)));
+                Program program = Programs.of(plannerPhase.getRules(Commons.context(ctx)));
 
                 output = program.run(planner, input, toTraits,
                     ImmutableList.of(), ImmutableList.of());
@@ -406,7 +379,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                 throw new AssertionError("Unknown planner type: " + plannerType);
         }
 
-        return output;
+        return (T) output;
     }
 
     /** {@inheritDoc} */

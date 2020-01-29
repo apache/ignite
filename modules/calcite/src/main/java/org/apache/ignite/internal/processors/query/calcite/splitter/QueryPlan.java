@@ -22,9 +22,10 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
@@ -44,18 +45,26 @@ public class QueryPlan {
     }
 
     /**
+     * @return Query fragments.
+     */
+    public List<Fragment> fragments() {
+        return fragments;
+    }
+
+    /**
      * Inits query fragments.
      *
+     * @param mappingService Mapping service.
      * @param ctx Planner context.
      */
-    public void init(PlannerContext ctx) {
+    public void init(MappingService mappingService, PlanningContext ctx) {
         int i = 0;
 
         RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
 
         while (true) {
             try {
-                F.first(fragments).init(ctx, mq);
+                F.first(fragments).init(mappingService, ctx, mq);
 
                 break;
             }
@@ -75,15 +84,29 @@ public class QueryPlan {
 
                 fragments.add(fragment);
 
-                parent.replaceInput(edge.childIndex(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
+                if (parent != null)
+                    parent.replaceInput(edge.childIndex(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
+                else {
+                    // need to fix a distribution of a root of a fragment
+                    int idx = 0;
+
+                    for (; idx < fragments.size(); idx++) {
+                        if (fragments.get(idx).root() == child)
+                            break;
+                    }
+
+                    assert idx < fragments.size();
+
+                    fragments.set(idx, new Fragment(new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment)));
+                }
             }
         }
     }
 
     /**
-     * @return Query fragments.
+     * Clones this plan with a new cluster.
      */
-    public List<Fragment> fragments() {
-        return fragments;
+    public QueryPlan clone(RelOptCluster cluster) {
+        return new Cloner(cluster).go(this);
     }
 }

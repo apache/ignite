@@ -104,7 +104,8 @@ public enum IgniteComponentType {
     QUERY_ENGINE(
         NoOpQueryEngine.class.getName(),
         "org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor",
-        "ignite-calcite"
+        "ignite-calcite",
+        "org.apache.ignite.internal.processors.query.calcite.message.CalciteMessageFactory"
     );
 
     /** No-op class name. */

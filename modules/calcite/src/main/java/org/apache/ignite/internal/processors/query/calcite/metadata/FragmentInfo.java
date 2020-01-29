@@ -71,6 +71,13 @@ public class FragmentInfo {
     }
 
     /**
+     * @return {@code True} if the fragment has nodes mapping.
+     */
+    public boolean mapped() {
+        return mapping != null;
+    }
+
+    /**
      * @return Pairs of underlying Receiver relational nodes and theirs data source information.
      */
     public ImmutableList<Pair<IgniteReceiver, RelSource>> sources() {
@@ -99,9 +106,8 @@ public class FragmentInfo {
         if (mapping != null) {
             NodesMapping newMapping = mapping.prune(filter);
 
-            if (newMapping != mapping) {
+            if (newMapping != mapping)
                 return new FragmentInfo(sources, newMapping);
-            }
         }
 
         return this;

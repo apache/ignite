@@ -126,7 +126,6 @@ import static java.util.Objects.nonNull;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.IgniteComponentType.QUERY_ENGINE;
 import static org.apache.ignite.internal.binary.BinaryUtils.fieldTypeName;
 import static org.apache.ignite.internal.binary.BinaryUtils.typeByClass;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
@@ -162,9 +161,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private final @Nullable GridQueryIndexing idx;
-
-    /** */
-    private final @Nullable QueryEngine qryEngine;
 
     /** Value object context. */
     private final CacheQueryObjectValueContext valCtx;
@@ -225,18 +221,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     public GridQueryProcessor(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx);
 
-        boolean inBoundIndexingEnabled = false;
-
         if (idxCls != null) {
             idx = U.newInstance(idxCls);
 
             idxCls = null;
         }
         else
-            idx = (inBoundIndexingEnabled = INDEXING.inClassPath()) ? U.newInstance(INDEXING.className()) : null;
-
-        // At now experimental engine uses some logic of old one and cannot work separately.
-        qryEngine = inBoundIndexingEnabled ? QUERY_ENGINE.createOptional() : null;
+            idx = INDEXING.inClassPath() ? U.<GridQueryIndexing>newInstance(INDEXING.className()) : null;
 
         valCtx = new CacheQueryObjectValueContext(ctx);
 
@@ -258,14 +249,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
-
-        // Have to start engine first because it registers schema listeners which has
-        // to be notified at the time the indexing module registers schema objects
-        if (qryEngine != null) {
-            ctx.resource().injectGeneric(qryEngine);
-
-            qryEngine.start(ctx);
-        }
 
         if (idx != null) {
             ctx.resource().injectGeneric(idx);
@@ -716,18 +699,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         checkxEnabled();
 
         return idx;
-    }
-
-    /**
-     * @return Query engine.
-     * @throws IgniteException If module is not enabled.
-     */
-    public QueryEngine getQueryEngine() throws IgniteException {
-        if (qryEngine == null)
-            throw new IgniteException("Failed to execute query using experimental engine (consider adding module " +
-                QUERY_ENGINE.module() + " to classpath or moving it from 'optional' to 'libs' folder).");
-
-        return qryEngine;
     }
 
     /**

@@ -17,40 +17,118 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Collections;
+import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ * Abstract node of execution tree.
  */
 public abstract class AbstractNode<T> implements Node<T> {
-    /** */
-    protected final Sink<T> target;
+    /** for debug purpose */
+    private volatile Thread thread;
 
     /** */
-    protected List<Source> sources;
+    private final ImmutableList<Node<T>> inputs;
+
+    /** */
+    private Sink<T> target;
 
     /**
-     * @param target Target.
+     * {@link Inbox} node may not have proper context at creation time in case it
+     * creates on first message received from a remote source. This case the context
+     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
      */
-    protected AbstractNode(Sink<T> target) {
-        this.target = target;
+    private ExecutionContext ctx;
+
+    /**
+     * @param ctx Execution context.
+     */
+    protected AbstractNode(ExecutionContext ctx) {
+        this(ctx, ImmutableList.of());
+    }
+
+    /**
+     * @param ctx Execution context.
+     */
+    protected AbstractNode(ExecutionContext ctx, @NotNull Node<T> input) {
+        this(ctx, ImmutableList.of(input));
+    }
+
+    /**
+     * @param ctx Execution context.
+     */
+    protected AbstractNode(ExecutionContext ctx, @NotNull List<Node<T>> inputs) {
+        this.ctx = ctx;
+        this.inputs = ImmutableList.copyOf(inputs);
     }
 
     /** {@inheritDoc} */
-    @Override public void sources(List<Source> sources) {
-        this.sources = Collections.unmodifiableList(sources);
-    }
-
-    /**
-     * @param idx Index of a source to signal/
-     */
-    public void signal(int idx) {
-        sources.get(idx).signal();
+    @Override public void target(Sink<T> sink) {
+        target = sink;
     }
 
     /** {@inheritDoc} */
-    @Override public void signal() {
-        sources.forEach(Source::signal);
+    @Override public Sink<T> target() {
+        return target;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Node<T>> inputs() {
+        return inputs;
+    }
+
+    /** */
+    protected void context(ExecutionContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutionContext context() {
+        return ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void request() {
+        checkThread();
+
+        inputs().forEach(Node::request);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        checkThread();
+
+        context().setCancelled();
+        inputs().forEach(Node::cancel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        checkThread();
+
+        inputs().forEach(Node::reset);
+    }
+
+    /**
+     * Links the node inputs to the node sinks.
+     */
+    protected void link() {
+        for (int i = 0; i < inputs.size(); i++)
+            inputs.get(i).target(sink(i));
+    }
+
+    /** */
+    protected void checkThread() {
+        if (!U.assertionsEnabled())
+            return;
+
+        if (thread == null)
+            thread = Thread.currentThread();
+        else
+            assert thread == Thread.currentThread();
     }
 }

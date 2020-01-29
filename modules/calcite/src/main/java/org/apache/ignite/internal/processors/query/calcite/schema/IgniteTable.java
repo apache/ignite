@@ -18,14 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
@@ -35,111 +39,186 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.type.RowType;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.TableScan;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /** */
-public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable {
+public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable, DistributedTable, SortedTable {
     /** */
-    private final String tableName;
+    private final String name;
 
     /** */
-    private final String cacheName;
+    private final TableDescriptor desc;
 
     /** */
-    private final RowType rowType;
-
-    /** */
-    private final Object identityKey;
+    private final Statistic statistic;
 
     /**
-     * @param tableName Table name.
-     * @param cacheName Cache name.
-     * @param rowType Row type.
-     * @param identityKey Affinity identity key.
+     * @param name Table full name.
      */
-    public IgniteTable(String tableName, String cacheName, RowType rowType, Object identityKey) {
-        this.tableName = tableName;
-        this.cacheName = cacheName;
-        this.rowType = rowType;
-        this.identityKey = identityKey;
+    public IgniteTable(String name, TableDescriptor desc) {
+        this.name = name;
+        this.desc = desc;
+
+        statistic = new StatisticsImpl();
     }
 
     /**
-     * @return Table name;
+     * @return Table name.
      */
-    public String tableName() {
-        return tableName;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
+    public String name() {
+        return name;
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return rowType.asRelDataType(typeFactory);
+        return desc.apply(typeFactory);
     }
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
-        return new TableStatistics();
+        return statistic;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-                .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
+            .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
+            .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
         return new IgniteTableScan(cluster, traitSet, relOptTable);
     }
 
-    /**
-     * @return Table distribution trait.
-     */
-    public IgniteDistribution distribution() {
-        Object key = identityKey();
+    /** {@inheritDoc} */
+    @Override public NodesMapping mapping(PlanningContext ctx) {
+        GridCacheContext<?, ?> cctx = desc.cacheContext();
 
-        if (key == null)
-            return IgniteDistributions.broadcast();
+        assert cctx != null;
 
-        return IgniteDistributions.hash(rowType.distributionKeys(), new DistributionFunction.AffinityDistribution(CU.cacheId(cacheName), key));
+        if (!cctx.gate().enterIfNotStopped())
+            throw U.convertException(new CacheStoppedException(cctx.name()));
+
+        try {
+            if (cctx.isReplicated())
+                return replicatedMapping(cctx, ctx.topologyVersion());
+
+            return partitionedMapping(cctx, ctx.topologyVersion());
+        }
+        finally {
+            cctx.gate().leave();
+        }
     }
 
-    /**
-     * @return Affinity identity key.
-     */
-    protected Object identityKey() {
-        return identityKey;
+    /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return desc.distribution();
     }
 
-    /**
-     * @param ctx Planner context.
-     * @return Fragment meta information.
-     */
-    public FragmentInfo fragmentInfo(PlannerContext ctx) {
-        return new FragmentInfo(ctx.mapForCache(CU.cacheId(cacheName)));
+    /** {@inheritDoc} */
+    @Override public List<RelCollation> collations() {
+        return desc.collations();
     }
 
     /** {@inheritDoc} */
     @Override public Enumerable<Object[]> scan(DataContext root) {
-        throw new AssertionError(); // TODO
+        return Linq4j.asEnumerable(new TableScan((ExecutionContext) root, desc));
     }
 
     /** */
-    private class TableStatistics implements Statistic {
+    private NodesMapping partitionedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
+        byte flags = NodesMapping.HAS_PARTITIONED_CACHES;
+
+        List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
+        List<List<UUID>> res;
+
+        if (cctx.config().getWriteSynchronizationMode() == CacheWriteSynchronizationMode.PRIMARY_SYNC) {
+            res = new ArrayList<>(assignments.size());
+
+            for (List<ClusterNode> partNodes : assignments)
+                res.add(F.isEmpty(partNodes) ? Collections.emptyList() : Collections.singletonList(F.first(partNodes).id()));
+        }
+        else if (!cctx.topology().rebalanceFinished(topVer)) {
+            res = new ArrayList<>(assignments.size());
+
+            flags |= NodesMapping.HAS_MOVING_PARTITIONS;
+
+            for (int part = 0; part < assignments.size(); part++) {
+                List<ClusterNode> partNodes = assignments.get(part);
+                List<UUID> partIds = new ArrayList<>(partNodes.size());
+
+                for (ClusterNode node : partNodes) {
+                    if (cctx.topology().partitionState(node.id(), part) == GridDhtPartitionState.OWNING)
+                        partIds.add(node.id());
+                }
+
+                res.add(partIds);
+            }
+        }
+        else
+            res = Commons.transform(assignments, nodes -> Commons.transform(nodes, ClusterNode::id));
+
+        return new NodesMapping(null, res, flags);
+    }
+
+    /** */
+    private NodesMapping replicatedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
+        byte flags = NodesMapping.HAS_REPLICATED_CACHES;
+
+        if (cctx.config().getNodeFilter() != null)
+            flags |= NodesMapping.PARTIALLY_REPLICATED;
+
+        GridDhtPartitionTopology topology = cctx.topology();
+
+        List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.cacheId());
+        List<UUID> res;
+
+        if (!topology.rebalanceFinished(topVer)) {
+            flags |= NodesMapping.PARTIALLY_REPLICATED;
+
+            res = new ArrayList<>(nodes.size());
+
+            int parts = topology.partitions();
+
+            for (ClusterNode node : nodes) {
+                if (isOwner(node.id(), topology, parts))
+                    res.add(node.id());
+            }
+        }
+        else
+            res = Commons.transform(nodes, ClusterNode::id);
+
+        return new NodesMapping(res, null, flags);
+    }
+
+    /** */
+    private boolean isOwner(UUID nodeId, GridDhtPartitionTopology topology, int parts) {
+        for (int p = 0; p < parts; p++) {
+            if (topology.partitionState(nodeId, p) != GridDhtPartitionState.OWNING)
+                return false;
+        }
+        return true;
+    }
+
+    /** */
+    private class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */
         @Override public Double getRowCount() {
             return null;
@@ -157,11 +236,11 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
 
         /** {@inheritDoc} */
         @Override public List<RelCollation> getCollations() {
-            return ImmutableList.of();
+            return collations();
         }
 
         /** {@inheritDoc} */
-        @Override public RelDistribution getDistribution() {
+        @Override public IgniteDistribution getDistribution() {
             return distribution();
         }
     }

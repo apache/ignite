@@ -17,31 +17,75 @@
 
 package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.serialize.GraphNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 
 /**
  * A superclass of all relational nodes representations.
  */
-public abstract class RelGraphNode implements GraphNode {
+public abstract class RelGraphNode implements Serializable {
     /** */
-    protected SerializedTraits traits;
+    private final List<Serializable> traits;
 
     /**
      * @param traits Traits of this relational expression.
      */
     protected RelGraphNode(RelTraitSet traits) {
-        this.traits = new SerializedTraits(traits);
+        assert traits.contains(IgniteConvention.INSTANCE);
+
+        List<Serializable> list = new ArrayList<>(traits.size() - 1);
+
+        for (RelTrait trait : traits) {
+            if (trait != IgniteConvention.INSTANCE)
+                list.add(toSerializable(trait));
+        }
+
+        this.traits = list;
     }
 
     /**
-     * Converts representation to particular RelNode.
+     * Perform back conversion of serializable traits representation to trait set.
+     *
+     * @param cluster Cluster.
+     * @return Trait set.
+     */
+    protected RelTraitSet traitSet(RelOptCluster cluster) {
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+
+        for (Serializable trait : this.traits)
+            traits = traits.replace(fromSerializable(trait));
+
+        return traits.simplify();
+    }
+
+    /** Converts a trait to its serializable representation. */
+    private Serializable toSerializable(RelTrait trait) {
+        if (trait instanceof Serializable)
+            return (Serializable) trait;
+
+        throw new AssertionError();
+    }
+
+    /** Converts a serializable representation of a trait to a trait itself. */
+    private RelTrait fromSerializable(Serializable trait) {
+        if (trait instanceof RelTrait)
+            return (RelTrait) trait;
+
+        throw new AssertionError();
+    }
+
+    /**
+     * Converts representation to particular IgniteRel.
      *
      * @param ctx Conversion context.
      * @param children Input rels.
      * @return RelNode.
      */
-    public abstract RelNode toRel(ConversionContext ctx, List<RelNode> children);
+    public abstract IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children);
 }

@@ -21,18 +21,20 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.jetbrains.annotations.Nullable;
 
 /** No op implementation. */
-public class NoOpQueryEngine implements QueryEngine {
-    /** {@inheritDoc} */
-    @Override public void start(GridKernalContext ctx) {}
+public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine {
+    /**
+     * @param ctx Kernal context.
+     */
+    public NoOpQueryEngine(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** {@inheritDoc} */
-    @Override public void stop() {}
-
-    /** {@inheritDoc} */
-    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String query, Object... params) throws IgniteSQLException {
+    @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String query, Object... params) throws IgniteSQLException {
         return Collections.emptyList();
     }
 }

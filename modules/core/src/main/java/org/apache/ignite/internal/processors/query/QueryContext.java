@@ -50,7 +50,7 @@ public final class QueryContext {
      * @param params Context parameters.
      * @return Query context.
      */
-    public static QueryContext of(Object... params) {
+    public static QueryContext of(String schemaName, Object... params) {
         return !F.isEmpty(params) ? new QueryContext(build(null, params).toArray()) : new QueryContext(EMPTY);
     }
 

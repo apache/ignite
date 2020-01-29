@@ -23,13 +23,13 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.ExpToRexTranslator;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,8 +70,8 @@ public class GraphToRelConverter implements ConversionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PlannerContext getContext() {
-        return Commons.plannerContext(getCluster().getPlanner().getContext());
+    @Override public PlanningContext getContext() {
+        return Commons.context(getCluster().getPlanner().getContext());
     }
 
     /** {@inheritDoc} */
@@ -95,13 +95,13 @@ public class GraphToRelConverter implements ConversionContext {
      * @param graph RelGraph.
      * @return RelNode tree.
      */
-    public RelNode convert(RelGraph graph) {
+    public IgniteRel convert(RelGraph graph) {
         return F.first(convertRecursive(this, graph, graph.nodes().subList(0, 1)));
     }
 
     /** */
-    private List<RelNode> convertRecursive(ConversionContext ctx, RelGraph graph, List<Ord<RelGraphNode>> src) {
-        ImmutableList.Builder<RelNode> b = ImmutableList.builder();
+    private List<IgniteRel> convertRecursive(ConversionContext ctx, RelGraph graph, List<Ord<RelGraphNode>> src) {
+        ImmutableList.Builder<IgniteRel> b = ImmutableList.builder();
 
         for (Ord<RelGraphNode> node : src)
             b.add(node.e.toRel(ctx, convertRecursive(ctx, graph, graph.children(node.i))));

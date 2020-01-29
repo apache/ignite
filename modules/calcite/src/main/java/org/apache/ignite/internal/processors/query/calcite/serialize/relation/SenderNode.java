@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelTarget;
 import org.apache.ignite.internal.util.typedef.F;
@@ -53,10 +54,10 @@ public class SenderNode extends RelGraphNode {
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode toRel(ConversionContext ctx, List<RelNode> children) {
+    @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
         RelNode input = F.first(children);
         RelOptCluster cluster = input.getCluster();
 
-        return new IgniteSender(cluster, traits.toTraitSet(cluster), input, target);
+        return new IgniteSender(cluster, traitSet(cluster), input, target);
     }
 }

@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.Collections;
 import java.util.Objects;
 
 /**
  * A node with a single input
  */
 public interface SingleNode<T> extends Node<T> {
-
     /**
      * @return Single sink object.
      */
@@ -33,10 +31,9 @@ public interface SingleNode<T> extends Node<T> {
     }
 
     /**
-     * Registers a single source.
-     * @param source Source.
+     * @return Single input.
      */
-    default void source(Source source) {
-        sources(Collections.singletonList(source));
+    default Node<T> input() {
+        return Objects.requireNonNull(input(0));
     }
 }

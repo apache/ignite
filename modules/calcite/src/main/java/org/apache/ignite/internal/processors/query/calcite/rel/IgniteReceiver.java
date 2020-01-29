@@ -21,6 +21,8 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.splitter.RelSource;
@@ -71,5 +73,12 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
      */
     public IgniteDistribution distribution() {
         return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    /**
+     * @return Node collations.
+     */
+    public List<RelCollation> collations() {
+        return getTraitSet().getTraits(RelCollationTraitDef.INSTANCE);
     }
 }

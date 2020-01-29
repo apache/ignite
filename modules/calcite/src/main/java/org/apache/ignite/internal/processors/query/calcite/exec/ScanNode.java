@@ -18,18 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
-import java.util.List;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ * Scan node.
  */
-public class ScanNode implements SingleNode<Object[]> {
-    /** */
-    private static final Object[] END = new Object[0];
-
-    /** */
-    private final Sink<Object[]> target;
-
+public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, AutoCloseable {
     /** */
     private final Iterable<Object[]> source;
 
@@ -37,48 +31,83 @@ public class ScanNode implements SingleNode<Object[]> {
     private Iterator<Object[]> it;
 
     /** */
-    private Object[] row;
+    private Object row;
 
     /**
-     * @param target Target.
+     * @param ctx Execution context.
      * @param source Source.
      */
-    public ScanNode(Sink<Object[]> target, Iterable<Object[]> source) {
-        this.target = target;
+    public ScanNode(ExecutionContext ctx, Iterable<Object[]> source) {
+        super(ctx);
+
         this.source = source;
     }
 
     /** {@inheritDoc} */
-    @Override public void signal() {
-        if (row == END)
-            return;
+    @Override public void request() {
+        try {
+            requestInternal();
+        }
+        catch (Exception e) {
+            Commons.close(it, e);
 
-        if (row != null && !target.push(row))
-            return;
+            throw e;
+        }
+    }
 
-        row = null;
+    /** */
+    private void requestInternal() {
+        checkThread();
+
+        if (context().cancelled()
+            || row == EndMarker.INSTANCE
+            || row != null && !target().push((Object[]) row))
+            return;
 
         if (it == null)
             it = source.iterator();
 
+        Thread thread = Thread.currentThread();
+
         while (it.hasNext()) {
+            if (context().cancelled() || thread.isInterrupted()) {
+                row = null;
+
+                close();
+
+                return;
+            }
+
             row = it.next();
 
-            if (!target.push(row))
+            // TODO load balancing - resubmit this::request() in case of long execution
+
+            if (!target().push((Object[]) row))
                 return;
         }
 
-        row = END;
-        target.end();
+        try {
+            row = EndMarker.INSTANCE;
+
+            target().end();
+        }
+        finally {
+            close();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void sources(List<Source> sources) {
-        throw new UnsupportedOperationException();
+    @Override public void close() {
+        Commons.close(it);
+
+        it = null;
+
+        if (row != EndMarker.INSTANCE)
+            row = null;
     }
 
     /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
-        throw new UnsupportedOperationException();
+        throw new AssertionError();
     }
 }

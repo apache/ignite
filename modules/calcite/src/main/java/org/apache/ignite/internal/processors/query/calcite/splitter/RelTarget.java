@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.splitter;
 
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerContext;
+import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public interface RelTarget {
     /**
-     * @return Exchange id, has to be unique in scope of query.
+     * @return Target fragment ID.
      */
-    long exchangeId();
+    long fragmentId();
 
     /**
-     * Returns target mapping. It's used in calculation where to send a particular row to.
-     * See {@link DistributionFunction#toDestination(PlannerContext, NodesMapping, ImmutableIntList)}
+     * Returns target mapping. It's used in calculation a nodes list, where to send a particular row to.
+     * See {@link DistributionFunction#destination(PartitionService, NodesMapping, ImmutableIntList)}
      *
      * @return Target mapping.
      */
