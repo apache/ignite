@@ -31,6 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -76,9 +77,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
     /** */
     private Path srcTmpDir;
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCreateInstance() {
         IgniteCallable<Object> c = callable(srcTmpDir, CREATE_INSTANCE_CLS_NAME, CREATE_INSTANCE_SRC);
@@ -88,9 +87,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
         assertThrowsWithCause(() -> compute(grid(FORBIDDEN)).call(c), AccessControlException.class);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCallStaticMethod() {
         IgniteCallable<Object> c = callable(srcTmpDir, CALL_INTERNAL_CLASS_METHOD_CLS_NAME,
@@ -107,8 +104,8 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
 
         Permissions perms = new Permissions();
 
-        perms.add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal"));
-        perms.add(new RuntimePermission("accessClassInPackage.org.apache.ignite.internal.*"));
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE));
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE + ".*"));
 
         startGrid(ALLOWED, ALLOW_ALL, perms, false);
 
@@ -123,17 +120,13 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
             .setDeploymentSpi(new LocalDeploymentSpi());
     }
 
-    /**
-     *
-     */
+    /** */
     @Before
     public void setUp() throws Exception {
         srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
     }
 
-    /**
-     *
-     */
+    /** */
     @After
     public void tearDown() {
         U.delete(srcTmpDir);
