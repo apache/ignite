@@ -386,14 +386,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
+        DistributedMetaStorage metastorage0 = metastorage;
+
+        if (metastorage0 == null)
+            return;
+
         try {
             GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
             for (Metric m : mreg) {
                 if (m instanceof HitRateMetric)
-                    opsFut.add(metastorage.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
+                    opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
                 else if (m instanceof HistogramMetric)
-                    opsFut.add(metastorage.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+                    opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
             }
 
             opsFut.markInitialized();
