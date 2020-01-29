@@ -659,6 +659,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Stops this cache. Child classes should override this method
      * to provide custom stop behavior.
+     *
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     public void stop(boolean destroy) {
         // Nulling thread local reference to ensure values will be eventually GCed
