@@ -11669,4 +11669,34 @@ public abstract class IgniteUtils {
             }
         }
     }
+
+    /**
+     * Stops workers from given collection and waits for their completion.
+     *
+     * @param workers Workers collection.
+     * @param cancel Wheter should cancel workers.
+     * @param log Logger.
+     */
+    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, IgniteLogger log) {
+        for (GridWorker worker : workers) {
+            try {
+                if (cancel)
+                    worker.cancel();
+
+                worker.join();
+            }
+            catch (Exception e) {
+                log.warning(String.format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+            }
+        }
+    }
+
+    /**
+     * Unquote the given string.
+     * @param s String.
+     * @return Unquoted string.
+     */
+    public static String unquote(String s) {
+        return s == null ? null : s.replaceAll("^\"|\"$", "");
+    }
 }
