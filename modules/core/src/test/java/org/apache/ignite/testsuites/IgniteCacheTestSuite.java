@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.IgniteIncompleteCacheObjectSe
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteTxConfigCacheSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteTxStoreExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
@@ -152,7 +153,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerUpdateAfte
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
-import org.apache.ignite.internal.processors.cache.IgniteTxStoreExceptionSelfTest;
 
 /**
  * Test suite.

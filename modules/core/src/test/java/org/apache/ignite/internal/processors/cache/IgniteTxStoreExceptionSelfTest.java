@@ -43,13 +43,20 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.apache.ignite.cache.CacheMode;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.runners.model.Statement;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -83,6 +90,18 @@ public class IgniteTxStoreExceptionSelfTest extends GridCacheAbstractSelfTest {
      * */
     private static final AtomicInteger prevRunCycle = new AtomicInteger(Integer.MIN_VALUE);
 
+    @BeforeClass
+    public static void beforeClass(){
+        System.out.printf("dfg");
+    }
+
+    @Rule
+    public TestRule rule = new TestRule() {
+        @Override public Statement apply(Statement base, Description description) {
+            return base;
+        }
+    };
+
     /** Parameterized run parameter : number/id of run cycle. */
     @Parameterized.Parameter(0)
     public int runCycleId;
@@ -107,7 +126,7 @@ public class IgniteTxStoreExceptionSelfTest extends GridCacheAbstractSelfTest {
      * Test run configurations: Run number (keep different values to detect change of run cycle),
      * Cache mode, near cache cfg, Grid count, Check of not supported feature.
      * */
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "testRunId={0}, cacheMode={1}, nearCacheCfg={2}, gridCount={3}")
     public static Collection<Object[]> parameterizedConfig() {
         return Arrays.asList(new Object[][] {
             {1, REPLICATED, null, 3, null},
