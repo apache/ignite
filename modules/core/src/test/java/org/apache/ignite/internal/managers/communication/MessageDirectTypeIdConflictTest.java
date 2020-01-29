@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -54,6 +55,9 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
     /** Message direct type. Message with this direct type will be registered by {@link GridIoMessageFactory} first. */
     private static final short MSG_DIRECT_TYPE = -44;
 
+    /** Register extensions. */
+    private static final AtomicBoolean REG_EXTENSIONS = new AtomicBoolean();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -68,11 +72,15 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         stopAllGrids();
+
+        REG_EXTENSIONS.set(true);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        REG_EXTENSIONS.set(false);
 
         stopAllGrids();
     }
@@ -120,11 +128,13 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
-                @Override public void registerAll(IgniteMessageFactory factory) {
-                    factory.register(MSG_DIRECT_TYPE, TestMessage::new);
-                }
-            });
+            if (REG_EXTENSIONS.get()) {
+                registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                    @Override public void registerAll(IgniteMessageFactory factory) {
+                        factory.register(MSG_DIRECT_TYPE, TestMessage::new);
+                    }
+                });
+            }
         }
 
         /** {@inheritDoc} */
