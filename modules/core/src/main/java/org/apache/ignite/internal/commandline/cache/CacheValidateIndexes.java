@@ -62,6 +62,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_SIZES;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_CRC;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 
 /**
@@ -84,6 +85,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         map.put(CHECK_FIRST + " N", "validate only the first N keys");
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
         map.put(CHECK_SIZES.toString(), "check that index size and cache size are same");
+        map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk");
 
         usageCache(
             logger,
@@ -113,7 +115,10 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         private final int checkThrough;
 
         /** Check that index size and cache size are same. */
-        private final boolean checkSizes;
+        private boolean checkSizes;
+
+        /** Check CRC */
+        private boolean checkCrc;
 
         /**
          * Constructor.
@@ -122,6 +127,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
          * @param nodeId Node id.
          * @param checkFirst Max number of entries to be checked.
          * @param checkThrough Number of entries to check through.
+         * @param checkCrc Check CRC.
          * @param checkSizes Check that index size and cache size are same.
          */
         public Arguments(
@@ -129,12 +135,14 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             UUID nodeId,
             int checkFirst,
             int checkThrough,
+            boolean checkCrc,
             boolean checkSizes
         ) {
             this.caches = caches;
             this.nodeId = nodeId;
             this.checkFirst = checkFirst;
             this.checkThrough = checkThrough;
+            this.checkCrc = checkCrc;
             this.checkSizes = checkSizes;
         }
 
@@ -150,6 +158,13 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
          */
         public int checkFirst() {
             return checkFirst;
+        }
+
+        /**
+         * @return Check CRC
+         */
+        public boolean checkCrc() {
+            return checkCrc;
         }
 
         /**
@@ -197,6 +212,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null,
             args.checkFirst(),
             args.checkThrough(),
+            args.checkCrc(),
             args.checkSizes()
         );
 
@@ -270,6 +286,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
     @Override public void parseArguments(CommandArgIterator argIter) {
         int checkFirst = -1;
         int checkThrough = -1;
+        boolean checkCrc = false;
         UUID nodeId = null;
         Set<String> caches = null;
         boolean checkSizes = false;
@@ -278,6 +295,12 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             String nextArg = argIter.nextArg("");
 
             ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
+
+            if (arg == CHECK_CRC) {
+                checkCrc = true;
+
+                continue;
+            }
 
             if (arg == CHECK_FIRST || arg == CHECK_THROUGH) {
                 if (!argIter.hasNextSubArg())
@@ -330,7 +353,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             }
         }
 
-        args = new Arguments(caches, nodeId, checkFirst, checkThrough, checkSizes);
+        args = new Arguments(caches, nodeId, checkFirst, checkThrough, checkCrc, checkSizes);
     }
 
     /** {@inheritDoc} */

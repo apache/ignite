@@ -178,7 +178,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
             doSleep(500);
 
         // Validate indexes on start.
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, true);
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false, true);
 
         node.context().resource().injectGeneric(clo);
 

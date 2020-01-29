@@ -41,6 +41,9 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     /** Check first K elements. */
     private int checkFirst = -1;
 
+    /** Check CRC */
+    private boolean checkCrc;
+
     /** Check through K element (skip K-1, check Kth). */
     private int checkThrough = -1;
 
@@ -71,12 +74,14 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
         Set<UUID> nodes,
         int checkFirst,
         int checkThrough,
+        boolean checkCrc,
         boolean checkSizes
     ) {
         this.caches = caches;
         this.checkFirst = checkFirst;
         this.checkThrough = checkThrough;
         this.nodes = nodes;
+        this.checkCrc = checkCrc;
         this.checkSizes = checkSizes;
     }
 
@@ -99,6 +104,13 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
      */
     public int getCheckFirst() {
         return checkFirst;
+    }
+
+    /**
+     * @return checkCrc.
+     */
+    public boolean сheckCrc() {
+        return checkCrc;
     }
 
     /**
@@ -139,10 +151,17 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
         if (protoVer > V2)
             nodes = readSet(in);
 
-        if (protoVer > V3)
+        if (protoVer > V3) {
             checkSizes = in.readBoolean();
+            checkCrc = in.readBoolean();
+        }
+
     }
 
+    /** Set checkCrc */
+    protected void checkCrc(boolean checkCrc) {
+        this.checkCrc = checkCrc;
+    }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {

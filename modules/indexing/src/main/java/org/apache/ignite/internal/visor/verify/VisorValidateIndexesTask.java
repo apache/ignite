@@ -109,6 +109,7 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
                     arg.getCaches(),
                     arg.getCheckFirst(),
                     arg.getCheckThrough(),
+                    arg.сheckCrc(),
                     arg.checkSizes()
                 );
 
