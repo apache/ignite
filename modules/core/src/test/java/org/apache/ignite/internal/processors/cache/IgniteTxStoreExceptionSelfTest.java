@@ -43,20 +43,13 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.apache.ignite.cache.CacheMode;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.junit.runners.model.Statement;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -89,18 +82,6 @@ public class IgniteTxStoreExceptionSelfTest extends GridCacheAbstractSelfTest {
      * Moreover, parameters injection is activated after before-test event and are empty in the test initialization.
      * */
     private static final AtomicInteger prevRunCycle = new AtomicInteger(Integer.MIN_VALUE);
-
-    @BeforeClass
-    public static void beforeClass(){
-        System.out.printf("dfg");
-    }
-
-    @Rule
-    public TestRule rule = new TestRule() {
-        @Override public Statement apply(Statement base, Description description) {
-            return base;
-        }
-    };
 
     /** Parameterized run parameter : number/id of run cycle. */
     @Parameterized.Parameter(0)
