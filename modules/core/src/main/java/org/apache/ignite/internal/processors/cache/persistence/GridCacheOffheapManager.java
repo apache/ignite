@@ -2584,35 +2584,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
+            assert ctx.database().checkpointLockIsHeldByThread();
+
             CacheDataStore delegate0 = init0(true);
 
             if (delegate0 == null)
                 return;
 
-            ctx.database().checkpointReadLock();
-            try {
-                // Clear persistent pendingTree
-                if (pendingTree != null) {
-                    PendingRow row = new PendingRow(cacheId);
+            // Clear persistent pendingTree
+            if (pendingTree != null) {
+                PendingRow row = new PendingRow(cacheId);
 
-                    GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+                GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
 
-                    while (cursor.next()) {
-                        PendingRow row0 = cursor.get();
+                while (cursor.next()) {
+                    PendingRow row0 = cursor.get();
 
-                        assert row0.link != 0 : row;
+                    assert row0.link != 0 : row;
 
-                        boolean res = pendingTree.removex(row0);
+                    boolean res = pendingTree.removex(row0);
 
-                        assert res;
-                    }
+                    assert res;
                 }
+            }
 
-                delegate0.clear(cacheId);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
+            delegate0.clear(cacheId);
         }
 
         /**

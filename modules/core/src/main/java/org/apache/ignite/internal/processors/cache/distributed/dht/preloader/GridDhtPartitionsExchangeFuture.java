@@ -2317,7 +2317,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null)
                 cctx.coordinators().onExchangeDone(events().discoveryCache());
 
-            // Create and destory caches and cache proxies.
+            // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
             cctx.kernalContext().authentication().onActivate();
