@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.expression
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.Types;
 
 /**
  * Describes {@link org.apache.calcite.rex.RexLocalRef}.
@@ -35,7 +36,7 @@ public class LocalRefExpression implements Expression {
      * @param index Index.
      */
     public LocalRefExpression(RelDataType type, int index) {
-        this.type = DataType.fromType(type);
+        this.type = Types.fromType(type);
         this.index = index;
     }
 

@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -35,6 +36,9 @@ import static org.apache.ignite.internal.processors.query.calcite.metadata.Nodes
  *
  */
 public class MappingServiceImpl extends AbstractService implements MappingService {
+    /** */
+    private GridDiscoveryManager discoveryManager;
+
     /**
      * @param ctx Kernal.
      */
@@ -42,11 +46,23 @@ public class MappingServiceImpl extends AbstractService implements MappingServic
         super(ctx);
     }
 
+    /**
+     * @param discoveryManager Discovery manager.
+     */
+    public void discoveryManager(GridDiscoveryManager discoveryManager) {
+        this.discoveryManager = discoveryManager;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        discoveryManager(ctx.discovery());
+    }
+
     /** {@inheritDoc} */
     @Override public NodesMapping mapBalanced(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter) {
         assert desiredCnt >= 0;
 
-        List<ClusterNode> nodes = ctx.discovery().discoCache(topVer).serverNodes();
+        List<ClusterNode> nodes = discoveryManager.discoCache(topVer).serverNodes();
 
         if (nodeFilter != null)
             nodes = nodes.stream().filter(nodeFilter).collect(Collectors.toList());

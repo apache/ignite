@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface QueryPlanCache {
+public interface QueryPlanCache extends Service {
     /**
      * @param ctx Context.
      * @param key Cache key.

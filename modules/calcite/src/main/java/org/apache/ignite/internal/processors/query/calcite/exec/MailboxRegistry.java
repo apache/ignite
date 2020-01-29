@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface MailboxRegistry {
+public interface MailboxRegistry extends Service {
     /**
      * Tries to register and inbox node and returns it if success or returns previously registered inbox otherwise.
      *

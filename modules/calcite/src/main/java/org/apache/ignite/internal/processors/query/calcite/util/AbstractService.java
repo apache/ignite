@@ -23,10 +23,7 @@ import org.apache.ignite.internal.GridKernalContext;
 /**
  *
  */
-public abstract class AbstractService implements LifecycleAware {
-    /** */
-    protected final GridKernalContext ctx;
-
+public abstract class AbstractService implements LifecycleAware, Service {
     /** */
     protected final IgniteLogger log;
 
@@ -34,17 +31,16 @@ public abstract class AbstractService implements LifecycleAware {
      * @param ctx Kernal.
      */
     protected AbstractService(GridKernalContext ctx) {
-        this.ctx = ctx;
         log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        // No-op;
+        init();
     }
 
     /** {@inheritDoc} */
     @Override public void onStop() {
-        // No-op;
+        tearDown();
     }
 }

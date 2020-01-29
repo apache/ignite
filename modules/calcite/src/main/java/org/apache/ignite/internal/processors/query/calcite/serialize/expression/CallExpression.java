@@ -22,6 +22,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.Types;
 
 /**
  * Describes {@link org.apache.calcite.rex.RexCall}.
@@ -46,7 +47,7 @@ public class CallExpression implements Expression {
      */
     public CallExpression(SqlOperator op, RelDataType type, List<Expression> operands) {
         opName = op.getName();
-        this.type = DataType.fromType(type);
+        this.type = Types.fromType(type);
         this.operands = operands;
         opSyntax = op.getSyntax();
     }

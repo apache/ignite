@@ -20,13 +20,14 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.util.function.Predicate;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Service is responsible for nodes mapping calculation.
  */
-public interface MappingService {
+public interface MappingService extends Service {
     /**
      * Returns Nodes mapping for intermediate fragments, without Scan nodes leafs. Such fragments may be executed
      * on any cluster node, actual list of nodes is chosen on the basis of adopted selection strategy (using node filter).

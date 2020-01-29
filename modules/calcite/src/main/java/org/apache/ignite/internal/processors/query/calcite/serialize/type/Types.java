@@ -15,19 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 
 /**
- * Operation object, encapsulates query execution logic.
+ *
  */
-public interface QueryExecution {
+public final class Types {
+    /** */
+    private Types() {
+        // No-op.
+    }
+
     /**
-     * Executes a query.
-     *
-     * @return Query cursor.
+     * Factory method to construct data type representation from RelDataType.
+     * @param type RelDataType.
+     * @return DataType.
      */
-    FieldsQueryCursor<List<?>> execute();
+    public static DataType fromType(RelDataType type) {
+        if (type.isStruct())
+            return StructType.fromType(type);
+
+        if (type instanceof RelDataTypeFactoryImpl.JavaType)
+            return JavaType.fromType(type);
+
+        return SqlType.fromType(type);
+    }
 }

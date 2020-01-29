@@ -56,8 +56,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
-import org.apache.ignite.internal.processors.query.calcite.message.TestMessageService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
@@ -82,8 +83,10 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -93,6 +96,7 @@ import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.HAS_REPLICATED_CACHES;
@@ -123,7 +127,7 @@ public class PlannerTest extends GridCommonAbstractTest {
     @After
     public void tearDown() throws Throwable {
         if (!F.isEmpty(executors))
-            executors.forEach(QueryTaskExecutorImpl::onStop);
+            executors.forEach(QueryTaskExecutorImpl::tearDown);
 
         if (lastException != null)
             throw lastException;
@@ -983,7 +987,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             TestIoManager mgr = new TestIoManager();
             GridTestKernalContext kernal;
             QueryTaskExecutorImpl taskExecutor;
-            TestMessageService messageService;
+            MessageServiceImpl messageService;
             MailboxRegistryImpl mailboxRegistry;
             ExchangeServiceImpl exchangeService;
             ExecutionContext ectx;
@@ -997,10 +1001,22 @@ public class PlannerTest extends GridCommonAbstractTest {
             kernal = newContext();
 
             taskExecutor = new QueryTaskExecutorImpl(kernal);
-            taskExecutor.onStart(kernal);
+            taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+                kernal.config().getQueryThreadPoolSize(),
+                kernal.igniteInstanceName(),
+                "calciteQry",
+                (t,ex) -> {
+                    log().error(ex.getMessage(), ex);
+                    lastException = ex;
+                },
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME
+            ));
             executors.add(taskExecutor);
 
-            messageService = new TestMessageService(nodes.get(0), kernal);
+            messageService = new TestMessageServiceImpl(kernal, mgr);
+
+            messageService.localNodeId(nodes.get(0));
             messageService.taskExecutor(taskExecutor);
             mgr.register(messageService);
 
@@ -1010,7 +1026,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.taskExecutor(taskExecutor);
             exchangeService.messageService(messageService);
             exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.registerListeners();
+            exchangeService.init();
 
             ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
 
@@ -1028,10 +1044,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             kernal = newContext();
 
             taskExecutor = new QueryTaskExecutorImpl(kernal);
-            taskExecutor.onStart(kernal);
+            taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+                kernal.config().getQueryThreadPoolSize(),
+                kernal.igniteInstanceName(),
+                "calciteQry",
+                (t,ex) -> {
+                    log().error(ex.getMessage(), ex);
+                    lastException = ex;
+                },
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME
+            ));
             executors.add(taskExecutor);
 
-            messageService = new TestMessageService(nodes.get(1), kernal);
+            messageService = new TestMessageServiceImpl(kernal, mgr);
+            messageService.localNodeId(nodes.get(1));
             messageService.taskExecutor(taskExecutor);
             mgr.register(messageService);
 
@@ -1041,7 +1068,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.taskExecutor(taskExecutor);
             exchangeService.messageService(messageService);
             exchangeService.mailboxRegistry(mailboxRegistry);
-            exchangeService.registerListeners();
+            exchangeService.init();
 
             ectx = new ExecutionContext(
                 taskExecutor,
@@ -1738,6 +1765,33 @@ public class PlannerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public List<RelCollation> collations() {
             throw new AssertionError();
+        }
+    }
+
+    /** */
+    private static class TestMessageServiceImpl extends MessageServiceImpl {
+        /** */
+        private final TestIoManager mgr;
+
+        /** */
+        private TestMessageServiceImpl(GridTestKernalContext kernal, TestIoManager mgr) {
+            super(kernal);
+            this.mgr = mgr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void send(UUID nodeId, CalciteMessage msg) {
+            mgr.send(localNodeId(), nodeId, msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean prepareMarshal(Message msg) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean prepareUnmarshal(Message msg) {
+            return true;
         }
     }
 

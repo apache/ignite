@@ -35,7 +35,6 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     /** */
     private final Map<MailboxKey, Inbox<?>> remotes;
 
-
     /**
      * @param ctx Kernal.
      */

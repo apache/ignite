@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface QueryTaskExecutor {
+public interface QueryTaskExecutor extends Service {
     /**
      * Executes a query task in a thread, responsible for particular query fragment.
      *

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.Map;
-import java.util.Optional;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -37,6 +36,9 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     private static final int CACHE_SIZE = 1024;
 
     /** */
+    private GridInternalSubscriptionProcessor subscriptionProcessor;
+
+    /** */
     private volatile Map<CacheKey, QueryPlan> cache;
 
     /**
@@ -46,7 +48,26 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         super(ctx);
 
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
-        Optional.ofNullable(ctx.internalSubscriptionProcessor()).ifPresent(this::registerListeners);
+        subscriptionProcessor(ctx.internalSubscriptionProcessor());
+
+        init();
+    }
+
+    /**
+     * @param subscriptionProcessor Subscription processor.
+     */
+    public void subscriptionProcessor(GridInternalSubscriptionProcessor subscriptionProcessor) {
+        this.subscriptionProcessor = subscriptionProcessor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init() {
+        subscriptionProcessor.registerSchemaChangeListener(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -90,11 +111,5 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     /** {@inheritDoc} */
     @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
         // No-op
-    }
-
-    /** */
-    private void registerListeners(GridInternalSubscriptionProcessor prc) {
-        prc.registerSchemaChangeListener(this);
-
     }
 }

@@ -60,10 +60,24 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /**
+     * @return Task executor.
+     */
+    public QueryTaskExecutor taskExecutor() {
+        return taskExecutor;
+    }
+
+    /**
      * @param mailboxRegistry Mailbox registry.
      */
     public void mailboxRegistry(MailboxRegistry mailboxRegistry) {
         this.mailboxRegistry = mailboxRegistry;
+    }
+
+    /**
+     * @return  Mailbox registry.
+     */
+    public MailboxRegistry mailboxRegistry() {
+        return mailboxRegistry;
     }
 
     /**
@@ -73,19 +87,26 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         this.messageService = messageService;
     }
 
+    /**
+     * @return  Message service.
+     */
+    public MessageService messageService() {
+        return messageService;
+    }
+
     /** {@inheritDoc} */
     @Override public void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
-        messageService.send(nodeId, new QueryBatchMessage(queryId, fragmentId, exchangeId, batchId, rows));
+        messageService().send(nodeId, new QueryBatchMessage(queryId, fragmentId, exchangeId, batchId, rows));
     }
 
     /** {@inheritDoc} */
     @Override public void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        messageService.send(nodeId, new QueryBatchAcknowledgeMessage(queryId, fragmentId, exchangeId, batchId));
+        messageService().send(nodeId, new QueryBatchAcknowledgeMessage(queryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */
     @Override public void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        messageService.send(nodeId, new InboxCancelMessage(queryId, fragmentId, exchangeId, batchId));
+        messageService().send(nodeId, new InboxCancelMessage(queryId, fragmentId, exchangeId, batchId));
     }
 
     /** {@inheritDoc} */
@@ -96,29 +117,19 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         mailboxRegistry(proc.mailboxRegistry());
         messageService(proc.messageService());
 
-        registerListeners();
+        init();
     }
 
-    /**
-     * For tests purpose.
-     */
-    public void registerListeners() {
-        messageService.register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
-        messageService.register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
-        messageService.register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
-    }
-
-    /**
-     * @return Minimal execution context to meet Inbox needs.
-     */
-    private ExecutionContext baseInboxContext(UUID queryId, long fragmentId) {
-        PlanningContext ctx = PlanningContext.builder().logger(log).build();
-        return new ExecutionContext(taskExecutor, ctx, queryId, fragmentId, null, ImmutableMap.of());
+    /** {@inheritDoc} */
+    @Override public void init() {
+        messageService().register((n, m) -> onMessage(n, (InboxCancelMessage) m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage) m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage) m), MessageType.QUERY_BATCH_MESSAGE);
     }
 
     /** */
-    private void onMessage(UUID nodeId, InboxCancelMessage msg) {
-        Inbox<?> inbox = mailboxRegistry.inbox(msg.queryId(), msg.exchangeId());
+    protected void onMessage(UUID nodeId, InboxCancelMessage msg) {
+        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox != null)
             inbox.cancel();
@@ -133,8 +144,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
-    private void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
-        Outbox<?> outbox = mailboxRegistry.outbox(msg.queryId(), msg.exchangeId());
+    protected void onMessage(UUID nodeId, QueryBatchAcknowledgeMessage msg) {
+        Outbox<?> outbox = mailboxRegistry().outbox(msg.queryId(), msg.exchangeId());
 
         if (outbox != null)
             outbox.onAcknowledge(nodeId, msg.batchId());
@@ -149,13 +160,13 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     }
 
     /** */
-    private void onMessage(UUID nodeId, QueryBatchMessage msg) {
-        Inbox<?> inbox = mailboxRegistry.inbox(msg.queryId(), msg.exchangeId());
+    protected void onMessage(UUID nodeId, QueryBatchMessage msg) {
+        Inbox<?> inbox = mailboxRegistry().inbox(msg.queryId(), msg.exchangeId());
 
         if (inbox == null && msg.batchId() == 0)
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            inbox = mailboxRegistry.register(new Inbox<>(this, mailboxRegistry, baseInboxContext(msg.queryId(), msg.fragmentId()), msg.exchangeId(), msg.exchangeId()));
+            inbox = mailboxRegistry().register(new Inbox<>(this, mailboxRegistry(), baseInboxContext(msg.queryId(), msg.fragmentId()), msg.exchangeId(), msg.exchangeId()));
 
         if (inbox != null)
             inbox.onBatchReceived(nodeId, msg.batchId(), msg.rows());
@@ -167,5 +178,13 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 "exchangeId=" + msg.exchangeId() + ", " +
                 "batchId=" + msg.batchId() + "]");
         }
+    }
+
+    /**
+     * @return Minimal execution context to meet Inbox needs.
+     */
+    private ExecutionContext baseInboxContext(UUID queryId, long fragmentId) {
+        PlanningContext ctx = PlanningContext.builder().logger(log).build();
+        return new ExecutionContext(taskExecutor(), ctx, queryId, fragmentId, null, ImmutableMap.of());
     }
 }

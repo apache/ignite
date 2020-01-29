@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.function.ToIntFunction;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -27,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  *
  */
 public class PartitionServiceImpl extends AbstractService implements PartitionService {
+    /** */
+    private GridCacheSharedContext<?,?> cacheSharedContext;
+
     /**
      * @param ctx Kernal.
      */
@@ -34,11 +39,25 @@ public class PartitionServiceImpl extends AbstractService implements PartitionSe
         super(ctx);
     }
 
+    /**
+     * @param cacheSharedContext Cache shared context.
+     */
+    public void cacheSharedContext(GridCacheSharedContext<?,?> cacheSharedContext) {
+        this.cacheSharedContext = cacheSharedContext;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        cacheSharedContext(ctx.cache().context());
+    }
+
     /** {@inheritDoc} */
     @Override public ToIntFunction<Object> partitionFunction(int cacheId) {
         if (cacheId == CU.UNDEFINED_CACHE_ID)
             return k -> k == null ? 0 : k.hashCode();
 
-        return ctx.cache().context().cacheContext(cacheId).group().affinityFunction()::partition;
+        AffinityFunction affinity = cacheSharedContext.cacheContext(cacheId).group().affinityFunction();
+
+        return affinity::partition;
     }
 }

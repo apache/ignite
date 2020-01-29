@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -255,18 +256,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    private void onStart(GridKernalContext ctx, Object... components) {
-        for (Object cmp : components) {
-            if (cmp instanceof LifecycleAware)
-                ((LifecycleAware) cmp).onStart(ctx);
+    private void onStart(GridKernalContext ctx, Service... services) {
+        for (Service service : services) {
+            if (service instanceof LifecycleAware)
+                ((LifecycleAware) service).onStart(ctx);
         }
     }
 
     /** */
-    private void onStop(Object... components) {
-        for (Object cmp : components) {
-            if (cmp instanceof LifecycleAware)
-                ((LifecycleAware) cmp).onStop();
+    private void onStop(Service... services) {
+        for (Service service : services) {
+            if (service instanceof LifecycleAware)
+                ((LifecycleAware) service).onStop();
         }
     }
 }

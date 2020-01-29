@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.expression
 
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.serialize.type.Types;
 
 /**
  * Describes {@link org.apache.calcite.rex.RexLiteral}.
@@ -35,7 +36,7 @@ public class LiteralExpression implements Expression {
      * @param value Value.
      */
     public LiteralExpression(RelDataType type, Comparable<?> value) {
-        this.type = DataType.fromType(type);
+        this.type = Types.fromType(type);
         this.value = value;
     }
 

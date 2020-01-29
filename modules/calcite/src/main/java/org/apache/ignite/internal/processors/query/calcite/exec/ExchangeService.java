@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface ExchangeService {
+public interface ExchangeService extends Service {
     /** A number of rows in a single batch. */
     int BATCH_SIZE = 200;
 

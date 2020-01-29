@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
-
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.QueryContext;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
 /**
- * Operation object, encapsulates query execution logic.
+ *
  */
-public class DistributedExecution implements QueryExecution {
-    public DistributedExecution(QueryContext ctx, String query, Object[] params) {
+public interface Service {
+    /**
+     * Initiates this service.
+     */
+    default void init() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> execute() {
-        return null; // TODO;
+    /**
+     * Cleans up this service
+     */
+    default void tearDown() {
+        // No-op.
     }
 }

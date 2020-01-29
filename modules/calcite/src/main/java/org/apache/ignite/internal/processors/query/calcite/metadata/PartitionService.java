@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.function.ToIntFunction;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface PartitionService {
+public interface PartitionService extends Service {
     /**
      * Creates a partition mapping function on the basis of affinity function of cache with given ID.
      *

@@ -26,20 +26,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TestIoManager {
     /** */
-    private final Map<UUID, TestMessageService> srvcMap = new ConcurrentHashMap<>();
+    private final Map<UUID, MessageServiceImpl> srvcMap = new ConcurrentHashMap<>();
 
     /** */
-    protected void send(UUID senderId, UUID nodeId, CalciteMessage msg) {
-        TestMessageService target = srvcMap.get(nodeId);
-
-        assert target != null;
-
-        target.onMessage(senderId, msg, true);
+    public void send(UUID senderId, UUID nodeId, CalciteMessage msg) {
+        srvcMap.get(nodeId).onMessage(senderId, msg, true);
     }
 
     /** */
-    public void register(TestMessageService service) {
-        srvcMap.put(service.localNodeId, service);
-        service.mgr = this;
+    public void register(MessageServiceImpl service) {
+        srvcMap.put(service.localNodeId(), service);
     }
 }

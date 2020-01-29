@@ -30,34 +30,40 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
  */
 public class QueryTaskExecutorImpl extends AbstractService implements QueryTaskExecutor {
     /** */
-    private IgniteStripedThreadPoolExecutor srvc;
+    private IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor;
 
     /** */
     public QueryTaskExecutorImpl(GridKernalContext ctx) {
         super(ctx);
     }
 
+    /**
+     * @param stripedThreadPoolExecutor Executor.
+     */
+    public void stripedThreadPoolExecutor(IgniteStripedThreadPoolExecutor stripedThreadPoolExecutor) {
+        this.stripedThreadPoolExecutor = stripedThreadPoolExecutor;
+    }
+
     /** {@inheritDoc} */
     @Override public void execute(UUID queryId, long fragmentId, Runnable queryTask) {
-        srvc.execute(queryTask, hash(queryId, fragmentId));
+        stripedThreadPoolExecutor.execute(queryTask, hash(queryId, fragmentId));
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        srvc = new IgniteStripedThreadPoolExecutor(
+        stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
             ctx.config().getQueryThreadPoolSize(),
             ctx.igniteInstanceName(),
             "calciteQry",
             ctx.uncaughtExceptionHandler(),
             true,
             DFLT_THREAD_KEEP_ALIVE_TIME
-        );
+        ));
     }
 
     /** {@inheritDoc} */
-    @Override public void onStop() {
-        U.shutdownNow(getClass(), srvc, log);
-        srvc = null;
+    @Override public void tearDown() {
+        U.shutdownNow(getClass(), stripedThreadPoolExecutor, log);
     }
 
     /** */

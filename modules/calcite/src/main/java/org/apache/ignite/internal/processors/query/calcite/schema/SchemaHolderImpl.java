@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.CacheMode;
@@ -38,6 +37,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     private final Map<String, IgniteSchema> schemas = new HashMap<>();
 
     /** */
+    private GridInternalSubscriptionProcessor subscriptionProcessor;
+
+    /** */
     private volatile SchemaPlus schema;
 
     /**
@@ -46,7 +48,16 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     public SchemaHolderImpl(GridKernalContext ctx) {
         super(ctx);
 
-        Optional.ofNullable(ctx.internalSubscriptionProcessor()).ifPresent(this::registerListeners);
+        subscriptionProcessor(ctx.internalSubscriptionProcessor());
+
+        init();
+    }
+
+    /**
+     * @param subscriptionProcessor Subscription processor.
+     */
+    public void subscriptionProcessor(GridInternalSubscriptionProcessor subscriptionProcessor) {
+        this.subscriptionProcessor = subscriptionProcessor;
     }
 
     /**
@@ -55,6 +66,16 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
      */
     public void schema(SchemaPlus schema) {
         this.schema = schema;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init() {
+        subscriptionProcessor.registerSchemaChangeListener(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -93,11 +114,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         schema.removeTable(typeDescriptor.tableName());
 
         rebuild();
-    }
-
-    /** */
-    private void registerListeners(GridInternalSubscriptionProcessor prc) {
-        prc.registerSchemaChangeListener(this);
     }
 
     /** */

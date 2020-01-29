@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -97,6 +97,15 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     private final DiscoveryEventListener discoLsnr;
 
     /** */
+    private UUID localNodeId;
+
+    /** */
+    private GridEventStorageManager eventManager;
+
+    /** */
+    private GridCachePartitionExchangeManager<?,?> exchangeManager;
+
+    /** */
     private QueryPlanCache queryPlanCache;
 
     /** */
@@ -137,10 +146,31 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
+     * @param localNodeId Local node ID.
+     */
+    public void localNodeId(UUID localNodeId) {
+        this.localNodeId = localNodeId;
+    }
+
+    /**
+     * @return Local node ID.
+     */
+    public UUID localNodeId() {
+        return localNodeId;
+    }
+
+    /**
      * @param queryPlanCache Query cache.
      */
     public void queryPlanCache(QueryPlanCache queryPlanCache) {
         this.queryPlanCache = queryPlanCache;
+    }
+
+    /**
+     * @return Query cache.
+     */
+    public QueryPlanCache queryPlanCache() {
+        return queryPlanCache;
     }
 
     /**
@@ -151,10 +181,24 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
+     * @return Schema holder.
+     */
+    public SchemaHolder schemaHolder() {
+        return schemaHolder;
+    }
+
+    /**
      * @param taskExecutor Task executor.
      */
     public void taskExecutor(QueryTaskExecutor taskExecutor) {
         this.taskExecutor = taskExecutor;
+    }
+
+    /**
+     * @return Task executor.
+     */
+    public QueryTaskExecutor taskExecutor() {
+        return taskExecutor;
     }
 
     /**
@@ -165,10 +209,24 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
+     * @return Failure processor.
+     */
+    public FailureProcessor failureProcessor() {
+        return failureProcessor;
+    }
+
+    /**
      * @param partitionService Partition service.
      */
     public void partitionService(PartitionService partitionService) {
         this.partitionService = partitionService;
+    }
+
+    /**
+     * @return Partition service.
+     */
+    public PartitionService partitionService() {
+        return partitionService;
     }
 
     /**
@@ -179,10 +237,24 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
+     * @return Mailbox registry.
+     */
+    public MailboxRegistry mailboxRegistry() {
+        return mailboxRegistry;
+    }
+
+    /**
      * @param mappingService Mapping service.
      */
     public void mappingService(MappingService mappingService) {
         this.mappingService = mappingService;
+    }
+
+    /**
+     * @return Mapping service.
+     */
+    public MappingService mappingService() {
+        return mappingService;
     }
 
     /**
@@ -193,10 +265,52 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /**
+     * @return Message service.
+     */
+    public MessageService messageService() {
+        return messageService;
+    }
+
+    /**
      * @param exchangeService Exchange service.
      */
     public void exchangeService(ExchangeService exchangeService) {
         this.exchangeService = exchangeService;
+    }
+
+    /**
+     * @return Exchange service.
+     */
+    public ExchangeService exchangeService() {
+        return exchangeService;
+    }
+
+    /**
+     * @param eventManager Event manager.
+     */
+    public void eventManager(GridEventStorageManager eventManager) {
+        this.eventManager = eventManager;
+    }
+
+    /**
+     * @return Event manager.
+     */
+    public GridEventStorageManager eventManager() {
+        return eventManager;
+    }
+
+    /**
+     * @param exchangeManager Exchange manager.
+     */
+    public void exchangeManager(GridCachePartitionExchangeManager<?,?> exchangeManager) {
+        this.exchangeManager = exchangeManager;
+    }
+
+    /**
+     * @return Exchange manager.
+     */
+    public GridCachePartitionExchangeManager<?, ?> exchangeManager() {
+        return exchangeManager;
     }
 
     /** {@inheritDoc} */
@@ -223,10 +337,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         }
 
         ExecutionContext ectx = new ExecutionContext(
-            taskExecutor, pctx, queryId, local.fragmentId(), local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(params)
+            taskExecutor(), pctx, queryId, local.fragmentId(), local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(params)
         );
 
-        Node<Object[]> node = new Implementor(partitionService, mailboxRegistry, exchangeService, failureProcessor, ectx, log).go(local.root());
+        Node<Object[]> node = new Implementor(partitionService(), mailboxRegistry(), exchangeService(), failureProcessor(), ectx, log).go(local.root());
 
         assert !(node instanceof SenderNode);
 
@@ -264,7 +378,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             // start remote execution
             for (Pair<UUID, QueryStartRequest> pair : requests)
-                messageService.send(pair.left, pair.right);
+                messageService().send(pair.left, pair.right);
         }
 
         // start local execution
@@ -278,7 +392,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID queryId) {
-        mailboxRegistry.outboxes(queryId).forEach(Outbox::cancel);
+        mailboxRegistry().outboxes(queryId).forEach(Outbox::cancel);
 
         QueryInfo info = running.get(queryId);
 
@@ -288,6 +402,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
+        localNodeId(ctx.localNodeId());
+        exchangeManager(ctx.cache().context().exchange());
+        eventManager(ctx.event());
+
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
         queryPlanCache(proc.queryPlanCache());
@@ -300,43 +418,37 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         messageService(proc.messageService());
         exchangeService(proc.exchangeService());
 
-        registerListeners();
-
-        Optional.ofNullable(ctx.event()).ifPresent(this::registerDiscovery);
+        init();
      }
 
-    /**
-     * For tests purpose.
-     */
-    public void registerListeners() {
-        messageService.register((n,m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
-        messageService.register((n,m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
-        messageService.register((n,m) -> onMessage(n, (QueryCancelRequest) m), MessageType.QUERY_CANCEL_REQUEST);
+    /** {@inheritDoc} */
+    @Override public void init() {
+        messageService().register((n,m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
+        messageService().register((n,m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
+        messageService().register((n,m) -> onMessage(n, (QueryCancelRequest) m), MessageType.QUERY_CANCEL_REQUEST);
+
+        eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
-    @Override public void onStop() {
-        Optional.ofNullable(ctx.event()).ifPresent(this::unregisterDiscovery);
+    @Override public void tearDown() {
+        eventManager().removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
         running.clear();
     }
 
     /** */
-    private void registerDiscovery(GridEventStorageManager mgr) {
-        mgr.addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
-    }
-
-    /** */
-    private void unregisterDiscovery(GridEventStorageManager mgr) {
-        mgr.removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+    protected AffinityTopologyVersion topologyVersion() {
+        return exchangeManager().readyAffinityVersion();
     }
 
     /** */
     private QueryPlan prepare(PlanningContext ctx) {
         CacheKey cacheKey = new CacheKey(ctx.schema().getName(), ctx.query());
 
-        QueryPlan plan = queryPlanCache.queryPlan(ctx, cacheKey, this::prepare0);
+        QueryPlan plan = queryPlanCache().queryPlan(ctx, cacheKey, this::prepare0);
 
-        plan.init(mappingService, ctx);
+        plan.init(mappingService(), ctx);
 
         return plan;
     }
@@ -398,17 +510,17 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         };
 
         return PlanningContext.builder()
-            .localNodeId(ctx.localNodeId())
+            .localNodeId(localNodeId())
             .parentContext(Commons.convert(qryCtx)) // TODO Connection config on the basis of query context
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schemaName != null
-                    ? schemaHolder.schema().getSubSchema(schemaName)
-                    : schemaHolder.schema())
+                    ? schemaHolder().schema().getSubSchema(schemaName)
+                    : schemaHolder().schema())
                 .traitDefs(traitDefs)
                 .build())
             .query(query)
             .parameters(params)
-            .topologyVersion(currentTopologyVersion())
+            .topologyVersion(topologyVersion())
             .logger(log)
             .build();
     }
@@ -423,13 +535,13 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         };
 
         return PlanningContext.builder()
-            .localNodeId(ctx.localNodeId())
+            .localNodeId(localNodeId())
             .originatingNodeId(originatingNodeId)
             .parentContext(Contexts.empty())
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schemaName != null
-                    ? schemaHolder.schema().getSubSchema(schemaName)
-                    : schemaHolder.schema())
+                    ? schemaHolder().schema().getSubSchema(schemaName)
+                    : schemaHolder().schema())
                 .traitDefs(traitDefs)
                 .build())
             .topologyVersion(topVer)
@@ -438,12 +550,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private AffinityTopologyVersion currentTopologyVersion() {
-        return ctx.cache().context().exchange().readyAffinityVersion();
-    }
-
-    /** */
-    private void onMessage(UUID nodeId, QueryStartRequest msg) {
+    protected void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
@@ -455,7 +562,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             // TODO do we need a local optimisation phase here?
             ExecutionContext execCtx = new ExecutionContext(
-                taskExecutor,
+                taskExecutor(),
                 ctx,
                 msg.queryId(),
                 msg.fragmentId(),
@@ -463,16 +570,16 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 Commons.parametersMap(msg.parameters())
             );
 
-            Node<Object[]> node = new Implementor(partitionService, mailboxRegistry, exchangeService, failureProcessor, execCtx, log).go(root);
+            Node<Object[]> node = new Implementor(partitionService(), mailboxRegistry(), exchangeService(), failureProcessor(), execCtx, log).go(root);
 
             assert node instanceof Outbox : node;
 
             node.request();
 
-            messageService.send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId()));
+            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId()));
         }
         catch (Exception ex) {
-            messageService.send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
+            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
         }
     }
 
@@ -653,7 +760,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 consumer.cancel();
 
             if (cancelRemote)
-                messageService.send(remotes, new QueryCancelRequest(ctx.queryId()));
+                messageService().send(remotes, new QueryCancelRequest(ctx.queryId()));
 
             if (state0 == QueryState.CANCELLED)
                 running.remove(ctx.queryId());

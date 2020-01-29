@@ -21,12 +21,13 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public interface ExecutionService {
+public interface ExecutionService extends Service {
     /**
      * Executes a query.
      *

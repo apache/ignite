@@ -106,9 +106,8 @@ public class FragmentInfo {
         if (mapping != null) {
             NodesMapping newMapping = mapping.prune(filter);
 
-            if (newMapping != mapping) {
+            if (newMapping != mapping)
                 return new FragmentInfo(sources, newMapping);
-            }
         }
 
         return this;

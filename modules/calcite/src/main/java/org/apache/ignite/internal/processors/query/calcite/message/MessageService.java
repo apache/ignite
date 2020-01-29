@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
  *
  */
-public interface MessageService {
+public interface MessageService extends Service {
     /**
      * Sends a message to given nodes.
      *
