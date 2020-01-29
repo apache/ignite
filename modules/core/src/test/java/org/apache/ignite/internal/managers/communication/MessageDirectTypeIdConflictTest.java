@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.communication;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,10 +38,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests that node will not start if some component tries to register message factory with direct type
@@ -54,9 +54,6 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
 
     /** Message direct type. Message with this direct type will be registered by {@link GridIoMessageFactory} first. */
     private static final short MSG_DIRECT_TYPE = -44;
-
-    /** Register extensions. */
-    private static final AtomicBoolean REG_EXTENSIONS = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -72,15 +69,11 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         stopAllGrids();
-
-        REG_EXTENSIONS.set(true);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        REG_EXTENSIONS.set(false);
 
         stopAllGrids();
     }
@@ -91,7 +84,7 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRegisterMessageFactoryWithConflictDirectTypeId() throws Exception {
-        GridTestUtils.assertThrows(log, this::startGrid, IgniteCheckedException.class,
+        assertThrows(log, this::startGrid, IgniteCheckedException.class,
                 "Message factory is already registered for direct type: " + MSG_DIRECT_TYPE);
     }
 
@@ -128,13 +121,11 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-            if (REG_EXTENSIONS.get()) {
-                registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
-                    @Override public void registerAll(IgniteMessageFactory factory) {
-                        factory.register(MSG_DIRECT_TYPE, TestMessage::new);
-                    }
-                });
-            }
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(MSG_DIRECT_TYPE, TestMessage::new);
+                }
+            });
         }
 
         /** {@inheritDoc} */
