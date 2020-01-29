@@ -19,6 +19,16 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesDestroyTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest;
+import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionDuringPartitionClearTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithDedicatedWorkerSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushFsyncWithMmapBufferSelfTest;
 
 /**
  *
@@ -32,6 +42,8 @@ public class IgnitePdsTestSuite3 extends TestSuite {
 
         addRealPageStoreTestsNotForDirectIo(suite);
 
+        addRealPageStoreTestsLongRunning(suite);
+
         return suite;
     }
 
@@ -43,5 +55,33 @@ public class IgnitePdsTestSuite3 extends TestSuite {
     public static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
         // Rebalancing test
         suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
+     *
+     * @param suite suite to add tests into.
+     */
+    private static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+
+        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
+
+        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
+
+        // Integrity test.
+        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
+
+        suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
+
+        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
     }
 }
