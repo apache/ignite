@@ -87,8 +87,8 @@ public enum IgniteFeatures {
     /** ContinuousQuery with security subject id support. */
     CONT_QRY_SECURITY_AWARE(21),
 
-    /** Preventing loss of in-memory data when deactivating the cluster. */
-    FORCED_CHANGE_OF_CLUSTER_STATE(22);
+    /** Long operations dump timeout. */
+    LONG_OPERATIONS_DUMP_TIMEOUT(30);
 
     /**
      * Unique feature identifier.
