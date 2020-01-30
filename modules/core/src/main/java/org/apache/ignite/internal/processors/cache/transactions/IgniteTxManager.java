@@ -1149,31 +1149,38 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Collection<IgniteTxEntry> entries = tx.local() ? tx.allEntries() : tx.writeEntries();
 
         for (IgniteTxEntry entry : entries) {
-            GridCacheEntryEx cached = entry.cached();
-
-            GridCacheContext cacheCtx = entry.context();
-
-            if (cached == null)
-                cached = cacheCtx.cache().peekEx(entry.key());
-
-            if (cached.detached())
-                continue;
+            cctx.database().checkpointReadLock();
 
             try {
-                if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
-                    cacheCtx.cache().removeEntry(cached);
+                GridCacheEntryEx cached = entry.cached();
 
-                if (!tx.near() && isNearEnabled(cacheCtx)) {
-                    GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+                GridCacheContext cacheCtx = entry.context();
 
-                    GridNearCacheEntry e = near.peekExx(entry.key());
+                if (cached == null)
+                    cached = cacheCtx.cache().peekEx(entry.key());
 
-                    if (e != null && e.markObsoleteIfEmpty(null))
-                        near.removeEntry(e);
+                if (cached.detached())
+                    continue;
+
+                try {
+                    if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
+                        cacheCtx.cache().removeEntry(cached);
+
+                    if (!tx.near() && isNearEnabled(cacheCtx)) {
+                        GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+
+                        GridNearCacheEntry e = near.peekExx(entry.key());
+
+                        if (e != null && e.markObsoleteIfEmpty(null))
+                            near.removeEntry(e);
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
                 }
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
+            finally {
+                cctx.database().checkpointReadUnlock();
             }
         }
     }
