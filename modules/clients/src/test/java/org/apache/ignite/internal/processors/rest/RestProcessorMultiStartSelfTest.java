@@ -41,11 +41,6 @@ public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-    }
-
     /**
      * Test that multiple nodes can start with JETTY enabled.
      *

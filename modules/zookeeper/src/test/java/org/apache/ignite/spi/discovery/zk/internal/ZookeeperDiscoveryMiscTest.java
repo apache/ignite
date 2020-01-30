@@ -395,6 +395,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     /**
      * @param nodeIdx Node index.
      * @param expMsg Expected error message.
+     * @param client Client mode flag.
      */
     private void checkStartFail(final int nodeIdx, String expMsg, boolean client) {
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {

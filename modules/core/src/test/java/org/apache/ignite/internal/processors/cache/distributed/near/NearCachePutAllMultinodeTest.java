@@ -50,9 +50,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /** Number of transactions. */
     private static final int TX_CNT = 10_000;
 
-    /** Client flag. */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 30_000;
@@ -63,7 +60,7 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (!client) {
+        if (!c.isClientMode()) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
@@ -83,8 +80,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(GRID_CNT - 2);
-
-        client = true;
 
         Ignite grid = startClientGrid(GRID_CNT - 2);
 

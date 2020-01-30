@@ -929,7 +929,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Starts new client grid with given index.
+     * Starts new client grid.
      *
      * @return Started grid.
      * @throws Exception If anything failed.

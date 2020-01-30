@@ -63,14 +63,11 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (clientMode)
+        if (cfg.isClientMode())
             cfg.setWorkDirectory(TMP_DIR);
 
         TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
@@ -121,8 +118,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         srv1.cache(DEFAULT_CACHE_NAME).put(1, org);
 
-        clientMode = true;
-
         Ignite cl1 = startClientGrid(1);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
@@ -168,8 +163,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
-        clientMode = true;
-
         Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
@@ -201,8 +194,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
-
-        clientMode = true;
 
         Ignite cl1 = startClientGrid(4);
 
@@ -239,8 +230,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
 
-        clientMode = true;
-
         Ignite cl1 = startClientGrid(4);
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
@@ -276,8 +265,6 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         srv3.cache(DEFAULT_CACHE_NAME).put(
             1, new Organization(1, "Microsoft", "One Microsoft Way Redmond, WA 98052-6399, USA"));
-
-        clientMode = true;
 
         Ignite cl1 = startClientGrid(4);
 

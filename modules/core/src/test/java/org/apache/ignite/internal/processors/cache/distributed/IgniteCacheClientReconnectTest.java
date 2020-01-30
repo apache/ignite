@@ -66,9 +66,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     private static final long TEST_TIME = 60_000;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean forceServerMode;
 
     /** {@inheritDoc} */
@@ -77,7 +74,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        if (!client) {
+        if (!cfg.isClientMode()) {
             CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
             for (int i = 0; i < CACHES; i++) {
@@ -127,8 +124,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
         startGrids(SRV_CNT);
 
-        client = true;
-
         startClientGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
 
         waitForTopology(SRV_CNT + CLIENTS_CNT);
@@ -153,8 +148,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
         startGrids(SRV_CNT);
-
-        client = true;
 
         forceServerMode = true;
 
@@ -253,8 +246,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     @Test
     public void testClientReconnect() throws Exception {
         startGrids(SRV_CNT);
-
-        client = true;
 
         final AtomicBoolean stop = new AtomicBoolean(false);
 

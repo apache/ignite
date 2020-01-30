@@ -208,8 +208,8 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
      * @throws Exception On error.
      */
     private void startGridAndPopulateCache(int nodes) throws Exception {
-        startGrids(NODE_CNT - 1);
-        startClientGrid(NODE_CNT - 1);
+        startGrid(0);
+        startClientGridsMultiThreaded(1, NODE_CNT - 1);
 
         IgniteCache<Long, String> cache = grid(0).cache(CACHE_NAME);
 

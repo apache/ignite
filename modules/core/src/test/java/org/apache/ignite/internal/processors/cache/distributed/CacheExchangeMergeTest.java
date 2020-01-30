@@ -373,7 +373,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
                             startGrid(nodeIdx);
                         }
-
                     }
 
                     return null;

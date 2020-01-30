@@ -86,9 +86,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     private boolean testAttribute = true;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean daemon;
 
     /**
@@ -104,7 +101,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (client)
+        if (cfg.isClientMode())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
@@ -1285,8 +1282,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                client = true;
-
                 int iter = 0;
 
                 while (!stop.get()) {
