@@ -273,6 +273,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
         finally {
             lock.writeLock().unlock();
+
+            cancelUpdateFutures();
         }
     }
 
@@ -874,14 +876,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             ver = INITIAL_VERSION;
 
-            for (GridFutureAdapter<Boolean> fut : updateFuts.values())
-                fut.onDone(new IgniteCheckedException("Client was disconnected during the operation."));
-
-            updateFuts.clear();
+            cancelUpdateFutures();
         }
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /**
+     * Cancel all waiting futures and clear the map.
+     */
+    private void cancelUpdateFutures() {
+        for (GridFutureAdapter<Boolean> fut : updateFuts.values())
+            fut.onDone(new IgniteCheckedException("Client was disconnected during the operation."));
+
+        updateFuts.clear();
     }
 
     /** {@inheritDoc} */
