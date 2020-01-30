@@ -142,7 +142,12 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      * @throws Exception In case of fail
      */
     public void testFailWhileStart() throws Exception {
-        failWhilePut(true);
+        try {
+            failWhilePut(true);
+        }
+        finally {
+            canFail.set(false);
+        }
     }
 
     /**
@@ -151,7 +156,12 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
      * @throws Exception In case of fail
      */
     public void testFailAfterStart() throws Exception {
-        failWhilePut(false);
+        try {
+            failWhilePut(false);
+        }
+        finally {
+            canFail.set(false);
+        }
     }
 
     /**
