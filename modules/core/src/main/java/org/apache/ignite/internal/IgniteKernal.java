@@ -233,6 +233,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
@@ -1521,21 +1522,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        final long longOpDumpTimeout = IgniteSystemProperties.getLong(
-                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
-                DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
-        );
-
-        if (longOpDumpTimeout > 0) {
-            longOpDumpTask = ctx.timeout().schedule(new Runnable() {
-                @Override public void run() {
-                    GridKernalContext ctx = IgniteKernal.this.ctx;
-
-                    if (ctx != null)
-                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
-                }
-            }, longOpDumpTimeout, longOpDumpTimeout);
-        }
+        scheduleLongOperationsDumpTask(ctx.cache().context().tm().longOperationsDumpTimeout());
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
@@ -1558,6 +1545,36 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static DecimalFormat doubleFormat() {
         return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
+    }
+
+    /**
+     * Scheduling tasks for dumping long operations. Closes current task
+     * (if any) and if the {@code longOpDumpTimeout > 0} schedules a new task
+     * with a new timeout, delay and start period equal to
+     * {@code longOpDumpTimeout}, otherwise task is deleted.
+     *
+     * @param longOpDumpTimeout Long operations dump timeout.
+     */
+    public void scheduleLongOperationsDumpTask(long longOpDumpTimeout) {
+        if (isStopping())
+            return;
+
+        synchronized (this) {
+            GridTimeoutProcessor.CancelableTask task = longOpDumpTask;
+
+            if (nonNull(task))
+                task.close();
+
+            if (longOpDumpTimeout > 0) {
+                longOpDumpTask = ctx.timeout().schedule(
+                    () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout),
+                    longOpDumpTimeout,
+                    longOpDumpTimeout
+                );
+            }
+            else
+                longOpDumpTask = null;
+        }
     }
 
     /**
