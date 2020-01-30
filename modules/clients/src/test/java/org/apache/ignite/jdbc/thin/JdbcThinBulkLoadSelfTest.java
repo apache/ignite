@@ -43,22 +43,29 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import java.util.Arrays;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * COPY statement tests.
  */
-public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
-    /** Subdirectory with CSV files */
+@RunWith(Parameterized.class)
+public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+    /** Subdirectory with CSV files. */
     private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
 
     /** Default table name. */
     private static final String TBL_NAME = "Person";
 
-    /** A CSV file with zero records */
+    /** A CSV file with zero records. */
     private static final String BULKLOAD_EMPTY_CSV_FILE =
         Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload0.csv"))
             .getAbsolutePath();
@@ -89,6 +96,31 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     /** JDBC statement. */
     private Statement stmt;
 
+    /** Parametrized run param : cacheMode. */
+    @Parameterized.Parameter(0)
+    public CacheMode cacheMode;
+
+    /** Parametrized run param : atomicity. */
+    @Parameterized.Parameter(1)
+    public CacheAtomicityMode atomicityMode;
+
+    /** Parametrized run param : near mode. */
+    @Parameterized.Parameter(2)
+    public Boolean isNear;
+
+    /** Test run configurations: Cache mode, atomicity type, is near. */
+    @Parameterized.Parameters
+    public static Collection<Object[]> runConfig() {
+        return Arrays.asList(new Object[][] {
+            {PARTITIONED, ATOMIC, true},
+            {PARTITIONED, ATOMIC, false},
+            {PARTITIONED, TRANSACTIONAL, true},
+            {PARTITIONED, TRANSACTIONAL, false},
+            {REPLICATED, ATOMIC, false},
+            {REPLICATED, TRANSACTIONAL, false},
+        });
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
         return cacheConfigWithIndexedTypes();
@@ -104,14 +136,14 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     private CacheConfiguration cacheConfigWithIndexedTypes() {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
-        cache.setCacheMode(cacheMode());
-        cache.setAtomicityMode(atomicityMode());
+        cache.setCacheMode(cacheMode);
+        cache.setAtomicityMode(atomicityMode);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
-        if (cacheMode() == PARTITIONED)
+        if (cacheMode == PARTITIONED)
             cache.setBackups(1);
 
-        if (nearCache())
+        if (isNear)
             cache.setNearConfiguration(new NearCacheConfiguration());
 
         cache.setIndexedTypes(
@@ -148,27 +180,6 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         return cache;
     }
-
-    /**
-     * Returns true if we are testing near cache.
-     *
-     * @return true if we are testing near cache.
-     */
-    protected abstract boolean nearCache();
-
-    /**
-     * Returns cache atomicity mode we are testing.
-     *
-     * @return The cache atomicity mode we are testing.
-     */
-    protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * Returns cache mode we are testing.
-     *
-     * @return The cache mode we are testing.
-     */
-    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -573,14 +584,19 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         execute(conn, "create table " + tblName +
             " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
 
-        int updatesCnt = stmt.executeUpdate(
-            "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "' into " + tblName +
-                "(_key, age, firstName, lastName)" +
-                " format csv");
+        try {
+            int updatesCnt = stmt.executeUpdate(
+                "copy from '" + BULKLOAD_TWO_LINES_CSV_FILE + "' into " + tblName +
+                    "(_key, age, firstName, lastName)" +
+                    " format csv");
 
-        assertEquals(2, updatesCnt);
+            assertEquals(2, updatesCnt);
 
-        checkCacheContents(tblName, true, 2);
+            checkCacheContents(tblName, true, 2);
+        }
+        finally {
+            execute(conn, "drop table " + tblName);
+        }
     }
 
     /**

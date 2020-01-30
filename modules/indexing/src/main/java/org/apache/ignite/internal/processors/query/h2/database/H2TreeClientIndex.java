@@ -74,7 +74,7 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     private int calculateInlineSize(IndexColumn[] cols, int inlineSize, CacheConfiguration<?, ?> cacheConf) {
         List<InlineIndexHelper> inlineCols = getAvailableInlineColumns(cols);
 
-        return computeInlineSize(inlineCols, inlineSize, cacheConf);
+        return computeInlineSize(inlineCols, inlineSize, cacheConf.getSqlIndexMaxInlineSize());
     }
 
     /** {@inheritDoc} */
