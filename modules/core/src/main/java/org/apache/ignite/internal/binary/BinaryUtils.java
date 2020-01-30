@@ -1715,7 +1715,7 @@ public class BinaryUtils {
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
+        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();

@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.query;
 
-/**
- * Update counter implementation for MVCC mode.
- */
-public class PartitionMvccTxUpdateCounterImpl extends PartitionTxUpdateCounterImpl {
-    /** {@inheritDoc} */
-    @Override public long reserve(long delta) {
-        return next(delta);
-    }
+import java.util.List;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 
+/** Verifies default sql schema through SqlFieldsQuery API. */
+public class IgniteSqlDefaultSchemaTest extends AbstractDefaultSchemaTest {
     /** {@inheritDoc} */
-    @Override public long reserved() {
-        return get();
+    @Override protected List<List<?>> execSql(String qry) {
+        return grid(0).context().query()
+            .querySqlFields(new SqlFieldsQuery(qry).setLazy(true), false)
+            .getAll();
     }
 }

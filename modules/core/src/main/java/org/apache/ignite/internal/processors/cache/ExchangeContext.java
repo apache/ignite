@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -37,6 +38,9 @@ import static org.apache.ignite.internal.processors.cache.GridCachePartitionExch
 public class ExchangeContext {
     /** */
     public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /** Cache groups to request affinity for during local join exchange. */
     private Set<Integer> requestGrpsAffOnJoin;
@@ -57,16 +61,25 @@ public class ExchangeContext {
     private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
 
     /**
+     * @param cctx Context.
      * @param crd Coordinator flag.
      * @param fut Exchange future.
      */
-    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
+    public ExchangeContext(GridCacheSharedContext<?, ?> cctx, boolean crd, GridDhtPartitionsExchangeFuture fut) {
+        log = cctx.logger(getClass());
+
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
+
+        boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
+
+        if (!allNodesSupportsPmeFreeSwitch)
+            log.warning("Current topology does not support the PME-free switch. Please check all nodes support" +
+                " this feature and it was not explicitly disabled by IGNITE_PME_FREE_SWITCH_DISABLED JVM option.");
 
         if (!compatibilityNode &&
             fut.wasRebalanced() &&
             fut.isBaselineNodeFailed() &&
-            allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH)) {
+            allNodesSupportsPmeFreeSwitch) {
             exchangeFreeSwitch = true;
             merge = false;
         }

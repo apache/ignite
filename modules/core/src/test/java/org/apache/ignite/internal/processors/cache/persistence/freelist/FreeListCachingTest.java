@@ -68,11 +68,15 @@ public class FreeListCachingTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        int pageSize = dsCfg.getPageSize() == 0 ? DataStorageConfiguration.DFLT_PAGE_SIZE : dsCfg.getPageSize();
+
+        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(140L * 1024 * 1024)
-            ));
+                .setMaxSize(pageSize * 40_000L));
+
+        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
