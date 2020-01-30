@@ -355,7 +355,7 @@ public class GridAffinityAssignmentCache {
                 assignment = IdealAffinityAssignment.create(
                     topVer,
                     sorted,
-                    baselineAssignmentWithoutOfflineNodes(topVer)
+                    baselineAssignmentWithoutOfflineNodes(discoCache)
                 );
             }
             else if (skipCalculation)
@@ -367,7 +367,7 @@ public class GridAffinityAssignmentCache {
                 assignment = IdealAffinityAssignment.create(
                     topVer,
                     sorted,
-                    baselineAssignmentWithoutOfflineNodes(topVer)
+                    baselineAssignmentWithoutOfflineNodes(discoCache)
                 );
             }
             else {
@@ -388,7 +388,7 @@ public class GridAffinityAssignmentCache {
 
                 assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
                     topVer,
-                    baselineAssignmentWithoutOfflineNodes(topVer),
+                    baselineAssignmentWithoutOfflineNodes(discoCache),
                     baselineAssignment
                 );
             }
@@ -455,16 +455,14 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param topVer Topology version.
+     * @param disco Discovery history.
      * @return Baseline assignment with filtered out offline nodes.
      */
-    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(AffinityTopologyVersion topVer) {
+    private List<List<ClusterNode>> baselineAssignmentWithoutOfflineNodes(DiscoCache disco) {
         Map<Object, ClusterNode> alives = new HashMap<>();
 
-        for (ClusterNode node : ctx.discovery().nodes(topVer)) {
-            if (!node.isClient() && !node.isDaemon())
-                alives.put(node.consistentId(), node);
-        }
+        for (ClusterNode node : disco.serverNodes())
+            alives.put(node.consistentId(), node);
 
         List<List<ClusterNode>> assignment = baselineAssignment.assignment();
 
