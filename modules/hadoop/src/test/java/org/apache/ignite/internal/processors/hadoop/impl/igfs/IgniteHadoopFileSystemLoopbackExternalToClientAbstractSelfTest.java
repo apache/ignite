@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointType;
 import org.apache.ignite.igfs.IgfsMode;
@@ -45,5 +46,15 @@ public abstract class IgniteHadoopFileSystemLoopbackExternalToClientAbstractSelf
         endpointCfg.setPort(DFLT_IPC_PORT + getTestIgniteInstanceIndex(gridName));
 
         return endpointCfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (getTestIgniteInstanceIndex(gridName) == 0)
+            cfg.setClientMode(true);
+
+        return cfg;
     }
 }
