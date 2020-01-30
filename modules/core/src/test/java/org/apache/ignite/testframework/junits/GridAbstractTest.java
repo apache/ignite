@@ -56,7 +56,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
@@ -80,6 +79,7 @@ import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -143,13 +144,22 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
+import static java.util.Collections.newSetFromMap;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
@@ -200,6 +210,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     };
 
+    /** Classes for which you want to clear the static log. */
+    private static final Collection<Class<?>> clearStaticLogClasses = newSetFromMap(new ConcurrentHashMap<>());
+
     /** Allows easy repeating for test. */
     @Rule public transient RepeatRule repeatRule = new RepeatRule();
 
@@ -247,12 +260,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** */
     static {
-        System.setProperty(IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
-        System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, "false");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
         System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
+
+        S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
 
         if (GridTestClockTimer.startTestTimer()) {
             Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
@@ -322,7 +337,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        // Checking that no test wrapper is set before test execution.
+        assert BPlusTree.testHndWrapper == null;
     }
 
     /**
@@ -334,7 +350,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        clearStaticLogClasses.forEach(this::clearStaticClassLog);
+        clearStaticLogClasses.clear();
     }
 
     /**
@@ -879,6 +896,23 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Starts new client grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx) throws Exception {
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
+
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+
+        cfg.setClientMode(true);
+
+        return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
+    }
+
+    /**
      * Starts new grid with given configuration.
      *
      * @param cfg Ignite configuration.
@@ -1196,8 +1230,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
-            if (!isRemoteJvm(igniteInstanceName))
-                G.stop(igniteInstanceName, cancel);
+            if (!isRemoteJvm(igniteInstanceName)) {
+                IgniteUtils.setCurrentIgniteName(igniteInstanceName);
+
+                try {
+                    G.stop(igniteInstanceName, cancel);
+                }
+                finally {
+                    IgniteUtils.setCurrentIgniteName(null);
+                }
+            }
             else
                 IgniteProcessProxy.stop(igniteInstanceName, cancel);
 
@@ -2369,6 +2411,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Clear S#classCache. Use if necessary to test sensitive data
+     * in the test. https://ggsystems.atlassian.net/browse/GG-25182
+     */
+    protected void clearGridToStringClassCache() {
+        ((Map)getFieldValueHierarchy(S.class, "classCache")).clear();
+    }
+
+    /**
      * @param millis Time to sleep.
      */
     public static void doSleep(long millis) {
@@ -2645,9 +2695,38 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     }
 
+    /**
+     * Clearing the static log for the class. <br/>
+     * There is a situation when class logs cannot be listened to although they
+     * are visible, for example, in a file. This happens when the test is in
+     * one of the suites and the static log was installed earlier and is not
+     * reset when the next test class is launched. To prevent this from
+     * happening, before starting all the tests in the test class, you need to
+     * reset the static class log.
+     *
+     * @param cls Class.
+     */
+    protected void clearStaticLog(Class<?> cls) {
+        assertNotNull(cls);
+
+        clearStaticLogClasses.add(cls);
+        clearStaticClassLog(cls);
+    }
 
     /**
-     * Returns metric set.
+     * Clearing the static log for the class.
+     *
+     * @param cls Class.
+     */
+    private void clearStaticClassLog(Class<?> cls) {
+        assertNotNull(cls);
+
+        ((AtomicReference<IgniteLogger>)getFieldValue(cls, "logRef")).set(null);
+        setFieldValue(cls, "log", null);
+    }
+
+    /**
+     * Returns metric registry.
      *
      * @param igniteInstanceName Ignite instance name.
      * @param grp Name of the group.
