@@ -1475,14 +1475,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.partId = partId;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            if (grp.mvccEnabled())
-                pCntr = new PartitionMvccTxUpdateCounterImpl();
-            else if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
-                pCntr = new PartitionAtomicUpdateCounterImpl();
-            else {
-                pCntr = ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
-                    new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
-            }
+
+            PartitionUpdateCounter delegate = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl(grp) :
+                grp.persistenceEnabled() ? new PartitionUpdateCounterTrackingImpl(grp) :
+                    new PartitionUpdateCounterVolatileImpl(grp);
+
+            pCntr = ctx.logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
+                new PartitionUpdateCounterDebugWrapper(partId, delegate) : delegate;
         }
 
         /**
