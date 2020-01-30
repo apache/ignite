@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -201,6 +202,18 @@ public class IgniteNodeRunner {
             catch (Exception e) {
                 // Print stack trace just for information.
                 X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
+
+                try {
+                    String line;
+                    Process p = Runtime.getRuntime().exec("ps aux");
+                    BufferedReader input =
+                        new BufferedReader(new InputStreamReader(p.getInputStream()));
+                    while ((line = input.readLine()) != null)
+                        System.out.println("proc: " + line);
+                    input.close();
+                } catch (Exception err) {
+                    err.printStackTrace();
+                }
             }
         }
 
