@@ -101,7 +101,7 @@
         Uncomment to enable debugging of partition counters.
     -->
     <!--
-        <category name="org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterDebugWrapper">
+        <category name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper">
             <level value="DEBUG"/>
         </category>
     -->

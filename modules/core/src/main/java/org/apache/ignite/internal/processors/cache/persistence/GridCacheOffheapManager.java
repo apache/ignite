@@ -1375,8 +1375,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to ||
-                                    entry.partitionCounter() == to && grp.hasAtomicCaches())
+                                if (++rebalancedCntrs[idx] == to)
                                     donePart = entry.partitionId();
 
                                 next = entry;
@@ -1417,8 +1416,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Partition done [partId=" + donePart +
-                                        " from=" + from + " to=" + to + ']');
+                                    log.debug("Partition done [grpId=" + grp.groupId() +
+                                        ", partId=" + donePart +
+                                        ", from=" + from +
+                                        ", to=" + to + ']');
                                 }
 
                                 doneParts.add(rbRec.partitionId()); // Add to done set immediately.
@@ -1427,8 +1428,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
                 }
 
-                assert entryIt != null || doneParts.size() == partMap.size() :
-                    "Reached end of WAL but not all partitions are done [done=" + doneParts + ", all=" + partMap + "]";
+                if (entryIt == null && doneParts.size() != partMap.size()) {
+                    for (int i = 0; i < partMap.size(); i++) {
+                        int p = partMap.partitionAt(i);
+
+                        if (!doneParts.contains(p)) {
+                            log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
+                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+
+                            assert false;
+
+                            doneParts.add(p);
+                        }
+                    }
+
+                    return;
+                }
             }
         }
     }
@@ -1904,7 +1919,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int grpId = grp.groupId();
             long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
 
-            long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+            AtomicBoolean metaPageAllocated = new AtomicBoolean(false);
+
+            long partMetaPage = pageMem.acquirePage(grpId, partMetaId, metaPageAllocated);
+
+            if (metaPageAllocated.get())
+                grp.metrics().incrementInitializedLocalPartitions();
+
             try {
                 boolean allocated = false;
                 boolean pendingTreeAllocated = false;
@@ -2708,35 +2729,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert active.get() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
+            assert ctx.database().checkpointLockIsHeldByThread();
+
             CacheDataStore delegate0 = init0(true);
 
             if (delegate0 == null)
                 return;
 
-            ctx.database().checkpointReadLock();
-            try {
-                // Clear persistent pendingTree
-                if (pendingTree != null) {
-                    PendingRow row = new PendingRow(cacheId);
+            // Clear persistent pendingTree
+            if (pendingTree != null) {
+                PendingRow row = new PendingRow(cacheId);
 
-                    GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+                GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
 
-                    while (cursor.next()) {
-                        PendingRow row0 = cursor.get();
+                while (cursor.next()) {
+                    PendingRow row0 = cursor.get();
 
-                        assert row0.link != 0 : row;
+                    assert row0.link != 0 : row;
 
-                        boolean res = pendingTree.removex(row0);
+                    boolean res = pendingTree.removex(row0);
 
-                        assert res;
-                    }
+                    assert res;
                 }
+            }
 
-                delegate0.clear(cacheId);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
+            delegate0.clear(cacheId);
         }
 
         /**
