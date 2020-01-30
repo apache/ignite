@@ -115,11 +115,13 @@ public class DistanceTest {
     @Test
     public void cosineSimilarityDistance() {
         double expRes = 0.9449111825230682d;
+        DenseVector a = new DenseVector(new double[]{1, 2, 3});
+        double[] b = {1, 1, 4};
 
         DistanceMeasure distanceMeasure = new CosineSimilarityDistance();
 
-//        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(new DenseVector(new double[]{1,2,3}), new DenseVector(new double[]{1,1,4})), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(a, b), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(a, new DenseVector(b)), PRECISION);
     }
 
 

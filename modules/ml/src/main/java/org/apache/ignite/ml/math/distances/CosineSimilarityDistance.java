@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import static java.lang.Math.sqrt;
+
 public class CosineSimilarityDistance implements DistanceMeasure {
     @Override
     public double compute(Vector a, Vector b) throws CardinalityException {
@@ -16,7 +18,17 @@ public class CosineSimilarityDistance implements DistanceMeasure {
 
     @Override
     public double compute(Vector a, double[] b) throws CardinalityException {
-        return 0;
+        double dot = 0.0;
+        double aSquaredSum = 0.0;
+        double bSquaredSum = 0.0;
+
+        for (int i = 0; i < b.length; i++) {
+            dot += b[i] * a.get(i);
+            aSquaredSum += a.get(i) * a.get(i);
+            bSquaredSum += b[i] * b[i];
+
+        }
+        return dot / (sqrt(aSquaredSum) * sqrt(bSquaredSum));
     }
 
     /** {@inheritDoc} */
