@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -532,6 +534,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
 
+            case MASTER_KEY_CHANGE_RECORD:
+                MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
+
+                return rec.dataSize();
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -1147,6 +1153,35 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case MASTER_KEY_CHANGE_RECORD:
+                int keyNameLen = in.readInt();
+
+                byte[] keyNameBytes = new byte[keyNameLen];
+
+                in.readFully(keyNameBytes);
+
+                String masterKeyName = new String(keyNameBytes);
+
+                int keysCnt = in.readInt();
+
+                HashMap<Integer, byte[]> grpKeys = new HashMap<>(keysCnt);
+
+                for (int i = 0; i < keysCnt; i++) {
+                    int grpId = in.readInt();
+
+                    int grpKeySize = in.readInt();
+
+                    byte[] grpKey = new byte[grpKeySize];
+
+                    in.readFully(grpKey);
+
+                    grpKeys.put(grpId, grpKey);
+                }
+
+                res = new MasterKeyChangeRecord(masterKeyName, grpKeys);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1711,6 +1746,27 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case SWITCH_SEGMENT_RECORD:
                 break;
 
+            case MASTER_KEY_CHANGE_RECORD:
+                MasterKeyChangeRecord mkChangeRec = (MasterKeyChangeRecord)rec;
+
+                byte[] keyIdBytes = mkChangeRec.getMasterKeyName().getBytes();
+
+                buf.putInt(keyIdBytes.length);
+                buf.put(keyIdBytes);
+
+                Map<Integer, byte[]> grpKeys = mkChangeRec.getGrpKeys();
+
+                buf.putInt(grpKeys.size());
+
+                for (Entry<Integer, byte[]> entry : grpKeys.entrySet()) {
+                    buf.putInt(entry.getKey());
+
+                    buf.putInt(entry.getValue().length);
+                    buf.put(entry.getValue());
+                }
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + rec.type());
         }
@@ -1784,7 +1840,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private static void putCacheStates(ByteBuffer buf, Map<Integer, CacheState> states) {
         buf.putShort((short)states.size());
 
-        for (Map.Entry<Integer, CacheState> entry : states.entrySet()) {
+        for (Entry<Integer, CacheState> entry : states.entrySet()) {
             buf.putInt(entry.getKey());
 
             CacheState state = entry.getValue();
@@ -2065,7 +2121,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         // Need 4 bytes for the number of caches.
         int size = 2;
 
-        for (Map.Entry<Integer, CacheState> entry : states.entrySet()) {
+        for (Entry<Integer, CacheState> entry : states.entrySet()) {
             // Cache ID.
             size += 4;
 

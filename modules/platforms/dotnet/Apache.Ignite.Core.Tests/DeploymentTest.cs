@@ -229,6 +229,7 @@ namespace Apache.Ignite.Core.Tests
         private class ProcessPathFunc : IComputeFunc<string>
         {
             [InstanceResource]
+            // ReSharper disable once UnassignedField.Local
             private IIgnite _ignite;
 
             /** <inheritdoc /> */

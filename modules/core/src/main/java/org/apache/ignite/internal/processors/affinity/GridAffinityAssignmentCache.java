@@ -575,7 +575,7 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @return Last calculated affinity version.
+     * @return Last initialized affinity version.
      */
     public AffinityTopologyVersion lastVersion() {
         return head.get().topologyVersion();

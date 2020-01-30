@@ -354,8 +354,10 @@ public interface GridDhtPartitionTopology {
 
     /**
      * Pre-processes partition update counters before exchange.
+     *
+     * @param parts Partitions.
      */
-    void finalizeUpdateCounters();
+    public void finalizeUpdateCounters(Set<Integer> parts);
 
     /**
      * @return Partition update counters.
@@ -422,17 +424,19 @@ public interface GridDhtPartitionTopology {
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 
     /**
-     * Calculates nodes and partitions which have non-actual state and must be rebalanced.
+     * Calculates nodes and partitions which have non-actual state (based on LWM value) and must be rebalanced.
      * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
      * Called on coordinator during assignment of partition states.
      *
      * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
      *                            (update counter is maximal) and should hold OWNING state for such partition).
-     * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @param haveHist Set of partitions which have WAL history to rebalance.
      * @param exchFut Exchange future for operation.
      * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
      */
-    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory,
+    public Map<UUID, Set<Integer>> resetOwners(
+        Map<Integer, Set<UUID>> ownersByUpdCounters,
+        Set<Integer> haveHist,
         GridDhtPartitionsExchangeFuture exchFut);
 
     /**

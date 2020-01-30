@@ -173,7 +173,7 @@ public class SecurityUtils {
     /**
      * @return True if class of {@code target} is a system type.
      */
-    private static boolean isSystemType(GridKernalContext ctx, Object target) {
+    public static boolean isSystemType(GridKernalContext ctx, Object target) {
         Class cls = target instanceof GridInternalWrapper
             ? ((GridInternalWrapper)target).userObject().getClass()
             : target.getClass();
