@@ -21,9 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
@@ -36,6 +38,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -55,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -495,6 +499,74 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             for (int k = 0; k < entryCnt; k++)
                 assertEquals(new IndexedObject(k), cache1.get(k));
         }
+    }
+
+    /**
+     * Check that historical rebalance doesn't start on the cleared partition after node blink.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalanceRestartWithNodeBlinking() throws Exception {
+        int entryCnt = PARTS_CNT * 200;
+
+        IgniteEx crd = startGrid(0);
+
+        crd.cluster().state(ClusterState.ACTIVE);
+        crd.cluster().baselineAutoAdjustEnabled(false);
+
+        Ignite node1 = startGrid(1);
+        Ignite node2 = startGrid(2);
+
+        List<ClusterNode> blt = new ArrayList<>(crd.context().discovery().aliveServerNodes());
+
+        crd.cluster().setBaselineTopology(blt);
+
+        IgniteCache<Integer, String> cache0 = crd.cache(CACHE_NAME);
+
+        for (int i = 0; i < entryCnt / 2; i++)
+            cache0.put(i, String.valueOf(i));
+
+        forceCheckpoint();
+
+        node2.close();
+
+        awaitPartitionMapExchange();
+
+        for (int i = entryCnt / 2; i < entryCnt; i++)
+            cache0.put(i, String.valueOf(i));
+
+        blockMessagePredicate = (node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
+
+                return msg0.groupId() == CU.cacheId(CACHE_NAME);
+            }
+
+            return false;
+        };
+
+        startGrid(2);
+
+        TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(grid(2));
+
+        spi2.waitForBlocked();
+        spi2.stopBlock();
+
+        node1.close();
+
+        spi2.blockMessages(blockMessagePredicate);
+        spi2.waitForBlocked();
+
+        startGrid(1);
+
+        spi2.stopBlock();
+
+        awaitPartitionMapExchange();
+
+        // Check that all data is present on the rebalanced node.
+        for (int i = 0; i < entryCnt; i++)
+            assertEquals(String.valueOf(i), grid(2).cache(CACHE_NAME).get(i));
     }
 
     /**

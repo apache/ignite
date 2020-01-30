@@ -84,9 +84,8 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /**
      * Initial counter points to last sequential update after WAL recovery.
-     * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
-    @Deprecated private long initCntr;
+    @Deprecated private volatile long initCntr;
 
     /**
      * @param grp Group.
@@ -344,6 +343,11 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         reserveCntr.set(0);
 
         queue.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetInitial() {
+        initCntr = 0;
     }
 
     /**
