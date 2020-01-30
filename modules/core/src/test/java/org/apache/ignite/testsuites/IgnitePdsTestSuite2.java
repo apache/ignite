@@ -92,18 +92,18 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
 
         // Integrity test.
-        suite.addTestSuite(IgniteDataIntegrityTests.class);
+/*        suite.addTestSuite(IgniteDataIntegrityTests.class);
         suite.addTestSuite(IgniteStandaloneWalIteratorInvalidCrcTest.class);
         suite.addTestSuite(IgniteReplayWalIteratorInvalidCrcTest.class);
         suite.addTestSuite(IgniteFsyncReplayWalIteratorInvalidCrcTest.class);
-        suite.addTestSuite(IgnitePureJavaCrcCompatibility.class);
+        suite.addTestSuite(IgnitePureJavaCrcCompatibility.class);*/
 
         addRealPageStoreTests(suite);
 
         addRealPageStoreTestsLongRunning(suite);
 
         // BaselineTopology tests
-        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
+/*        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
         suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
         suite.addTestSuite(ClientAffinityAssignmentWithBaselineTest.class);
@@ -111,7 +111,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
 
-        suite.addTestSuite(FileDownloaderTest.class);
+        suite.addTestSuite(FileDownloaderTest.class);*/
 
         return suite;
     }
@@ -122,7 +122,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     private static void addRealPageStoreTestsLongRunning(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+/*        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
 
         suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
 
@@ -141,7 +141,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
 
-        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);
+        suite.addTestSuite(IgniteWalFlushFsyncWithMmapBufferSelfTest.class);*/
     }
 
     /**
@@ -152,7 +152,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsPageSizesTest.class);
+        /*suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
         // Metrics test.
         suite.addTestSuite(IgniteDataStorageMetricsSelfTest.class);
@@ -234,7 +234,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsPartitionsStateRecoveryTest.class);
 
-        suite.addTestSuite(WalPreloadingConcurrentTest.class);
+        suite.addTestSuite(WalPreloadingConcurrentTest.class);*/
 
         suite.addTestSuite(CorruptedCheckpointReservationTest.class);
     }
