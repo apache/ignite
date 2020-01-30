@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.messaging;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,7 +30,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -70,29 +70,20 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(CLNT_CHECK, 2);
-    }
-
     /** */
     @Test
     public void test() throws Exception {
-        IgniteRunnable r = new RegisterExecAndForward<>(() -> {
+        runAndCheck(() -> {
             Ignite loc = Ignition.localIgnite();
 
-            IgniteMessaging messaging = loc.message(loc.cluster().forNodeIds(nodesToCheck()));
+            IgniteMessaging messaging = loc.message(loc.cluster().forNodeIds(nodesToCheckIds()));
 
             Integer idx = TOPIC_INDEX.incrementAndGet();
 
             String topic = "test_topic_" + idx;
 
             UUID id = messaging.remoteListen(topic, (uuid, o) -> {
-                VERIFIER.register();
+                VERIFIER.register(OPERATION_CHECK);
 
                 SYNCHRONIZED_SET.add(o);
 
@@ -108,9 +99,11 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
                 messaging.stopRemoteListen(id);
             }
         });
+    }
 
-        runAndCheck(grid(SRV_INITIATOR), r);
-        runAndCheck(grid(CLNT_INITIATOR), r);
+    /** {@inheritDoc} */
+    @Override protected Collection<String> endpoints() {
+        return Collections.emptyList();
     }
 
     /** */
