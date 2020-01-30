@@ -757,6 +757,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (state0 != MOVING && state0 != RENTING)
             return;
 
+        store.resetInitialUpdateCounter();
+
         clearAsync0(false);
     }
 
