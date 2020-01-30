@@ -55,7 +55,6 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -309,7 +308,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
             return false;
 
-        return !grp.mvccEnabled() && !grp.hasAtomicCaches();
+        return !grp.mvccEnabled(); // && !grp.hasAtomicCaches();
     }
 
     /**

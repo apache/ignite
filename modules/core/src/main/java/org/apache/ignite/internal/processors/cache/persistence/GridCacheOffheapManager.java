@@ -67,10 +67,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.PartitionAtomicUpdateCounterImpl;
-import org.apache.ignite.internal.processors.cache.PartitionMvccTxUpdateCounterImpl;
-import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterMvccImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterVolatileImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -2961,11 +2961,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         PartitionUpdateCounter readCntr0;
 
                         if (grp.mvccEnabled())
-                            readCntr0 = new PartitionMvccTxUpdateCounterImpl();
-                        else if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
-                            readCntr0 = new PartitionAtomicUpdateCounterImpl();
+                            readCntr0 = new PartitionUpdateCounterMvccImpl(grp);
+                        else if (!grp.persistenceEnabled())
+                            readCntr0 = new PartitionUpdateCounterTrackingImpl(grp);
                         else
-                            readCntr0 = new PartitionTxUpdateCounterImpl();
+                            readCntr0 = new PartitionUpdateCounterVolatileImpl(grp);
 
                         PartitionUpdateCounter cntr0 = delegate.partUpdateCounter();
 
