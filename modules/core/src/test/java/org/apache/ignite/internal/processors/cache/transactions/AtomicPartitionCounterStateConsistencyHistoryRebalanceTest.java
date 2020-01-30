@@ -15,19 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.transactions;
+
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
- * Update counter implementation for MVCC mode.
+ * Test partitions consistency in various scenarios when all rebalance is historical.
  */
-public class PartitionMvccTxUpdateCounterImpl extends PartitionTxUpdateCounterImpl {
-    /** {@inheritDoc} */
-    @Override public long reserve(long delta) {
-        return next(delta);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long reserved() {
-        return get();
-    }
+@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+public class AtomicPartitionCounterStateConsistencyHistoryRebalanceTest extends AtomicPartitionCounterStateConsistencyTest {
 }

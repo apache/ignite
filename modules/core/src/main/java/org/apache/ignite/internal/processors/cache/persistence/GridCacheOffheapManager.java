@@ -1364,8 +1364,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to ||
-                                    entry.partitionCounter() == to && grp.hasAtomicCaches())
+                                if (++rebalancedCntrs[idx] == to)
                                     donePart = entry.partitionId();
 
                                 next = entry;
@@ -1406,8 +1405,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Partition done [partId=" + donePart +
-                                        " from=" + from + " to=" + to + ']');
+                                    log.debug("Partition done [grpId=" + grp.groupId() +
+                                        ", partId=" + donePart +
+                                        ", from=" + from +
+                                        ", to=" + to + ']');
                                 }
 
                                 doneParts.add(rbRec.partitionId()); // Add to done set immediately.
@@ -1416,8 +1417,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
                 }
 
-                assert entryIt != null || doneParts.size() == partMap.size() :
-                    "Reached end of WAL but not all partitions are done";
+                if (entryIt == null && doneParts.size() != partMap.size()) {
+                    for (int i = 0; i < partMap.size(); i++) {
+                        int p = partMap.partitionAt(i);
+
+                        if (!doneParts.contains(p)) {
+                            log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
+                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+
+                            doneParts.add(p);
+                        }
+                    }
+
+                    return;
+                }
             }
         }
     }

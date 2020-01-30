@@ -36,14 +36,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Update counter implementation used for transactional cache groups in persistent mode.
+ * Update counter implementation used for cache groups in persistent mode for both tx and atomic caches.
  * <p>
- * Implements new partition update counter flow to avoid situations when:
+ * Implements the partition update counter flow to avoid situations when:
  * <ol>
  *     <li>update counter could be incremented and persisted while corresponding update is not recorded to WAL.</li>
- *     <li>update counter could be prematurely incremented causing missed rebalancing.</li>
+ *     <li>update counter could be updated out of order.</li>
  * </ol>
- * All these situations are sources of partitions desync.
+ * All these situations are sources of partitions desync in case of node failure under load.
+ * <p>
+ * The main idea is to track updates received out-of-order to ensure valid state of the update counter for rebalancing.
  * <p>
  * Below a short description of new flow:
  * <ol>
@@ -56,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
  *     logged to WAL using {@link RollbackRecord} for further recovery purposes.</li>
  * </ol>
  */
-public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
+public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounter {
     /**
      * Max allowed missed updates. Overflow will trigger critical failure handler to prevent OOM.
      */
@@ -77,11 +79,21 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /** */
     private boolean first = true;
 
+    /** */
+    protected final CacheGroupContext grp;
+
     /**
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
     @Deprecated private long initCntr;
+
+    /**
+     * @param grp Group.
+     */
+    public PartitionUpdateCounterTrackingImpl(CacheGroupContext grp) {
+        this.grp = grp;
+    }
 
     /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
@@ -440,7 +452,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
             if (start != item.start)
                 return false;
 
-            return  (delta != item.delta);
+            return delta == item.delta;
         }
     }
 
@@ -451,7 +463,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PartitionTxUpdateCounterImpl cntr = (PartitionTxUpdateCounterImpl)o;
+        PartitionUpdateCounterTrackingImpl cntr = (PartitionUpdateCounterTrackingImpl)o;
 
         if (!queue.equals(cntr.queue))
             return false;
@@ -480,5 +492,10 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public String toString() {
         return "Counter [lwm=" + get() + ", holes=" + queue +
             ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr.get() + ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheGroupContext context() {
+        return grp;
     }
 }
