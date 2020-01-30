@@ -647,7 +647,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param snpName Unique snapshot name.
      * @return Future which will be completed when snapshot is done.
      */
-    public IgniteInternalFuture<Boolean> createLocalSnapshot(String snpName, List<Integer> grpIds) {
+    IgniteInternalFuture<Boolean> createLocalSnapshot(String snpName, List<Integer> grpIds) {
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         Map<Integer, GridIntList> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
@@ -859,7 +859,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             snpName0 -> new SnapshotTask(cctx,
                 srcNodeId,
                 snpName0,
-                new File(snapshotTempDir(), snpName0),
+                tmpWorkDir,
                 exec,
                 ioFactory,
                 snpSndr,
@@ -872,27 +872,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
-     * @param rootSnpDir Absolute snapshot directory.
+     * @param snpLocDir Absolute snapshot directory.
      * @return Snapshot receiver instance.
      */
-    SnapshotFileSender localSnapshotSender(File rootSnpDir) throws IgniteCheckedException {
+    SnapshotFileSender localSnapshotSender(File snpLocDir) throws IgniteCheckedException {
         // Relative path to snapshot storage of local node.
         // Example: snapshotWorkDir/db/IgniteNodeName0
         String dbNodePath = relativeStoragePath(cctx);
 
-        U.ensureDirectory(new File(rootSnpDir, dbNodePath), "local snapshot directory", log);
+        File snpTargetDir = new File(snpLocDir, dbNodePath);
+
+        // todo should be fired on executor on task init
+        U.ensureDirectory(snpTargetDir, "local snapshot directory", log);
 
         return new LocalSnapshotFileSender(log,
-            new File(rootSnpDir, dbNodePath),
+            snpTargetDir,
             ioFactory,
             storeFactory,
             cctx.kernalContext()
                 .cacheObjects()
-                .binaryWriter(rootSnpDir.getAbsolutePath()),
+                .binaryWriter(snpLocDir.getAbsolutePath()),
             cctx.kernalContext()
                 .marshallerContext()
-                .marshallerMappingWriter(cctx.kernalContext(), rootSnpDir.getAbsolutePath()),
+                .marshallerMappingWriter(cctx.kernalContext(), snpLocDir.getAbsolutePath()),
             pageSize);
     }
 
@@ -962,7 +964,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     ) throws IgniteCheckedException {
         File rmtSnpDir = U.resolveWorkDirectory(rslvr.persistentStoreRootPath().getAbsolutePath(), dirPath, false);
 
-        File target = new File (rmtSnpDir, rslvr.folderName());
+        File target = new File(rmtSnpDir, rslvr.folderName());
 
         U.ensureDirectory(target, errorMsg, log);
 

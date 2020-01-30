@@ -94,7 +94,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private final String snpName;
 
     /** Snapshot working directory on file system. */
-    private final File snpWorkDir;
+    private final File tmpTaskWorkDir;
 
     /** Service to perform partitions copy. */
     private final Executor exec;
@@ -155,7 +155,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         String snpName,
-        File snpWorkDir,
+        File tmpWorkDir,
         Executor exec,
         FileIOFactory ioFactory,
         SnapshotFileSender snpSndr,
@@ -169,7 +169,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         this.log = cctx.logger(SnapshotTask.class);
         this.snpName = snpName;
         this.srcNodeId = srcNodeId;
-        this.snpWorkDir = snpWorkDir;
+        this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
         this.exec = exec;
         this.ioFactory = ioFactory;
         this.snpSndr = snpSndr;
@@ -272,11 +272,11 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
             // Delete snapshot directory if no other files exists.
             try {
-                if (U.fileCount(snpWorkDir.toPath()) == 0 || lastTh0 != null)
-                    U.delete(snpWorkDir.toPath());
+                if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || lastTh0 != null)
+                    U.delete(tmpTaskWorkDir.toPath());
             }
             catch (IOException e) {
-                log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + snpWorkDir + ']');
+                log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
             }
 
             snpFut.onDone(true, lastTh0, cancelled);
@@ -289,7 +289,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      */
     public IgniteInternalFuture<Void> submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
-            nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
+            nodeSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
 
             Set<Integer> grps = parts.stream()
                 .map(GroupPartitionId::getGroupId)
