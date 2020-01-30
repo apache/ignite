@@ -87,7 +87,7 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
      * @return Stream of runnables to call invoke methods.
      */
     private Stream<IgniteRunnable> operations() {
-        final Integer key = prmKey(grid(SRV_CHECK));
+        final Integer key = primaryKey(grid(SRV_CHECK));
 
         return Stream.<IgniteRunnable>of(
             () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invoke(key, createRunner()),

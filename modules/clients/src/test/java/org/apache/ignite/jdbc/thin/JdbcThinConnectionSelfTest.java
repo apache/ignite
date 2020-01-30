@@ -89,18 +89,18 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static final String LOCALHOST = "127.0.0.1";
 
     /** URL. */
-    private String url = affinityAwareness ?
+    private String url = partitionAwareness ?
         "jdbc:ignite:thin://127.0.0.1:10800..10802" :
         "jdbc:ignite:thin://127.0.0.1";
 
-    /** URL with affinity awareness flag. */
-    private String urlWithAffinityAwarenessFlag = url + "?affinityAwareness=" + affinityAwareness;
+    /** URL with partition awareness property. */
+    private String urlWithPartitionAwarenessProp = url + "?partitionAwareness=" + partitionAwareness;
 
-    /** URL with affinity awareness flag and semicolon as delimeter. */
-    private String urlWithAffinityAwarenessFlagSemicolon = url + ";affinityAwareness=" + affinityAwareness;
+    /** URL with partition awareness property and semicolon as delimiter. */
+    private String urlWithPartitionAwarenessPropSemicolon = url + ";partitionAwareness=" + partitionAwareness;
 
     /** Nodes count. */
-    private int nodesCnt = affinityAwareness ? 4 : 2;
+    private int nodesCnt = partitionAwareness ? 4 : 2;
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -175,13 +175,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSocketBuffers() throws Exception {
         final int dfltDufSize = 64 * 1024;
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&socketSendBuffer=-1",
+        assertInvalid(urlWithPartitionAwarenessProp + "&socketSendBuffer=-1",
             "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&socketReceiveBuffer=-1",
+        assertInvalid(urlWithPartitionAwarenessProp + "&socketReceiveBuffer=-1",
             "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketReceiveBuffer());
@@ -189,21 +189,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&socketSendBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&socketSendBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&socketReceiveBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&socketReceiveBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(1024, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&" +
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&" +
             "socketSendBuffer=1024&socketReceiveBuffer=2048")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
@@ -221,28 +221,28 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSocketBuffersSemicolon() throws Exception {
         final int dfltDufSize = 64 * 1024;
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";socketSendBuffer=-1",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";socketSendBuffer=-1",
             "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";socketReceiveBuffer=-1",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";socketReceiveBuffer=-1",
             "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";socketSendBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";socketSendBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";socketReceiveBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";socketReceiveBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(1024, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";" +
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";" +
             "socketSendBuffer=1024;socketReceiveBuffer=2048")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
@@ -258,24 +258,116 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testUpdateBatchSize() throws Exception {
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";updateBatchSize=-1",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";updateBatchSize=-1",
             "Property cannot be lower than 1 [name=updateBatchSize, value=-1]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon)) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertNull(io.connectionProperties().getUpdateBatchSize());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon
             + ";updateBatchSize=1024")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertEquals(1024, (int)io.connectionProperties().getUpdateBatchSize());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag +
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp +
             "&updateBatchSize=1024")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertEquals(1024, (int)io.connectionProperties().getUpdateBatchSize());
+        }
+    }
+
+    /**
+     * Test partition awareness Sql cache size property.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionAwarenessSqlCacheSizeProperty() throws Exception {
+        assertInvalid(urlWithPartitionAwarenessProp + "&partitionAwarenessSQLCacheSize=0",
+            "Property cannot be lower than 1 [name=partitionAwarenessSQLCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(1_000, io.connectionProperties().getPartitionAwarenessSqlCacheSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp +
+            "&partitionAwarenessSQLCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getPartitionAwarenessSqlCacheSize());
+        }
+    }
+
+    /**
+     * Test partition awareness Sql cache size property with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionAwarenessSqlCacheSizePropertySemicolon() throws Exception {
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";partitionAwarenessSQLCacheSize=0",
+            "Property cannot be lower than 1 [name=partitionAwarenessSQLCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon)) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(1_000, io.connectionProperties().getPartitionAwarenessSqlCacheSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon +
+            ";partitionAwarenessSQLCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getPartitionAwarenessSqlCacheSize());
+        }
+    }
+
+    /**
+     * Test partition awareness partition distributions cache size property.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionAwarenessPartitionDistributionsCacheSizeProperty() throws Exception {
+        assertInvalid(urlWithPartitionAwarenessProp + "&partitionAwarenessPartitionDistributionsCacheSize=0",
+            "Property cannot be lower than 1 [name=partitionAwarenessPartitionDistributionsCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
+            for (JdbcThinTcpIo io : ios(conn)) {
+                assertEquals(1_000,
+                    io.connectionProperties().getPartitionAwarenessPartitionDistributionsCacheSize());
+            }
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp +
+            "&partitionAwarenessPartitionDistributionsCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getPartitionAwarenessPartitionDistributionsCacheSize());
+        }
+    }
+
+    /**
+     * Test partition awareness partition distributions cache size property with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPartitionAwarenessPartitionDistributionsCacheSizePropertySemicolon() throws Exception {
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";partitionAwarenessPartitionDistributionsCacheSize=0",
+            "Property cannot be lower than 1 [name=partitionAwarenessPartitionDistributionsCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon)) {
+            for (JdbcThinTcpIo io : ios(conn)) {
+                assertEquals(1_000,
+                    io.connectionProperties().getPartitionAwarenessPartitionDistributionsCacheSize());
+            }
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon +
+            ";partitionAwarenessPartitionDistributionsCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getPartitionAwarenessPartitionDistributionsCacheSize());
         }
     }
 
@@ -286,44 +378,45 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSqlHints() throws Exception {
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertHints(conn, false, false, false, false, false, false, affinityAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, false,
-                false, affinityAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, false,
-                false, affinityAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&collocated=true")) {
-            assertHints(conn, false, false, true, false, false,
-                false, affinityAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, false,
-                false, affinityAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&lazy=true")) {
-            assertHints(conn, false, false, false, false, true,
-                false, affinityAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&skipReducerOnUpdate=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assertHints(conn, false, false, false, false, false,
-                true, affinityAwareness);
+                false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&distributedJoins=true&" +
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true")) {
+            assertHints(conn, true, false, false, false, false,
+                false, partitionAwareness);
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&enforceJoinOrder=true")) {
+            assertHints(conn, false, true, false, false, false,
+                false, partitionAwareness);
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&collocated=true")) {
+            assertHints(conn, false, false, true, false, false,
+                false, partitionAwareness);
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&replicatedOnly=true")) {
+            assertHints(conn, false, false, false, true, false,
+                false, partitionAwareness);
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&lazy=true")) {
+            assertHints(conn, false, false, false, false, true,
+                false, partitionAwareness);
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&skipReducerOnUpdate=true")) {
+            assertHints(conn, false, false, false, false, false,
+                true, partitionAwareness);
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true&" +
             "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true,
-                true, affinityAwareness);
+                true, partitionAwareness);
         }
     }
 
@@ -334,40 +427,40 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSqlHintsSemicolon() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";distributedJoins=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true")) {
             assertHints(conn, true, false, false, false, false,
-                false, affinityAwareness);
+                false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";enforceJoinOrder=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";enforceJoinOrder=true")) {
             assertHints(conn, false, true, false, false, false,
-                false, affinityAwareness);
+                false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";collocated=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";collocated=true")) {
             assertHints(conn, false, false, true, false, false,
-                false, affinityAwareness);
+                false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";replicatedOnly=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";replicatedOnly=true")) {
             assertHints(conn, false, false, false, true, false,
-                false, affinityAwareness);
+                false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";lazy=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";lazy=true")) {
             assertHints(conn, false, false, false, false, true,
-                false, affinityAwareness);
+                false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";skipReducerOnUpdate=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";skipReducerOnUpdate=true")) {
             assertHints(conn, false, false, false, false, false,
-                true, affinityAwareness);
+                true, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";distributedJoins=true;" +
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true;" +
             "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true,
-                true, affinityAwareness);
+                true, partitionAwareness);
         }
     }
 
@@ -384,7 +477,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void assertHints(Connection conn, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate, boolean affinityAwarenessEnabled)throws Exception {
+        boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate, boolean partitionAwarenessEnabled)throws Exception {
         for (JdbcThinTcpIo io: ios(conn)) {
             assertEquals(distributedJoins, io.connectionProperties().isDistributedJoins());
             assertEquals(enforceJoinOrder, io.connectionProperties().isEnforceJoinOrder());
@@ -392,7 +485,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals(replicatedOnly, io.connectionProperties().isReplicatedOnly());
             assertEquals(lazy, io.connectionProperties().isLazy());
             assertEquals(skipReducerOnUpdate, io.connectionProperties().isSkipReducerOnUpdate());
-            assertEquals(affinityAwarenessEnabled, io.connectionProperties().isAffinityAwareness());
+            assertEquals(partitionAwarenessEnabled, io.connectionProperties().isPartitionAwareness());
         }
     }
 
@@ -403,39 +496,39 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testTcpNoDelay() throws Exception {
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=0",
+        assertInvalid(urlWithPartitionAwarenessProp + "&tcpNoDelay=0",
             "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=1",
+        assertInvalid(urlWithPartitionAwarenessProp + "&tcpNoDelay=1",
             "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=false1",
+        assertInvalid(urlWithPartitionAwarenessProp + "&tcpNoDelay=false1",
             "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=true1",
+        assertInvalid(urlWithPartitionAwarenessProp + "&tcpNoDelay=true1",
             "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&tcpNoDelay=true")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=True")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&tcpNoDelay=True")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=false")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&tcpNoDelay=false")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=False")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&tcpNoDelay=False")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
@@ -448,34 +541,34 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testTcpNoDelaySemicolon() throws Exception {
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=0",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=0",
             "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=1",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=1",
             "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=false1",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=false1",
             "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=true1",
+        assertInvalid(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=true1",
             "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=true")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=True")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=True")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=false")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=false")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=False")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";tcpNoDelay=False")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
@@ -488,7 +581,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testAutoCloseServerCursorProperty() throws Exception {
-        String url = urlWithAffinityAwarenessFlag + "&autoCloseServerCursor";
+        String url = urlWithPartitionAwarenessProp + "&autoCloseServerCursor";
 
         String err = "Invalid property value. [name=autoCloseServerCursor";
 
@@ -497,7 +590,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid(url + "=false1", err);
         assertInvalid(url + "=true1", err);
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isAutoCloseServerCursor());
         }
@@ -530,7 +623,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testAutoCloseServerCursorPropertySemicolon() throws Exception {
-        String url = urlWithAffinityAwarenessFlagSemicolon + ";autoCloseServerCursor";
+        String url = urlWithPartitionAwarenessPropSemicolon + ";autoCloseServerCursor";
 
         String err = "Invalid property value. [name=autoCloseServerCursor";
 
@@ -590,15 +683,15 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSchemaSemicolon() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";schema=public")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";schema=public")) {
             assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";schema=\"" + DEFAULT_CACHE_NAME + '"')) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";schema=\"" + DEFAULT_CACHE_NAME + '"')) {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";schema=_not_exist_schema_")) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";schema=_not_exist_schema_")) {
             assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
     }
@@ -613,7 +706,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static Collection<JdbcThinTcpIo> ios(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        Collection<JdbcThinTcpIo> ios = affinityAwareness ? ((Map<UUID, JdbcThinTcpIo>)
+        Collection<JdbcThinTcpIo> ios = partitionAwareness ? ((Map<UUID, JdbcThinTcpIo>)
             getFieldValue(conn0, JdbcThinConnection.class, "ios")).values() :
             Collections.singleton(getFieldValue(conn0, JdbcThinConnection.class, "singleIo"));
 
@@ -647,7 +740,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testClose() throws Exception {
         final Connection conn;
 
-        try (Connection conn0 = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn0 = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn = conn0;
 
             assert conn != null;
@@ -672,7 +765,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStatement() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             try (Statement stmt = conn.createStatement()) {
                 assertNotNull(stmt);
 
@@ -695,7 +788,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStatement2() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             int [] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
@@ -749,7 +842,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStatement3() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             int [] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
@@ -809,7 +902,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatement() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // null query text
             assertThrows(log,
                 new Callable<Object>() {
@@ -843,7 +936,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatement3() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String sqlText = "select * from test where param = ?";
 
             int [] rsTypes = new int[]
@@ -904,7 +997,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatement4() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String sqlText = "select * from test where param = ?";
 
             int [] rsTypes = new int[]
@@ -970,7 +1063,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatementAutoGeneratedKeysUnsupported() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String sqlText = "insert into test (val) values (?)";
 
             assertThrows(log,
@@ -1020,7 +1113,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareCallUnsupported() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String sqlText = "exec test()";
 
             assertThrows(log,
@@ -1061,7 +1154,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testNativeSql() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // null query text
             assertThrows(log,
                 new Callable<Object>() {
@@ -1093,7 +1186,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetAutoCommit() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             boolean ac0 = conn.getAutoCommit();
 
             conn.setAutoCommit(!ac0);
@@ -1118,7 +1211,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCommit() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Should not be called in auto-commit mode
             assertThrows(log,
                 new Callable<Object>() {
@@ -1163,7 +1256,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testRollback() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Should not be called in auto-commit mode
             assertThrows(log,
                 new Callable<Object>() {
@@ -1193,7 +1286,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testBeginFailsWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.createStatement().execute("BEGIN");
 
             fail("Exception is expected");
@@ -1208,7 +1301,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.setAutoCommit(false);
             conn.createStatement().execute("COMMIT");
 
@@ -1222,7 +1315,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.setAutoCommit(false);
 
             conn.createStatement().execute("ROLLBACK");
@@ -1237,7 +1330,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetMetaData() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             assertNotNull(meta);
@@ -1258,7 +1351,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetReadOnly() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             conn.close();
 
             // Exception when called on closed connection
@@ -1282,7 +1375,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetCatalog() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsCatalogsInDataManipulation();
 
             assertNull(conn.getCatalog());
@@ -1314,7 +1407,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetTransactionIsolation() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Invalid parameter value
             assertThrows(log,
                 new Callable<Object>() {
@@ -1365,7 +1458,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testClearGetWarnings() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             SQLWarning warn = conn.getWarnings();
 
             assertNull(warn);
@@ -1399,7 +1492,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetTypeMap() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -1455,7 +1548,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetHoldability() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // default value
             assertEquals(conn.getMetaData().getResultSetHoldability(), conn.getHoldability());
 
@@ -1509,7 +1602,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSetSavepoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
@@ -1540,7 +1633,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSetSavepointName() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -1586,7 +1679,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testRollbackSavePoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -1632,7 +1725,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testReleaseSavepoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -1671,7 +1764,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateClob() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Unsupported
             assertThrows(log,
                 new Callable<Object>() {
@@ -1702,7 +1795,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateBlob() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Unsupported
             assertThrows(log,
                 new Callable<Object>() {
@@ -1733,7 +1826,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateNClob() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Unsupported
             assertThrows(log,
                 new Callable<Object>() {
@@ -1764,7 +1857,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateSQLXML() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Unsupported
             assertThrows(log,
                 new Callable<Object>() {
@@ -1797,7 +1890,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetSetClientInfoPair() throws Exception {
 //        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
 
@@ -1831,7 +1924,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetClientInfoProperties() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
 
@@ -1870,7 +1963,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateArrayOf() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final String typeName = "varchar";
 
             final String[] elements = new String[] {"apple", "pear"};
@@ -1911,7 +2004,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStruct() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Invalid typename
             assertThrows(log,
                 new Callable<Object>() {
@@ -1948,7 +2041,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetSchema() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assertEquals("PUBLIC", conn.getSchema());
 
             final String schema = "test";
@@ -1982,7 +2075,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testAbort() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             //Invalid executor
             assertThrows(log,
                 new Callable<Object>() {
@@ -2009,7 +2102,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetNetworkTimeout() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // default
             assertEquals(0, conn.getNetworkTimeout());
 
@@ -2057,7 +2150,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testInvalidNestedTxMode() {
         assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&nestedTransactionsMode=invalid");
+                DriverManager.getConnection(urlWithPartitionAwarenessProp + "&nestedTransactionsMode=invalid");
 
                 return null;
             }
@@ -2077,7 +2170,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         connProps.nestedTxMode("invalid");
 
-        connProps.setAffinityAwareness(affinityAwareness);
+        connProps.setPartitionAwareness(partitionAwareness);
 
         assertThrows(null, new Callable<Object>() {
             @SuppressWarnings("ResultOfObjectAllocationIgnored")
@@ -2095,7 +2188,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSslClientAndPlainServer()  {
         Throwable e = assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&sslMode=require" +
+                DriverManager.getConnection(urlWithPartitionAwarenessProp + "&sslMode=require" +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                     "&sslClientCertificateKeyStorePassword=123456" +
                     "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
@@ -2103,9 +2196,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, affinityAwareness ? "Failed to connect to server" : "Failed to SSL connect to server");
+        }, SQLException.class, partitionAwareness ? "Failed to connect to server" : "Failed to SSL connect to server");
 
-        if (affinityAwareness) {
+        if (partitionAwareness) {
             for (Throwable t: e.getSuppressed()) {
                 assertEquals(SQLException.class, t.getClass());
                 assertTrue(t.getMessage().contains("Failed to SSL connect to server"));
@@ -2126,7 +2219,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         final AtomicInteger exCnt = new AtomicInteger(0);
 
-        try (final Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (final Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             final IgniteInternalFuture f = runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {

@@ -846,17 +846,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void TestAsyncCompletionOrder()
         {
-            var cache = GetClientCache<int>();
-            var cache2 = Client.GetOrCreateCache<int, int>("TestAsyncCompletionOrder");
+            var config = GetClientConfiguration();
+            config.SocketTimeout = TimeSpan.FromMinutes(2);
+            using (var client = Ignition.StartClient(config))
+            {
+                var cache = client.GetCache<int, int>(CacheName);
+                var cache2 = Client.GetOrCreateCache<int, int>("TestAsyncCompletionOrder");
 
-            cache.PutAll(Enumerable.Range(1, 500000).Select(x => new KeyValuePair<int, int>(x, x)));
-            var t1 = cache.RemoveAllAsync();
-            var t2 = cache2.PutAsync(1, 1);
+                cache.PutAll(Enumerable.Range(1, 50000).Select(x => new KeyValuePair<int, int>(x, x)));
+                var t1 = cache.RemoveAllAsync();
+                var t2 = cache2.PutAsync(1, 1);
 
-            t2.Wait();
-            Assert.IsFalse(t1.IsCompleted);
+                t2.Wait();
+                Assert.IsFalse(t1.IsCompleted);
 
-            t1.Wait();
+                t1.Wait();
+            }
         }
 
         /// <summary>

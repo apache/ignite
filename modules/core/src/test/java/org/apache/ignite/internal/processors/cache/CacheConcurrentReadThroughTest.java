@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
@@ -123,14 +124,17 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
             for (IgniteFuture<?> fut : futs)
                 fut.get();
 
-            int loadCnt = TestCacheStore.loadCnt.get();
+            log.info("Iteration [iter=" + iter + ']');
 
-            long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                int loadCnt = TestCacheStore.loadCnt.get();
 
-            log.info("Iteration [iter=" + iter + ", loadCnt=" + loadCnt + ", misses=" + misses + ']');
+                long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
 
-            assertTrue("Unexpected loadCnt: " + loadCnt, loadCnt > 0 && loadCnt <= SYS_THREADS);
-            assertTrue("Unexpected misses: " + misses, misses > 0 && misses <= SYS_THREADS);
+                log.info("Iteration [loadCnt=" + loadCnt + ", misses=" + misses + ']');
+
+                return (loadCnt > 0 && loadCnt <= SYS_THREADS) && (misses > 0 && misses <= SYS_THREADS);
+            }, 5000));
 
             client.destroyCache(cacheName);
         }
