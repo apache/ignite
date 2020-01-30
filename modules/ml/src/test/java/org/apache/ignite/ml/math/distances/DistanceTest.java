@@ -124,5 +124,16 @@ public class DistanceTest {
         Assert.assertEquals(expRes, distanceMeasure.compute(a, new DenseVector(b)), PRECISION);
     }
 
+    /** */
+    @Test
+    public void jaccardIndex() {
+        double expRes =  0.3333333333333333;
+        double[] a = {0,1,2,5,6};
+        double[] b = {0,2,3,4,5,7,9};
 
+        DistanceMeasure distanceMeasure = new JaccardIndex();
+
+        Assert.assertEquals(expRes, distanceMeasure.compute(new DenseVector(a), new DenseVector(b)), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(new DenseVector(a), b), PRECISION);
+    }
 }
