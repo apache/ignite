@@ -222,7 +222,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        String nodePath = relativeStoragePath(ig.context().cache().context());
+        String nodePath = relativeStoragePath(ig.context().pdsFolderResolver());
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
             Paths.get(mgr.snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
@@ -786,6 +786,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             super(log);
 
             this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void init() throws IgniteCheckedException {
+            delegate.init();
         }
 
         /** {@inheritDoc} */

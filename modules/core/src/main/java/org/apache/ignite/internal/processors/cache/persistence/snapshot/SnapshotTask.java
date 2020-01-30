@@ -73,6 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.getPartionDeltaFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeStoragePath;
 
 /**
  *
@@ -245,11 +246,15 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      * @param th An exception which occurred during snapshot processing.
      */
     public void acceptException(Throwable th) {
+        assert th != null;
+
         if (state(SnapshotState.STOPPING)) {
             lastTh = th;
 
             startedFut.onDone(th);
         }
+
+        log.error("Exception occurred during snapshot operation", th);
     }
 
     /**
@@ -279,6 +284,9 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                 log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
             }
 
+            if (lastTh0 != null)
+                startedFut.onDone(lastTh0);
+
             snpFut.onDone(true, lastTh0, cancelled);
         }
     }
@@ -289,7 +297,11 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      */
     public IgniteInternalFuture<Void> submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
-            nodeSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
+            nodeSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
+                relativeStoragePath(cctx.kernalContext().pdsFolderResolver()),
+                false);
+
+            snpSndr.init();
 
             Set<Integer> grps = parts.stream()
                 .map(GroupPartitionId::getGroupId)
