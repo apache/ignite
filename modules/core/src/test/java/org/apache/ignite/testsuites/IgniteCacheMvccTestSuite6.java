@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.ReplicatedMvccTxPessimisticCa
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
@@ -82,6 +83,7 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(CacheExchangeMergeTest.class);
         ignoredTests.add(ExchangeMergeStaleServerNodesTest.class);
         ignoredTests.add(IgniteExchangeLatchManagerCoordinatorFailTest.class);
+        ignoredTests.add(IgniteExchangeLatchManagerDiscoHistoryTest.class);
         ignoredTests.add(PartitionsExchangeCoordinatorFailoverTest.class);
         ignoredTests.add(CacheParallelStartTest.class);
         ignoredTests.add(IgniteCache150ClientsTest.class);
