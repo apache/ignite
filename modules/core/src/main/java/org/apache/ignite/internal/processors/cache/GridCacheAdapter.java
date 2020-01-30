@@ -1980,6 +1980,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkKeysOrdered(keys, BulkOperation.GET);
+
         return getAllAsync0(ctx.cacheKeysView(keys),
             readerArgs,
             readThrough,
@@ -2727,7 +2729,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, "Invoke All");
+        checkKeysOrdered(keys, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2818,7 +2820,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, "Invoke All Async");
+        checkKeysOrdered(keys, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2870,7 +2872,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, "Invoke All Async");
+        checkKeysOrdered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2917,7 +2919,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, "Invoke All");
+        checkKeysOrdered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -3064,7 +3066,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkKeysOrdered(m, "Put All");
+        checkKeysOrdered(m, BulkOperation.PUT);
 
         putAll0(m);
 
@@ -3097,7 +3099,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkKeysOrdered(m, "Put All Async");
+        checkKeysOrdered(m, BulkOperation.PUT);
 
         return putAllAsync0(m);
     }
@@ -3256,7 +3258,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, "Remove All");
+        checkKeysOrdered(keys, BulkOperation.REMOVE);
 
         removeAll0(keys);
 
@@ -3298,7 +3300,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, "Remove All Async");
+        checkKeysOrdered(keys, BulkOperation.REMOVE);
 
         IgniteInternalFuture<Object> fut = removeAllAsync0(keys);
 
@@ -5203,18 +5205,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param m Map to examine.
      */
-    protected void checkKeysOrdered(Map m, String op) {
+    protected void checkKeysOrdered(Map m, BulkOperation op) {
         if (m == null || m.size() <= 1)
             return;
 
         if (m instanceof SortedMap || m instanceof GridSerializableMap)
             return;
 
-        if (curTxDeadlockDetecting())
+        if (curTxDeadlockDetecting(op))
             return;
 
         LT.warn(log, "Unordered map " + m.getClass().getSimpleName() +
-            " is used for " + op + " operation on cache " + name() + ". " +
+            " is used for " + op.title() + " operation on cache " + name() + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
     }
 
@@ -5225,7 +5227,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param coll Collection to examine.
      */
-    protected void checkKeysOrdered(Collection coll, String op) {
+    protected void checkKeysOrdered(Collection coll, BulkOperation op) {
         if (coll == null || coll.size() <= 1)
             return;
 
@@ -5233,24 +5235,52 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return;
 
         // To avoid false positives, once removeAll() is called, cache will never issue Remove All warnings.
-        if (ctx.lastRemoveAllJobFut().get() != null && op.startsWith("Remove All"))
+        if (ctx.lastRemoveAllJobFut().get() != null && op == BulkOperation.REMOVE)
             return;
 
-        if (curTxDeadlockDetecting())
+        if (curTxDeadlockDetecting(op))
             return;
 
         LT.warn(log, "Unordered collection " + coll.getClass().getSimpleName() +
-            " is used for " + op + " operation on cache " + name() + ". " +
+            " is used for " + op.title() + " operation on cache " + name() + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
     }
 
     /** */
-    private boolean curTxDeadlockDetecting() {
+    private boolean curTxDeadlockDetecting(BulkOperation op) {
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
 
-        return tx != null && !tx.implicit() && (ctx.tm().deadlockDetectionEnabled() ||
+        if (tx != null && !tx.implicit() &&
+            ((ctx.tm().deadlockDetectionEnabled() && tx.timeout() > 0L) ||
             (tx.concurrency() == OPTIMISTIC && tx.isolation() == SERIALIZABLE) ||
-            (tx.concurrency() == PESSIMISTIC && tx.isolation() != READ_COMMITTED));
+            (tx.concurrency() == PESSIMISTIC && tx.isolation() == READ_COMMITTED)))
+            return true;
+
+        if (op == BulkOperation.GET && tx == null)
+            return true;
+
+        return false;
+    }
+
+    /** */
+    protected enum BulkOperation {
+        GET("Get All"),
+        PUT("Put All"),
+        INVOKE("Invoke All"),
+        REMOVE("Remove All");
+
+        /** */
+        private final String title;
+
+        /** */
+        BulkOperation(String title) {
+            this.title = title;
+        }
+
+        /** */
+        public String title() {
+            return title;
+        }
     }
 
     /**

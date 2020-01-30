@@ -565,6 +565,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
+        checkKeysOrdered(keys, BulkOperation.GET);
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
@@ -699,7 +701,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(conflictMap.keySet());
 
-        checkKeysOrdered(conflictMap, "Put All DR");
+        checkKeysOrdered(conflictMap, BulkOperation.PUT);
 
         return updateAll0(null,
             null,
@@ -814,7 +816,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, "Invoke All");
+        checkKeysOrdered(keys, BulkOperation.INVOKE);
 
         return invokeAll0(false, keys, entryProcessor, args).get();
     }
@@ -897,7 +899,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, "Invoke All Async");
+        checkKeysOrdered(keys, BulkOperation.INVOKE);
 
         return invokeAll0(true, keys, entryProcessor, args);
     }
@@ -964,7 +966,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, "Invoke All");
+        checkKeysOrdered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -996,7 +998,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, "Invoke All Async");
+        checkKeysOrdered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 

@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -125,7 +126,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("explicitTx")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        ignite.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+        ignite.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
 
         HashMap<Integer, String> m = new HashMap<>();
 
@@ -194,7 +195,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testTreeMapRemoveAllLocal() throws Exception {
+    public void testTreeMapRemoveAll() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
         testLog = new ListeningTestLogger(false, log());
@@ -207,7 +208,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(0);
 
         IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("remove")
-            .setCacheMode(CacheMode.LOCAL));
+            .setCacheMode(CacheMode.PARTITIONED));
 
         c.put(1, "foo");
         c.put(2, "bar");
@@ -303,5 +304,81 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
             assertFalse(message.contains("operation on cache"));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHashSetGetAllReplicated() throws Exception {
+        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+
+        testLog = new ListeningTestLogger(false, log());
+
+        testLog.registerListener((s) -> {
+            if (s.contains("deadlock"))
+                messages.add(s);
+        });
+
+        Ignite ignite = startGrid(0);
+
+        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("get")
+            .setCacheMode(CacheMode.REPLICATED));
+
+        c.put(1, "foo");
+        c.put(2, "bar");
+
+        assertEquals(1, c.getAll(new HashSet<>(Arrays.asList(1, 3))).size());
+
+        int found = 0;
+
+        for (String message : messages) {
+            if (message.contains("Unordered collection "))
+                found++;
+
+            if (message.contains("operation on cache"))
+                found++;
+        }
+
+        assertEquals(0, found);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHashSetGetAllTx() throws Exception {
+        List<String> messages = Collections.synchronizedList(new ArrayList<>());
+
+        testLog = new ListeningTestLogger(false, log());
+
+        testLog.registerListener((s) -> {
+            if (s.contains("deadlock"))
+                messages.add(s);
+        });
+
+        Ignite ignite = startGrid(0);
+
+        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("getTx")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setCacheMode(CacheMode.PARTITIONED));
+
+        c.put(1, "foo");
+        c.put(2, "bar");
+
+        try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            assertEquals(1, c.getAll(new HashSet<>(Arrays.asList(1, 3))).size());
+
+            tx.commit();
+        }
+
+        int found = 0;
+
+        for (String message : messages) {
+            if (message.contains("Unordered collection HashSet is used for Get All operation on cache getTx. "))
+                found++;
+        }
+
+        assertEquals(1, found);
     }
 }
