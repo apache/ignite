@@ -610,6 +610,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @return Relative configured path of presistence data storage directory for the local node.
+     * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
      */
     public static String relativeStoragePath(GridCacheSharedContext cctx0) throws IgniteCheckedException {
         PdsFolderSettings pCfg = cctx0.kernalContext().pdsFolderResolver().resolveFolders();
