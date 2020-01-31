@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -687,10 +686,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @return Relative configured path of presistence data storage directory for the local node.
      * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
      */
-    public static String relativeStoragePath(PdsFoldersResolver rslvr) throws IgniteCheckedException {
-        PdsFolderSettings pCfg = rslvr.resolveFolders();
-
-        return Paths.get(DB_DEFAULT_FOLDER, pCfg.folderName()).toString();
+    public static String relativeNodePath(PdsFolderSettings pcfg) {
+        return Paths.get(DB_DEFAULT_FOLDER, pcfg.folderName()).toString();
     }
 
     /**
@@ -1121,8 +1118,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 // Example: snapshotWorkDir/db/IgniteNodeName0
                 PdsFolderSettings settings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-                String dbNodePath = relativeStoragePath(cctx.kernalContext().pdsFolderResolver());
-
                 File metaFile = new File(snpLocDir, settings.consistentId().toString() + SNAPSHOT_META_EXTENSION);
 
                 if (metaFile.exists())
@@ -1135,7 +1130,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     throw new IgniteCheckedException(e);
                 }
 
-                return U.resolveWorkDirectory(snpLocDir.getAbsolutePath(), dbNodePath, false);
+                return U.resolveWorkDirectory(snpLocDir.getAbsolutePath(), relativeNodePath(settings), false);
             },
             ioFactory,
             storeFactory,
@@ -1153,22 +1148,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param rmtNodeId Remote node id to send snapshot to.
      * @return Snapshot sender instance.
      */
-    SnapshotFileSender remoteSnapshotSender(
-        String snpName,
-        UUID rmtNodeId
-    ) throws IgniteCheckedException {
-        // Relative path to snapshot storage of local node.
-        // Example: snapshotWorkDir/db/IgniteNodeName0
-        String dbNodePath = relativeStoragePath(cctx.kernalContext().pdsFolderResolver());
-
+    SnapshotFileSender remoteSnapshotSender(String snpName, UUID rmtNodeId) {
         return new RemoteSnapshotFileSender(log,
+            () -> relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
                 DFLT_INITIAL_SNAPSHOT_TOPIC,
                 new SnapshotResponseMessage(snpName, errMsg),
                 SYSTEM_POOL),
-            snpName,
-            dbNodePath);
+            snpName);
     }
 
     /**
@@ -1428,11 +1416,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         /** Error handler which will be triggered in case of transmission sedner not started yet. */
         private final IgniteThrowableConsumer<String> errHnd;
 
+        /** Relative node path initializer. */
+        private final IgniteThrowableSupplier<String> initPath;
+
         /** Snapshot name */
         private final String snpName;
 
         /** Local node persistent directory with consistent id. */
-        private final String dbNodePath;
+        private String relativeNodePath;
 
         /**
          * @param log Ignite logger.
@@ -1442,17 +1433,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
          */
         public RemoteSnapshotFileSender(
             IgniteLogger log,
+            IgniteThrowableSupplier<String> initPath,
             GridIoManager.TransmissionSender sndr,
             IgniteThrowableConsumer<String> errHnd,
-            String snpName,
-            String dbNodePath
+            String snpName
         ) {
             super(log);
 
             this.sndr = sndr;
             this.errHnd = errHnd;
             this.snpName = snpName;
-            this.dbNodePath = dbNodePath;
+            this.initPath = initPath;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void init() throws IgniteCheckedException {
+            relativeNodePath = initPath.get();
+
+            if (relativeNodePath == null)
+                throw new IgniteException("Relative node path cannot be empty.");
         }
 
         /** {@inheritDoc} */
@@ -1515,7 +1514,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             params.put(SNP_GRP_ID_PARAM, pair.getGroupId());
             params.put(SNP_PART_ID_PARAM, pair.getPartitionId());
-            params.put(SNP_DB_NODE_PATH_PARAM, dbNodePath);
+            params.put(SNP_DB_NODE_PATH_PARAM, relativeNodePath);
             params.put(SNP_CACHE_DIR_NAME_PARAM, cacheDirName);
             params.put(SNP_NAME_PARAM, snpName);
 
