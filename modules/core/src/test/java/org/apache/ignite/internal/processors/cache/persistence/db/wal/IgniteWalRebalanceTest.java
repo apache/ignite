@@ -21,11 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
@@ -502,7 +500,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that historical rebalance doesn't start on the cleared partition after node blink.
+     * Check that historical rebalance doesn't start on the cleared partition when some cluster node restarts.
      *
      * @throws Exception If failed.
      */
@@ -510,17 +508,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     public void testRebalanceRestartWithNodeBlinking() throws Exception {
         int entryCnt = PARTS_CNT * 200;
 
-        IgniteEx crd = startGrid(0);
+        // Start 3 nodes cluster:
+        //  node0 - coordinator (main supplier for historical rebalance)
+        //  node1 - some node that will generate NODE_LEFT/NODE_JOINED events
+        //  node2 - historical rebalance demander
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
 
         crd.cluster().state(ClusterState.ACTIVE);
         crd.cluster().baselineAutoAdjustEnabled(false);
-
-        Ignite node1 = startGrid(1);
-        Ignite node2 = startGrid(2);
-
-        List<ClusterNode> blt = new ArrayList<>(crd.context().discovery().aliveServerNodes());
-
-        crd.cluster().setBaselineTopology(blt);
 
         IgniteCache<Integer, String> cache0 = crd.cache(CACHE_NAME);
 
@@ -529,9 +524,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        node2.close();
-
-        awaitPartitionMapExchange();
+        stopGrid(2);
 
         for (int i = entryCnt / 2; i < entryCnt; i++)
             cache0.put(i, String.valueOf(i));
@@ -550,21 +543,25 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(grid(2));
 
+        // Wait until node2 starts historical rebalancning.
         spi2.waitForBlocked();
         spi2.stopBlock();
 
-        node1.close();
+        // Interruption of rebalancing by NODE_LEFT event, historical supplier should not be provided.
+        stopGrid(1);
 
+        // Wait until the full rebalance begins.
         spi2.blockMessages(blockMessagePredicate);
         spi2.waitForBlocked();
 
+        // Interrupting it again by NODE_JOINED and get a historical supplier again.
         startGrid(1);
 
         spi2.stopBlock();
 
         awaitPartitionMapExchange();
 
-        // Check that all data is present on the rebalanced node.
+        // Verify data on demander node.
         for (int i = 0; i < entryCnt; i++)
             assertEquals(String.valueOf(i), grid(2).cache(CACHE_NAME).get(i));
     }

@@ -110,6 +110,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     /**
      * @param start Counter.
      * @param delta Delta.
+     * @deprecated TODO https://ggsystems.atlassian.net/browse/GG-17396
      */
     public void updateInitial(long start, long delta);
 
