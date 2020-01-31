@@ -152,6 +152,13 @@ public final class PlanningContext implements Context {
     }
 
     /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schema().getName();
+    }
+
+    /**
      * @return Schema.
      */
     public SchemaPlus schema() {

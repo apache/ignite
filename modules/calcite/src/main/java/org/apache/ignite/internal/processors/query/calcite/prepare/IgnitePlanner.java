@@ -212,9 +212,26 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public Pair<SqlNode, RelDataType> validateAndGetType(SqlNode sqlNode) throws ValidationException {
         ready();
 
-        SqlNode validatedNode = validate(sqlNode);
+        SqlNode validatedNode = validator.validate(sqlNode);
         RelDataType type = validator.getValidatedNodeType(validatedNode);
         return Pair.of(validatedNode, type);
+    }
+
+    /**
+     * Validates a SQL statement.
+     *
+     * @param sqlNode Root node of the SQL parse tree.
+     * @return Validated node, its validated type and type's origins.
+     * @throws ValidationException if not valid
+     */
+    public ValidationResult validateAndGetTypeMetadata(SqlNode sqlNode) throws ValidationException {
+        ready();
+
+        SqlNode validatedNode = validator.validate(sqlNode);
+        RelDataType type = validator.getValidatedNodeType(validatedNode);
+        List<List<String>> origins = validator.getFieldOrigins(validatedNode);
+
+        return new ValidationResult(validatedNode, type, origins);
     }
 
     /** {@inheritDoc} */

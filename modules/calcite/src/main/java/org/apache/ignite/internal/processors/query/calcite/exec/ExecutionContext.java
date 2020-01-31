@@ -99,7 +99,7 @@ public class ExecutionContext implements DataContext {
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return false; // TODO
+        return true; // TODO
     }
 
     /**

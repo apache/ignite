@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,19 +37,24 @@ import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 /**
  * Splits a query into a list of query fragments.
  */
-public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, QueryPlan> {
+public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, List<Fragment>> {
     /** */
     private List<Fragment> fragments;
 
     /** {@inheritDoc} */
-    @Override public QueryPlan go(IgniteRel root) {
+    @Override public List<Fragment> go(IgniteRel root) {
         fragments = new ArrayList<>();
 
-        fragments.add(new Fragment(visit(root)));
+        try {
+            fragments.add(new Fragment(visit(root)));
 
-        Collections.reverse(fragments);
+            Collections.reverse(fragments);
 
-        return new QueryPlan(fragments);
+            return fragments;
+        }
+        finally {
+            fragments = null;
+        }
     }
 
     /** {@inheritDoc} */

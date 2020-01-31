@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.sql.ResultSet;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -37,6 +38,12 @@ public interface QueryCursorEx<T> extends QueryCursor<T> {
      * @return Query metadata.
      */
     public List<GridQueryFieldMetadata> fieldsMeta();
+
+    /**
+     * @return {@code true} if this cursor corresponds to a {@link ResultSet} as a result of query,
+     * {@code false} if query was modifying operation like INSERT, UPDATE, or DELETE.
+     */
+    public boolean isQuery();
 
     /**
      * Query value consumer.

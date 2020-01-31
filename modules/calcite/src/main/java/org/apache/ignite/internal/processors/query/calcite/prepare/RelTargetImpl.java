@@ -15,28 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  *
  */
-public class RelSourceImpl implements RelSource, Serializable {
+public class RelTargetImpl implements RelTarget, Serializable {
     /** */
     private final long fragmentId;
 
     /** */
     private final NodesMapping mapping;
 
+    /** */
+    private final IgniteDistribution distribution;
+
     /**
-     * @param fragmentId Fragment ID.
-     * @param mapping Source mapping.
+     * @param fragmentId Target fragment ID.
+     * @param mapping Target mapping.
+     * @param distribution Target distribution.
      */
-    public RelSourceImpl(long fragmentId, NodesMapping mapping) {
+    public RelTargetImpl(long fragmentId, NodesMapping mapping, IgniteDistribution distribution) {
         this.fragmentId = fragmentId;
         this.mapping = mapping;
+        this.distribution = distribution;
     }
 
     /** {@inheritDoc} */
@@ -47,5 +53,10 @@ public class RelSourceImpl implements RelSource, Serializable {
     /** {@inheritDoc} */
     @Override public NodesMapping mapping() {
         return mapping;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return distribution;
     }
 }

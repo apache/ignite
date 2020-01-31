@@ -121,7 +121,7 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
     public FragmentInfo getFragmentInfo(RelNode rel) {
         for (;;) {
             try {
-                return sourceDistributionHandler.getFragmentInfo(rel, this);
+                return sourceDistributionHandler.fragmentInfo(rel, this);
             } catch (JaninoRelMetadataProvider.NoHandler e) {
                 sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMetadata.DEF);
             }

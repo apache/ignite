@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,7 +54,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
      * @param plan Plan to clone.
      * @return New plan.
      */
-    QueryPlan go(QueryPlan plan) {
+    MultiStepPlan go(MultiStepPlan plan) {
         List<Fragment> planFragments = plan.fragments();
 
         assert !F.isEmpty(planFragments);
@@ -69,7 +69,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
         Collections.reverse(fragments);
 
-        return new QueryPlan(fragments);
+        return new MultiStepPlanImpl(fragments, plan.rowMetadata());
     }
 
     /** {@inheritDoc} */

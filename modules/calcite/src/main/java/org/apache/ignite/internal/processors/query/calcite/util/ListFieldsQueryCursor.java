@@ -17,57 +17,62 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Spliterators;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RowMetadata;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>> {
+public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, QueryCursorEx<List<?>> {
     /** */
-    private final RelDataType rowType;
+    private final Iterator<List<?>> it;
 
     /** */
-    private final Iterator<T> it;
-
-    /** */
-    private final Function<T, List<?>> converter;
+    private final RowMetadata rowMetadata;
 
     /**
-     * @param rowType Row data type description.
      * @param it Iterator.
      * @param converter Row converter.
+     * @param rowMetadata Row metadata.
      */
-    public ListFieldsQueryCursor(RelDataType rowType, Iterator<T> it, Function<T, List<?>> converter) {
-        this.rowType = rowType;
-        this.it = it;
-        this.converter = converter;
+    public ListFieldsQueryCursor(Iterator<T> it, Function<T, List<?>> converter, RowMetadata rowMetadata) {
+        this.it = new ConvertingClosableIterator<>(it, converter);
+        this.rowMetadata = rowMetadata;
     }
 
     /** {@inheritDoc} */
-    @Override public String getFieldName(int idx) {
-        return rowType.getFieldList().get(idx).getName();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getColumnsCount() {
-        return rowType.getFieldCount();
+    @NotNull @Override public Iterator<List<?>> iterator() {
+        return it;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
+        ArrayList<List<?>> res = new ArrayList<>();
+
         try {
-            return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, 0), false)
-                .map(converter)
-                .collect(Collectors.toList());
+            getAll(res::add);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void getAll(Consumer<List<?>> c) throws IgniteCheckedException {
+        try {
+            while (it.hasNext())
+                c.consume(it.next());
         }
         finally {
             close();
@@ -75,12 +80,27 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>> {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        Commons.close(it);
+    @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+        return rowMetadata.fieldsMeta();
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<List<?>> iterator() {
-        return F.iterator(it, converter::apply, true);
+    @Override public String getFieldName(int idx) {
+        return rowMetadata.getFieldName(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getColumnsCount() {
+        return rowMetadata.getColumnsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isQuery() {
+        return true; // TODO pass and check QueryPlan.Type
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        Commons.close(it);
     }
 }

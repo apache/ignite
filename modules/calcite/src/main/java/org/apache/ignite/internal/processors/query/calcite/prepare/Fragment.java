@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -79,7 +78,7 @@ public class Fragment implements RelSource {
      * @param mq Metadata query used for data location calculation.
      */
     public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
-        FragmentInfo info = IgniteMdFragmentInfo.fragmentInfo(root, mq);
+        FragmentInfo info = IgniteMdFragmentInfo._fragmentInfo(root, mq);
 
         mapping = fragmentMapping(mappingService, ctx, info, mq);
 

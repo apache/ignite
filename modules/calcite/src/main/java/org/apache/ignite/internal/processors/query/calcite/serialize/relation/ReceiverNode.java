@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import java.util.List;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RelSource;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RelSourceImpl;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.serialize.type.Types;
-import org.apache.ignite.internal.processors.query.calcite.splitter.RelSource;
-import org.apache.ignite.internal.processors.query.calcite.splitter.RelSourceImpl;
 
 
 /**

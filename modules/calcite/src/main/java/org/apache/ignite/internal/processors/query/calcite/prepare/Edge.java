@@ -17,17 +17,50 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.calcite.rel.RelNode;
 
 /**
- *
+ * Describes RelNode tree edge.
  */
-public interface QueryPlanCache extends Service {
+public class Edge {
+    /** */
+    private final RelNode parent;
+
+    /** */
+    private final RelNode child;
+
+    /** */
+    private final int childIdx;
+
     /**
-     * @param ctx Context.
-     * @param key Cache key.
-     * @param factory Factory method to generate a plan on cache miss.
-     * @return Query plan.
+     * @param parent Parent node.
+     * @param child Child node.
+     * @param childIdx Child node index in parent.
      */
-    QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory);
+    public Edge(RelNode parent, RelNode child, int childIdx) {
+        this.parent = parent;
+        this.child = child;
+        this.childIdx = childIdx;
+    }
+
+    /**
+     * @return Parent node.
+     */
+    public RelNode parent() {
+        return parent;
+    }
+
+    /**
+     * @return Child node.
+     */
+    public RelNode child() {
+        return child;
+    }
+
+    /**
+     * @return Child node index in parent.
+     */
+    public int childIndex() {
+        return childIdx;
+    }
 }

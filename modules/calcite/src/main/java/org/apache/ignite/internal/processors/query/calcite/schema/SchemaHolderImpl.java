@@ -125,6 +125,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** */
     private void rebuild() {
         SchemaPlus schema = Frameworks.createRootSchema(false);
+        schema.add("PUBLIC", new IgniteSchema("PUBLIC"));
         schemas.forEach(schema::add);
         schema(schema);
     }
