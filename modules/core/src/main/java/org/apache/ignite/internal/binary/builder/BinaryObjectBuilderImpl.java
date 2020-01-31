@@ -402,12 +402,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         // Detect Enum and Enum array type.
         else if (newVal instanceof BinaryEnumObjectImpl)
             newFldTypeId = GridBinaryMarshaller.ENUM;
-        else if (newVal.getClass().isArray() && newVal.getClass().getComponentType() == BinaryObject.class) {
-            BinaryObject[] arr = (BinaryObject[])newVal;
 
-            newFldTypeId = arr.length > 0 && arr[0] instanceof BinaryEnumObjectImpl ?
-                GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
-        }
+        else if (newVal.getClass().isArray() && BinaryEnumObjectImpl.class.isAssignableFrom(newVal.getClass().getComponentType()))
+            newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
+
+        else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))
+            newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
+
         else
             newFldTypeId = BinaryUtils.typeByClass(newVal.getClass());
 

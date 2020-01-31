@@ -119,6 +119,9 @@ public class H2Utils {
      */
     static final int DECIMAL_DEFAULT_PRECISION = 65535;
 
+    /** */
+    public static final IndexColumn[] EMPTY_COLUMNS = new IndexColumn[0];
+
     /**
      * The default scale for a decimal value.
      */

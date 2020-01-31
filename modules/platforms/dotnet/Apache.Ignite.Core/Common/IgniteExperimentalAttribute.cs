@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+namespace Apache.Ignite.Core.Common
+{
+    using System;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned atomic near-cache mode. */
-public class JdbcThinBulkLoadAtomicPartitionedNearSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return true;
+    /// <summary>
+    /// This attribute marks API elements (such as interfaces and methods) as experimental
+    /// meaning that the API is not finalized yet and may be changed or replaced in future Ignite releases.
+    ///
+    /// Such APIs are exposed so that users can make use of a feature before the API has been stabilized.
+    /// The expectation is that an API element should be "eventually" stabilized. Incompatible changes are
+    /// allowed for such APIs: API may be removed, changed or stabilized in future Ignite releases
+    /// (both minor and maintenance).
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+    public sealed class IgniteExperimentalAttribute : Attribute
+    {
+        // No-op.
     }
 }

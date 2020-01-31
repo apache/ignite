@@ -73,6 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.getPartionDeltaFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeStoragePath;
 
 /**
  *
@@ -94,7 +95,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private final String snpName;
 
     /** Snapshot working directory on file system. */
-    private final File snpWorkDir;
+    private final File tmpTaskWorkDir;
 
     /** Service to perform partitions copy. */
     private final Executor exec;
@@ -155,7 +156,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         String snpName,
-        File snpWorkDir,
+        File tmpWorkDir,
         Executor exec,
         FileIOFactory ioFactory,
         SnapshotFileSender snpSndr,
@@ -169,7 +170,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         this.log = cctx.logger(SnapshotTask.class);
         this.snpName = snpName;
         this.srcNodeId = srcNodeId;
-        this.snpWorkDir = snpWorkDir;
+        this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
         this.exec = exec;
         this.ioFactory = ioFactory;
         this.snpSndr = snpSndr;
@@ -252,11 +253,15 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      * @param th An exception which occurred during snapshot processing.
      */
     public void acceptException(Throwable th) {
+        assert th != null;
+
         if (state(SnapshotState.STOPPING)) {
             lastTh = th;
 
             startedFut.onDone(th);
         }
+
+        log.error("Exception occurred during snapshot operation", th);
     }
 
     /**
@@ -279,12 +284,15 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
             // Delete snapshot directory if no other files exists.
             try {
-                if (U.fileCount(snpWorkDir.toPath()) == 0 || lastTh0 != null)
-                    U.delete(snpWorkDir.toPath());
+                if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || lastTh0 != null)
+                    U.delete(tmpTaskWorkDir.toPath());
             }
             catch (IOException e) {
-                log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + snpWorkDir + ']');
+                log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
             }
+
+            if (lastTh0 != null)
+                startedFut.onDone(lastTh0);
 
             snpFut.onDone(true, lastTh0, cancelled);
         }
@@ -296,8 +304,11 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      */
     public IgniteInternalFuture<Void> submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
-            // todo can be performed on the given executor
-            nodeSnpDir = U.resolveWorkDirectory(snpWorkDir.getAbsolutePath(), IgniteSnapshotManager.relativeStoragePath(cctx), false);
+            nodeSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
+                relativeStoragePath(cctx.kernalContext().pdsFolderResolver()),
+                false);
+
+            snpSndr.init();
 
             Set<Integer> grps = parts.stream()
                 .map(GroupPartitionId::getGroupId)
