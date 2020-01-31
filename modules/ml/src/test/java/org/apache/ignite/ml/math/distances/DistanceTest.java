@@ -45,6 +45,13 @@ public class DistanceTest {
         v2 = new DenseVector(data2);
     }
 
+    /**
+     * properties to test
+     * the distance from a point to itself is zero,
+     * the distance between two distinct points is positive,
+     * the distance from A to B is the same as the distance from B to A, and
+     */
+
     /** */
     @Test
     public void euclideanDistance() {
@@ -127,13 +134,11 @@ public class DistanceTest {
     /** */
     @Test
     public void jaccardIndex() {
-        double expRes =  0.3333333333333333;
-        double[] a = {0,1,2,5,6};
-        double[] b = {0,2,3,4,5,7,9};
+        double expRes =  0.2;
 
         DistanceMeasure distanceMeasure = new JaccardIndex();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(new DenseVector(a), new DenseVector(b)), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(new DenseVector(a), b), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 }
