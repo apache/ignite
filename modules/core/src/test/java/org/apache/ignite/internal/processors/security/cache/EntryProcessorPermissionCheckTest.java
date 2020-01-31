@@ -23,7 +23,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -62,8 +61,6 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
             SecurityPermissionSetBuilder.create()
                 .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
-
-        srvNode.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
