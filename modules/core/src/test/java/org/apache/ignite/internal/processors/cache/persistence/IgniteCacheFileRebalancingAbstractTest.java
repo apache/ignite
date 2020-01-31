@@ -288,7 +288,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
     public void testConsistencyOnFilesPreloadingInterruption() throws Exception {
         assert backups() > 0 : backups();
 
@@ -774,7 +773,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
-//    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
     public void test4nodesRestartLastNodeWithLoad() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
