@@ -270,14 +270,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
-        File snapshotDir0 = mgr.snapshotLocalDir(SNAPSHOT_NAME);
-
         IgniteInternalFuture<?> snpFut = mgr
             .runLocalSnapshotTask(SNAPSHOT_NAME,
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(snapshotDir0)) {
+                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -393,13 +391,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        File snpDir0 = mgr.snapshotLocalDir(SNAPSHOT_NAME);
-
         IgniteInternalFuture<?> fut = mgr.runLocalSnapshotTask(SNAPSHOT_NAME,
             ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
-            new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(snpDir0)) {
+            new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
@@ -678,14 +674,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch cpLatch = new CountDownLatch(1);
 
-        File snapshotDir0 = mgr.snapshotLocalDir(SNAPSHOT_NAME);
-
         IgniteInternalFuture<?> snpFut = mgr
             .runLocalSnapshotTask(SNAPSHOT_NAME,
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(snapshotDir0)) {
+                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
