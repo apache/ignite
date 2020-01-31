@@ -28,6 +28,8 @@ import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata20.repository.query.IgniteQuery;
 import org.apache.ignite.springdata20.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata20.repository.query.IgniteRepositoryQuery;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -35,6 +37,10 @@ import org.springframework.data.repository.core.support.AbstractEntityInformatio
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
+import org.springframework.expression.EvaluationException;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -45,6 +51,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite instance */
     private Ignite ignite;
 
+    /** Spring application context */
+    private ApplicationContext ctx;
+
     /** Mapping of a repository to a cache. */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
 
@@ -53,8 +62,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param ignite
      */
-    public IgniteRepositoryFactory(Ignite ignite) {
+    public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
         this.ignite = ignite;
+        this.ctx = ctx;
     }
 
     /**
@@ -63,8 +73,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param cfg Ignite configuration.
      */
-    public IgniteRepositoryFactory(IgniteConfiguration cfg) {
-        this.ignite = Ignition.start(cfg);
+    public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
+        ignite = Ignition.start(cfg);
+        this.ctx = ctx;
     }
 
     /**
@@ -73,8 +84,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param springCfgPath A path to Ignite configuration.
      */
-    public IgniteRepositoryFactory(String springCfgPath) {
+    public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
         this.ignite = Ignition.start(springCfgPath);
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -107,8 +119,19 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig " +
             "annotation to map this repository to the underlying cache.");
-
-        repoToCache.put(repoItf, annotation.cacheName());
+//        https://stackoverflow.com/questions/11616316/programmatically-evaluate-a-bean-expression-with-spring-expression-language
+        SpelExpressionParser parser = new SpelExpressionParser();
+        String cacheName =null;
+        try {
+            Expression expression = parser.parseExpression(annotation.cacheName());
+            StandardEvaluationContext ec = new StandardEvaluationContext();
+            ec.setBeanResolver(new BeanFactoryResolver(ctx.getAutowireCapableBeanFactory()));
+            cacheName = (String)expression.getValue(ec);
+        }  catch (EvaluationException ee) {
+            // @todo it can be constant string.
+            cacheName = annotation.cacheName();
+        }
+        repoToCache.put(repoItf, cacheName);
 
         return super.getRepositoryMetadata(repoItf);
     }
