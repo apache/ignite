@@ -59,7 +59,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-        startGrid();
+        startClientGrid();
     }
 
     /**
