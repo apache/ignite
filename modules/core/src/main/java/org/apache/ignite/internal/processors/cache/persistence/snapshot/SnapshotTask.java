@@ -73,7 +73,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.getPartionDeltaFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeStoragePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
 /**
  *
@@ -137,7 +137,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /** Absolute snapshot storage path. */
     // todo rewise configuration
-    private File nodeSnpDir;
+    private File tmpSnpDir;
 
     /** An exception which has been ocurred during snapshot processing. */
     private volatile Throwable lastTh;
@@ -272,8 +272,8 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
             snpSndr.close(lastTh0);
 
-            if (nodeSnpDir != null)
-                U.delete(nodeSnpDir);
+            if (tmpSnpDir != null)
+                U.delete(tmpSnpDir);
 
             // Delete snapshot directory if no other files exists.
             try {
@@ -297,8 +297,8 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
      */
     public IgniteInternalFuture<Void> submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
         try {
-            nodeSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
-                relativeStoragePath(cctx.kernalContext().pdsFolderResolver()),
+            tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
+                relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
                 false);
 
             snpSndr.init();
@@ -322,7 +322,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                     throw new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId);
 
                 // Create cache snapshot directory if not.
-                File grpDir = U.resolveWorkDirectory(nodeSnpDir.getAbsolutePath(),
+                File grpDir = U.resolveWorkDirectory(tmpSnpDir.getAbsolutePath(),
                     cacheDirName(gctx.config()), false);
 
                 U.ensureDirectory(grpDir,
@@ -531,7 +531,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                 // Wait for the completion of both futures - checkpoint end, copy partition.
                 .runAfterBothAsync(cpEndFut,
                     wrapExceptionIfStarted(() -> {
-                            File delta = getPartionDeltaFile(cacheWorkDir(nodeSnpDir, cacheDirName),
+                            File delta = getPartionDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName),
                                 pair.getPartitionId());
 
                             snpSndr.sendDelta(delta, cacheDirName, pair);

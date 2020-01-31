@@ -88,7 +88,7 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeStoragePath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
 /**
  *
@@ -222,7 +222,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Calculate CRCs
         final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
 
-        String nodePath = relativeStoragePath(ig.context().pdsFolderResolver());
+        String nodePath = relativeNodePath(ig.context().pdsFolderResolver().resolveFolders());
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
             Paths.get(mgr.snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
