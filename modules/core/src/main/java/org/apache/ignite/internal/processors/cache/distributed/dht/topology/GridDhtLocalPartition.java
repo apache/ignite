@@ -757,7 +757,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (state0 != MOVING && state0 != RENTING)
             return;
 
-        store.resetInitialUpdateCounter();
+        // Reset the initial update counter value to prevent historical rebalancing on this partition.
+        store.partUpdateCounter().resetInitial();
 
         clearAsync0(false);
     }
