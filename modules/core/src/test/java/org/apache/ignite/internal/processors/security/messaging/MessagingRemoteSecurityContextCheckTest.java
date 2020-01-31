@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.messaging;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,8 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +48,7 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgniteEx srv = startGridAllowAll(SRV);
+        startGridAllowAll(SRV);
 
         startGridAllowAll(SRV_INITIATOR);
 
@@ -65,7 +62,9 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
 
         startGridAllowAll(CLNT_CHECK);
 
-        srv.cluster().state(ClusterState.ACTIVE);
+        startGridAllowAll(SRV_ENDPOINT);
+
+        startClientAllowAll(CLNT_ENDPOINT);
 
         awaitPartitionMapExchange();
     }
@@ -85,6 +84,8 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
             UUID id = messaging.remoteListen(topic, (uuid, o) -> {
                 VERIFIER.register(OPERATION_CHECK);
 
+                compute(Ignition.localIgnite(), endpointIds()).broadcast(() -> VERIFIER.register(OPERATION_ENDPOINT));
+
                 SYNCHRONIZED_SET.add(o);
 
                 return true;
@@ -99,11 +100,6 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
                 messaging.stopRemoteListen(id);
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Collection<String> endpoints() {
-        return Collections.emptyList();
     }
 
     /** */
