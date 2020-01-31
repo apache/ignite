@@ -128,6 +128,10 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = grid(0);
 
+        U.dumpThreads(log);
+
+        printNodesIds(ig0);
+
         ig0.cluster().active(true);
 
         generateCps(ig0);
@@ -148,6 +152,10 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
         startGrids(2);
 
         IgniteEx ig0 = grid(0);
+
+        U.dumpThreads(log);
+
+        printNodesIds(ig0);
 
         ig0.cluster().active(true);
 
@@ -170,6 +178,10 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = grid(0);
 
+        U.dumpThreads(log);
+
+        printNodesIds(ig0);
+
         ig0.cluster().active(true);
 
         generateCps(ig0);
@@ -179,6 +191,10 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
         startGrid(1);
 
         awaitPartitionMapExchange();
+    }
+
+    private void printNodesIds(IgniteEx ig0) {
+        ig0.cluster().nodes().forEach(n -> System.out.println(n.id()));
     }
 
     /**
@@ -224,6 +240,8 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
     private void corruptWalRecord(IgniteEx ig, int cpIdx, boolean segmentCompressed) throws IgniteCheckedException, IOException {
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
 
+        printWalSegments(walMgr);
+
         FileWALPointer corruptedCp = getCp(ig, cpIdx);
 
         Optional<FileDescriptor> cpSegment = getFileDescriptor(segmentCompressed, walMgr, corruptedCp);
@@ -238,6 +256,18 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
 
             WalTestUtils.corruptWalRecord(cpSegment.get(), corruptedCp);
         }
+    }
+
+    private void printWalSegments(IgniteWriteAheadLogManager walMgr) {
+        File walArchiveDir = U.field(walMgr, "walArchiveDir");
+
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory();
+
+        List<FileDescriptor> walFiles = getWalFiles(walArchiveDir, iterFactory);
+
+        System.out.println("Wal segments in archived dir: ");
+
+        walFiles.forEach(f -> System.out.println(f.file().getName()));
     }
 
     /**
@@ -267,6 +297,8 @@ public class CorruptedCheckpointReservationTest extends GridCommonAbstractTest {
      */
     private void corruptCompressedWalSegment(IgniteEx ig, int cpIdx) throws IgniteCheckedException, IOException {
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
+
+        printWalSegments(walMgr);
 
         FileWALPointer corruptedCp = getCp(ig, cpIdx);
 

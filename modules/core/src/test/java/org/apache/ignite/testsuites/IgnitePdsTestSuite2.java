@@ -81,17 +81,17 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      */
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
-
+/*
         // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);
         suite.addTestSuite(IgniteStandaloneWalIteratorInvalidCrcTest.class);
         suite.addTestSuite(IgniteReplayWalIteratorInvalidCrcTest.class);
         suite.addTestSuite(IgniteFsyncReplayWalIteratorInvalidCrcTest.class);
-        suite.addTestSuite(IgnitePureJavaCrcCompatibility.class);
+        suite.addTestSuite(IgnitePureJavaCrcCompatibility.class);*/
 
         addRealPageStoreTests(suite);
 
-        // BaselineTopology tests
+/*        // BaselineTopology tests
         suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
         suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
@@ -100,7 +100,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
 
-        suite.addTestSuite(FileDownloaderTest.class);
+        suite.addTestSuite(FileDownloaderTest.class);*/
 
         return suite;
     }
@@ -113,7 +113,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
-        suite.addTestSuite(IgnitePdsPageSizesTest.class);
+/*        suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
         // Metrics test.
         suite.addTestSuite(IgniteDataStorageMetricsSelfTest.class);
@@ -136,13 +136,13 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteWalFlushBackgroundSelfTest.class);
 
-        suite.addTestSuite(IgniteWalFlushBackgroundWithMmapBufferSelfTest.class);
+        suite.addTestSuite(IgniteWalFlushBackgroundWithMmapBufferSelfTest.class);*/
 
         suite.addTestSuite(IgniteWalFlushLogOnlySelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushLogOnlyWithMmapBufferSelfTest.class);
 
-        suite.addTestSuite(IgniteWalFormatFileFailoverTest.class);
+/*        suite.addTestSuite(IgniteWalFormatFileFailoverTest.class);
 
         // Test suite uses Standalone WAL iterator to verify PDS content.
         suite.addTestSuite(IgniteWalReaderTest.class);
@@ -195,7 +195,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsPartitionsStateRecoveryTest.class);
 
-        suite.addTestSuite(WalPreloadingConcurrentTest.class);
+        suite.addTestSuite(WalPreloadingConcurrentTest.class);*/
 
         suite.addTestSuite(CorruptedCheckpointReservationTest.class);
     }
