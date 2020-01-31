@@ -888,14 +888,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     return grps;
                 }));
 
-        File rootSnpDir0 = snapshotLocalDir(snpName);
-
         try {
             return runLocalSnapshotTask(snpName,
                 cctx.localNodeId(),
                 parts,
                 snpRunner,
-                localSnapshotSender(rootSnpDir0));
+                localSnapshotSender(snpName));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -1095,10 +1093,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     }
 
     /**
-     * @param snpLocDir Absolute snapshot directory.
+     * @param snpName Snapshot name to associate sender with.
      * @return Snapshot receiver instance.
      */
-    SnapshotFileSender localSnapshotSender(File snpLocDir) throws IgniteCheckedException {
+    SnapshotFileSender localSnapshotSender(String snpName) throws IgniteCheckedException {
+        File snpLocDir = snapshotLocalDir(snpName);
+
         return new LocalSnapshotFileSender(log,
             () -> {
                 // Relative path to snapshot storage of local node.
