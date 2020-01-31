@@ -3176,8 +3176,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             curWalSegmIdx--;
 
-            if (log.isInfoEnabled())
-                log.info("Initialized WAL cursor [start=" + start + ", end=" + end + ", curWalSegmIdx=" + curWalSegmIdx + ']');
+            if (log.isDebugEnabled())
+                log.debug("Initialized WAL cursor [start=" + start + ", end=" + end + ", curWalSegmIdx=" + curWalSegmIdx + ']');
 
             advance();
         }
@@ -3202,8 +3202,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try {
                 fd = segmentRouter.findSegment(curWalSegmIdx);
 
-                if (log.isInfoEnabled())
-                    log.info("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file.getAbsolutePath() + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file.getAbsolutePath() + ']');
 
                 nextHandle = initReadHandle(fd, start != null && curWalSegmIdx == start.index() ? start : null);
             }
