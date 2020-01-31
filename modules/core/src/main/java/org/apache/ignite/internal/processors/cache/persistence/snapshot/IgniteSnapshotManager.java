@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -94,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -113,6 +116,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -133,11 +138,15 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
+import static org.apache.ignite.internal.util.IgniteUtils.getBaselineTopology;
 
 /** */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteSnapshot, PartitionsExchangeAware {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
+
+    /** File extension of snapshot meta infomation. */
+    public static final String SNAPSHOT_META_EXTENSION = ".snapshotmeta";
 
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
@@ -198,6 +207,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * temporary partition delta-files of locally started snapshot process.
      */
     private File tmpWorkDir;
+
+    /** Marshaller used to store snapshot meta information. */
+    private Marshaller marshaller;
 
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
@@ -287,6 +299,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+
+        marshaller = MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName());
 
         locSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), dcfg.getLocalSnapshotPath(), false);
         tmpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
@@ -745,7 +759,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 cctx.localNodeId(),
                 parts,
                 snpRunner,
-                localSnapshotSender(snapshotLocalDir(req.snpName)));
+                localSnapshotSender(req.snpName));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -1099,11 +1113,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     SnapshotFileSender localSnapshotSender(String snpName) throws IgniteCheckedException {
         File snpLocDir = snapshotLocalDir(snpName);
 
+        BaselineTopologyHistoryItem hist = BaselineTopologyHistoryItem.fromBaseline(getBaselineTopology(cctx));
+
         return new LocalSnapshotFileSender(log,
             () -> {
                 // Relative path to snapshot storage of local node.
                 // Example: snapshotWorkDir/db/IgniteNodeName0
+                PdsFolderSettings settings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+
                 String dbNodePath = relativeStoragePath(cctx.kernalContext().pdsFolderResolver());
+
+                File metaFile = new File(snpLocDir, settings.consistentId().toString() + SNAPSHOT_META_EXTENSION);
+
+                if (metaFile.exists())
+                    throw new IgniteCheckedException("Snapshot meta cannot be written: " + snpName);
+
+                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(metaFile))) {
+                    U.marshal(marshaller, new SnapshotMeta(snpName, hist), out);
+                }
+                catch (IOException e) {
+                    throw new IgniteCheckedException(e);
+                }
 
                 return U.resolveWorkDirectory(snpLocDir.getAbsolutePath(), dbNodePath, false);
             },
@@ -1199,6 +1229,43 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      */
     private static String cacheSnapshotPath(String snpName, String dbNodePath, String cacheDirName) {
         return Paths.get(snpName, dbNodePath, cacheDirName).toString();
+    }
+
+    /**
+     * Snapshot meta to write to disk.
+     */
+    private static class SnapshotMeta implements Serializable {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Snapshot name. */
+        private final String snpName;
+
+        /** Baseline topology at the moment of snapshot creation. */
+        private final BaselineTopologyHistoryItem hist;
+
+        /**
+         * @param snpName Snapshot name.
+         * @param hist aseline topology at the moment of snapshot creation.
+         */
+        public SnapshotMeta(String snpName, BaselineTopologyHistoryItem hist) {
+            this.snpName = snpName;
+            this.hist = hist;
+        }
+
+        /**
+         * @return Snapshot name.
+         */
+        public String snapshotName() {
+            return snpName;
+        }
+
+        /**
+         * @return Baseline on which snapshot has been created.
+         */
+        public BaselineTopologyHistoryItem getHist() {
+            return hist;
+        }
     }
 
     /**
@@ -1771,6 +1838,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * Snapshot operation start message.
      */
     private static class SnapshotStartDiscoveryMessage implements SnapshotDiscoveryMessage {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
         /** Discovery cache. */
         private final DiscoCache discoCache;
 
