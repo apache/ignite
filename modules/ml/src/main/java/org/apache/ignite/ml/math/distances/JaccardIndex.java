@@ -22,6 +22,9 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Calculates {@code J = |A \cap B| / |A \cup B| } (Jaccard index) distance between two points.
+ */
 public class JaccardIndex implements DistanceMeasure {
 
     @Override
