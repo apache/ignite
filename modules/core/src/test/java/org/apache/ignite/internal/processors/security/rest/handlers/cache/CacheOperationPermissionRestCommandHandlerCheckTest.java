@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.security.handlers.cache;
+package org.apache.ignite.internal.processors.security.rest.handlers.cache;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,7 +52,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCommonAbstractTest {
     /** Empty permission. */
-    private static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+    private static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
 
     /** Cache name for tests. */
     private static final String CACHE_NAME = "TEST_CACHE";
@@ -119,7 +119,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     @Test
     public void testCacheCreate() throws Exception {
         cachePerms.putIfAbsent(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
-        cachePerms.putIfAbsent(FORBIDDEN_CACHE_NAME, EMPTY_PERM);
+        cachePerms.putIfAbsent(FORBIDDEN_CACHE_NAME, EMPTY_PERMS);
 
         startGrid(getConfiguration()).cluster().active(true);
 

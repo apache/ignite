@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Consumer;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.ignite.plugin.security.SecurityPermission.*;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -48,96 +48,177 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** Forbidden cache. */
     protected static final String FORBIDDEN_CACHE = "FORBIDDEN_CACHE";
 
-    /** */
+    /** Cache permissions. */
+    private Map<String, SecurityPermission[]> cachePerms = new HashMap<>();
+
+    /** Security permission set. */
+    private Set<SecurityPermission> secPermSet = new HashSet<>();
+
+    /**
+     *
+     */
     @Test
-    public void testCreateDestroyCachePermissionsOnServerNode() throws Exception {
-        testCreateDestroyCachePermissions(false);
+    public void testCreateCachePermissionsOnServerNode() throws Exception {
+        testCreateCachePermissions(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testCreateDestroyCachePermissionsOnClientNode() throws Exception {
-        testCreateDestroyCachePermissions(true);
+    public void testDestroyCachePermissionsOnServerNode() throws Exception {
+        testDestroyCachePermissions(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
-    public void testCreateDestroysystemPermissionsOnServerNode() throws Exception {
-        testCreateDestroySystemPermissions(false);
+    public void testCreateCachePermissionsOnClientNode() throws Exception {
+        testCreateCachePermissions(true);
     }
 
-    /** */
+    /**
+        *
+        */
     @Test
-    public void testCreateDestroySystemPermissionsOnClientNode() throws Exception {
-        testCreateDestroySystemPermissions(true);
+    public void testDestroyCachePermissionsOnClientNode() throws Exception {
+        testDestroyCachePermissions(true);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testCreateSystemPermissionsOnServerNode() throws Exception {
+        testCreateSystemPermissions(false);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testDestruySystemPermissionsOnServerNode() throws Exception {
+        testCreateSystemPermissions(false);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testDestroySystemPermissionsOnClientNode() throws Exception {
+        testDestroySystemPermissions(true);
     }
 
     /**
      * @param isClient Is client.
      * @throws Exception If failed.
      */
-    private void testCreateDestroyCachePermissions(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                    .defaultAllowAll(true)
-                .appendCachePermissions(TEST_CACHE, CACHE_CREATE, CACHE_DESTROY)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS)
-                .appendSystemPermissions(JOIN_AS_SERVER)
-                .build(),
-            isClient);
+    private void testCreateCachePermissions(boolean isClient) throws Exception {
+        cachePerms.put(TEST_CACHE, new SecurityPermission[] {CACHE_CREATE});
+        cachePerms.put(FORBIDDEN_CACHE, EMPTY_PERMS);
+
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node", isClient);
+
+        node.createCache(TEST_CACHE);
+
+        // This won't fail since defaultAllowAll is true.
+        node.createCache(NEW_TEST_CACHE);
+
+        assertThrowsWithCause(() -> node.createCache(FORBIDDEN_CACHE), SecurityException.class);
+    }
+
+    /**
+     * @param isClient Is client.
+     * @throws Exception If failed.
+     */
+    private void testDestroyCachePermissions(boolean isClient) throws Exception {
+        cachePerms.put(TEST_CACHE, new SecurityPermission[] {CACHE_CREATE, CACHE_DESTROY});
+        cachePerms.put(FORBIDDEN_CACHE, new SecurityPermission[] {CACHE_CREATE});
+
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node", isClient);
+
+        node.createCache(TEST_CACHE);
+        node.cache(TEST_CACHE).destroy();
 
         // This won't fail since defaultAllowAll is true.
         node.createCache(NEW_TEST_CACHE);
         node.cache(NEW_TEST_CACHE).destroy();
 
-        node.createCache(TEST_CACHE);
-        node.cache(TEST_CACHE).destroy();
-
-        assertThrowsWithCause(() -> node.createCache(FORBIDDEN_CACHE), SecurityException.class);
-        assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), NullPointerException.class);
+        node.createCache(FORBIDDEN_CACHE);
+        assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), SecurityException.class);
     }
 
     /**
      * @param isClient Is client.
      * @throws Exception If failed.
      */
-    private void testCreateDestroySystemPermissions(boolean isClient) throws Exception {
-        Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-                SecurityPermissionSetBuilder.create()
-                        .defaultAllowAll(false)
-                        .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS)
-                        .appendSystemPermissions(JOIN_AS_SERVER, CACHE_CREATE, CACHE_DESTROY)
-                        .build(),
-                isClient);
+    private void testCreateSystemPermissions(boolean isClient) throws Exception {
+        cachePerms.put(TEST_CACHE, EMPTY_PERMS);
+        cachePerms.put(FORBIDDEN_CACHE, EMPTY_PERMS);
+
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node", isClient);
+
+        assertThrowsWithCause(() -> node.createCache(TEST_CACHE), SecurityException.class);
+        assertThrowsWithCause(() -> node.createCache(FORBIDDEN_CACHE), SecurityException.class);
+
+        node.close();
+
+        secPermSet.add(CACHE_CREATE);
+
+        Ignite node1 = startGrid(loginPrefix(isClient) + "_test_node", isClient);
 
         // This won't fail becouse CACHE_CREATE is in systemPermissions.
-        node.createCache(NEW_TEST_CACHE);
-        node.createCache(FORBIDDEN_CACHE);
-
-        // This won't fail becouse CACHE_DESTROY is in systemPermissions.
-        node.cache(NEW_TEST_CACHE).destroy();
-        node.cache(FORBIDDEN_CACHE).destroy();
+        node1.createCache(NEW_TEST_CACHE);
+        node1.createCache(FORBIDDEN_CACHE);
     }
 
     /**
-     * @return Collection of operations to invoke a cache operation.
+     * @param isClient Is client.
+     * @throws Exception If failed.
      */
-    private List<Consumer<IgniteCache<String, String>>> operations() {
-        return Arrays.asList(
-            c -> c.put("key", "value"),
-            c -> c.putAll(singletonMap("key", "value")),
-            c -> c.get("key"),
-            c -> c.getAll(Collections.singleton("key")),
-            c -> c.containsKey("key"),
-            c -> c.remove("key"),
-            c -> c.removeAll(Collections.singleton("key")),
-            c -> c.replace("key", "value"),
-            c -> c.putIfAbsent("key", "value"),
-            c -> c.getAndPut("key", "value"),
-            c -> c.getAndRemove("key"),
-            c -> c.getAndReplace("key", "value"),
-            IgniteCache::clear
-        );
+    private void testDestroySystemPermissions(boolean isClient) throws Exception {
+        cachePerms.put(TEST_CACHE, EMPTY_PERMS);
+        cachePerms.put(FORBIDDEN_CACHE, EMPTY_PERMS);
+
+        secPermSet.add(CACHE_CREATE);
+
+        Ignite node = startGrid(loginPrefix(isClient) + "_test_node", isClient);
+
+        node.createCache(TEST_CACHE);
+        node.createCache(NEW_TEST_CACHE);
+        node.createCache(FORBIDDEN_CACHE);
+
+        // This won't fail since defaultAllowAll is true.
+        node.cache(NEW_TEST_CACHE).destroy();
+
+        assertThrowsWithCause(() -> node.cache(TEST_CACHE).destroy(), SecurityException.class);
+        assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), SecurityException.class);
+
+        node.close();
+
+        secPermSet.remove(CACHE_CREATE);
+        secPermSet.add(CACHE_DESTROY);
+
+        Ignite node1 = startGrid(loginPrefix(isClient) + "_test_node", isClient);
+
+        // This won't fail becouse CACHE_DESTROY is in systemPermissions.
+        node1.cache(TEST_CACHE).destroy();
+        node1.cache(FORBIDDEN_CACHE).destroy();
+    }
+
+    /**
+     * @param login Login.
+     * @param isClient Is client.
+     */
+    protected IgniteEx startGrid(String login, boolean isClient) throws Exception {
+        SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create();
+        builder.defaultAllowAll(true);
+
+        cachePerms.forEach((builder::appendCachePermissions));
+        secPermSet.forEach(builder::appendSystemPermissions);
+
+        return startGrid(login, builder.build(), null, isClient);
     }
 
     /** {@inheritDoc} */
@@ -148,6 +229,11 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGridAllowAll("server").cluster().active(true);
+
+        secPermSet.clear();
+        secPermSet.add(JOIN_AS_SERVER);
+
+        cachePerms.clear();
     }
 
     /** {@inheritDoc} */
