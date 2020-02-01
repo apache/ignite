@@ -69,7 +69,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
         Collections.reverse(fragments);
 
-        return new MultiStepPlanImpl(fragments, plan.rowMetadata());
+        return new MultiStepPlanImpl(fragments, plan.fieldsMetadata());
     }
 
     /** {@inheritDoc} */

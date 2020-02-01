@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 
 /**
@@ -31,7 +32,7 @@ public interface MultiStepPlan extends QueryPlan {
     /**
      * @return Row metadata.
      */
-    RowMetadata rowMetadata();
+    List<GridQueryFieldMetadata> fieldsMetadata();
 
     /**
      * Inits query fragments.

@@ -76,7 +76,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RowMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -504,16 +503,13 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
-        // Prepare row metadata.
-        RowMetadata rowMetadata = rowMetadata(validated.dataType(), validated.origins(), ctx);
-
-        //
-        return new MultiStepPlanImpl(fragments, rowMetadata);
+        return new MultiStepPlanImpl(fragments, fieldsMetadata(validated, ctx));
     }
 
     /** */
-    private RowMetadata rowMetadata(RelDataType validatedType, List<List<String>> origins, PlanningContext ctx) {
-        List<RelDataTypeField> fields = validatedType.getFieldList();
+    private List<GridQueryFieldMetadata> fieldsMetadata(ValidationResult validationResult, PlanningContext ctx) {
+        List<RelDataTypeField> fields = validationResult.dataType().getFieldList();
+        List<List<String>> origins = validationResult.origins();
 
         assert fields.size() == origins.size();
 
@@ -533,7 +529,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             ));
         }
 
-        return new RowMetadata(b.build());
+        return b.build();
     }
 
     /** */
@@ -610,7 +606,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         info.awaitAllReplies();
 
         // TODO weak map to stop query on cursor collected by GC.
-        return new ListFieldsQueryCursor<>(info.<Object[]>iterator(), Arrays::asList, plan.rowMetadata());
+        return new ListFieldsQueryCursor<>(info.<Object[]>iterator(), Arrays::asList, plan.fieldsMetadata());
     }
 
     /** */

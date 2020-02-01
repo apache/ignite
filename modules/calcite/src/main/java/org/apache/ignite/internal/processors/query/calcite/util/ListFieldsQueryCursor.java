@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RowMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,16 +36,16 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
     private final Iterator<List<?>> it;
 
     /** */
-    private final RowMetadata rowMetadata;
+    private final List<GridQueryFieldMetadata> fieldsMeta;
 
     /**
      * @param it Iterator.
      * @param converter Row converter.
-     * @param rowMetadata Row metadata.
+     * @param fieldsMeta Fields metadata.
      */
-    public ListFieldsQueryCursor(Iterator<T> it, Function<T, List<?>> converter, RowMetadata rowMetadata) {
+    public ListFieldsQueryCursor(Iterator<T> it, Function<T, List<?>> converter, List<GridQueryFieldMetadata> fieldsMeta) {
         this.it = new ConvertingClosableIterator<>(it, converter);
-        this.rowMetadata = rowMetadata;
+        this.fieldsMeta = fieldsMeta;
     }
 
     /** {@inheritDoc} */
@@ -81,17 +80,17 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
 
     /** {@inheritDoc} */
     @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-        return rowMetadata.fieldsMeta();
+        return fieldsMeta;
     }
 
     /** {@inheritDoc} */
     @Override public String getFieldName(int idx) {
-        return rowMetadata.getFieldName(idx);
+        return fieldsMeta.get(idx).fieldName();
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnsCount() {
-        return rowMetadata.getColumnsCount();
+        return fieldsMeta.size();
     }
 
     /** {@inheritDoc} */

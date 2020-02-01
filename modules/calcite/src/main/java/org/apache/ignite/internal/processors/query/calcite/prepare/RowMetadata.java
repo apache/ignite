@@ -35,25 +35,25 @@ public class RowMetadata {
    /**
     * @return Query metadata.
     */
-   public List<GridQueryFieldMetadata> fieldsMeta() {
+   public List<GridQueryFieldMetadata> fieldsMetadata() {
       return fieldsMeta;
    }
+   /**
+    * Gets number of columns in a row.
+    *
+    * @return row size.
+    */
+   public int fieldsCount() {
+      return fieldsMeta.size();
+   }
+
    /**
     * Gets field name.
     *
     * @param idx field index.
     * @return Field name.
     */
-   public String getFieldName(int idx){
+   public String fieldName(int idx){
       return fieldsMeta.get(idx).fieldName();
-   }
-
-   /**
-    * Gets number of columns in a row.
-    *
-    * @return row size.
-    */
-   public int getColumnsCount() {
-      return fieldsMeta.size();
    }
 }

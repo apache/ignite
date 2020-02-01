@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
@@ -38,21 +39,21 @@ public class MultiStepPlanImpl implements MultiStepPlan {
     private final List<Fragment> fragments;
 
     /** */
-    private final RowMetadata rowMetadata;
+    private final List<GridQueryFieldMetadata> fieldsMeta;
 
     /**
      * @param fragments Query fragments.
      */
     public MultiStepPlanImpl(List<Fragment> fragments) {
-        this(fragments, new RowMetadata(ImmutableList.of()));
+        this(fragments, ImmutableList.of());
     }
 
     /**
      * @param fragments Query fragments.
-     * @param rowMetadata Row metadata.
+     * @param fieldsMeta Fields metadata.
      */
-    public MultiStepPlanImpl(List<Fragment> fragments, RowMetadata rowMetadata) {
-        this.rowMetadata = rowMetadata;
+    public MultiStepPlanImpl(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
         this.fragments = fragments;
     }
 
@@ -62,8 +63,8 @@ public class MultiStepPlanImpl implements MultiStepPlan {
     }
 
     /** {@inheritDoc} */
-    @Override public RowMetadata rowMetadata() {
-        return rowMetadata;
+    @Override public List<GridQueryFieldMetadata> fieldsMetadata() {
+        return fieldsMeta;
     }
 
     /** {@inheritDoc} */
