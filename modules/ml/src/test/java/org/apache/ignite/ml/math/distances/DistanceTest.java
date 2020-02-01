@@ -72,7 +72,7 @@ public class DistanceTest {
     @Test
     public void distanceFromPointToItselfIsZero() {
         DISTANCE_MEASURES.forEach(distance -> {
-            Vector vector = randomVector(10);
+            Vector vector = randomVector(3);
             String errorMessage = errorMessage(distance, vector, vector);
             assertEquals(errorMessage, 0d, distance.compute(vector,vector),  PRECISION);
         });
@@ -80,10 +80,21 @@ public class DistanceTest {
 
     /** */
     @Test
+    public void  distancFfromAToBIsTheSameAsDistanceFromBToA() {
+        DISTANCE_MEASURES.forEach(distance -> {
+            Vector vector1 = randomVector(3);
+            Vector vector2 = randomVector(3);
+            String errorMessage = errorMessage(distance, vector1, vector2);
+            assertEquals(errorMessage, distance.compute(vector1,vector2), distance.compute(vector2,vector1), PRECISION);
+        });
+    }
+
+    /** */
+    @Test
     public void distanceBetweenTwoDistinctPointsIsPositive() {
         DISTANCE_MEASURES.forEach(distance -> {
-            Vector vector1 = randomVector(10);
-            Vector vector2 = randomVector(10);
+            Vector vector1 = randomVector(3);
+            Vector vector2 = randomVector(3);
             String errorMessage = errorMessage(distance, vector1, vector2);
             assertTrue(errorMessage, distance.compute(vector1,vector2) > 0);
         });
@@ -155,6 +166,7 @@ public class DistanceTest {
         assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
+    /** Returns a random vector*/
     private static Vector randomVector(int length) {
         double[] vec = new double[length];
 
@@ -164,11 +176,17 @@ public class DistanceTest {
         return new DenseVector(vec);
     }
 
+    /**
+     * Creates an assertion error message from a distsnce measure and params.
+     */
     private static String errorMessage(DistanceMeasure measure, Vector param1, Vector param2) {
         return String.format("%s(%s, %s)", measure.getClass().getSimpleName(),
                 vectorToString(param1), vectorToString(param2));
     }
 
+    /**
+     * Converts vector to string
+     */
     private static String vectorToString(Vector vector) {
         return "[" + Arrays.stream(vector.asArray()).boxed()
                 .map(Object::toString)

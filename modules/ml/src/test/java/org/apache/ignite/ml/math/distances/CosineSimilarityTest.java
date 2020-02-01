@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
+/** Test for {@code CosineSimilarity}. */
 public class CosineSimilarityTest {
     /** Precision. */
     private static final double PRECISION = 0.0;
