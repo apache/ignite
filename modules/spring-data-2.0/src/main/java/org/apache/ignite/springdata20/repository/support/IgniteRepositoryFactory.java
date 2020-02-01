@@ -37,7 +37,6 @@ import org.springframework.data.repository.core.support.AbstractEntityInformatio
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
-import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -120,20 +119,35 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig " +
             "annotation to map this repository to the underlying cache.");
 //        https://stackoverflow.com/questions/11616316/programmatically-evaluate-a-bean-expression-with-spring-expression-language
-        SpelExpressionParser parser = new SpelExpressionParser();
-        String cacheName =null;
-        try {
+        String cacheName = null;
+        if (!looksLikeExpression(annotation.cacheName())) {
+            cacheName = annotation.cacheName();
+        }
+        else {
+            SpelExpressionParser parser = new SpelExpressionParser();
             Expression expression = parser.parseExpression(annotation.cacheName());
             StandardEvaluationContext ec = new StandardEvaluationContext();
             ec.setBeanResolver(new BeanFactoryResolver(ctx.getAutowireCapableBeanFactory()));
             cacheName = (String)expression.getValue(ec);
-        }  catch (EvaluationException ee) {
-            // @todo it can be constant string.
-            cacheName = annotation.cacheName();
         }
         repoToCache.put(repoItf, cacheName);
-
         return super.getRepositoryMetadata(repoItf);
+    }
+
+    /**
+     * The method tryes to identify SpEL extression
+     * @see <a href="https://docs.spring.io/spring/docs/5.0.16.RELEASE/spring-framework-reference/core.html#expressions">SpEL</a>
+     * @param expression
+     * @return
+     */
+
+    private boolean looksLikeExpression(String expression) {
+        boolean looksLikeExpression = expression.contains("@") || expression.contains("#")
+            || expression.contains("$") || expression.contains("?") || expression.contains("(")
+            || expression.contains(")") || expression.contains("'") || expression.contains("{")
+            || expression.contains("}") || expression.contains(">") || expression.contains("<")
+            || expression.contains("=");
+        return looksLikeExpression;
     }
 
     /** {@inheritDoc} */
