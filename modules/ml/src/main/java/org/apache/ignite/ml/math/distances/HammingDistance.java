@@ -41,21 +41,6 @@ public class HammingDistance implements DistanceMeasure {
     }
 
     /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        throw new UnsupportedOperationException("It's not supported yet");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;

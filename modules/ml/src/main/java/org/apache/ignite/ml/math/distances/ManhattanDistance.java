@@ -16,9 +16,6 @@
  */
 package org.apache.ignite.ml.math.distances;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
@@ -39,16 +36,6 @@ public class ManhattanDistance implements DistanceMeasure {
     /** {@inheritDoc} */
     @Override public double compute(Vector a, double[] b) throws CardinalityException {
         throw new UnsupportedOperationException("It's not supported yet");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op
     }
 
     /** {@inheritDoc} */
