@@ -23,10 +23,27 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.joining;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 /** */
 public class DistanceTest {
     /** Precision. */
     private static final double PRECISION = 0.0;
+
+    /** All distace measures. */
+    private static final List<DistanceMeasure> DISTANCE_MEASURES = asList(
+            new ChebyshevDistance(),
+            new EuclideanDistance(),
+            new HammingDistance(),
+            new JaccardIndex(),
+            new ManhattanDistance(),
+            new ManhattanDistance());
 
     /** */
     private Vector v1;
@@ -47,10 +64,30 @@ public class DistanceTest {
 
     /**
      * properties to test
-     * the distance from a point to itself is zero,
-     * the distance between two distinct points is positive,
      * the distance from A to B is the same as the distance from B to A, and
      */
+
+
+    /** */
+    @Test
+    public void distanceFromPointToItselfIsZero() {
+        DISTANCE_MEASURES.forEach(distance -> {
+            Vector vector = randomVector(10);
+            String errorMessage = errorMessage(distance, vector, vector);
+            assertEquals(errorMessage, 0d, distance.compute(vector,vector),  PRECISION);
+        });
+    }
+
+    /** */
+    @Test
+    public void distanceBetweenTwoDistinctPointsIsPositive() {
+        DISTANCE_MEASURES.forEach(distance -> {
+            Vector vector1 = randomVector(10);
+            Vector vector2 = randomVector(10);
+            String errorMessage = errorMessage(distance, vector1, vector2);
+            assertTrue(errorMessage, distance.compute(vector1,vector2) > 0);
+        });
+    }
 
     /** */
     @Test
@@ -59,8 +96,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new EuclideanDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
-        Assert.assertEquals(expRes, new EuclideanDistance().compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, new EuclideanDistance().compute(v1, data2), PRECISION);
     }
 
     /** */
@@ -70,8 +107,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new ManhattanDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
@@ -81,8 +118,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new HammingDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
@@ -92,8 +129,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new ChebyshevDistance();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
@@ -103,21 +140,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new MinkowskiDistance(2d);
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
-    }
-
-    /** */
-    @Test
-    public void cosineSimilarityDistance() {
-        double expRes = 0.9449111825230682d;
-        DenseVector a = new DenseVector(new double[]{1, 2, 3});
-        double[] b = {1, 1, 4};
-
-        DistanceMeasure distanceMeasure = new CosineSimilarityDistance();
-
-        Assert.assertEquals(expRes, distanceMeasure.compute(a, b), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(a, new DenseVector(b)), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
     /** */
@@ -127,7 +151,27 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new JaccardIndex();
 
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
+        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
+    }
+
+    private static Vector randomVector(int length) {
+        double[] vec = new double[length];
+
+        for (int i = 0; i <vec.length; i++) {
+            vec[i] = Math.random();
+        }
+        return new DenseVector(vec);
+    }
+
+    private static String errorMessage(DistanceMeasure measure, Vector param1, Vector param2) {
+        return String.format("%s(%s, %s)", measure.getClass().getSimpleName(),
+                vectorToString(param1), vectorToString(param2));
+    }
+
+    private static String vectorToString(Vector vector) {
+        return "[" + Arrays.stream(vector.asArray()).boxed()
+                .map(Object::toString)
+                .collect(joining(",")) + "]";
     }
 }
