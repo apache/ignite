@@ -19,23 +19,4 @@ public class ChebyshevDistance implements DistanceMeasure {
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
         return MatrixUtil.localCopyOf(a).minus(b).foldMap(Math::max, Math::abs, 0d);
     }
-
-    /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        double res = 0d;
-
-        for (int i = 0; i < b.length; i++)
-            res = Math.max(abs(b[i] - a.get(i)), res);
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op
-    }
 }

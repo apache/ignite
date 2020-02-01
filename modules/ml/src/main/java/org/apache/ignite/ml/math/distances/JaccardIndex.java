@@ -26,14 +26,4 @@ public class JaccardIndex implements DistanceMeasure {
 
         return intersect / (a.size() + b.size() - intersect);
     }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op
-    }
 }

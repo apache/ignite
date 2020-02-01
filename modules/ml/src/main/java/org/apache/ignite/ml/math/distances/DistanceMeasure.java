@@ -17,6 +17,10 @@
 package org.apache.ignite.ml.math.distances;
 
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -50,5 +54,15 @@ public interface DistanceMeasure extends Externalizable {
      */
     default double compute(Vector a, double[] b) throws CardinalityException {
         return compute(a, new DenseVector(b));
+    }
+
+    /** {@inheritDoc} */
+    @Override default void writeExternal(ObjectOutput out) throws IOException {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override default void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op
     }
 }
