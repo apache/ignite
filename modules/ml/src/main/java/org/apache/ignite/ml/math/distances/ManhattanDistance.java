@@ -34,11 +34,6 @@ public class ManhattanDistance implements DistanceMeasure {
     }
 
     /** {@inheritDoc} */
-    @Override public double compute(Vector a, double[] b) throws CardinalityException {
-        throw new UnsupportedOperationException("It's not supported yet");
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;

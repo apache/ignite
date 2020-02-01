@@ -60,7 +60,6 @@ public class DistanceTest {
         DistanceMeasure distanceMeasure = new EuclideanDistance();
 
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
-
         Assert.assertEquals(expRes, new EuclideanDistance().compute(v1, data2), PRECISION);
     }
 
@@ -71,6 +70,7 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new ManhattanDistance();
 
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
@@ -81,19 +81,8 @@ public class DistanceTest {
 
         DistanceMeasure distanceMeasure = new HammingDistance();
 
+        Assert.assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         Assert.assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
-    }
-
-    /** */
-    @Test(expected = UnsupportedOperationException.class)
-    public void manhattanDistance2() {
-        new ManhattanDistance().compute(v1, data2);
-    }
-
-    /** */
-    @Test(expected = UnsupportedOperationException.class)
-    public void hammingDistance2() {
-        new HammingDistance().compute(v1, data2);
     }
 
     /** */
