@@ -19,7 +19,6 @@ package org.apache.ignite.ml.math.distances;
 
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,14 +35,13 @@ public class DistanceTest {
     /** Precision. */
     private static final double PRECISION = 0.0;
 
-    /** All distace measures. */
+    /** All distace measures for distace properties tests. */
     private static final List<DistanceMeasure> DISTANCE_MEASURES = asList(
             new ChebyshevDistance(),
             new EuclideanDistance(),
             new HammingDistance(),
-            new JaccardIndex(),
             new ManhattanDistance(),
-            new ManhattanDistance());
+            new MinkowskiDistance(Math.random()));
 
     /** */
     private Vector v1;
@@ -62,30 +60,27 @@ public class DistanceTest {
         v2 = new DenseVector(data2);
     }
 
-    /**
-     * properties to test
-     * the distance from A to B is the same as the distance from B to A, and
-     */
-
-
     /** */
     @Test
     public void distanceFromPointToItselfIsZero() {
         DISTANCE_MEASURES.forEach(distance -> {
             Vector vector = randomVector(3);
             String errorMessage = errorMessage(distance, vector, vector);
+
             assertEquals(errorMessage, 0d, distance.compute(vector,vector),  PRECISION);
         });
     }
 
     /** */
     @Test
-    public void  distancFfromAToBIsTheSameAsDistanceFromBToA() {
+    public void distancFfromAToBIsTheSameAsDistanceFromBToA() {
         DISTANCE_MEASURES.forEach(distance -> {
             Vector vector1 = randomVector(3);
             Vector vector2 = randomVector(3);
             String errorMessage = errorMessage(distance, vector1, vector2);
-            assertEquals(errorMessage, distance.compute(vector1,vector2), distance.compute(vector2,vector1), PRECISION);
+
+            assertEquals(errorMessage,
+                    distance.compute(vector1, vector2), distance.compute(vector2, vector1), PRECISION);
         });
     }
 
@@ -96,6 +91,7 @@ public class DistanceTest {
             Vector vector1 = randomVector(3);
             Vector vector2 = randomVector(3);
             String errorMessage = errorMessage(distance, vector1, vector2);
+
             assertTrue(errorMessage, distance.compute(vector1,vector2) > 0);
         });
     }
@@ -150,17 +146,6 @@ public class DistanceTest {
         double expRes = Math.pow(5, 0.5);
 
         DistanceMeasure distanceMeasure = new MinkowskiDistance(2d);
-
-        assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
-        assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
-    }
-
-    /** */
-    @Test
-    public void jaccardIndex() {
-        double expRes =  0.2;
-
-        DistanceMeasure distanceMeasure = new JaccardIndex();
 
         assertEquals(expRes, distanceMeasure.compute(v1, data2), PRECISION);
         assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
