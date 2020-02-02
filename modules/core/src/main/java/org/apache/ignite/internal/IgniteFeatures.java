@@ -77,7 +77,10 @@ public enum IgniteFeatures {
     WC_SNAPSHOT_CHAIN_MODE(22),
 
     /** Support of DR-specific visor tasks used by control utility. */
-    DR_CONTROL_UTILITY(25);
+    DR_CONTROL_UTILITY(25),
+
+    /** Distributed change timeout for dump long operations. */
+    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30);
 
     /**
      * Unique feature identifier.
