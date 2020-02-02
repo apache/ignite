@@ -17,13 +17,12 @@
 
 package org.apache.ignite.ml.math.distances;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -37,11 +36,11 @@ public class DistanceTest {
 
     /** All distace measures for distace properties tests. */
     private static final List<DistanceMeasure> DISTANCE_MEASURES = asList(
-            new ChebyshevDistance(),
-            new EuclideanDistance(),
-            new HammingDistance(),
-            new ManhattanDistance(),
-            new MinkowskiDistance(Math.random()));
+        new ChebyshevDistance(),
+        new EuclideanDistance(),
+        new HammingDistance(),
+        new ManhattanDistance(),
+        new MinkowskiDistance(Math.random()));
 
     /** */
     private Vector v1;
@@ -67,7 +66,7 @@ public class DistanceTest {
             Vector vector = randomVector(3);
             String errorMessage = errorMessage(distance, vector, vector);
 
-            assertEquals(errorMessage, 0d, distance.compute(vector,vector),  PRECISION);
+            assertEquals(errorMessage, 0d, distance.compute(vector, vector), PRECISION);
         });
     }
 
@@ -80,7 +79,7 @@ public class DistanceTest {
             String errorMessage = errorMessage(distance, vector1, vector2);
 
             assertEquals(errorMessage,
-                    distance.compute(vector1, vector2), distance.compute(vector2, vector1), PRECISION);
+                distance.compute(vector1, vector2), distance.compute(vector2, vector1), PRECISION);
         });
     }
 
@@ -92,7 +91,7 @@ public class DistanceTest {
             Vector vector2 = randomVector(3);
             String errorMessage = errorMessage(distance, vector1, vector2);
 
-            assertTrue(errorMessage, distance.compute(vector1,vector2) > 0);
+            assertTrue(errorMessage, distance.compute(vector1, vector2) > 0);
         });
     }
 
@@ -151,11 +150,11 @@ public class DistanceTest {
         assertEquals(expRes, distanceMeasure.compute(v1, v2), PRECISION);
     }
 
-    /** Returns a random vector*/
+    /** Returns a random vector */
     private static Vector randomVector(int length) {
         double[] vec = new double[length];
 
-        for (int i = 0; i <vec.length; i++) {
+        for (int i = 0; i < vec.length; i++) {
             vec[i] = Math.random();
         }
         return new DenseVector(vec);
@@ -166,7 +165,7 @@ public class DistanceTest {
      */
     private static String errorMessage(DistanceMeasure measure, Vector param1, Vector param2) {
         return String.format("%s(%s, %s)", measure.getClass().getSimpleName(),
-                vectorToString(param1), vectorToString(param2));
+            vectorToString(param1), vectorToString(param2));
     }
 
     /**
@@ -174,7 +173,7 @@ public class DistanceTest {
      */
     private static String vectorToString(Vector vector) {
         return "[" + Arrays.stream(vector.asArray()).boxed()
-                .map(Object::toString)
-                .collect(joining(",")) + "]";
+            .map(Object::toString)
+            .collect(joining(",")) + "]";
     }
 }

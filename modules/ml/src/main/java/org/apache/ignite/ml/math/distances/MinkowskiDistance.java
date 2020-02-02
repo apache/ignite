@@ -16,12 +16,11 @@
  */
 package org.apache.ignite.ml.math.distances;
 
+import java.util.Objects;
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MatrixUtil;
-
-import java.util.Objects;
 
 import static org.apache.ignite.ml.math.functions.Functions.PLUS;
 
@@ -46,14 +45,16 @@ public class MinkowskiDistance implements DistanceMeasure {
         IgniteDoubleFunction<Double> fun = value -> Math.pow(Math.abs(value), p);
 
         Double result = MatrixUtil.localCopyOf(a).minus(b).foldMap(PLUS, fun, 0d);
-        return Math.pow(result, 1/p);
+        return Math.pow(result, 1 / p);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MinkowskiDistance that = (MinkowskiDistance) o;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        MinkowskiDistance that = (MinkowskiDistance)o;
         return Double.compare(that.p, p) == 0;
     }
 

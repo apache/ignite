@@ -20,14 +20,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
 import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
- * This class is based on the corresponding class from Apache Common Math lib.
- * Interface for distance measures of n-dimensional vectors.
+ * This class is based on the corresponding class from Apache Common Math lib. Interface for distance measures of
+ * n-dimensional vectors.
  */
 public interface DistanceMeasure extends Externalizable {
     /**
