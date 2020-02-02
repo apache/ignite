@@ -72,7 +72,7 @@ public class DistanceTest {
 
     /** */
     @Test
-    public void distancFfromAToBIsTheSameAsDistanceFromBToA() {
+    public void distanceFromAToBIsTheSameAsDistanceFromBToA() {
         DISTANCE_MEASURES.forEach(distance -> {
             Vector vector1 = randomVector(3);
             Vector vector2 = randomVector(3);
@@ -160,17 +160,13 @@ public class DistanceTest {
         return new DenseVector(vec);
     }
 
-    /**
-     * Creates an assertion error message from a distsnce measure and params.
-     */
+    /** Creates an assertion error message from a distsnce measure and params. */
     private static String errorMessage(DistanceMeasure measure, Vector param1, Vector param2) {
         return String.format("%s(%s, %s)", measure.getClass().getSimpleName(),
             vectorToString(param1), vectorToString(param2));
     }
 
-    /**
-     * Converts vector to string
-     */
+    /** Converts vector to string. */
     private static String vectorToString(Vector vector) {
         return "[" + Arrays.stream(vector.asArray()).boxed()
             .map(Object::toString)
