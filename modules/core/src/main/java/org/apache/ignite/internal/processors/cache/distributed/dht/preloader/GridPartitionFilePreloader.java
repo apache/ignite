@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -48,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -222,7 +225,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         GridDhtPartitionsExchangeFuture exchFut,
         Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
     ) {
-        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
+        Collection<T2<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
 
         if (orderedAssigns.isEmpty()) {
             if (log.isDebugEnabled())
@@ -417,9 +420,10 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param assignsMap The map of cache groups assignments to preload.
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
-    private Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> reorderAssignments(
-        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap) {
-        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> res = new TreeMap<>();
+    private List<T2<ClusterNode, Map<Integer, Set<Integer>>>> reorderAssignments(
+        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap
+    ) {
+        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sorted = new TreeMap<>();
 
         for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
             CacheGroupContext grp = e.getKey();
@@ -429,7 +433,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
 
             int order = grp.config().getRebalanceOrder();
 
-            Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns = res.computeIfAbsent(order, v -> new HashMap<>());
+            Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns = sorted.computeIfAbsent(order, v -> new HashMap<>());
 
             for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
                 Map<Integer, Set<Integer>> grpAssigns = nodeAssigns.computeIfAbsent(e0.getKey(), v -> new HashMap<>());
@@ -438,7 +442,14 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             }
         }
 
-        return res.values();
+        List<T2<ClusterNode, Map<Integer, Set<Integer>>>> ordered = new ArrayList<>(8);
+
+        for (Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : sorted.values()) {
+            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>>  e : nodeAssigns.entrySet())
+                ordered.add(new T2<>(e.getKey(), e.getValue()));
+        }
+
+        return ordered;
     }
 
     /**

@@ -168,8 +168,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         IgniteEx ignite0 = startGrid(0, true);
 
-        LoadParameters<TestValue> idxCache =
-            testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
+        LoadParameters<TestValue> idxCache = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
 
         LoadParameters<Integer> replicatedCache = new DataLoader<>(
             grid(0).cache(CACHE),
@@ -213,6 +212,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
     public void testHistoricalStartsAfterFilesPreloading() throws Exception {
         assert backups() > 0 : backups();
 

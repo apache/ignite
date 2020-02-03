@@ -85,7 +85,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final GridDhtPartitionExchangeId exchId;
 
     /** Assignments ordered by cache rebalance priority and node. */
-    private final Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
+    private final Collection<T2<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
     /** Unique partition identifier with node identifier. */
     private final Map<Long, UUID> partsToNodes = new ConcurrentHashMap<>();
@@ -127,7 +127,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cpLsnr Checkpoint listener.
      */
     public FileRebalanceRoutine(
-        Collection<Map<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
+        Collection<T2<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
@@ -153,65 +153,63 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
 
         cctx.kernalContext().getSystemExecutorService().submit(() -> {
-            for (Map<ClusterNode, Map<Integer, Set<Integer>>> map : orderedAssgnments) {
-                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : map.entrySet()) {
-                    UUID nodeId = nodeAssigns.getKey().id();
+            for (T2<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+                UUID nodeId = nodeAssigns.getKey().id();
 
-                    Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
+                Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
 
-                    IgniteInternalFuture<Boolean> snapshotFut0;
+                IgniteInternalFuture<Boolean> snapshotFut0;
+
+                try {
+                    lock.lock();
 
                     try {
-                        lock.lock();
-
-                        try {
-                            if (isDone())
-                                return;
-
-                            snapshotFut0 = snapshotFut;
-
-                            if (snapshotFut0 != null && (snapshotFut0.isCancelled() || !snapshotFut0.get()))
-                                return;
-
-                            Set<String> grps = new HashSet<>();
-
-                            for (Integer grpId : assigns.keySet()) {
-                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                                grps.add(grp.cacheOrGroupName());
-
-                                if (!requestedGroups.contains(grpId)) {
-                                    requestedGroups.add(grpId);
-
-                                    grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-                                }
-                            }
-
-                            U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + grps + "]");
-
-                            snapshotFut = snapshotFut0 = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
-                        }
-                        finally {
-                            lock.unlock();
-                        }
-
-                        snapshotFut0.get();
-                    }
-                    catch (IgniteFutureCancelledCheckedException ignore) {
-                        // No-op.
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (!isDone()) {
-                            log.error(e.getMessage(), e);
-
-                            onDone(e);
-
+                        if (isDone())
                             return;
+
+                        snapshotFut0 = snapshotFut;
+
+                        if (snapshotFut0 != null && (snapshotFut0.isCancelled() || !snapshotFut0.get()))
+                            return;
+
+                        Set<String> grps = new HashSet<>();
+
+                        for (Integer grpId : assigns.keySet()) {
+                            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                            grps.add(grp.cacheOrGroupName());
+
+                            if (!requestedGroups.contains(grpId)) {
+                                requestedGroups.add(grpId);
+
+                                grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+                            }
                         }
 
-                        if (log.isDebugEnabled())
-                            log.debug("Stale error (ignore) " + e.getMessage());
+                        U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + grps + "]");
+
+                        snapshotFut = snapshotFut0 = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
                     }
+                    finally {
+                        lock.unlock();
+                    }
+
+                    snapshotFut0.get();
+                }
+                catch (IgniteFutureCancelledCheckedException ignore) {
+                    // No-op.
+                }
+                catch (IgniteCheckedException e) {
+                    if (!isDone()) {
+                        log.error(e.getMessage(), e);
+
+                        onDone(e);
+
+                        return;
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Stale error (ignore) " + e.getMessage());
                 }
             }
         });
@@ -226,37 +224,24 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         lock.lock();
 
         try {
-            for (Map<ClusterNode, Map<Integer, Set<Integer>>> orderAssign : orderedAssgnments) {
-                for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>> nodeAssign : orderAssign.entrySet()) {
-                    UUID nodeId = nodeAssign.getKey().id();
+            for (T2<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+                for (Map.Entry<Integer, Set<Integer>> grpAssign : nodeAssigns.getValue().entrySet()) {
+                    int grpId = grpAssign.getKey();
+                    Set<Integer> parts = grpAssign.getValue();
 
-                    for (Map.Entry<Integer, Set<Integer>> grpAssign : nodeAssign.getValue().entrySet()) {
-                        int grpId = grpAssign.getKey();
+                    String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
 
-                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+                    Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
 
-                        String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
+                    for (Integer partId : parts) {
+                        long uniquePartId = uniquePartId(grpId, partId);
 
-                        Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
+                        regionParts.add(uniquePartId);
 
-                        for (Integer partId : grpAssign.getValue()) {
-                            assert !grp.topology().localPartition(partId).active() :
-                                "cache=" + grp.cacheOrGroupName() + " p=" + partId;
-
-                            long grpAndPart = uniquePartId(grpId, partId);
-
-                            regionParts.add(grpAndPart);
-
-                            partsToNodes.put(grpAndPart, nodeId);
-                        }
-
-                        Integer remainParts = remaining.get(grpId);
-
-                        if (remainParts == null)
-                            remainParts = 0;
-
-                        remaining.put(grpId, remainParts + grpAssign.getValue().size());
+                        partsToNodes.put(uniquePartId, nodeAssigns.getKey().id());
                     }
+
+                    remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
                 }
             }
 
@@ -501,6 +486,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             histAssigns.put(node, msg);
         }
+
+        // todo WAL iterator can fail on rotation.
+        Thread.yield();
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
 
