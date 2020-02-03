@@ -1319,7 +1319,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             boolean removed = partDataStores.remove(p, store);
 
-            assert removed : "grp=" + grp.cacheOrGroupName() + " p=" + p;
+            assert removed;
 
             destroyCacheDataStore0(store);
         }

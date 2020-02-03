@@ -36,7 +36,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -488,7 +487,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 long to = e.getValue().get2();
                 String grpName = grp.cacheOrGroupName();
 
-                assert from != 0 && from <= to : "grp=" + grpName + "p=" + p + ", from=" + from + ", to=" + to;
+                assert from != 0 && from <= to : "grp=" + grpName + ", p=" + p + ", from=" + from + ", to=" + to;
 
                 if (log.isDebugEnabled()) {
                     log.debug("Prepare for historical rebalancing [grp=" + grpName +
@@ -501,13 +500,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             histAssigns.put(node, msg);
-        }
-
-        try {
-            U.sleep(200);
-        }
-        catch (IgniteInterruptedCheckedException ignore) {
-            // No-op.
         }
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
