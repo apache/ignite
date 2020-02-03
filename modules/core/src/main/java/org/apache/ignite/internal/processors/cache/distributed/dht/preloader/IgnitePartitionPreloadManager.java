@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * DHT cache partition files preloader.
  */
-public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
+public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter {
     /** */
     private final boolean fileRebalanceEnabled =
         IgniteSystemProperties.getBoolean(IGNITE_FILE_REBALANCE_ENABLED, true);
@@ -87,7 +87,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
     /**
      * @param ktx Kernal context.
      */
-    public GridPartitionFilePreloader(GridKernalContext ktx) {
+    public IgnitePartitionPreloadManager(GridKernalContext ktx) {
         assert CU.isPersistenceEnabled(ktx.config()) : "Persistence must be enabled to use file preloading";
     }
 

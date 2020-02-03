@@ -96,7 +96,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridPartitionFilePreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgnitePartitionPreloadManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -3180,7 +3180,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<CacheGroupContext, GridDhtPreloaderAssignments> fileAssignsMap = null;
 
-                    GridPartitionFilePreloader filePreloader = cctx.filePreloader();
+                    IgnitePartitionPreloadManager preloader = cctx.preloader();
 
                     boolean forcePreload = false;
 
@@ -3374,7 +3374,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                if (!forcePreload && filePreloader != null && filePreloader.required(grp))
+                                if (!forcePreload && preloader != null && preloader.required(grp))
                                     fileAssignsMap.put(grp, assigns);
                                 else
                                     assignsMap.put(grp.groupId(), assigns);
@@ -3395,8 +3395,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
                         Runnable loadFilesStarter = null;
 
-                        if (filePreloader != null)
-                            loadFilesStarter = filePreloader.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
+                        if (preloader != null)
+                            loadFilesStarter = preloader.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
 
                         int size = assignsMap.size();
 

@@ -2356,8 +2356,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
 
-                if (cctx.filePreloader() != null)
-                    cctx.filePreloader().onExchangeDone(this);
+                if (cctx.preloader() != null)
+                    cctx.preloader().onExchangeDone(this);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
@@ -3276,8 +3276,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
-        boolean fileRebalanceApplicable = grp != null && cctx.filePreloader() != null &&
-            cctx.filePreloader().supports(grp, cctx.discovery().aliveServerNodes());
+        boolean fileRebalanceApplicable = grp != null && cctx.preloader() != null &&
+            cctx.preloader().supports(grp, cctx.discovery().aliveServerNodes());
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
