@@ -71,6 +71,13 @@ public class BaselineTopologyHistoryItem implements Serializable {
     }
 
     /**
+     * @return Collection of baseline nodes.
+     */
+    public Collection<Object> consistentIds() {
+        return consIds;
+    }
+
+    /**
      *
      */
     public List<Long> branchingHistory() {

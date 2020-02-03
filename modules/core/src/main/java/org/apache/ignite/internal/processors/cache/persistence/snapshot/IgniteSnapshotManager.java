@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -95,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -139,6 +143,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 import static org.apache.ignite.internal.util.IgniteUtils.getBaselineTopology;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PREPARE_RESTORE_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT;
 
 /** */
@@ -236,14 +241,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
 
-    /** Take snapshot operation procedure. */
-    private final DistributedProcess<String, Boolean> prepareSnpRestore;
+    /** Prepare snapshot restore operation procedure. */
+    private final DistributedProcess<String, Boolean> prepareRestoreSnpProc;
+
+    /** Snapshot restore operation procedure. */
+    private final DistributedProcess<String, Boolean> restoreSnpProc;
 
     /** Cluster snapshot operation requested by user. */
     private ClusterSnapshotFuture clusterSnpFut;
 
+    /** Cluster snapshot restore operation requested by user. */
+    private ClusterSnapshotFuture restoreSnpFut;
+
     /** Current snapshot opertaion on local node. */
     private volatile SnapshotTask clusterSnpTask;
+
+    /**
+     * Current snapshot restore operation on local node. Accessed only from discovery thread,
+     * so the order is guaranteed.
+     */
+    private volatile String restoringSnpName;
 
     /**
      * @param ctx Kernal context.
@@ -251,8 +268,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     public IgniteSnapshotManager(GridKernalContext ctx) {
         takeSnpProc = new DistributedProcess<>(ctx, TAKE_SNAPSHOT, this::takeSnapshot, this::takeSnapshotResult);
 
-        prepareSnpRestore = new DistributedProcess<>(ctx, PREPARE_RESTORE_SNAPSHOT, this::prepareSnapshotRestore,
+        prepareRestoreSnpProc = new DistributedProcess<>(ctx, PREPARE_RESTORE_SNAPSHOT, this::prepareSnapshotRestore,
             this::prepareSnapshotRestoreResult);
+
+        restoreSnpProc = new DistributedProcess<>(ctx, RESTORE_SNAPSHOT, this::snapshotRestore,
+            this::snapshotRestoreResult);
     }
 
     /**
@@ -279,6 +299,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         super.start0();
 
         GridKernalContext kctx = cctx.kernalContext();
+
+        // todo Will not start for client nodes. Should we?
 
         if (kctx.clientNode())
             return;
@@ -408,7 +430,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     DiscoveryCustomEvent evt0 = (DiscoveryCustomEvent)evt;
 
                     if (evt0.customMessage() instanceof InitMessage) {
-                        InitMessage msg = (InitMessage)evt0.customMessage();
+                        InitMessage<?> msg = (InitMessage<?>)evt0.customMessage();
 
                         if (msg.type() == TAKE_SNAPSHOT.ordinal()) {
                             assert clusterSnpTask != null : evt;
@@ -809,22 +831,159 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     }
 
     /**
+     * @param snpLocDir Snapshot local directory.
+     * @return Snapshot meta instance.
+     * @throws IgniteCheckedException If fails.
+     */
+    private SnapshotMeta readNodeSnaspshotMeta(File snpLocDir) throws IgniteCheckedException {
+        if (!snpLocDir.exists() || !snpLocDir.isDirectory())
+            throw new IgniteCheckedException("Snapshot local directory not found on local node: " + snpLocDir);
+
+        File metaFile = new File(snpLocDir,
+            cctx.kernalContext()
+                .pdsFolderResolver()
+                .resolveFolders()
+                .consistentId()
+                .toString() + SNAPSHOT_META_EXTENSION);
+
+        if (metaFile.exists())
+            throw new IgniteCheckedException("Snapshot meta doesn't exists on local node for a given snapshot: " + snpLocDir.getName());
+
+        SnapshotMeta meta;
+
+        try (InputStream stream = new BufferedInputStream(new FileInputStream(metaFile))) {
+            meta = marshaller.unmarshal(stream, U.resolveClassLoader(cctx.gridConfig()));
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
+
+        if (meta == null)
+            throw new IgniteCheckedException("Snapshot meta hasn't been resolved on local node for a given snapshot: " + snpLocDir.getName());
+
+        return meta;
+    }
+
+    /**
+     * @param meta Snapshot meta to check.
+     * @param blt Current baseline topology.
+     * @throws IgniteCheckedException If validation fails.
+     */
+    private static void validateSnapshot(SnapshotMeta meta, BaselineTopology blt) throws IgniteCheckedException {
+        Set<Object> currConsIds = blt.consistentIds();
+
+        if (currConsIds == null || !currConsIds.equals(meta.hist.consistentIds())) {
+            throw new IgniteCheckedException("Snapshot can be restored only on the same topology " +
+                "[currConsIds=" + currConsIds + ", snapshotConsIds=" + meta.hist.consistentIds() + ']');
+        }
+    }
+
+    /**
      * @param snpName Snapshot name which offered to restore.
      * @return Future which will be completed on restore operation prepared.
      */
     IgniteInternalFuture<Boolean> prepareSnapshotRestore(String snpName) {
-        // todo disable activation
+        // todo disable any further activation requests
+
+        if (cctx.kernalContext().clientNode())
+            return new GridFinishedFuture<>();
+
+        try {
+            validateSnapshot(readNodeSnaspshotMeta(snapshotLocalDir(snpName)), getBaselineTopology(cctx));
+
+            restoringSnpName = snpName;
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
 
         return new GridFinishedFuture<>();
     }
 
     /**
-     * @param id
-     * @param res
-     * @param err
+     * @param id Restore process id.
+     * @param res Results of prepare restore process.
+     * @param err Errors if occurred.
      */
     void prepareSnapshotRestoreResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
+        Exception err0 = err.values()
+            .stream()
+            .filter(Objects::nonNull)
+            .findAny()
+            .orElse(null);
 
+        synchronized (snpOpMux) {
+            if (err0 == null)
+                restoreSnpProc.start(id, restoringSnpName);
+            else {
+                if (restoreSnpFut != null) {
+                    restoreSnpFut.onDone(err0);
+
+                    restoreSnpFut = null;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param snpName Snapshot name which offered to restore.
+     * @return Future which will be completed on restore operation prepared.
+     */
+    IgniteInternalFuture<Boolean> snapshotRestore(String snpName) {
+
+        return new GridFinishedFuture<>();
+    }
+
+    /**
+     * @param id Restore process id.
+     * @param res Results of prepare restore process.
+     * @param err Errors if occurred.
+     */
+    void snapshotRestoreResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> restoreSnapshot(String name) {
+        if (cctx.kernalContext().clientNode()) {
+            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
+                "perform snapshot restore operation."));
+        }
+
+        if (active(cctx.kernalContext().state().clusterState().state())) {
+            return new IgniteFinishedFutureImpl<>(new IgniteException("Snapshot restore operation has been rejected. " +
+                "Restore must be performed on deactivated cluster."));
+        }
+
+        if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT)) {
+            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
+                "a snapshot operation."));
+        }
+
+        synchronized (snpOpMux) {
+            try {
+                if (restoreSnpFut != null && !restoreSnpFut.isDone()) {
+                    throw new IgniteCheckedException("Snapshot restore operation has been rejected. " +
+                        "The previous snapshot restore was not completed gracefully.");
+                }
+
+                validateSnapshot(readNodeSnaspshotMeta(snapshotLocalDir(name)), getBaselineTopology(cctx));
+
+                ClusterSnapshotFuture restoreFut0 = new ClusterSnapshotFuture(UUID.randomUUID());
+
+                restoreSnpFut = restoreFut0;
+
+                prepareRestoreSnpProc.start(restoreFut0.id, name);
+
+                if (log.isInfoEnabled())
+                    log.info("Cluster-wide snapshot restore operation started [snpName=" + name + ']');
+
+                return new IgniteFutureImpl<>(restoreSnpFut);
+            }
+            catch (IgniteCheckedException e) {
+                return new IgniteFinishedFutureImpl<>(e);
+            }
+        }
     }
 
     /**
@@ -870,16 +1029,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             takeSnpProc.start(clsFut.id, new SnapshotOperationRequest(name, grps));
 
+
             if(log.isInfoEnabled())
                 log.info("Cluster-wide snapshot operation started [snpName=" + name + ", gprs=" + grps + ']');
 
-            return new IgniteFutureImpl<>(clsFut);
+            return new IgniteFutureImpl<>(clusterSnpFut);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> restoreSnapshot(String name) {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -1140,10 +1295,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         // So discoCache will be calculated correctly.
         BaselineTopologyHistoryItem hist = BaselineTopologyHistoryItem.fromBaseline(getBaselineTopology(cctx));
 
+        if (hist == null)
+            throw new IgniteCheckedException("Snapshot operation is allowed only for baseline toplogy enabled.");
+
         return new LocalSnapshotFileSender(log,
             () -> {
-                // Relative path to snapshot storage of local node.
-                // Example: snapshotWorkDir/db/IgniteNodeName0
+                // Write snapshot meta file
                 PdsFolderSettings settings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
                 File metaFile = new File(snpLocDir, settings.consistentId().toString() + SNAPSHOT_META_EXTENSION);
