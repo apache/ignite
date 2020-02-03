@@ -386,7 +386,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Client type: platform.
                 stream.WriteByte(ClientType);
 
-                // TODO Authentication attributes
+                // TODO User attributes
                 if (version >= Ver170)
                     stream.WriteByte(BinaryUtils.HdrNull);
 

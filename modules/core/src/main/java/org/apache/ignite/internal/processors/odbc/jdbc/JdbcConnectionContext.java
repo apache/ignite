@@ -175,7 +175,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
 
-            authAttrs = reader.readMap();
+            userAttrs = reader.readMap();
         }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {

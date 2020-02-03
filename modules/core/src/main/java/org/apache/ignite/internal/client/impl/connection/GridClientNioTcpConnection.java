@@ -163,8 +163,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
-    /** Authentication attributes. */
-    Map<String, String> authAttrs;
+    /** User attributes. */
+    Map<String, String> userAttrs;
 
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
@@ -198,7 +198,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         Byte marshId,
         GridClientTopology top,
         SecurityCredentials cred,
-        Map<String, String> authAttrs
+        Map<String, String> userAttrs
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -207,7 +207,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
-        this.authAttrs = authAttrs;
+        this.userAttrs = userAttrs;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -910,7 +910,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
-        msg.authenticationAttributes(authAttrs);
+        msg.userAttributes(userAttrs);
 
         if (credentials() != null) {
             msg.login((String) credentials().getLogin());

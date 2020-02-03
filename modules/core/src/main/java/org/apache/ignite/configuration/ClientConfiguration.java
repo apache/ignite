@@ -90,8 +90,8 @@ public final class ClientConfiguration implements Serializable {
     /** @serial User password. */
     private String userPwd;
 
-    /** Authentication attributes. */
-    private Map<String, String> authAttrs;
+    /** User attributes. */
+    private Map<String, String> userAttrs;
 
     /** Tx config. */
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
@@ -499,19 +499,19 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Authentication attributes.
+     * @return User attributes.
      */
-    public Map<String, String> getAuthenticationAttributes() {
-        return authAttrs;
+    public Map<String, String> getUserAttributes() {
+        return userAttrs;
     }
 
     /**
-     * Authentication attributes can be used in custom authenticator to authenticate thin clients.
+     * User attributes can be used in custom authenticator to authenticate clients by checking attributes.
      *
-     * @param authAttrs Authentication attributes.
+     * @param userAttrs User attributes.
      */
-    public ClientConfiguration setAuthenticationAttributes(Map<String, String> authAttrs) {
-        this.authAttrs = authAttrs;
+    public ClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
 
         return this;
     }

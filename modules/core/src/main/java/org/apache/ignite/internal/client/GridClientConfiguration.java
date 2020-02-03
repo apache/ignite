@@ -124,8 +124,8 @@ public class GridClientConfiguration {
     /** Daemon flag. */
     private boolean daemon;
 
-    /** Authentication attributes. */
-    private Map<String, String> authAttrs;
+    /** User attributes. */
+    private Map<String, String> userAttrs;
 
     /**
      * Creates default configuration.
@@ -160,7 +160,7 @@ public class GridClientConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
-        authAttrs = cfg.getAuthenticationAttributes();
+        userAttrs = cfg.getUserAttributes();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }
@@ -915,19 +915,19 @@ public class GridClientConfiguration {
     }
 
     /**
-     * @return Authentication attributes.
+     * @return User attributes.
      */
-    public Map<String, String> getAuthenticationAttributes() {
-        return authAttrs;
+    public Map<String, String> getUserAttributes() {
+        return userAttrs;
     }
 
     /**
-     * Authentication attributes can be used in custom authenticator to authenticate thin clients.
+     * User attributes can be used in custom authenticator to authenticate clients by checking attributes.
      *
-     * @param authAttrs Authentication attributes.
+     * @param userAttrs User attributes.
      */
-    public GridClientConfiguration setAuthenticationAttributes(Map<String, String> authAttrs) {
-        this.authAttrs = authAttrs;
+    public GridClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
 
         return this;
     }

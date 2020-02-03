@@ -27,9 +27,9 @@ import static org.apache.ignite.internal.processors.security.impl.TestAdditional
     ADDITIONAL_SECURITY_PASSWORD_ATTR;
 
 /**
- * Creates authentication attributes for thin clients.
+ * Creates user attributes for thin clients.
  */
-public class AuthenticationAttributesFactory implements Factory<Map<String, String>> {
+public class UserAttributesFactory implements Factory<Map<String, String>> {
     /** {@inheritDoc} */
     @Override public Map<String, String> create() {
         HashMap<String, String> map = new HashMap<>();

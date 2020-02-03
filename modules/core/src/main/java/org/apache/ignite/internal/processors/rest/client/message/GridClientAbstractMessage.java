@@ -51,8 +51,8 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** Password. */
     private String pwd;
 
-    /** Authentication attributes. */
-    Map<String, String> authAttrs;
+    /** User attributes. */
+    Map<String, String> userAttrs;
 
     /** {@inheritDoc} */
     @Override public long requestId() {
@@ -127,13 +127,13 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> authenticationAttributes() {
-        return authAttrs;
+    @Override public Map<String, String> userAttributes() {
+        return userAttrs;
     }
 
     /** {@inheritDoc} */
-    @Override public void authenticationAttributes(Map<String, String> authAttrs) {
-        this.authAttrs = authAttrs;
+    @Override public void userAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
     }
 
     /** {@inheritDoc} */
@@ -143,7 +143,7 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
         U.writeString(out, login);
         U.writeString(out, pwd);
 
-        U.writeMap(out, authAttrs);
+        U.writeMap(out, userAttrs);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +153,7 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
         login = U.readString(in);
         pwd = U.readString(in);
 
-        authAttrs = U.readMap(in);
+        userAttrs = U.readMap(in);
     }
 
     /** {@inheritDoc} */

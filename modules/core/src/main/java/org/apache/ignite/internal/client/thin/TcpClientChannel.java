@@ -157,7 +157,7 @@ class TcpClientChannel implements ClientChannel {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
 
-        handshake(cfg.getUserName(), cfg.getUserPassword(), cfg.getAuthenticationAttributes());
+        handshake(cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -402,14 +402,14 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Client handshake. */
-    private void handshake(String user, String pwd, Map<String, String> authAttrs)
+    private void handshake(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
-        handshakeReq(user, pwd, authAttrs);
-        handshakeRes(user, pwd, authAttrs);
+        handshakeReq(user, pwd, userAttrs);
+        handshakeRes(user, pwd, userAttrs);
     }
 
     /** Send handshake request. */
-    private void handshakeReq(String user, String pwd, Map<String, String> authAttrs)
+    private void handshakeReq(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
         BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null);
@@ -424,7 +424,7 @@ class TcpClientChannel implements ClientChannel {
         writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
         if (ver.compareTo(V1_7_0) >= 0)
-            writer.writeMap(authAttrs);
+            writer.writeMap(userAttrs);
 
         if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
             writer.writeString(user);
@@ -437,7 +437,7 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Receive and handle handshake response. */
-    private void handshakeRes(String user, String pwd, Map<String, String> authAttrs)
+    private void handshakeRes(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
         int resSize = dataInput.readInt();
 
@@ -478,7 +478,7 @@ class TcpClientChannel implements ClientChannel {
                 else { // Retry with server version.
                     ver = srvVer;
 
-                    handshake(user, pwd, authAttrs);
+                    handshake(user, pwd, userAttrs);
                 }
             }
         }

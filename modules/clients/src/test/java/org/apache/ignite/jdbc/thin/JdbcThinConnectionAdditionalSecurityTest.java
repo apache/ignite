@@ -120,8 +120,8 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
                 "&sslClientCertificateKeyStorePassword=123456" +
                 "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456" +
-                "&authenticationAttributesFactory=" +
-                "org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory")) {
+                "&userAttributesFactory=" +
+                "org.apache.ignite.internal.processors.security.UserAttributesFactory")) {
                 checkConnection(conn);
             }
         }
@@ -180,8 +180,8 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&authenticationAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory");
+                        "&userAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.UserAttributesFactory");
 
                     return null;
                 }
@@ -210,8 +210,8 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456" +
-                        "&authenticationAttributesFactory=" +
-                        "org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory");
+                        "&userAttributesFactory=" +
+                        "org.apache.ignite.internal.processors.security.UserAttributesFactory");
 
                     return null;
                 }

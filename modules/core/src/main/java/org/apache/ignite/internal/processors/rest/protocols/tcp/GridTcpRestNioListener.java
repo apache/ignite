@@ -417,7 +417,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restReq.credentials(new SecurityCredentials(msg0.login(), msg0.password()));
             }
 
-            restReq.authAttributes(msg.authenticationAttributes());
+            restReq.userAttributes(msg.userAttributes());
         }
 
         return restReq;

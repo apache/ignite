@@ -62,7 +62,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.6.0. Added: Expiration Policy configuration. */
     public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
 
-    /** Version 1.7.0. Added: Authentication attributes support. */
+    /** Version 1.7.0. Added: User attributes support. */
     public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
 
     /** Default version. */
@@ -163,7 +163,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         String pwd = null;
 
         if (ver.compareTo(VER_1_7_0) >= 0)
-            authAttrs = reader.readMap();
+            userAttrs = reader.readMap();
 
         if (ver.compareTo(VER_1_1_0) >= 0) {
             try {

@@ -52,8 +52,8 @@ public class GridRestRequest {
     /** */
     private AuthorizationContext authCtx;
 
-    /** Authentication attributes. */
-    Map<String, String> authAttrs;
+    /** User attributes. */
+    Map<String, String> userAttrs;
 
     /**
      * @return Destination ID.
@@ -166,21 +166,21 @@ public class GridRestRequest {
     }
 
     /**
-     * Gets authentication attributes.
+     * Gets user attributes.
      *
-     * @return Authentication attributes.
+     * @return User attributes.
      */
-    public Map<String, String> authAttributes() {
-        return authAttrs;
+    public Map<String, String> userAttributes() {
+        return userAttrs;
     }
 
     /**
-     * Gets authentication attributes.
+     * Gets user attributes.
      *
-     * @param authAttrs Authentication attributes.
+     * @param userAttrs User attributes.
      */
-    public void authAttributes(Map<String, String> authAttrs) {
-        this.authAttrs = authAttrs;
+    public void userAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
     }
 
     /** {@inheritDoc} */

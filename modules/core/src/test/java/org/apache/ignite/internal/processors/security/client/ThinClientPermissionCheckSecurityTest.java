@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.security.client;
 
 import java.util.Map;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
-import org.apache.ignite.internal.processors.security.AuthenticationAttributesFactory;
+import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.junit.runner.RunWith;
@@ -46,7 +46,7 @@ public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionC
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<String, String> authenticationAttributres() {
-        return new AuthenticationAttributesFactory().create();
+    @Override protected Map<String, String> userAttributres() {
+        return new UserAttributesFactory().create();
     }
 }
