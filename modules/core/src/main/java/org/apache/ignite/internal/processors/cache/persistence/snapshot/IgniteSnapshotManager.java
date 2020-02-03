@@ -301,7 +301,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         GridKernalContext kctx = cctx.kernalContext();
 
         // todo Will not start for client nodes. Should we?
-
         if (kctx.clientNode())
             return;
 
@@ -759,7 +758,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpTask + ']'));
         }
 
-        // todo write snapshot metadata
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         Map<Integer, GridIntList> parts = req.grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
@@ -897,7 +895,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             return new GridFinishedFuture<>(e);
         }
 
-        return new GridFinishedFuture<>();
+        return new GridFinishedFuture<>(Boolean.TRUE);
     }
 
     /**
