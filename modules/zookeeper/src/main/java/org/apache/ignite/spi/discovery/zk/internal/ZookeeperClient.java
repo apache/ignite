@@ -168,7 +168,7 @@ public class ZookeeperClient implements Watcher {
      */
     boolean connected() {
         synchronized (stateMux) {
-            return state == ConnectionState.CONNECTED;
+            return state == ConnectionState.Connected;
         }
     }
 
@@ -221,7 +221,7 @@ public class ZookeeperClient implements Watcher {
                         break;
 
                     case SyncConnected:
-                        newState = ConnectionState.CONNECTED;
+                        newState = ConnectionState.Connected;
 
                         break;
 
@@ -249,7 +249,7 @@ public class ZookeeperClient implements Watcher {
 
                         scheduleConnectionCheck();
                     }
-                    else if (newState == ConnectionState.CONNECTED) {
+                    else if (newState == ConnectionState.Connected) {
                         retryCount.set(0);
 
                         stateMux.notifyAll();
@@ -266,7 +266,7 @@ public class ZookeeperClient implements Watcher {
 
                 notifyConnectionLost();
             }
-            else if (newState == ConnectionState.CONNECTED) {
+            else if (newState == ConnectionState.Connected) {
                 for (ZkAsyncOperation op : retryQ)
                     op.execute();
             }
@@ -867,7 +867,7 @@ public class ZookeeperClient implements Watcher {
             if (retry) {
                 long remainingTime;
 
-                if (state == ConnectionState.CONNECTED && connStartTime == prevConnStartTime) {
+                if (state == ConnectionState.Connected && connStartTime == prevConnStartTime) {
                     state = ConnectionState.DISCONNECTED;
 
                     connStartTime = System.currentTimeMillis();
@@ -1328,7 +1328,7 @@ public class ZookeeperClient implements Watcher {
      */
     private enum ConnectionState {
         /** */
-        CONNECTED,
+        Connected,
         /** */
         DISCONNECTED,
         /** */
