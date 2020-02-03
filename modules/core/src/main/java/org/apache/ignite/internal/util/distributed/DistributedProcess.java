@@ -387,6 +387,20 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
          *
          * @see IgniteSnapshotManager
          */
-        TAKE_SNAPSHOT
+        TAKE_SNAPSHOT,
+
+        /**
+         * Prepare for snapshot restoring operation.
+         *
+         * @see IgniteSnapshotManager
+         */
+        PREPARE_RESTORE_SNAPSHOT,
+
+        /**
+         * Snapshot restore operation.
+         *
+         * @see IgniteSnapshotManager
+         */
+        RESTORE_SNAPSHOT
     }
 }

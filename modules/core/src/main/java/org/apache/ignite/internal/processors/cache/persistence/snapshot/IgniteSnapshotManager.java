@@ -138,6 +138,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 import static org.apache.ignite.internal.util.IgniteUtils.getBaselineTopology;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PREPARE_RESTORE_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT;
 
 /** */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter implements IgniteSnapshot, PartitionsExchangeAware {
@@ -234,6 +236,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> takeSnpProc;
 
+    /** Take snapshot operation procedure. */
+    private final DistributedProcess<String, Boolean> prepareSnpRestore;
+
     /** Cluster snapshot operation requested by user. */
     private ClusterSnapshotFuture clusterSnpFut;
 
@@ -244,8 +249,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param ctx Kernal context.
      */
     public IgniteSnapshotManager(GridKernalContext ctx) {
-        takeSnpProc = new DistributedProcess<>(ctx, DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT,
-            this::takeSnapshot, this::takeSnapshotResult);
+        takeSnpProc = new DistributedProcess<>(ctx, TAKE_SNAPSHOT, this::takeSnapshot, this::takeSnapshotResult);
+
+        prepareSnpRestore = new DistributedProcess<>(ctx, PREPARE_RESTORE_SNAPSHOT, this::prepareSnapshotRestore,
+            this::prepareSnapshotRestoreResult);
     }
 
     /**
@@ -403,7 +410,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     if (evt0.customMessage() instanceof InitMessage) {
                         InitMessage msg = (InitMessage)evt0.customMessage();
 
-                        if (msg.type() == DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal()) {
+                        if (msg.type() == TAKE_SNAPSHOT.ordinal()) {
                             assert clusterSnpTask != null : evt;
 
                             DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
@@ -802,6 +809,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     }
 
     /**
+     * @param snpName Snapshot name which offered to restore.
+     * @return Future which will be completed on restore operation prepared.
+     */
+    IgniteInternalFuture<Boolean> prepareSnapshotRestore(String snpName) {
+        // todo disable activation
+
+        return new GridFinishedFuture<>();
+    }
+
+    /**
+     * @param id
+     * @param res
+     * @param err
+     */
+    void prepareSnapshotRestoreResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
+
+    }
+
+    /**
      * @return {@code True} if snapshot operation started.
      */
     public boolean snapshotInProgress() {
@@ -1110,6 +1136,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     SnapshotFileSender localSnapshotSender(String snpName) throws IgniteCheckedException {
         File snpLocDir = snapshotLocalDir(snpName);
 
+        // This will be called inside discovery thread which initiates snapshot operation.
+        // So discoCache will be calculated correctly.
         BaselineTopologyHistoryItem hist = BaselineTopologyHistoryItem.fromBaseline(getBaselineTopology(cctx));
 
         return new LocalSnapshotFileSender(log,
