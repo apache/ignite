@@ -79,10 +79,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(2);
 
-        IgniteConfiguration clientCfg = getConfiguration("client")
-            .setClientMode(true);
-
-        startGrid(clientCfg);
+        startClientGrid(getConfiguration("client"));
     }
 
     /** */

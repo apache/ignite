@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -81,13 +80,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
-        Ignition.setClientMode(true);
-        try {
-            startGrid(CLIENT);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        startClientGrid(CLIENT);
     }
 
     /**

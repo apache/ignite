@@ -77,11 +77,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg3 = getConfiguration("client");
         cfg3.setCacheConfiguration(new CacheConfiguration(cacheName0));
 
-        cfg3.setClientMode(true);
-
         IgniteEx ig1 = startGrid(cfg1);
         IgniteEx ig2 = startGrid(cfg2);
-        IgniteEx ig3 = startGrid(cfg3);
+        IgniteEx ig3 = startClientGrid(cfg3);
 
         assertTrue(!ig1.active());
         assertTrue(!ig2.active());
@@ -230,10 +228,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     public void testJoinDaemonAndDaemonStop() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        IgniteEx daemon = startGrid(
+        IgniteEx daemon = startClientGrid(
             getConfiguration("daemon")
                 .setDaemon(true)
-                .setClientMode(true)
         );
 
         Collection<ClusterNode> daemons = ig.cluster().forDaemons().nodes();
@@ -255,10 +252,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        startGrid(
+        startClientGrid(
             getConfiguration("daemon")
                 .setDaemon(true)
-                .setClientMode(true)
         );
 
         stopGrid(1);
@@ -277,10 +273,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         ig.active(true);
 
-        IgniteEx daemon = startGrid(
+        IgniteEx daemon = startClientGrid(
             getConfiguration("daemon")
                 .setDaemon(true)
-                .setClientMode(true)
         );
 
         assertTrue(ig.active());

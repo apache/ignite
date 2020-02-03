@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -44,9 +43,7 @@ public class GridServiceProxyNodeStopSelfTest extends GridCommonAbstractTest {
 
         server.services().deployClusterSingleton("my-service", MyServiceFactory.create());
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         final MyService proxy = client.services().serviceProxy("my-service", MyService.class, false);
 

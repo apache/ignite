@@ -79,9 +79,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     /** Logger for listen log messages. */
     private static ListeningTestLogger listeningLog;
 
-    /** Creating a client node. */
-    private boolean clientNode;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -111,7 +108,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(clientNode)
             .setCacheConfiguration(createCacheConfigs())
             .setGridLogger(listeningLog)
             .setConnectorConfiguration(new ConnectorConfiguration());
@@ -248,8 +244,6 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         assertTrue(logLsnr.check());
 
-        clientNode = false;
-
         startGrid(stoppedNodeId);
 
         awaitPartitionMapExchange();
@@ -304,13 +298,9 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private IgniteEx createCluster(int nodes) throws Exception {
-        clientNode = false;
-
         IgniteEx crd = startGrids(nodes);
 
-        clientNode = true;
-
-        startGrid(nodes);
+        startClientGrid(nodes);
 
         awaitPartitionMapExchange();
 

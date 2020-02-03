@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 
 import static org.apache.ignite.Ignition.localIgnite;
 
@@ -90,11 +91,17 @@ public class AbstractContinuousQueryRemoteSecurityContextCheckTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, OPERATION_OPEN_CQ, 1)
-            .expect(CLNT_RUN, OPERATION_OPEN_CQ, 1)
-            .expect(SRV_CHECK, OPERATION_CQ_COMPONENT, 2);
+    @Override protected void runAndCheck(IgniteRunnable op) {
+        initiators().forEach(initiator -> {
+            VERIFIER.initiator(initiator)
+                .expect(SRV_RUN, OPERATION_OPEN_CQ, 1)
+                .expect(CLNT_RUN, OPERATION_OPEN_CQ, 1)
+                .expect(SRV_CHECK, OPERATION_CQ_COMPONENT, 2);
+
+            compute(initiator, nodesToRunIds()).broadcast(op);
+
+            VERIFIER.checkResult();
+        });
     }
 
     /**

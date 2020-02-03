@@ -69,9 +69,6 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     /** */
     private static ConcurrentHashMap<Object, Object> storeMap = new ConcurrentHashMap<>();
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -81,8 +78,6 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -145,10 +140,8 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        Ignite client1 = startGrid(4);
-        final Ignite client2 = startGrid(5);
+        final Ignite client1 = startClientGrid(4);
+        final Ignite client2 = startClientGrid(5);
 
         final Integer key = primaryKey(srv0.cache(DEFAULT_CACHE_NAME));
 
@@ -245,10 +238,8 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        Ignite client1 = startGrid(4);
-        final Ignite client2 = startGrid(5);
+        final Ignite client1 = startClientGrid(4);
+        final Ignite client2 = startClientGrid(5);
 
         final Integer key = primaryKey(srv0.cache(DEFAULT_CACHE_NAME));
 
@@ -381,9 +372,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
 
         srv0Cache.put(key, 1);
 
-        client = true;
-
-        Ignite client = startGrid(4);
+        Ignite client = startClientGrid(4);
 
         testSpi(srv0).blockMessages(GridNearTxPrepareResponse.class, client.name());
 

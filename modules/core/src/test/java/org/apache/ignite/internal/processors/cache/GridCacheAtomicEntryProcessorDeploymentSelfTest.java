@@ -46,22 +46,15 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /** */
     protected DeploymentMode depMode;
 
-    /** */
-    protected boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
-
-        if (clientMode)
+        if (cfg.isClientMode())
             cfg.setClassLoader(getExternalClassLoader());
 
         cfg.setDeploymentMode(depMode);
-
         cfg.setCacheConfiguration(cacheConfiguration());
-
         cfg.setConnectorConfiguration(null);
 
         return cfg;
@@ -149,11 +142,8 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      */
     private void doTestInvoke() throws Exception {
         try {
-            clientMode = false;
             startGrid(0);
-
-            clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
@@ -182,11 +172,8 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      */
     private void doTestInvokeAll() throws Exception {
         try {
-            clientMode = false;
             startGrid(0);
-
-            clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
