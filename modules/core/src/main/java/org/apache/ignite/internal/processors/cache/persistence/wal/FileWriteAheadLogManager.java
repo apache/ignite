@@ -617,15 +617,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (currHnd != null)
                 currHnd.close(false);
-
-            if (walSegmentSyncWorker != null)
-                walSegmentSyncWorker.shutdown();
-
-            if (walWriter != null)
-                walWriter.shutdown();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + this.currHnd.fileIO, e);
+        }
+
+        if (walSegmentSyncWorker != null)
+            walSegmentSyncWorker.shutdown();
+
+        try {
+            if (walWriter != null)
+                walWriter.shutdown();
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            U.error(log, "Failed to gracefully shutdown WAL components, thread was interrupted.", e);
         }
 
         segmentAware.interrupt();
