@@ -254,6 +254,45 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
+     * Test deactivation works via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateNonPersistent() throws Exception {
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("non-persistent-dataRegion")
+            .setPersistenceEnabled(false);
+
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
+
+        ignite.cluster().state(ACTIVE);
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        injectTestSystemOut();
+
+        ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
+            .setDataRegionName("non-persistent-dataRegion"));
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--deactivate"));
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+        assertContains(log, testOut.toString(), "Your cluster has in-memory cache configured. " +
+            "During deactivation all data from these caches will be cleared!");
+
+        assertEquals(EXIT_CODE_OK, execute("--deactivate", "--force"));
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
+    }
+
+    /**
      * Test the deactivation command on the active and no cluster with checking
      * the cluster name(which is set through the system property) in
      * confirmation.

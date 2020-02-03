@@ -21,6 +21,21 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import java.util.Collections;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
@@ -36,9 +51,12 @@ public class DeactivateCommand implements Command<Void> {
     /** Cluster name. */
     private String clusterName;
 
+    /** Force cluster deactivation even it might have in-mem caches. */
+    private boolean force;
+
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
+        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION, "--force"));
     }
 
     /** {@inheritDoc} */
@@ -50,7 +68,7 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
+        return "Warning: the command will deactivate a cluster \"" + clusterName + "\". Make sure there are no caches not backed with persistent storage.";
     }
 
     /**
@@ -63,6 +81,12 @@ public class DeactivateCommand implements Command<Void> {
         logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
+
+            if (!force && hasInMemCaches(client, clientCfg)) {
+                throw new IllegalStateException("Your cluster has in-memory cache configured. " +
+                    "During deactivation all data from these caches will be cleared! Use --force to skip this.");
+            }
+
             GridClientClusterState state = client.state();
 
             state.active(false);
@@ -79,6 +103,27 @@ public class DeactivateCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        if (argIter.hasNextArg()) {
+            String arg = argIter.peekNextArg();
+            if ("--force".equalsIgnoreCase(arg)) {
+                force = true;
+                argIter.nextArg("");
+            }
+        }
+    }
+
+    /** Launches task to search for in-mem caches. */
+    boolean hasInMemCaches(GridClient client, GridClientConfiguration clientCfg) throws Exception {
+        return TaskExecutor.executeTask(
+            client,
+            FindNotPersistentCachesTask.class,
+            null,
+            clientCfg
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
     }
@@ -86,5 +131,52 @@ public class DeactivateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public String name() {
         return DEACTIVATE.toCommandName();
+    }
+
+    /** Searches for any non-persistent cache. */
+    private static class FindNotPersistentCachesJob extends ComputeJobAdapter {
+
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        @Override public Boolean execute() throws IgniteException {
+            //Find data region to set persistent flag
+            for(String cacheName : ignite.cacheNames()){
+                CacheConfiguration cacheCfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+                DataRegionConfiguration regionCfg = cacheCfg.getDataRegionName() == null
+                    ? ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
+                    : null;
+
+                if (regionCfg == null) {
+                    for (DataRegionConfiguration dataRegionCfg : ignite.configuration().getDataStorageConfiguration()
+                        .getDataRegionConfigurations()) {
+                        if (dataRegionCfg.getName().equals(cacheCfg.getDataRegionName())) {
+                            regionCfg = dataRegionCfg;
+                            break;
+                        }
+                    }
+                }
+
+                if(!regionCfg.isPersistenceEnabled())
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    /** Searches for any non-persistent cache. */
+    @GridInternal
+    private static class FindNotPersistentCachesTask extends ComputeTaskSplitAdapter<VisorTaskArgument, Boolean> {
+        @Override
+        protected Collection<? extends ComputeJob> split(int gridSize, VisorTaskArgument arg) throws IgniteException {
+            return Collections.singletonList(new FindNotPersistentCachesJob());
+        }
+
+        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
+            ComputeJobResult jobResult = results.get(0);
+            return jobResult.getData();
+        }
     }
 }
