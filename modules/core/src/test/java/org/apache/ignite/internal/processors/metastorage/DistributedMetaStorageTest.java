@@ -354,7 +354,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         metastorage(0).write("key0", "value0");
 
-        startClient(1);
+        startClientGrid(1);
 
         AtomicInteger clientLsnrUpdatesCnt = new AtomicInteger();
 
@@ -380,7 +380,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         igniteEx.cluster().active(true);
 
-        startClient(1);
+        startClientGrid(1);
 
         metastorage(0).write("key0", "value0");
 
@@ -471,11 +471,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         for (int i = 1; i < cnt; i++)
             assertDistributedMetastoragesAreEqual(grid(0), grid(i));
-    }
-
-    /** */
-    protected IgniteEx startClient(int idx) throws Exception {
-        return startGrid(getConfiguration(getTestIgniteInstanceName(idx)).setClientMode(true));
     }
 
     /**

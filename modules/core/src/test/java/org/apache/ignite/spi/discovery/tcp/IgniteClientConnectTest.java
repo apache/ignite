@@ -191,11 +191,9 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         IgniteConfiguration clientCfg = getConfiguration("client");
 
-        clientCfg.setClientMode(true);
-
         clientJustStarted.set(true);
 
-        IgniteEx client = startGrid(clientCfg);
+        IgniteEx client = startClientGrid(clientCfg);
 
         latch.countDown();
 

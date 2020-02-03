@@ -1895,7 +1895,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         startGrid(getConfiguration("grid").setMvccVacuumFrequency(Integer.MAX_VALUE));
 
-        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid(getConfiguration("client"));
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -1970,7 +1970,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         node.cluster().active(true);
 
-        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid(getConfiguration("client"));
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 

@@ -1028,11 +1028,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGrids();
 
-        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+        IgniteConfiguration clientCfg = getConfiguration("client");
 
         ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
-        Ignite client = startGrid("client", clientCfg);
+        Ignite client = startClientGrid("client", clientCfg);
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -1066,11 +1066,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGridsMultiThreaded(gridCount());
 
-        IgniteConfiguration clientCfg = getConfiguration("client").setClientMode(true);
+        IgniteConfiguration clientCfg = getConfiguration("client");
 
         ((TcpDiscoverySpi)clientCfg.getDiscoverySpi()).setForceServerMode(false);
 
-        Ignite client = startGrid("client", clientCfg);
+        Ignite client = startClientGrid("client", clientCfg);
 
         CacheConfiguration ccfg = cacheConfiguration("testCache");
 

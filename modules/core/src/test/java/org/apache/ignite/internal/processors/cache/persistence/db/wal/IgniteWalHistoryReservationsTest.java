@@ -50,14 +50,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  *
  */
 public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
-    /** */
-    private volatile boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         cfg.setConsistentId("NODE$" + gridName.charAt(gridName.length() - 1));
 
@@ -98,8 +93,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
-
-        client = false;
 
         stopAllGrids();
 
