@@ -196,7 +196,5 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsPartitionsStateRecoveryTest.class);
 
         suite.addTestSuite(WalPreloadingConcurrentTest.class);
-
-        suite.addTestSuite(CorruptedCheckpointReservationTest.class);
     }
 }
