@@ -435,7 +435,7 @@ public class GridReduceQueryExecutor {
                     .partitions(convert(mapping.partitionsMap()))
                     .queries(mapQueries)
                     .parameters(params)
-                    .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
+                    .flags(queryFlags(qry, enforceJoinOrder || !singlePartMode, lazy, dataPageScanEnabled))
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
 
