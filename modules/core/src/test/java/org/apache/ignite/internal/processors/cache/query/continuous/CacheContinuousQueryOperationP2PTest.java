@@ -60,16 +60,12 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     /** */
     private static final int UPDATES = 100;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(communicationSpi());
 
-        cfg.setClientMode(client);
         cfg.setPeerClassLoadingEnabled(true);
 
         return cfg;
@@ -86,11 +82,7 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
-
-        client = false;
+        startClientGrid(NODES - 1);
     }
 
     /** {@inheritDoc} */

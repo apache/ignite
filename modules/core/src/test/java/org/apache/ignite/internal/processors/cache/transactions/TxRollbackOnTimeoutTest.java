@@ -96,14 +96,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = "client".equals(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        if (!client) {
+        if (!"client".equals(igniteInstanceName)) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
             if (nearCacheEnabled())
@@ -147,7 +142,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
      * @return Started client.
      */
     private Ignite startClient() throws Exception {
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 

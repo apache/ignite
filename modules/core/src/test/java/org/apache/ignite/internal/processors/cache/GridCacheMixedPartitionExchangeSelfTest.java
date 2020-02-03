@@ -58,8 +58,6 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
         if (cache)
             cfg.setCacheConfiguration(cacheConfiguration());
-        else
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -130,7 +128,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 4; i < 8; i++)
-                    startGrid(i);
+                    startClientGrid(i);
 
                 for (int i = 4; i < 8; i++)
                     stopGrid(i);

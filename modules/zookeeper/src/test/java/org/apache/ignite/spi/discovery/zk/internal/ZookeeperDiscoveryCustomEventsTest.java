@@ -110,11 +110,8 @@ public class ZookeeperDiscoveryCustomEventsTest extends ZookeeperDiscoverySpiTes
         if (srvs > 1)
             startGridsMultiThreaded(1, srvs - 1);
 
-        if (clients > 0) {
-            helper.clientMode(true);
-
-            startGridsMultiThreaded(srvs, clients);
-        }
+        if (clients > 0)
+            startClientGridsMultiThreaded(srvs, clients);
 
         awaitPartitionMapExchange();
 

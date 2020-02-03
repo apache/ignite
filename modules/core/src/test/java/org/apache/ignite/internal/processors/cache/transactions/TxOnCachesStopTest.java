@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -168,9 +167,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     private void runTxOnCacheStop(boolean block) throws Exception {
         startGridsMultiThreaded(2);
 
-        Ignition.setClientMode(true);
-
-        IgniteEx ig = startGrid("client");
+        IgniteEx ig = startClientGrid("client");
 
         ig.cluster().active(true);
 
@@ -187,9 +184,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     public void testTxOnCacheStopInMid() throws Exception {
         startGridsMultiThreaded(2);
 
-        Ignition.setClientMode(true);
-
-        IgniteEx ig = startGrid("client");
+        IgniteEx ig = startClientGrid("client");
 
         ig.cluster().active(true);
 
@@ -208,9 +203,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(1);
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         client.cluster().active(true);
 
@@ -353,11 +346,9 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        Ignition.setClientMode(true);
-
         ArrayList<Ignite> clients = new ArrayList<>();
         for (int ci = 0; ci < 2; ++ci)
-            clients.add(startGrid("client-" + ci));
+            clients.add(startClientGrid("client-" + ci));
 
         clients.get(0).cluster().active(true);
 
