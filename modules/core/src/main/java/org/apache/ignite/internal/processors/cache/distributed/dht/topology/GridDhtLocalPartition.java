@@ -759,7 +759,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Reset the initial update counter value to prevent historical rebalancing on this partition.
         if (grp.persistenceEnabled())
-            store.resetInitialUpdateCounter();
+            resetUpdateCounter();
 
         clearAsync0(false);
     }
