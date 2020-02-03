@@ -41,9 +41,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_S
  *
  */
 public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -60,8 +57,6 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
         }
 
         cfg.setCacheConfiguration(ccfgs);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -111,9 +106,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             topVer(4, 1)), // FullHistSize = 5.
             5);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         stopGrid(4);
 
@@ -127,7 +120,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             topVer(6, 0)), // Client event ->FullHistSize = 5.
             5);
 
-        startGrid(4);
+        startClientGrid(4);
 
         stopGrid(4);
 
@@ -143,7 +136,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             topVer(8, 0)), // Client event ->FullHistSize = 5.
             5);
 
-        startGrid(4);
+        startClientGrid(4);
 
         stopGrid(4);
 
@@ -160,8 +153,6 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
             topVer(9, 0), // Client event -> FullHistSize = 5.
             topVer(10, 0)), // Client event ->FullHistSize = 5.
             5);
-
-        client = false;
 
         startGrid(4);
 

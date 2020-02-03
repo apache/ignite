@@ -23,7 +23,6 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -68,9 +67,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         startGrid(2);
 
         // Start client node.
-        Ignition.setClientMode(true);
-        startGrid(3);
-        Ignition.setClientMode(false);
+        startClientGrid(3);
 
         Collection<BaselineNode> baselineNodes;
 

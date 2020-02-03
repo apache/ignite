@@ -156,8 +156,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
         boolean isClient = igniteInstanceName.contains(CLIENT);
 
-        cfg.setClientMode(isClient);
-
         if (!isClient) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -213,7 +211,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             gridStarted = true;
         }
 
-        client = startGrid(CLIENT);
+        client = startClientGrid(CLIENT);
 
         cache = client.getOrCreateCache(CACHE_NAME);
 
@@ -492,7 +490,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      */
     @Test
     public void testJmxParametersSpreading() throws Exception {
-        startGrid(CLIENT_2);
+        startClientGrid(CLIENT_2);
 
         try {
             TransactionsMXBean tmMxBean = getMxBean(

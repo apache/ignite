@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -58,14 +57,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
-
-        Ignition.setClientMode(true);
-        try {
-            startGrid(CLIENT);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        startClientGrid(CLIENT);
 
         IgniteCache c = grid(CLIENT).cache(CACHE_NAME);
 
