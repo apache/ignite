@@ -74,7 +74,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -136,8 +135,8 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
@@ -222,12 +221,6 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** Hold system property values before test started. The properties will be restored in {@link #afterTest()} */
     private final LinkedList<IgniteBiTuple<String, String>> changedSysPropertiesInTest = new LinkedList<>();
-
-    /**
-     * Page handler wrapper for {@link BPlusTree}, it can be saved here and overridden for test purposes,
-     * then it must be restored using value of this field.
-     */
-    private transient PageHandlerWrapper<BPlusTree.Result> regularPageHndWrapper;
 
     /**
      *
@@ -593,7 +586,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         changedSysPropertiesInTestClass.clear();
 
-        regularPageHndWrapper = BPlusTree.pageHndWrapper == null ? ((tree, hnd) -> hnd) : BPlusTree.pageHndWrapper;
+        // Checking that no test wrapper is set before test execution.
+        assert BPlusTree.testHndWrapper == null;
     }
 
     /**
@@ -609,9 +603,6 @@ public abstract class GridAbstractTest extends TestCase {
         finally {
             changedSysPropertiesInTestClass.clear();
         }
-
-        //restoring page handler wrapper
-        BPlusTree.pageHndWrapper = regularPageHndWrapper == null ? ((tree, hnd) -> hnd) : regularPageHndWrapper;
 
         clearStaticLogClasses.forEach(this::clearStaticClassLog);
         clearStaticLogClasses.clear();

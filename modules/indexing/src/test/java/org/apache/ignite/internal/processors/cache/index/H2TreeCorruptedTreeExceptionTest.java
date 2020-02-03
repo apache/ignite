@@ -54,8 +54,13 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
     /** */
     private final LogListener logListener = new MessageOrderLogListener(
-        String.format(".*Tree is corrupted.*cacheId=.?\\d+, cacheName=\\w+, indexName=%s, groupName=%s.*%s.*",
-            IDX_NAME, GRP_NAME, IGNITE_TO_STRING_INCLUDE_SENSITIVE)
+        String.format(
+                ".*?Tree is corrupted.*?cacheId=-1578586276, cacheName=SQL_PUBLIC_A, indexName=%s, groupName=%s" +
+                    ", msg=Runtime failure on row: Row@.*?key: 1, val: .*?%s.*",
+                IDX_NAME,
+                GRP_NAME,
+                IGNITE_TO_STRING_INCLUDE_SENSITIVE
+        )
     );
 
     /** */
@@ -92,7 +97,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        BPlusTree.pageHndWrapper = (tree, hnd) -> {
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
             if (hnd instanceof BPlusTree.Insert) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
@@ -126,6 +131,10 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        clearGridToStringClassCache();
+
+        BPlusTree.testHndWrapper = null;
 
         super.afterTest();
     }
