@@ -641,8 +641,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * system behavior in crash scenarios for atomic caches.
      * <p>
      * Keys are locked in the order in which they appear in map. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeMap}. Using unordered map,
-     * such as {@link HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
@@ -904,8 +904,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@inheritDoc}
      * <p>
      * Keys are locked in the order in which they appear in map. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeMap}. Using unordered map,
-     * such as {@link HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -930,8 +930,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the entire putAll.  Listeners may observe individual updates.
      * <p>
      * Keys are locked in the order in which they appear in map. It is caller's responsibility to
-     * make sure keys always follow same order, such as by using {@link TreeMap}. Using unordered map,
-     * such as {@link HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param map Map containing keys and values to put into the cache.
      * @return a Future representing pending completion of the operation.
