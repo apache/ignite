@@ -34,7 +34,6 @@ public class IgniteCacheFileRebalancingTxTest extends IgniteCacheFileRebalancing
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg.setBackups(backups());
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);

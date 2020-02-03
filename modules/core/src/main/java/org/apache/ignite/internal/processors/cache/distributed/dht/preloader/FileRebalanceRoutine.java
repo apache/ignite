@@ -85,7 +85,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final GridDhtPartitionExchangeId exchId;
 
     /** Assignments ordered by cache rebalance priority and node. */
-    private final Collection<T2<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssgnments;
+    private final Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
     /** Unique partition identifier with node identifier. */
     private final Map<Long, UUID> partsToNodes = new ConcurrentHashMap<>();
@@ -127,7 +127,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param cpLsnr Checkpoint listener.
      */
     public FileRebalanceRoutine(
-        Collection<T2<ClusterNode, Map<Integer, Set<Integer>>>> assigns,
+        Collection<T2<UUID, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
@@ -153,9 +153,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
 
         cctx.kernalContext().getSystemExecutorService().submit(() -> {
-            for (T2<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
-                UUID nodeId = nodeAssigns.getKey().id();
-
+            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+                UUID nodeId = nodeAssigns.getKey();
                 Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
 
                 IgniteInternalFuture<Boolean> snapshotFut0;
@@ -224,21 +223,19 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         lock.lock();
 
         try {
-            for (T2<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
                 for (Map.Entry<Integer, Set<Integer>> grpAssign : nodeAssigns.getValue().entrySet()) {
                     int grpId = grpAssign.getKey();
                     Set<Integer> parts = grpAssign.getValue();
-
-                    String regName = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
-
-                    Set<Long> regionParts = regionToParts.computeIfAbsent(regName, v -> new LinkedHashSet<>());
+                    String region = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
+                    Set<Long> regionParts = regionToParts.computeIfAbsent(region, v -> new LinkedHashSet<>());
 
                     for (Integer partId : parts) {
                         long uniquePartId = uniquePartId(grpId, partId);
 
                         regionParts.add(uniquePartId);
 
-                        partsToNodes.put(uniquePartId, nodeAssigns.getKey().id());
+                        partsToNodes.put(uniquePartId, nodeAssigns.getKey());
                     }
 
                     remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
@@ -415,11 +412,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             U.log(log, "Cancelling file rebalancing [topVer=" + topVer + "]");
 
-            if (snapshotFut != null && !snapshotFut.isDone()) {
-                if (log.isDebugEnabled())
-                    log.debug("Cancelling snapshot creation [fut=" + snapshotFut + "]");
+            IgniteInternalFuture<Boolean> snapshotFut0 = snapshotFut;
 
-                snapshotFut.cancel();
+            if (snapshotFut0 != null && !snapshotFut0.isDone()) {
+                if (log.isDebugEnabled())
+                    log.debug("Cancelling snapshot creation [fut=" + snapshotFut0 + "]");
+
+                snapshotFut0.cancel();
             }
 
             if (isFailed()) {
@@ -486,9 +485,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             histAssigns.put(node, msg);
         }
-
-        // todo WAL iterator can fail on rotation.
-        Thread.yield();
 
         GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
 

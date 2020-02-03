@@ -58,6 +58,7 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -225,7 +226,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         GridDhtPartitionsExchangeFuture exchFut,
         Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
     ) {
-        Collection<T2<ClusterNode, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
+        Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
 
         if (orderedAssigns.isEmpty()) {
             if (log.isDebugEnabled())
@@ -304,14 +305,19 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
         if (!IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
             return false;
 
-        if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() == CacheRebalanceMode.NONE)
+        if (grp.config().getRebalanceDelay() == -1 || grp.config().getRebalanceMode() != CacheRebalanceMode.ASYNC)
             return false;
 
         // Do not rebalance system cache with files as they are not exists.
         if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
             return false;
 
-        return !grp.mvccEnabled(); // && !grp.hasAtomicCaches();
+        for (GridCacheContext ctx : grp.caches()) {
+            if (ctx.config().getAtomicityMode() == ATOMIC)
+                return false;
+        }
+
+        return !grp.mvccEnabled();
     }
 
     /**
@@ -420,7 +426,7 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
      * @param assignsMap The map of cache groups assignments to preload.
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
-    private List<T2<ClusterNode, Map<Integer, Set<Integer>>>> reorderAssignments(
+    private List<T2<UUID, Map<Integer, Set<Integer>>>> reorderAssignments(
         Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap
     ) {
         Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sorted = new TreeMap<>();
@@ -442,11 +448,11 @@ public class GridPartitionFilePreloader extends GridCacheSharedManagerAdapter {
             }
         }
 
-        List<T2<ClusterNode, Map<Integer, Set<Integer>>>> ordered = new ArrayList<>(8);
+        List<T2<UUID, Map<Integer, Set<Integer>>>> ordered = new ArrayList<>(8);
 
         for (Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : sorted.values()) {
             for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>>  e : nodeAssigns.entrySet())
-                ordered.add(new T2<>(e.getKey(), e.getValue()));
+                ordered.add(new T2<>(e.getKey().id(), e.getValue()));
         }
 
         return ordered;

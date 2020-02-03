@@ -2999,12 +2999,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheDatabaseSharedManager dbMgr;
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
-        GridPartitionFilePreloader preloader = null;
+        GridPartitionFilePreloader filePreloader = null;
         IgniteSnapshotManager snapshotMgr = null;
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
-            preloader = new GridPartitionFilePreloader(ctx);
+            filePreloader = new GridPartitionFilePreloader(ctx);
             snapshotMgr = new IgniteSnapshotManager(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
@@ -3068,7 +3068,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             mvccCachingMgr,
             deadlockDetectionMgr,
             diagnosticMgr,
-            preloader
+            filePreloader
         );
     }
 
