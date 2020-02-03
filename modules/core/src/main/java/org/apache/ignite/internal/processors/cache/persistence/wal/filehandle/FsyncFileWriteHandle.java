@@ -685,6 +685,11 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     }
 
     /** {@inheritDoc} */
+    @Override public boolean closed() {
+        return stop.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public void signalNextAvailable() {
         lock.lock();
 

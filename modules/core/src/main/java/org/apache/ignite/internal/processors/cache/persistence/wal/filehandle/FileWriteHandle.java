@@ -97,6 +97,11 @@ public interface FileWriteHandle {
     boolean close(boolean rollOver) throws IgniteCheckedException, StorageException;
 
     /**
+     * @return {@code True} if current segment is closed.
+     */
+    boolean closed();
+
+    /**
      * Signals next segment available to wake up other worker threads waiting for WAL to write.
      */
     void signalNextAvailable();
