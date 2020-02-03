@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -58,6 +59,8 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.events.CacheConsistencyViolationEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -66,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
@@ -83,6 +87,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -104,6 +109,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CLIENTS = 3;
+
+    /** */
+    private static final AtomicInteger REPAIRS = new AtomicInteger();
 
     /** */
     private boolean client;
@@ -4075,7 +4083,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTx1() throws Exception {
-        accountTx(false, false, false, false);
+        accountTx(false, false, false, false, false);
     }
 
     /**
@@ -4083,7 +4091,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTx2() throws Exception {
-        accountTx(true, false, false, false);
+        accountTx(true, false, false, false, false);
     }
 
     /**
@@ -4091,7 +4099,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTxWithNonSerializable() throws Exception {
-        accountTx(false, false, true, false);
+        accountTx(false, false, true, false, false);
     }
 
     /**
@@ -4099,7 +4107,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTxNearCache() throws Exception {
-        accountTx(false, true, false, false);
+        accountTx(false, true, false, false, false);
     }
 
     /**
@@ -4107,7 +4115,15 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAccountTxNodeRestart() throws Exception {
-        accountTx(false, false, false, true);
+        accountTx(false, false, false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAccountTxNodeRestartWithReadRepair() throws Exception {
+        accountTx(false, false, false, true, true);
     }
 
     /**
@@ -4115,19 +4131,34 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @param nearCache If {@code true} near cache is enabled.
      * @param nonSer If {@code true} starts threads executing non-serializable transactions.
      * @param restart If {@code true} restarts one node.
+     * @param readRepair If {@code true} uses withReadRepair proxy.
      * @throws Exception If failed.
      */
     private void accountTx(final boolean getAll,
         final boolean nearCache,
         final boolean nonSer,
-        final boolean restart) throws Exception {
+        final boolean restart,
+        final boolean readRepair) throws Exception {
         final Ignite srv = ignite(1);
+
+        UUID rrLsnr = null;
 
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false);
 
         final String cacheName = srv.createCache(ccfg).getName();
 
         try {
+            if (readRepair)
+                rrLsnr = srv.events().remoteListen(null,
+                    (IgnitePredicate<Event>)e -> {
+                        assert e instanceof CacheConsistencyViolationEvent;
+
+                        REPAIRS.incrementAndGet();
+
+                        return true;
+                    },
+                    EVT_CONSISTENCY_VIOLATION);
+
             final List<Ignite> clients = clients();
 
             final int ACCOUNTS = SF.applyLB(100, 10);
@@ -4161,9 +4192,12 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                         final IgniteTransactions txs = node.transactions();
 
-                        final IgniteCache<Integer, Account> cache =
+                        IgniteCache<Integer, Account> cache =
                             nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<Integer, Account>()) :
                                 node.<Integer, Account>cache(cacheName);
+
+                        if (readRepair)
+                            cache = cache.withReadRepair();
 
                         assertNotNull(cache);
 
@@ -4219,9 +4253,12 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     final IgniteTransactions txs = node.transactions();
 
-                    final IgniteCache<Integer, Account> cache =
+                    IgniteCache<Integer, Account> cache =
                         nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<Integer, Account>()) :
                             node.<Integer, Account>cache(cacheName);
+
+                    if (readRepair)
+                        cache = cache.withReadRepair();
 
                     assertNotNull(cache);
 
@@ -4364,9 +4401,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                 assertEquals(ACCOUNTS * VAL_PER_ACCOUNT, sum);
             }
+
+            assertEquals(0, REPAIRS.get());
         }
         finally {
             destroyCache(cacheName);
+
+            if (rrLsnr != null)
+                srv.events().stopRemoteListen(rrLsnr);
+
+            REPAIRS.set(0);
         }
     }
 
