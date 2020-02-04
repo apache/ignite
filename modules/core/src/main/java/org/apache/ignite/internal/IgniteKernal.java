@@ -3964,7 +3964,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cluster().state() == ClusterState.ACTIVE && !force) {
             String msg = ClusterStateChangeCommand.isClusterReadyForDeactivation((cls -> compute().execute(cls, null)));
             if (!msg.isEmpty())
-                throw new IllegalStateException(msg + " To proceed launch with the force flag.");
+                throw new IllegalStateException(msg + " Please, enable force flag to deactivate cluster.");
         }
 
         cluster().state(ClusterState.INACTIVE);

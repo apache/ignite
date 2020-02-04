@@ -128,7 +128,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
                     }
                 });
                 if (!msg.isEmpty())
-                    throw new IllegalStateException(msg + " Type --force to proceed.");
+                    throw new IllegalStateException(msg + " Please, add --force to deactivate cluster.");
             }
 
             client.state().state(state);
