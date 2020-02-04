@@ -124,12 +124,8 @@ public class GridDhtPartitionDemander {
     /** Rebalancing last cancelled time. */
     private final AtomicLong lastCancelledTime = new AtomicLong(-1);
 
-    /** Rebalancing evicted partitions left. */
-    private final AtomicLongMetric evictedPartitionsLeft;
-
     /** Rebalancing expected keys. */
     private final AtomicLongMetric expectedKeys;
-
 
     /**
      * @param grp Ccahe group.
@@ -181,13 +177,14 @@ public class GridDhtPartitionDemander {
             "rebalancing was completed with an error or was cancelled. If there were several such cases, the metric " +
             "stores the last time. The metric displays the value even if there is no rebalancing process.");
 
-        evictedPartitionsLeft = mreg.longMetric("RebalancingEvictedPartitionsLeft", "The number of evicted" +
-            " partitions before rebalancing start.");
+        mreg.register("RebalancingEvictedPartitionsLeft", () -> rebalanceFut.evictedPartitionsLeft.get(),
+            "The number of evicted partitions before rebalancing start.");
 
         expectedKeys = mreg.longMetric("RebalancingExpectedKeys",
             "The number of expected keys to rebalance for the whole cache group.");
 
-        mreg.register("RebalancingExpectedBytes", () -> expectedKeys.value() * averagePartitionSize.get(),
+        mreg.register("RebalancingExpectedBytes", () -> (long)(1.0 * expectedKeys.value() *
+            rebalanceFut.receivedBytes.get() / rebalanceFut.receivedKeys.get()),
             "The number of expected bytes to rebalance  of this cache group.");
     }
 
@@ -327,7 +324,7 @@ public class GridDhtPartitionDemander {
         if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, lastCancelledTime);
+            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, lastCancelledTime, oldFut.evictedPartitionsLeft);
 
             if (!grp.localWalEnabled())
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
@@ -581,8 +578,6 @@ public class GridDhtPartitionDemander {
 
         final AtomicInteger clearingPartitions = new AtomicInteger(fullPartitions.size());
 
-        evictedPartitionsLeft.add(clearingPartitions.get());
-
         for (int partId : fullPartitions) {
             if (fut.isDone()) {
                 clearAllFuture.onDone();
@@ -597,8 +592,6 @@ public class GridDhtPartitionDemander {
                     if (!fut.isDone()) {
                         // Cancel rebalance if partition clearing was failed.
                         if (f.error() != null) {
-
-                            evictedPartitionsLeft.add(-clearingPartitions.get());
 
                             for (GridCacheContext cctx : grp.caches()) {
                                 if (cctx.statisticsEnabled()) {
@@ -616,8 +609,6 @@ public class GridDhtPartitionDemander {
                         }
                         else {
                             int remaining = clearingPartitions.decrementAndGet();
-
-                            evictedPartitionsLeft.decrement();
 
                             for (GridCacheContext cctx : grp.caches()) {
                                 if (cctx.statisticsEnabled()) {
@@ -641,8 +632,6 @@ public class GridDhtPartitionDemander {
             }
             else {
                 int remaining = clearingPartitions.decrementAndGet();
-
-                evictedPartitionsLeft.decrement();
 
                 for (GridCacheContext cctx : grp.caches()) {
                     if (cctx.statisticsEnabled()) {
@@ -1276,6 +1265,9 @@ public class GridDhtPartitionDemander {
         /** Rebalancing last cancelled time. */
         private final AtomicLong lastCancelledTime;
 
+        /** Rebalancing evicted partitions left. */
+        private final AtomicLong evictedPartitionsLeft;
+
         /**
          * @param grp Cache group.
          * @param assignments Assignments.
@@ -1288,13 +1280,15 @@ public class GridDhtPartitionDemander {
             GridDhtPreloaderAssignments assignments,
             IgniteLogger log,
             long rebalanceId,
-            AtomicLong lastCancelledTime) {
+            AtomicLong lastCancelledTime,
+            AtomicLong evictedPartitionsLeft) {
             assert assignments != null;
 
             exchId = assignments.exchangeId();
             topVer = assignments.topologyVersion();
 
             this.lastCancelledTime = lastCancelledTime;
+            this.evictedPartitionsLeft = evictedPartitionsLeft;
 
             assignments.forEach((k, v) -> {
                 assert v.partitions() != null :
@@ -1338,6 +1332,7 @@ public class GridDhtPartitionDemander {
             this.routines = 0;
             this.cancelLock = new ReentrantReadWriteLock();
             this.lastCancelledTime = new AtomicLong();
+            this.evictedPartitionsLeft = new AtomicLong(0);
         }
 
         /**
@@ -1535,6 +1530,10 @@ public class GridDhtPartitionDemander {
             assert discoEvt != null;
 
             grp.addRebalanceEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+        }
+
+        public void evictedPartitionsLeft(long partitions) {
+            evictedPartitionsLeft.addAndGet(partitions);
         }
 
         /**
