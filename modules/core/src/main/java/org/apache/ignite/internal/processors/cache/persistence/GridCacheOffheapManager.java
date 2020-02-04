@@ -1028,7 +1028,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 minPtr = startPtr;
         }
 
-        WALIterator it = grp.shared().wal().replay(minPtr);
+        WALIterator it = grp.shared().wal().replay(minPtr, true, null);
 
         WALHistoricalIterator iterator = new WALHistoricalIterator(log, grp, partCntrs, it);
 
@@ -1434,11 +1434,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
                                     (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
 
-                            assert false;
-
                             doneParts.add(p);
                         }
                     }
+
+                    assert false;
 
                     return;
                 }

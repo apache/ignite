@@ -917,22 +917,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
-        return replay(start, null);
+        return replay(start, true, null);
     }
 
     /** {@inheritDoc} */
     @Override public WALIterator replay(
         WALPointer start,
+        boolean limited,
         @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
     ) throws IgniteCheckedException, StorageException {
         assert start == null || start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
-        FileWriteHandle hnd = currentHandle();
-
         FileWALPointer end = null;
 
-        if (hnd != null)
-            end = hnd.position();
+        if (limited) {
+            FileWriteHandle hnd = currentHandle();
+
+            if (hnd != null)
+                end = hnd.position();
+        }
 
         RecordsIterator iter = new RecordsIterator(
             cctx,

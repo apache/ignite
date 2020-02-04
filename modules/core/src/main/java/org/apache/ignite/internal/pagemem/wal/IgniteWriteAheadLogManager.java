@@ -119,6 +119,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Invoke this method to iterate over the written log entries.
      *
      * @param start Optional WAL pointer from which to start iteration.
+     * @param limited Limit iterator to current segment.
      * @param recordDeserializeFilter Specify a filter to skip WAL records. Those records will not be explicitly deserialized.
      * @return Records iterator.
      * @throws IgniteException If failed to start iteration.
@@ -126,6 +127,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      */
     public WALIterator replay(
         WALPointer start,
+        boolean limited,
         @Nullable IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordDeserializeFilter
     ) throws IgniteCheckedException, StorageException;
 

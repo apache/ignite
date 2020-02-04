@@ -2339,7 +2339,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long lastArchivedSegment = cctx.wal().lastArchivedSegment();
 
-        WALIterator it = cctx.wal().replay(recPtr, recordTypePredicate);
+        WALIterator it = cctx.wal().replay(recPtr, true, recordTypePredicate);
 
         RestoreBinaryState restoreBinaryState = new RestoreBinaryState(status, it, lastArchivedSegment, cacheGroupsPredicate);
 
@@ -2824,7 +2824,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Map<GroupPartitionId, Integer> partitionRecoveryStates = new HashMap<>();
 
-        WALIterator it = cctx.wal().replay(status.startPtr, recordTypePredicate);
+        WALIterator it = cctx.wal().replay(status.startPtr, true, recordTypePredicate);
 
         RestoreLogicalState restoreLogicalState =
             new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
