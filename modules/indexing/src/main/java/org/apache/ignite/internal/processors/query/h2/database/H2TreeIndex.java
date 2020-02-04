@@ -653,30 +653,22 @@ public class H2TreeIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(boolean rmvIndex) {
-        try {
-            if (cctx.affinityNode() && rmvIndex) {
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-                for (int i = 0; i < segments.length; i++) {
-                    H2Tree tree = segments[i];
-
-                    tree.destroy();
-
-                    dropMetaPage(i);
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-        finally {
-            super.destroy(rmvIndex);
-        }
+    @Override public void destroy(boolean rmvIdx) {
+        destroy0(rmvIdx, false);
     }
 
     /** {@inheritDoc} */
     @Override public void asyncDestroy(boolean rmvIdx) {
+        destroy0(rmvIdx, true);
+    }
+
+    /**
+     * Internal method for destroying index with async option.
+     *
+     * @param rmvIdx Flag remove.
+     * @param async Destroy asynchronously.
+     */
+    private void destroy0(boolean rmvIdx, boolean async) {
         try {
             if (cctx.affinityNode() && rmvIdx) {
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
@@ -687,24 +679,30 @@ public class H2TreeIndex extends GridH2IndexBase {
                 for (int i = 0; i < segments.length; i++) {
                     H2Tree tree = segments[i];
 
-                    tree.markDestroyed();
+                    if (async) {
+                        tree.markDestroyed();
 
-                    rootPages.add(tree.getMetaPageId());
-                    trees.add(tree);
+                        rootPages.add(tree.getMetaPageId());
+                        trees.add(tree);
+                    }
+                    else
+                        tree.destroy();
 
                     dropMetaPage(i);
                 }
 
-                DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
-                    rootPages,
-                    trees,
-                    cctx.group().name(),
-                    cctx.cache().name(),
-                    table.getSchema().getName(),
-                    getName()
-                );
+                if (async) {
+                    DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
+                        rootPages,
+                        trees,
+                        cctx.group().name(),
+                        cctx.cache().name(),
+                        table.getSchema().getName(),
+                        getName()
+                    );
 
-                cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
+                    cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
+                }
             }
         }
         catch (IgniteCheckedException e) {
