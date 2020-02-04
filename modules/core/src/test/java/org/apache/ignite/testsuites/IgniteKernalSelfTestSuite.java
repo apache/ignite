@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.service.ServicePredicateAccessCache
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
+import org.apache.ignite.internal.util.IgniteUtilsWorkDirectoryTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -119,6 +120,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
         suite.addTestSuite(GridStartupWithUndefinedIgniteHomeSelfTest.class);
+        suite.addTestSuite(IgniteUtilsWorkDirectoryTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridVersionSelfTest.class, ignoredTests);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
