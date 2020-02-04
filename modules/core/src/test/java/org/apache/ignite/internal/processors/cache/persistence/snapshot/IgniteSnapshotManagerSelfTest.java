@@ -90,6 +90,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -181,7 +182,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(memCfg)
-            .setCacheConfiguration(defaultCacheCfg);
+            .setCacheConfiguration(defaultCacheCfg)
+            .setClusterStateOnStart(INACTIVE);
     }
 
     /**
@@ -715,7 +717,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterSnapshotUnderLoad() throws Exception {
+        // todo default cluster state on start is INACTIVE, must be required for snapshot restore
+
         int grids = 3;
+        String snpName = "backup23012020";
         AtomicBoolean stop = new AtomicBoolean();
 
         IgniteEx ig0 = startGridsWithCache(grids, defaultCacheCfg, CACHE_KEYS_RANGE);
@@ -730,11 +735,24 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }, 3, "Cache-put-");
 
         IgniteFuture<Void> fut = ig0.snapshot()
-            .createSnapshot("backup23012020", Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
+            .createSnapshot(snpName, Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         fut.listen(f -> stop.set(true));
 
         fut.get();
+
+        log.info(">>>> Cluster snapshot created.");
+
+        // cluster can be deactivated but we must test snapshot restore when binary recovery also occurred
+        stopAllGrids();
+
+        IgniteEx ig = startGrids(grids);
+
+        assertTrue(ig.cluster().state() == INACTIVE);
+
+        IgniteFuture<Void> restoreFut = ig.snapshot().restoreSnapshot(snpName);
+
+        restoreFut.get();
     }
 
     // todo check exception on cache stop during snapshot operation in progress

@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -844,7 +845,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 .consistentId()
                 .toString() + SNAPSHOT_META_EXTENSION);
 
-        if (metaFile.exists())
+        if (!metaFile.exists())
             throw new IgniteCheckedException("Snapshot meta doesn't exists on local node for a given snapshot: " + snpLocDir.getName());
 
         SnapshotMeta meta;
@@ -868,11 +869,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @throws IgniteCheckedException If validation fails.
      */
     private static void validateSnapshot(SnapshotMeta meta, BaselineTopology blt) throws IgniteCheckedException {
-        Set<Object> currConsIds = blt.consistentIds();
+        Set<String> currConsIds = blt.consistentIds()
+            .stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet());
 
-        if (currConsIds == null || !currConsIds.equals(meta.hist.consistentIds())) {
+        Set<String> snpConsIds = meta.hist.consistentIds()
+            .stream()
+            .map(Object::toString)
+            .collect(Collectors.toSet());
+
+        if (!currConsIds.equals(snpConsIds)) {
             throw new IgniteCheckedException("Snapshot can be restored only on the same topology " +
-                "[currConsIds=" + currConsIds + ", snapshotConsIds=" + meta.hist.consistentIds() + ']');
+                "[currConsIds=" + currConsIds + ", snapshotConsIds=" + snpConsIds + ']');
         }
     }
 
@@ -882,6 +891,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      */
     IgniteInternalFuture<Boolean> prepareSnapshotRestore(String snpName) {
         // todo disable any further activation requests
+
+        if (log.isInfoEnabled()) {
+            log.info("Start preparation of snapshot restore operation on local node " +
+                "[snpName=" + snpName + ", nodeId=" + cctx.localNode().id() + ']');
+        }
 
         if (cctx.kernalContext().clientNode())
             return new GridFinishedFuture<>();
@@ -904,22 +918,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param err Errors if occurred.
      */
     void prepareSnapshotRestoreResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
-        Exception err0 = err.values()
+        Optional<Exception> err0 = err.values()
             .stream()
             .filter(Objects::nonNull)
-            .findAny()
-            .orElse(null);
+            .findAny();
+
+        if (log.isInfoEnabled()) {
+            log.info("End preparation of snapshot restore operation on local node " +
+                "[snpName=" + restoringSnpName + ", nodeId=" + cctx.localNode().id() +
+                ", err=" + err0.orElse(null) + ']');
+        }
 
         synchronized (snpOpMux) {
-            if (err0 == null)
-                restoreSnpProc.start(id, restoringSnpName);
-            else {
+            if (err0.isPresent()) {
                 if (restoreSnpFut != null) {
-                    restoreSnpFut.onDone(err0);
+                    restoreSnpFut.onDone(err0.get());
 
                     restoreSnpFut = null;
                 }
             }
+            else
+                restoreSnpProc.start(id, restoringSnpName);
         }
     }
 
@@ -928,6 +947,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @return Future which will be completed on restore operation prepared.
      */
     IgniteInternalFuture<Boolean> snapshotRestore(String snpName) {
+        if (log.isInfoEnabled())
+            log.info("Start snapshot restore on local node [snpName=" + snpName + ", nodeId=" + cctx.localNode().id() + ']');
 
         return new GridFinishedFuture<>();
     }
@@ -938,7 +959,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param err Errors if occurred.
      */
     void snapshotRestoreResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
-
+        if (log.isInfoEnabled())
+            log.info("Finish snapshot restore on local node [snpName=" + restoringSnpName + ", nodeId=" + cctx.localNode().id() + ']');
     }
 
     /** {@inheritDoc} */
