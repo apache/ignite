@@ -125,7 +125,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  * Command line handler test.
@@ -281,7 +280,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
             .setDataRegionName("non-persistent-dataRegion"));
 
-        if (IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE))
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE))
             assertEquals(EXIT_CODE_OK, execute("--deactivate"));
         else {
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--deactivate"));
@@ -291,6 +290,73 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "During deactivation all data from these caches will be erased!");
 
             assertEquals(EXIT_CODE_OK, execute("--deactivate", "--force"));
+        }
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
+    }
+
+    /**
+     * Test deactivation works via control.sh using --set-change command.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateWithSetState() throws Exception {
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
+
+        ignite.cluster().state(ACTIVE);
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive"));
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
+    }
+
+    /**
+     * Test deactivation works via control.sh and --set-state command when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateNonPersistentWithSetState() throws Exception {
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("non-persistent-dataRegion")
+            .setPersistenceEnabled(false);
+
+        Ignite ignite = startGrids(1);
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
+
+        ignite.cluster().state(ACTIVE);
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        injectTestSystemOut();
+
+        ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
+            .setDataRegionName("non-persistent-dataRegion"));
+
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE))
+            assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive"));
+        else {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--set-state", "inactive"));
+
+            assertTrue(ignite.cluster().active());
+            assertEquals(ACTIVE, ignite.cluster().state());
+            assertContains(log, testOut.toString(), "During deactivation all data from these caches will be erased!");
+
+            assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive", "--force"));
         }
 
         assertFalse(ignite.cluster().active());

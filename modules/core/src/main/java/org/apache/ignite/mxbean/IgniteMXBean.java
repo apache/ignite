@@ -412,7 +412,7 @@ public interface IgniteMXBean {
      */
     @Deprecated
     @MXBeanDescription(
-        "Execute activate or deactivate process. Deactivation may require flag 'force'."
+        "Execute activate or deactivate process. Deprecated. Use activate() / deactivate(). Deactivation may require flag 'force'."
     )
     @MXBeanParametersNames(
         "active"

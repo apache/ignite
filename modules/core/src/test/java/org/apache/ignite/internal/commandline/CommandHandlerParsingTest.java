@@ -365,11 +365,25 @@ public class CommandHandlerParsingTest {
 
                     checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
+                    args = parseArgs(asList(cmdL.text(), "--force", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
                     break;
                 }
                 case SET_STATE: {
                     for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
                         args = parseArgs(asList(cmdL.text(), newState, "--yes"));
+
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+
+                        assertEquals(newState, argState.toString());
+                    }
+
+                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                        args = parseArgs(asList(cmdL.text(), newState, "--force", "--yes"));
 
                         checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
