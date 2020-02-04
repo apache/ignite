@@ -388,11 +388,31 @@ public interface IgniteMXBean {
     )
     public boolean pingNode(String nodeId);
 
+    /** Activates cluster. */
+    @MXBeanDescription(
+        "Execute activation process."
+    )
+    @MXBeanParametersNames(
+        "active"
+    )
+    public void activate();
+
+    /** Deactivates cluster. */
+    @MXBeanDescription(
+        "Execute deactivation process."
+    )
+    @MXBeanParametersNames(
+        "force"
+    )
+    public void deactivate(boolean force);
+
     /**
      * @param active Activate/DeActivate flag.
+     * @deprecated Use {@link #activate()} and {@link #deactivate(boolean)} instead.
      */
+    @Deprecated
     @MXBeanDescription(
-        "Execute activate or deactivate process."
+        "Execute activate or deactivate process. Deactivation may require flag 'force'."
     )
     @MXBeanParametersNames(
         "active"

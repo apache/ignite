@@ -231,6 +231,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.commandline.DeactivateCommand;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -3945,8 +3946,28 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void activate() {
+        cluster().state(ClusterState.ACTIVE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deactivate(boolean force) {
+        //Check if cluster ir ready for deactivation.
+        if (cluster().state() == ClusterState.ACTIVE && !force) {
+            String msg = DeactivateCommand.isClusterReadyForDeactivation((cls -> compute().execute(cls, null)));
+            if (!msg.isEmpty())
+                throw new IllegalStateException(msg + " To proceed launch with the force flag.");
+        }
+
+        cluster().state(ClusterState.INACTIVE);
+    }
+
+    /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        cluster().active(active);
+        if (active)
+            active();
+        else
+            deactivate(false);
     }
 
     /** */
