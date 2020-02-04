@@ -96,7 +96,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered map HashMap is used for Put All operation on cache exact. " +
+            if (message.contains("Unordered map java.util.HashMap is used for putAll operation on cache exact. " +
                 "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead."))
                 found++;
         }
@@ -184,7 +184,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered collection HashSet is used for Invoke All operation on cache invoke. "))
+            if (message.contains("Unordered collection java.util.HashSet is used for invokeAll operation on cache invoke. "))
                 found++;
         }
 
@@ -375,7 +375,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
         int found = 0;
 
         for (String message : messages) {
-            if (message.contains("Unordered collection HashSet is used for Get All operation on cache getTx. "))
+            if (message.contains("Unordered collection java.util.HashSet is used for getAll operation on cache getTx."))
                 found++;
         }
 

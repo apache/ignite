@@ -1980,7 +1980,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.GET);
+        warnIfUnordered(keys, BulkOperation.GET);
 
         return getAllAsync0(ctx.cacheKeysView(keys),
             readerArgs,
@@ -2729,7 +2729,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.INVOKE);
+        warnIfUnordered(keys, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2820,7 +2820,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.INVOKE);
+        warnIfUnordered(keys, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2872,7 +2872,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, BulkOperation.INVOKE);
+        warnIfUnordered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -2919,7 +2919,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, BulkOperation.INVOKE);
+        warnIfUnordered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -3066,7 +3066,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkKeysOrdered(m, BulkOperation.PUT);
+        warnIfUnordered(m, BulkOperation.PUT);
 
         putAll0(m);
 
@@ -3099,7 +3099,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(m.keySet());
 
-        checkKeysOrdered(m, BulkOperation.PUT);
+        warnIfUnordered(m, BulkOperation.PUT);
 
         return putAllAsync0(m);
     }
@@ -3258,7 +3258,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.REMOVE);
+        warnIfUnordered(keys, BulkOperation.REMOVE);
 
         removeAll0(keys);
 
@@ -3300,7 +3300,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.REMOVE);
+        warnIfUnordered(keys, BulkOperation.REMOVE);
 
         IgniteInternalFuture<Object> fut = removeAllAsync0(keys);
 
@@ -5205,7 +5205,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param m Map to examine.
      */
-    protected void checkKeysOrdered(Map m, BulkOperation op) {
+    protected void warnIfUnordered(Map m, BulkOperation op) {
         if (m == null || m.size() <= 1)
             return;
 
@@ -5215,7 +5215,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (curTxDeadlockDetecting(op))
             return;
 
-        LT.warn(log, "Unordered map " + m.getClass().getSimpleName() +
+        LT.warn(log, "Unordered map " + m.getClass().getName() +
             " is used for " + op.title() + " operation on cache " + name() + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
     }
@@ -5227,7 +5227,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param coll Collection to examine.
      */
-    protected void checkKeysOrdered(Collection coll, BulkOperation op) {
+    protected void warnIfUnordered(Collection coll, BulkOperation op) {
         if (coll == null || coll.size() <= 1)
             return;
 
@@ -5241,7 +5241,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (curTxDeadlockDetecting(op))
             return;
 
-        LT.warn(log, "Unordered collection " + coll.getClass().getSimpleName() +
+        LT.warn(log, "Unordered collection " + coll.getClass().getName() +
             " is used for " + op.title() + " operation on cache " + name() + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
     }
@@ -5250,13 +5250,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private boolean curTxDeadlockDetecting(BulkOperation op) {
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
 
+        boolean get = (op == BulkOperation.GET);
+
         if (tx != null && !tx.implicit() &&
             ((ctx.tm().deadlockDetectionEnabled() && tx.timeout() > 0L) ||
             (tx.concurrency() == OPTIMISTIC && tx.isolation() == SERIALIZABLE) ||
-            (tx.concurrency() == PESSIMISTIC && tx.isolation() == READ_COMMITTED)))
+            (get && tx.concurrency() == PESSIMISTIC && tx.isolation() == READ_COMMITTED)))
             return true;
 
-        if (op == BulkOperation.GET && tx == null)
+        if (get && tx == null)
             return true;
 
         return false;
@@ -5264,22 +5266,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** */
     protected enum BulkOperation {
-        GET("Get All"),
-        PUT("Put All"),
-        INVOKE("Invoke All"),
-        REMOVE("Remove All");
-
-        /** */
-        private final String title;
-
-        /** */
-        BulkOperation(String title) {
-            this.title = title;
-        }
+        GET,
+        PUT,
+        INVOKE,
+        REMOVE;
 
         /** */
         public String title() {
-            return title;
+            return name().toLowerCase() + "All";
         }
     }
 

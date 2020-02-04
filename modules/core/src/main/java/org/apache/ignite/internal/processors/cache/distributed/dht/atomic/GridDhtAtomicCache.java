@@ -565,7 +565,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.GET);
+        warnIfUnordered(keys, BulkOperation.GET);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -701,7 +701,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(conflictMap.keySet());
 
-        checkKeysOrdered(conflictMap, BulkOperation.PUT);
+        warnIfUnordered(conflictMap, BulkOperation.PUT);
 
         return updateAll0(null,
             null,
@@ -816,7 +816,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.INVOKE);
+        warnIfUnordered(keys, BulkOperation.INVOKE);
 
         return invokeAll0(false, keys, entryProcessor, args).get();
     }
@@ -899,7 +899,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(keys);
 
-        checkKeysOrdered(keys, BulkOperation.INVOKE);
+        warnIfUnordered(keys, BulkOperation.INVOKE);
 
         return invokeAll0(true, keys, entryProcessor, args);
     }
@@ -966,7 +966,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, BulkOperation.INVOKE);
+        warnIfUnordered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -998,7 +998,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(map.keySet());
 
-        checkKeysOrdered(map, BulkOperation.INVOKE);
+        warnIfUnordered(map, BulkOperation.INVOKE);
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
