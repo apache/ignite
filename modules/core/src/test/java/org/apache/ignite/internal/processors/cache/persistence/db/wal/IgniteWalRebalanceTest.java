@@ -533,7 +533,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             if (msg instanceof GridDhtPartitionDemandMessage) {
                 GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
 
-                return msg0.groupId() == CU.cacheId(CACHE_NAME);
+                return msg0.groupId() == CU.cacheId(CACHE_NAME) && msg0.partitions().size() == PARTS_CNT;
             }
 
             return false;
@@ -544,15 +544,13 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(grid(2));
 
         // Wait until node2 starts historical rebalancning.
-        spi2.waitForBlocked();
-        spi2.stopBlock();
+        spi2.waitForBlocked(1);
 
         // Interruption of rebalancing by NODE_LEFT event, historical supplier should not be provided.
         stopGrid(1);
 
         // Wait until the full rebalance begins.
-        spi2.blockMessages(blockMessagePredicate);
-        spi2.waitForBlocked();
+        spi2.waitForBlocked(2);
 
         // Interrupting it again by NODE_JOINED and get a historical supplier again.
         startGrid(1);
