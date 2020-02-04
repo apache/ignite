@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,13 +20,11 @@ package org.apache.ignite.internal.util;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
+import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import static java.lang.String.join;
 import static java.lang.System.clearProperty;
@@ -35,12 +34,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.workDirectory;
 import static org.apache.ignite.internal.util.typedef.internal.U.getIgniteHome;
 import static org.apache.ignite.internal.util.typedef.internal.U.nullifyHomeDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /** */
-public class IgniteUtilsWorkDirectoryTest {
+public class IgniteUtilsWorkDirectoryTest extends TestCase {
     /** */
     private static final String USER_WORK_DIR = join(File.separator,
         getIgniteHome(), "userWorkDirTest");
@@ -60,8 +56,7 @@ public class IgniteUtilsWorkDirectoryTest {
     private static String dfltUserDir;
 
     /** */
-    @Before
-    public void setup() {
+    public void setUp() {
         dfltIgniteHome = getProperty(IgniteSystemProperties.IGNITE_HOME);
         dfltUserDir = getProperty("user.dir");
         clearProperty(IgniteSystemProperties.IGNITE_HOME);
@@ -69,7 +64,6 @@ public class IgniteUtilsWorkDirectoryTest {
     }
 
     /** */
-    @After
     public void tearDown() {
         if (dfltIgniteHome != null)
             setProperty(IgniteSystemProperties.IGNITE_HOME, dfltIgniteHome);
@@ -80,7 +74,6 @@ public class IgniteUtilsWorkDirectoryTest {
     /**
      * The work directory specified by the user has the highest priority
      */
-    @Test
     public void testWorkDirectory1() {
         executeGenericTest(true, false, false,
             USER_WORK_DIR);
@@ -89,7 +82,6 @@ public class IgniteUtilsWorkDirectoryTest {
     /**
      * The work directory specified by the user has the highest priority
      */
-    @Test
     public void testWorkDirectory2() {
         executeGenericTest(true, false, true,
             USER_WORK_DIR);
@@ -98,7 +90,6 @@ public class IgniteUtilsWorkDirectoryTest {
     /**
      * The work directory specified by the user has the highest priority
      */
-    @Test
     public void testWorkDirectory3() {
         executeGenericTest(true, true, false,
             USER_WORK_DIR);
@@ -107,7 +98,6 @@ public class IgniteUtilsWorkDirectoryTest {
     /**
      * The work directory specified by the user has the highest priority
      */
-    @Test
     public void testWorkDirectory4() {
         executeGenericTest(true, true, true,
             USER_WORK_DIR);
@@ -153,14 +143,12 @@ public class IgniteUtilsWorkDirectoryTest {
     }
 
     /** */
-    @Test
     public void testNonAbsolutePathWorkDir() {
         genericPathExceptionTest("nonAbsolutePathTestDirectory",
             "Work directory path must be absolute: nonAbsolutePathTestDirectory");
     }
 
     /** */
-    @Test
     public void testDisabledWriteToWorkDir() {
         String strDir = join(File.separator, USER_WORK_DIR, "CannotWriteTestDirectory");
         File dir = new File(strDir);
@@ -185,7 +173,6 @@ public class IgniteUtilsWorkDirectoryTest {
     }
 
     /** */
-    @Test
     public void testDisabledWorkDirCreation() {
         String strDirParent = join(File.separator, USER_WORK_DIR, "CannotWriteTestDirectory");
         File dirParent = new File(strDirParent);
