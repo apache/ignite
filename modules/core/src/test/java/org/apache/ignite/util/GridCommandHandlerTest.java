@@ -297,31 +297,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * Test deactivation works via control.sh using --set-change command.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDeactivateWithSetState() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        assertFalse(ignite.cluster().active());
-        assertEquals(INACTIVE, ignite.cluster().state());
-
-        ignite.cluster().state(ACTIVE);
-
-        assertTrue(ignite.cluster().active());
-        assertEquals(ACTIVE, ignite.cluster().state());
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive"));
-
-        assertFalse(ignite.cluster().active());
-        assertEquals(INACTIVE, ignite.cluster().state());
-    }
-
-    /**
      * Test deactivation works via control.sh and --set-state command when a non-persistent cache involved.
      *
      * @throws Exception If failed.

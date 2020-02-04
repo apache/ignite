@@ -77,7 +77,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
 
         if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE)
             && taskLauncher.apply(FindNotPersistentCachesTask.class)) {
-            return "The cluster has at least one cache configured without persistense. " +
+            return "The cluster has at least one cache configured without persistence. " +
                 "During deactivation all data from these caches will be erased!";
         }
 
@@ -117,7 +117,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
 
-            //Search for in-memory-only caches. Warn of possible data loss.
+            //Search for in-memory-only caches. Fail if possible data loss.
             if (state == INACTIVE && !force) {
                 String msg = isClusterReadyForDeactivation((cls) -> {
                     try {
