@@ -20,7 +20,7 @@ package org.apache.ignite.plugin.extensions.communication;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Provider of communication message fctories.
+ * Provider of communication message factories.
  * <p>
  * Implementation of this interface is responsible for registration of all message factories in
  * {@link #registerAll} method.

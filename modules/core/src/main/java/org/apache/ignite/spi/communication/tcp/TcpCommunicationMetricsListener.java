@@ -103,7 +103,7 @@ class TcpCommunicationMetricsListener {
     private final Object msgTypMapMux = new Object();
 
     /** Message type map. */
-    private volatile Map<Short, String> msgTypMape;
+    private volatile Map<Short, String> msgTypeMap;
 
     /** */
     public TcpCommunicationMetricsListener(GridMetricManager mmgr) {
@@ -278,7 +278,7 @@ class TcpCommunicationMetricsListener {
             if (metric.name().startsWith(prefix)) {
                 short directType = Short.parseShort(metric.name().substring(prefix.length()));
 
-                Map<Short, String> msgTypMap0 = msgTypMape;
+                Map<Short, String> msgTypMap0 = msgTypeMap;
 
                 if (msgTypMap0 != null) {
                     String typeName = msgTypMap0.get(directType);
@@ -357,24 +357,24 @@ class TcpCommunicationMetricsListener {
     private void updateMessageTypeMap(Message msg) {
         short typeId = msg.directType();
 
-        Map<Short, String> msgTypMap0 = msgTypMape;
+        Map<Short, String> msgTypMap0 = msgTypeMap;
 
         if (msgTypMap0 == null || !msgTypMap0.containsKey(typeId)) {
             synchronized (msgTypMapMux) {
-                if (msgTypMape == null) {
+                if (msgTypeMap == null) {
                     msgTypMap0 = new HashMap<>();
 
                     msgTypMap0.put(typeId, msg.getClass().getName());
 
-                    msgTypMape = msgTypMap0;
+                    msgTypeMap = msgTypMap0;
                 }
                 else {
-                    if (!msgTypMape.containsKey(typeId)) {
-                        msgTypMap0 = new HashMap<>(msgTypMape);
+                    if (!msgTypeMap.containsKey(typeId)) {
+                        msgTypMap0 = new HashMap<>(msgTypeMap);
 
                         msgTypMap0.put(typeId, msg.getClass().getName());
 
-                        msgTypMape = msgTypMap0;
+                        msgTypeMap = msgTypMap0;
                     }
                 }
             }

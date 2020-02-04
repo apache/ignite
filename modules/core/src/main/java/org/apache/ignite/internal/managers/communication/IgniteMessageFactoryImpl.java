@@ -124,7 +124,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
             supplier = CUSTOM.get(directType);
 
         if (supplier == null)
-                throw new IgniteException("Invalid message type: " + directType);
+            throw new IgniteException("Invalid message type: " + directType);
 
         return supplier.get();
     }
