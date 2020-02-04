@@ -558,11 +558,6 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
             return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean closed() {
-        return stop.get();
-    }
-
     /**
      * Signals next segment available to wake up other worker threads waiting for WAL to write.
      */

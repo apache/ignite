@@ -931,17 +931,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWALPointer end = null;
 
-        if (hnd != null) {
-            // if current segment is closed - we can miss last update.
-            if (hnd.closed()) {
-                // todo can hang if next segment is not avalable
-                hnd.awaitNext();
-
-                hnd = currentHandle();
-            }
-
+        if (hnd != null)
             end = hnd.position();
-        }
 
         RecordsIterator iter = new RecordsIterator(
             cctx,
