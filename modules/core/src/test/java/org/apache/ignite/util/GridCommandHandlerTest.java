@@ -99,6 +99,7 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+import org.apache.ignite.IgniteSystemProperties;
 
 import static java.io.File.separatorChar;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
@@ -124,6 +125,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  * Command line handler test.
@@ -279,14 +281,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
             .setDataRegionName("non-persistent-dataRegion"));
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--deactivate"));
+        if (IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE))
+            assertEquals(EXIT_CODE_OK, execute("--deactivate"));
+        else {
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--deactivate"));
 
-        assertTrue(ignite.cluster().active());
-        assertEquals(ACTIVE, ignite.cluster().state());
-        assertContains(log, testOut.toString(), "Your cluster has in-memory cache configured. " +
-            "During deactivation all data from these caches will be cleared!");
+            assertTrue(ignite.cluster().active());
+            assertEquals(ACTIVE, ignite.cluster().state());
+            assertContains(log, testOut.toString(), "During deactivation all data from these caches will be erased!");
 
-        assertEquals(EXIT_CODE_OK, execute("--deactivate", "--force"));
+            assertEquals(EXIT_CODE_OK, execute("--deactivate", "--force"));
+        }
 
         assertFalse(ignite.cluster().active());
         assertEquals(INACTIVE, ignite.cluster().state());

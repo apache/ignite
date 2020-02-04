@@ -36,11 +36,13 @@ import java.util.Collections;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  * Command to deactivate cluster.
@@ -55,8 +57,8 @@ public class DeactivateCommand implements Command<Void> {
     private boolean force;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION, "--force"));
+    @Override public void printUsage(Logger log) {
+        Command.usage(log, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION, "--force"));
     }
 
     /** {@inheritDoc} */
@@ -68,7 +70,10 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will deactivate a cluster \"" + clusterName + "\". Make sure there are no caches not backed with persistent storage.";
+        return "Warning: the command will deactivate a cluster \"" + clusterName + "\"." +
+            (IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE)
+                ? ""
+                : " Make sure there are no caches not backed with persistent storage.");
     }
 
     /**
@@ -77,24 +82,26 @@ public class DeactivateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to deactivate.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
-        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        log.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
 
-            if (!force && hasInMemCaches(client, clientCfg)) {
-                throw new IllegalStateException("Your cluster has in-memory cache configured. " +
-                    "During deactivation all data from these caches will be cleared! Use --force to skip this.");
+            //Search for in-memory-only caches. Warn of possible data loss.
+            if (!IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE) && !force
+                && hasInMemCaches(client, clientCfg)) {
+                throw new IllegalStateException("The cluster has at least one cache configured without persistense. " +
+                    "During deactivation all data from these caches will be erased! Type --force to proceed.");
             }
 
             GridClientClusterState state = client.state();
 
             state.active(false);
 
-            logger.info("Cluster deactivated");
+            log.info("Cluster deactivated.");
         }
         catch (Exception e) {
-            logger.severe("Failed to deactivate cluster.");
+            log.severe("Failed to deactivate cluster.");
 
             throw e;
         }
@@ -139,8 +146,10 @@ public class DeactivateCommand implements Command<Void> {
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** */
+        @SuppressWarnings("unchecked")
         @Override public Boolean execute() throws IgniteException {
-            //Find data region to set persistent flag
+            //Find data region to set persistent flag.
             for(String cacheName : ignite.cacheNames()){
                 CacheConfiguration cacheCfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
 
@@ -169,14 +178,15 @@ public class DeactivateCommand implements Command<Void> {
     /** Searches for any non-persistent cache. */
     @GridInternal
     private static class FindNotPersistentCachesTask extends ComputeTaskSplitAdapter<VisorTaskArgument, Boolean> {
-        @Override
-        protected Collection<? extends ComputeJob> split(int gridSize, VisorTaskArgument arg) throws IgniteException {
+
+        /** Provides one job. */
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, VisorTaskArgument arg) throws IgniteException {
             return Collections.singletonList(new FindNotPersistentCachesJob());
         }
 
+        /** Only one result is expected. */
         @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
-            ComputeJobResult jobResult = results.get(0);
-            return jobResult.getData();
+            return results.get(0).getData();
         }
     }
 }
