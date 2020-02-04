@@ -3044,7 +3044,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void resetInitialUpdateCounter() {
-            pCntr.resetInitial();
+            pCntr.resetInitialCounter();
         }
 
         /** {@inheritDoc} */

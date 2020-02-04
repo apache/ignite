@@ -347,7 +347,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     }
 
     /** {@inheritDoc} */
-    @Override public void resetInitial() {
+    @Override public void resetInitialCounter() {
         initCntr = 0;
     }
 
