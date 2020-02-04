@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
@@ -199,14 +200,38 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
         // Wait until tx0 is committed by recovery on node0.
         assertNotNull(txs0);
-        txs0.get(0).finishFuture().get(30_000);
+        try {
+            txs0.get(0).finishFuture().get(3_000);
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
+            // If timeout happens recovery message from g0 to g1 is mapped to the same stripe as near finish request.
+            // We will complete latch to allow sequential processing.
+            stripeBlockLatch.countDown();
+
+            // Wait until sequential processing is finished.
+            assertTrue("sequential processing", GridTestUtils.waitForCondition(() ->
+                grid(1).context().getStripedExecutorService().queueSize(stripeHolder[0]) == 0, 5_000));
+
+            // Unblock recovery message from g1 to g0 because tx is in RECOVERY_FINISH state and waits for recovery end.
+            TestRecordingCommunicationSpi.spi(grid(1)).stopBlock();
+
+            txs0.get(0).finishFuture().get();
+            txs1.get(0).finishFuture().get();
+
+            final TransactionState s1 = txs0.get(0).state();
+            final TransactionState s2 = txs1.get(0).state();
+
+            assertEquals(s1, s2);
+
+            return;
+        }
 
         // Release rollback request processing, triggering an attempt to rollback the transaction during recovery.
         stripeBlockLatch.countDown();
 
         // Wait until finish message is processed.
-        GridTestUtils.waitForCondition(() ->
-            grid(1).context().getStripedExecutorService().queueSize(stripeHolder[0]) == 0, 5_000);
+        assertTrue("concurrent processing", GridTestUtils.waitForCondition(() ->
+            grid(1).context().getStripedExecutorService().queueSize(stripeHolder[0]) == 0, 5_000));
 
         // Proceed with recovery on grid1 -> grid0. Tx0 is committed so tx1 also should be committed.
         TestRecordingCommunicationSpi.spi(grid(1)).stopBlock();
