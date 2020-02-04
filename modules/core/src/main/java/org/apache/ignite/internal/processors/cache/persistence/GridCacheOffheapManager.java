@@ -1028,7 +1028,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 minPtr = startPtr;
         }
 
-        WALIterator it = grp.shared().wal().replay(minPtr, true, null);
+        WALIterator it = grp.shared().wal().replay(minPtr, false, null);
 
         WALHistoricalIterator iterator = new WALHistoricalIterator(log, grp, partCntrs, it);
 
