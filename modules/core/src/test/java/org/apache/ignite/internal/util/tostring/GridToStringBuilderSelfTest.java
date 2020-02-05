@@ -21,12 +21,16 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -37,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
@@ -517,6 +522,179 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that {@link GridToStringBuilder} doesn't fail while iterating over concurrently modified collection.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testToStringCheckConcurrentModificationExceptionFromList() throws Exception {
+        ClassWithList classWithList = new ClassWithList();
+
+        CountDownLatch modificationStartedLatch = new CountDownLatch(1);
+        AtomicBoolean finished = new AtomicBoolean(false);
+
+        IgniteInternalFuture finishFut = GridTestUtils.runAsync(() -> {
+            List list = classWithList.list;
+            for (int i = 0; i < 100; i++)
+                list.add(new SlowToStringObject());
+
+            Random rnd = new Random();
+
+            while (!finished.get()) {
+                if (rnd.nextBoolean() && list.size() > 1)
+                    list.remove(list.size() / 2);
+                else
+                    list.add(list.size() / 2, new SlowToStringObject());
+
+                if (modificationStartedLatch.getCount() > 0)
+                    modificationStartedLatch.countDown();
+
+
+            }
+        });
+
+        modificationStartedLatch.await();
+
+        String s = null;
+
+        try {
+            s = classWithList.toString();
+        }
+        finally {
+            finished.set(true);
+
+            finishFut.get();
+
+            assertNotNull(s);
+            assertTrue(s.contains("concurrent modification"));
+        }
+    }
+
+    /**
+     * Verifies that {@link GridToStringBuilder} doesn't fail while iterating over concurrently modified map.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testToStringCheckConcurrentModificationExceptionFromMap() throws Exception {
+        ClassWithMap classWithMap = new ClassWithMap();
+
+        CountDownLatch modificationStartedLatch = new CountDownLatch(1);
+        AtomicBoolean finished = new AtomicBoolean(false);
+
+        IgniteInternalFuture finishFut = GridTestUtils.runAsync(() -> {
+            Map map = classWithMap.map;
+            for (int i = 0; i < 100; i++)
+                map.put(i, new SlowToStringObject());
+
+            Random rnd = new Random();
+
+            while (!finished.get()) {
+                if (rnd.nextBoolean() && map.size() > 1)
+                    map.remove(map.size() / 2);
+                else
+                    map.put(map.size() / 2, new SlowToStringObject());
+
+                if (modificationStartedLatch.getCount() > 0)
+                    modificationStartedLatch.countDown();
+
+
+            }
+        });
+
+        modificationStartedLatch.await();
+
+        String s = null;
+
+        try {
+            s = classWithMap.toString();
+        }
+        finally {
+            finished.set(true);
+
+            finishFut.get();
+
+            assertNotNull(s);
+            assertTrue(s.contains("concurrent modification"));
+        }
+    }
+
+    /**
+     *
+     * Test verifies that when RuntimeException is thrown from toString method of some class
+     * GridToString builder doesn't fail but finishes building toString representation.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRuntimeExceptionCaught() throws Exception {
+        WrapperForFaultyToStringClass wr = new WrapperForFaultyToStringClass(
+            new ClassWithFaultyToString[] {new ClassWithFaultyToString()});
+
+        String strRep = wr.toString();
+
+        //field before faulty field was written successfully to string representation
+        assertTrue(strRep.contains("id=12345"));
+
+        //message from RuntimeException was written to string representation
+        assertTrue(strRep.contains("toString failed"));
+
+        //field after faulty field was written successfully to string representation
+        assertTrue(strRep.contains("str=str"));
+    }
+
+    /**
+     * @param exp Expected.
+     * @param w Wrapper.
+     */
+    private void checkHierarchy(String exp, Wrapper w) {
+        String wS = w.toString();
+
+        info(wS);
+
+        assertEquals(exp, wS);
+    }
+
+    /** Class containing another class with faulty toString implementation
+     * to force GridToStringBuilder to call faulty toString. */
+    private static class WrapperForFaultyToStringClass {
+        /** */
+        @SuppressWarnings("unused")
+        @GridToStringInclude
+        private int id = 12345;
+
+        /** */
+        @SuppressWarnings("unused")
+        @GridToStringInclude
+        private ClassWithFaultyToString[] arr;
+
+        /** */
+        @SuppressWarnings("unused")
+        @GridToStringInclude
+        private String str = "str";
+
+        /** */
+        WrapperForFaultyToStringClass(ClassWithFaultyToString[] arr) {
+            this.arr = arr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(WrapperForFaultyToStringClass.class, this);
+        }
+    }
+
+    /**
+     * Class throwing a RuntimeException from a {@link ClassWithFaultyToString#toString()} method.
+     */
+    private static class ClassWithFaultyToString {
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            throw new RuntimeException("toString failed");
+        }
+    }
+
+    /**
      * Test class.
      */
     private static class TestClass1 {
@@ -649,6 +827,91 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
          */
         TestClass2(String str) {
             this.str = str;
+        }
+    }
+
+    /** */
+    private static class ClassWithList {
+        /** */
+        @GridToStringInclude
+        private final List list = new LinkedList();
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClassWithList.class, this);
+        }
+    }
+
+    /** */
+    private static class ClassWithMap {
+        /** */
+        @GridToStringInclude
+        private final Map map = new HashMap();
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ClassWithMap.class, this);
+        }
+    }
+
+    /**
+     * Class sleeps a short quanta of time to increase chances of data race
+     * between {@link GridToStringBuilder} iterating over collection  user thread concurrently modifying it.
+     */
+    private static class SlowToStringObject {
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            doSleep(1);
+
+            return super.toString();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Parent {
+        /** */
+        private int a;
+
+        /** */
+        @GridToStringInclude
+        private Parent pa[] = new Parent[1];
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Parent.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Child extends Parent {
+        /** */
+        private int b;
+
+        /** */
+        @GridToStringInclude
+        private Parent pb[] = new Parent[1];
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Child.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Wrapper {
+        /** */
+        @GridToStringInclude
+        Parent p = new Child();
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Wrapper.class, this);
         }
     }
 }
