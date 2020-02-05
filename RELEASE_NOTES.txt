@@ -12,8 +12,7 @@ Ignite:
 * Added IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE system property
 * Added IGNITE_YARN_QUEUE property to override YARN queue name
 * Added JMX ability to exclude node from topology
-* Added JMX metrics for PME timings
-* Added JMX metrics for current partition map exchange execution time
+* Added JMX metrics for partition map exchange timings
 * Added SSL support for ZookeeperSpi
 * Added Spark SQL Table Schema Specification
 * Added WAL page snapshot records compression
