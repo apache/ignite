@@ -254,7 +254,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
                 exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
-            return rebRoutine::requestPartitionsSnapshot;
+            return rebRoutine::startPartitionsPreloading;
         }
         finally {
             lock.unlock();

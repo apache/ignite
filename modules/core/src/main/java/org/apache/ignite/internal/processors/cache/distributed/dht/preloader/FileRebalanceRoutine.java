@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -111,7 +112,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /** Checkpoint listener. */
     private final Consumer<Runnable> cpLsnr;
 
-    /** */
+    /**
+     *
+     */
     public FileRebalanceRoutine() {
         this(null, null, null, null, 0, null);
 
@@ -147,71 +150,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /**
      * Initialize and start partition preloading.
      */
-    public void requestPartitionsSnapshot() {
+    public void startPartitionsPreloading() {
         initialize();
 
-        Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
-
-        cctx.kernalContext().getSystemExecutorService().submit(() -> {
-            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
-                UUID nodeId = nodeAssigns.getKey();
-                Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
-
-                IgniteInternalFuture<Boolean> snapshotFut0;
-
-                try {
-                    lock.lock();
-
-                    try {
-                        if (isDone())
-                            return;
-
-                        snapshotFut0 = snapshotFut;
-
-                        if (snapshotFut0 != null && (snapshotFut0.isCancelled() || !snapshotFut0.get()))
-                            return;
-
-                        Set<String> grps = new HashSet<>();
-
-                        for (Integer grpId : assigns.keySet()) {
-                            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                            grps.add(grp.cacheOrGroupName());
-
-                            if (!requestedGroups.contains(grpId)) {
-                                requestedGroups.add(grpId);
-
-                                grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-                            }
-                        }
-
-                        U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + grps + "]");
-
-                        snapshotFut = snapshotFut0 = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns);
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-
-                    snapshotFut0.get();
-                }
-                catch (IgniteFutureCancelledCheckedException ignore) {
-                    // No-op.
-                }
-                catch (IgniteCheckedException e) {
-                    if (!isDone()) {
-                        log.error(e.getMessage(), e);
-
-                        onDone(e);
-
-                        return;
-                    }
-
-                    if (log.isDebugEnabled())
-                        log.debug("Stale error (ignore) " + e.getMessage());
-                }
-            }
-        });
+        requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>());
     }
 
     /**
@@ -250,6 +192,58 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         }
         catch (IgniteCheckedException e) {
             onDone(e);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * @param iter Iterator on node assignments.
+     * @param groups Requested groups.
+     */
+    private void requestPartitionsSnapshot(Iterator<T2<UUID, Map<Integer, Set<Integer>>>> iter, Set<Integer> groups) {
+        lock.lock();
+
+        try {
+            if (isDone() || !iter.hasNext())
+                return;
+
+            T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns = iter.next();
+
+            UUID nodeId = nodeAssigns.get1();
+            Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
+
+            Set<String> currGroups = new HashSet<>();
+
+            for (Integer grpId : assigns.keySet()) {
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                currGroups.add(grp.cacheOrGroupName());
+
+                if (!groups.contains(grpId)) {
+                    groups.add(grpId);
+
+                    grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+                }
+            }
+
+            U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + currGroups + "]");
+
+            (snapshotFut = cctx.snapshotMgr().createRemoteSnapshot(nodeId, assigns)).listen(f -> {
+                    try {
+                        if (!f.isCancelled() && Boolean.TRUE.equals(f.get()))
+                            requestPartitionsSnapshot(iter, groups);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (onDone(e))
+                            return;
+
+                        if (log.isDebugEnabled())
+                            log.debug("Stale error (ignored): " + e.getMessage());
+                    }
+                }
+            );
         }
         finally {
             lock.unlock();
@@ -317,7 +311,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
         assert partsCnt != null;
 
-        Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v-> new ConcurrentHashMap<>());
+        Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v -> new ConcurrentHashMap<>());
 
         cntrs.put(partId, cntr);
 
@@ -364,7 +358,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
 
                 if (fut != null) {
-                    U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
+                    U.log(log, "Starting index rebuild [cache=" + ctx.cache().name() + "]");
 
                     fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
                         ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
@@ -590,7 +584,8 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             }
 
             clearTask.get();
-        } catch (IgniteFutureCancelledCheckedException ignore) {
+        }
+        catch (IgniteFutureCancelledCheckedException ignore) {
             // No-op.
         }
     }
@@ -609,18 +604,28 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         return S.toString(FileRebalanceRoutine.class, this);
     }
 
-    /** */
+    /**
+     *
+     */
     private static class MemoryCleaner extends GridFutureAdapter {
-        /** */
+        /**
+         *
+         */
         private final Set<Long> parts;
 
-        /** */
+        /**
+         *
+         */
         private final DataRegion region;
 
-        /** */
+        /**
+         *
+         */
         private final GridCacheSharedContext cctx;
 
-        /** */
+        /**
+         *
+         */
         private final IgniteLogger log;
 
         /**
@@ -685,7 +690,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 int grpId = (int)(uniquePart >> 32);
                 int partId = (int)uniquePart;
 
-                if (prevGrpId == 0|| prevGrpId != grpId) {
+                if (prevGrpId == 0 || prevGrpId != grpId) {
                     grp = cctx.cache().cacheGroup(grpId);
 
                     prevGrpId = grpId;
