@@ -329,7 +329,7 @@ ML:
 * Added support new feature-label extraction API (Vectorizers) to Preprocessor trainers
 * Added vector projection
 * Advanced support of categorical features (LabelEncoding, Strings in vectorizers)
-* Fix the problem with ML Labmdas which are not working in binary builds
+* Fixed the problem with ML Labmdas which are not working in binary builds
 * Implementation of a distributed estimator
 * Import models from MLeap
 * Import models from XGBoost
