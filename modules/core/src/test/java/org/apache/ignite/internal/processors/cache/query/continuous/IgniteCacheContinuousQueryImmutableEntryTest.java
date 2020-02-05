@@ -33,9 +33,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -60,7 +62,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -153,7 +155,9 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         e0.writeTo(buf, writer);
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
-        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(new GridIoMessageFactory(null), (byte)1));
+        IgniteMessageFactoryImpl msgFactory =
+                new IgniteMessageFactoryImpl(new MessageFactory[]{new GridIoMessageFactory()});
+        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory, (byte)1));
 
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());
