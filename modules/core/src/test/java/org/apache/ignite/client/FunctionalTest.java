@@ -21,6 +21,7 @@ import java.lang.management.ManagementFactory;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -290,101 +292,147 @@ public class FunctionalTest {
         try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(getClientConfiguration())
         ) {
-            ClientCache<Object, Object> cache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+            IgniteCache<Object, Object> thickCache = ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+            ClientCache<Object, Object> thinCache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
 
             Person person = new Person(1, "name");
 
             // Primitive and built-in types.
-            checkDataType(cache, (byte)1);
-            checkDataType(cache, (short)1);
-            checkDataType(cache, 1);
-            checkDataType(cache, 1L);
-            checkDataType(cache, 1.0f);
-            checkDataType(cache, 1.0d);
-            checkDataType(cache, 'c');
-            checkDataType(cache, true);
-            checkDataType(cache, "string");
-            checkDataType(cache, UUID.randomUUID());
-            checkDataType(cache, new Date());
+            checkDataType(thinCache, thickCache, (byte)1);
+            checkDataType(thinCache, thickCache, (short)1);
+            checkDataType(thinCache, thickCache, 1);
+            checkDataType(thinCache, thickCache, 1L);
+            checkDataType(thinCache, thickCache, 1.0f);
+            checkDataType(thinCache, thickCache, 1.0d);
+            checkDataType(thinCache, thickCache, 'c');
+            checkDataType(thinCache, thickCache, true);
+            checkDataType(thinCache, thickCache, "string");
+            checkDataType(thinCache, thickCache, UUID.randomUUID());
+            checkDataType(thinCache, thickCache, new Date());
 
             // Enum.
-            checkDataType(cache, CacheAtomicityMode.ATOMIC);
+            checkDataType(thinCache, thickCache, CacheAtomicityMode.ATOMIC);
 
             // Binary object.
-            checkDataType(cache, person);
+            checkDataType(thinCache, thickCache, person);
 
             // Arrays.
-            checkDataType(cache, new byte[] {(byte)1});
-            checkDataType(cache, new short[] {(short)1});
-            checkDataType(cache, new int[] {1});
-            checkDataType(cache, new long[] {1L});
-            checkDataType(cache, new float[] {1.0f});
-            checkDataType(cache, new double[] {1.0d});
-            checkDataType(cache, new char[] {'c'});
-            checkDataType(cache, new boolean[] {true});
-            checkDataType(cache, new String[] {"string"});
-            checkDataType(cache, new UUID[] {UUID.randomUUID()});
-            checkDataType(cache, new Date[] {new Date()});
-            checkDataType(cache, new int[][] {new int[] {1}});
+            checkDataType(thinCache, thickCache, new byte[] {(byte)1});
+            checkDataType(thinCache, thickCache, new short[] {(short)1});
+            checkDataType(thinCache, thickCache, new int[] {1});
+            checkDataType(thinCache, thickCache, new long[] {1L});
+            checkDataType(thinCache, thickCache, new float[] {1.0f});
+            checkDataType(thinCache, thickCache, new double[] {1.0d});
+            checkDataType(thinCache, thickCache, new char[] {'c'});
+            checkDataType(thinCache, thickCache, new boolean[] {true});
+            checkDataType(thinCache, thickCache, new String[] {"string"});
+            checkDataType(thinCache, thickCache, new UUID[] {UUID.randomUUID()});
+            checkDataType(thinCache, thickCache, new Date[] {new Date()});
+            checkDataType(thinCache, thickCache, new int[][] {new int[] {1}});
 
-            checkDataType(cache, new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
+            checkDataType(thinCache, thickCache, new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
 
-            checkDataType(cache, new Person[] {person});
-            checkDataType(cache, new Person[][] {new Person[] {person}});
-            checkDataType(cache, new Object[] {1, "string", person, new Person[] {person}});
+            checkDataType(thinCache, thickCache, new Person[] {person});
+            checkDataType(thinCache, thickCache, new Person[][] {new Person[] {person}});
+            checkDataType(thinCache, thickCache, new Object[] {1, "string", person, new Person[] {person}});
 
             // Lists.
-            checkDataType(cache, Arrays.asList(person, person));
-            checkDataType(cache, new ArrayList<>(Arrays.asList(person, person)));
-            checkDataType(cache, new LinkedList<>(Arrays.asList(person, person)));
-            checkDataType(cache, Arrays.asList(Arrays.asList(person, person), person));
-            checkDataType(cache, Collections.singletonList(person));
-            checkDataType(cache, Collections.emptyList());
+            checkDataType(thinCache, thickCache, Collections.emptyList());
+            checkDataType(thinCache, thickCache, Collections.singletonList(person));
+            checkDataType(thinCache, thickCache, Arrays.asList(person, person));
+            checkDataType(thinCache, thickCache, new ArrayList<>(Arrays.asList(person, person)));
+            checkDataType(thinCache, thickCache, new LinkedList<>(Arrays.asList(person, person)));
+            checkDataType(thinCache, thickCache, Arrays.asList(Arrays.asList(person, person), person));
 
             // Sets.
-            checkDataType(cache, new HashSet<>(Arrays.asList(1, 2)));
-            checkDataType(cache, new HashSet<>(Arrays.asList(Arrays.asList(person, person), person)));
-            checkDataType(cache, new HashSet<>(new ArrayList<>(Arrays.asList(Arrays.asList(person, person), person))));
-            checkDataType(cache, Collections.singleton(person));
-            checkDataType(cache, Collections.emptySet());
+            checkDataType(thinCache, thickCache, Collections.emptySet());
+            checkDataType(thinCache, thickCache, Collections.singleton(person));
+            checkDataType(thinCache, thickCache, new HashSet<>(Arrays.asList(1, 2)));
+            checkDataType(thinCache, thickCache, new HashSet<>(Arrays.asList(Arrays.asList(person, person), person)));
+            checkDataType(thinCache, thickCache, new HashSet<>(new ArrayList<>(Arrays.asList(Arrays.asList(person,
+                person), person))));
 
             // Maps.
-            checkDataType(cache, F.asMap(1, person));
-            checkDataType(cache, new HashMap<>(F.asMap(1, person)));
-            checkDataType(cache, Collections.emptyMap());
-            checkDataType(cache, Collections.singletonMap(1, person));
+            checkDataType(thinCache, thickCache, Collections.emptyMap());
+            checkDataType(thinCache, thickCache, Collections.singletonMap(1, person));
+            checkDataType(thinCache, thickCache, F.asMap(1, person));
+            checkDataType(thinCache, thickCache, new HashMap<>(F.asMap(1, person)));
+            checkDataType(thinCache, thickCache, new HashMap<>(F.asMap(new HashSet<>(Arrays.asList(1, 2)),
+                Arrays.asList(person, person))));
         }
     }
 
     /**
      * Check that we get the same value from the cache as we put before.
      *
-     * @param cache Cache.
+     * @param thinCache Cache.
      * @param obj Value of data type to check.
      */
-    private void checkDataType(ClientCache<Object, Object> cache, Object obj) {
+    private void checkDataType(ClientCache<Object, Object> thinCache, IgniteCache<Object, Object> thickCache,
+        Object obj) {
         Integer key = 1;
 
-        cache.put(key, obj);
+        thinCache.put(key, obj);
 
-        assertTrue(cache.containsKey(key));
+        assertTrue(thinCache.containsKey(key));
 
-        Object cachedObj = cache.get(key);
+        Object cachedObj = thinCache.get(key);
 
-        if (obj instanceof Object[])
-            assertArrayEquals((Object[])obj, (Object[])cachedObj);
-        else if (U.isPrimitiveArray(obj))
-            assertArrayEquals(new Object[] {obj}, new Object[] {cachedObj}); // Hack to compare primitive arrays.
-        else
-            assertEquals(obj, cachedObj);
+        assertEqualsArraysAware(obj, cachedObj);
+
+        // TODO IGNITE-12624 Put object to thick cache to register binary type (workaround for system types registration)
+        thickCache.put(2, obj);
+
+        // TODO IGNITE-12624 Skip check for system types marshalled by optimized marshaller.
+        if (!hasSystemOptimizedMarshallerType(obj))
+            assertEqualsArraysAware(obj, thickCache.get(key));
 
         if (!obj.getClass().isArray()) { // TODO IGNITE-12578
             // Server-side comparison with the original object.
-            assertTrue(cache.replace(key, obj, obj));
+            assertTrue(thinCache.replace(key, obj, obj));
 
             // Server-side comparison with the restored object.
-            assertTrue(cache.remove(key, cachedObj));
+            assertTrue(thinCache.remove(key, cachedObj));
         }
+    }
+
+    /**
+     * Check recursively if the object has system types which marshalled by optimized marshaller.
+     *
+     * Note: This is temporary method needed to workaround IGNITE-12624.
+     */
+    private boolean hasSystemOptimizedMarshallerType(Object obj) {
+        if (obj.getClass().getName().startsWith("java.util.Collections") ||
+            obj.getClass().getName().startsWith("java.util.Arrays") ||
+            obj instanceof GridLeanMap)
+            return true;
+        else if (obj instanceof Collection) {
+            for (Object obj0 : (Iterable<?>)obj) {
+                if (hasSystemOptimizedMarshallerType(obj0))
+                    return true;
+            }
+        }
+        else if (obj instanceof Map) {
+            return hasSystemOptimizedMarshallerType(((Map)obj).values()) ||
+                hasSystemOptimizedMarshallerType(((Map)obj).keySet());
+        }
+
+        return false;
+    }
+
+    /**
+     * Assert values equals (deep equals for arrays).
+     *
+     * @param exp Expected value.
+     * @param actual Actual value.
+     */
+    private void assertEqualsArraysAware(Object exp, Object actual) {
+        if (exp instanceof Object[])
+            assertArrayEquals((Object[])exp, (Object[])actual);
+        else if (U.isPrimitiveArray(exp))
+            assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
+        else
+            assertEquals(exp, actual);
     }
 
     /**
