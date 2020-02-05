@@ -32,13 +32,15 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 
 /**
  * Command to change cluster state.
  */
 public class ClusterStateChangeCommand implements Command<ClusterState> {
     /**  */
-    private static final String FLAG_FORCE = "--force";
+    static final String FORCE_COMMAND = "--force";
 
     /** New cluster state */
     private ClusterState state;
@@ -58,7 +60,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         params.put(ACTIVE_READ_ONLY.toString(), "Activate cluster. Cache updates are denied.");
 
         Command.usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
-            optional(FLAG_FORCE, CMD_AUTO_CONFIRMATION));
+            optional(FORCE_COMMAND, CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
@@ -78,12 +80,12 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         try (GridClient client = Command.startClient(clientCfg)) {
             // Search for in-memory-only caches. Fail if data loss might appear.
             if (state == INACTIVE && !force) {
-                Boolean readyToDeactivate = TaskExecutor.executeTask(client, VisorCheckDeactivationTask.class,
+                Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
                     null, clientCfg);
 
                 if (!readyToDeactivate)
-                    throw new IllegalStateException(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES
-                        + " Please, add " + FLAG_FORCE + " to deactivate cluster.");
+                    throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                        + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
             }
 
             client.state().state(state);
@@ -113,7 +115,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
 
-            if (FLAG_FORCE.equalsIgnoreCase(arg)) {
+            if (FORCE_COMMAND.equalsIgnoreCase(arg)) {
                 force = true;
 
                 argIter.nextArg("");

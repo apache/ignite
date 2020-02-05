@@ -107,6 +107,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  *
@@ -114,6 +115,13 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extract
 public class GridClusterStateProcessor extends GridProcessorAdapter implements IGridClusterStateProcessor, MetastorageLifecycleListener {
     /** */
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
+
+    /**
+     * Warning of unsafe deactivation. May be used with {@link #isDeactivationSafe()}.
+     * */
+    public static final String DATA_LOST_ON_DEACTIVATION_WARNING =
+        "Cluster has nodes configured without persistence. " +
+            "During deactivation in-memory data and objects can be lost!";
 
     /** */
     private boolean inMemoryMode;
@@ -1652,6 +1660,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      */
     public boolean isBaselineAutoAdjustEnabled() {
         return distributedBaselineConfiguration.isBaselineAutoAdjustEnabled();
+    }
+
+    /**
+     * @return {@code False} if cluster deactivation can erase user's data and objects.
+     * {@code True} If deactivation is safe.
+     */
+    public boolean isDeactivationSafe() {
+        // Find any node with disabled memory reusage on deactivation/activation.
+        boolean cacheDataCanBeLost = ctx.cluster().get().forServers().forPredicate(node ->
+            !(Boolean)node.attributes().getOrDefault(ATTR_REUSE_MEMORY_ON_DEACTIVATE, false))
+            .nodes().stream().findAny().isPresent();
+
+        return !cacheDataCanBeLost || ctx.cache().inMemoryCaches().isEmpty();
     }
 
     /**

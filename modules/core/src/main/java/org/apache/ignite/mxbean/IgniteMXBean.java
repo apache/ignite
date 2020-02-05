@@ -363,8 +363,12 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
         "if specified checkpoint was indeed removed, false otherwise.")
-    @MXBeanParametersNames("key")
-    @MXBeanParametersDescriptions("Checkpoint key to remove.")
+    @MXBeanParametersNames(
+        "key"
+    )
+    @MXBeanParametersDescriptions(
+        "Checkpoint key to remove."
+    )
     public boolean removeCheckpoint(String key);
 
     /**
@@ -376,18 +380,22 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Pings node with given node ID to see whether it is alive. " +
         "Returns whether or not node is alive.")
-    @MXBeanParametersNames("nodeId")
-    @MXBeanParametersDescriptions("String presentation of node ID. See java.util.UUID class for details.")
+    @MXBeanParametersNames(
+        "nodeId"
+    )
+    @MXBeanParametersDescriptions(
+        "String presentation of node ID. See java.util.UUID class for details."
+    )
     public boolean pingNode(String nodeId);
 
     /** Activates cluster. */
     @MXBeanDescription("Execute activation process.")
-    @MXBeanParametersNames("active")
     public void activate();
 
     /** Deactivates cluster. */
     @MXBeanDescription("Execute deactivation process.")
     @MXBeanParametersNames("force")
+    @MXBeanParametersDescriptions("Force deactivation. Can lead to data loss.")
     public void deactivate(boolean force);
 
     /**
@@ -427,8 +435,12 @@ public interface IgniteMXBean {
      * @throws JMException Thrown if undeploy failed.
      */
     @MXBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
-    @MXBeanParametersNames("taskName")
-    @MXBeanParametersDescriptions("Name of the task to undeploy.")
+    @MXBeanParametersNames(
+        "taskName"
+    )
+    @MXBeanParametersDescriptions(
+        "Name of the task to undeploy."
+    )
     public void undeployTaskFromGrid(String taskName) throws JMException;
 
     /**
@@ -464,8 +476,12 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Pings node with given host name to see if it is alive. " +
         "Returns whether or not node is alive.")
-    @MXBeanParametersNames("host")
-    @MXBeanParametersDescriptions("Host name or IP address of the node to ping.")
+    @MXBeanParametersNames(
+        "host"
+    )
+    @MXBeanParametersDescriptions(
+        "Host name or IP address of the node to ping."
+    )
     public boolean pingNodeByAddress(String host);
 
     /**

@@ -6,7 +6,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -55,7 +55,7 @@ public class GridStateMBeanTest extends GridCommonAbstractTest {
             mxBean.deactivate(false);
         }
         catch (Exception e) {
-            assertTrue(e.getMessage().contains(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES));
+            assertTrue(e.getMessage().contains(GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING));
         }
 
         assertTrue(mxBean.active());
