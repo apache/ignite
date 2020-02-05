@@ -27,7 +27,9 @@ import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
+import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 
 /**
  * Command to deactivate cluster.
@@ -44,7 +46,7 @@ public class DeactivateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Command.usage(log, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
-            optional("--force", CMD_AUTO_CONFIRMATION));
+            optional(FORCE_COMMAND, CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
@@ -56,10 +58,7 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will deactivate a cluster \"" + clusterName + "\"." +
-            (IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE)
-                ? ""
-                : " Make sure there are no caches not backed with persistent storage.");
+        return "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
     }
 
     /**
@@ -75,12 +74,12 @@ public class DeactivateCommand implements Command<Void> {
 
             // Search for in-memory-only caches. Fail if possible data loss.
             if (!force) {
-                Boolean readyToDeactivate = TaskExecutor.executeTask(client, VisorCheckDeactivationTask.class,
+                Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
                     null, clientCfg);
 
                 if (!readyToDeactivate)
-                    throw new IllegalStateException(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES
-                        + " Please, add --force to deactivate cluster.");
+                    throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                        + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
             }
 
             GridClientClusterState state = client.state();
@@ -102,8 +101,10 @@ public class DeactivateCommand implements Command<Void> {
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
-            if ("--force".equalsIgnoreCase(arg)) {
+
+            if (FORCE_COMMAND.equalsIgnoreCase(arg)) {
                 force = true;
+
                 argIter.nextArg("");
             }
         }

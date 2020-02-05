@@ -232,9 +232,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import java.util.stream.Collectors;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -306,7 +303,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_KEEP_MEMORY_ON_DEACTIVATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
@@ -1984,8 +1981,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.addNodeAttribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
             ctx.service() instanceof IgniteServiceProcessor);
 
-        //Allows to predict behavior on deactivation.
-        add(ATTR_KEEP_MEMORY_ON_DEACTIVATION, getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE));
+        // Allows to predict behavior on deactivation.
+        add(ATTR_REUSE_MEMORY_ON_DEACTIVATE, getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE));
     }
 
     /**
@@ -3983,15 +3980,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void deactivate(boolean force) {
-        // Check if cluster ir ready for deactivation.
-        if ((cluster().state() == ClusterState.ACTIVE || cluster().state() == ClusterState.ACTIVE_READ_ONLY)
-            && !force) {
-            Boolean readyForDeactivation = compute().execute(VisorCheckDeactivationTask.class,
-                new VisorTaskArgument<>(cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toList()),
-                    null, false));
+        // Check if cluster is ready for deactivation.
+        if (cluster().state() != ClusterState.INACTIVE && !force) {
 
-            if (!readyForDeactivation)
-                throw new IllegalStateException(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES
+            if (!context().state().isDeactivationSafe())
+                throw new IllegalStateException(GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING
                     + " Please, enable force flag to deactivate cluster.");
         }
 

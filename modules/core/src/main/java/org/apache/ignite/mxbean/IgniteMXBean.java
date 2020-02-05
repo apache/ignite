@@ -363,9 +363,13 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
         "if specified checkpoint was indeed removed, false otherwise.")
-    public boolean removeCheckpoint(
-        @MXBeanParameter(name = "key", description = "Checkpoint key to remove.") String key
-    );
+    @MXBeanParametersNames(
+        "key"
+    )
+    @MXBeanParametersDescriptions(
+        "Checkpoint key to remove."
+    )
+    public boolean removeCheckpoint(String key);
 
     /**
      * Pings node with given node ID to see whether it is alive.
@@ -376,23 +380,22 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Pings node with given node ID to see whether it is alive. " +
         "Returns whether or not node is alive.")
-    public boolean pingNode(
-        @MXBeanParameter(name = "nodeId",
-            description = "String presentation of node ID. See java.util.UUID class for details.") String nodeId
-    );
+    @MXBeanParametersNames(
+        "nodeId"
+    )
+    @MXBeanParametersDescriptions(
+        "String presentation of node ID. See java.util.UUID class for details."
+    )
+    public boolean pingNode(String nodeId);
 
     /** Activates cluster. */
     @MXBeanDescription("Execute activation process.")
-    @MXBeanParametersNames("active")
     public void activate();
 
     /** Deactivates cluster. */
-    @MXBeanDescription(
-        "Execute deactivation process."
-    )
-    @MXBeanParametersNames(
-        "force"
-    )
+    @MXBeanDescription("Execute deactivation process.")
+    @MXBeanParametersNames("force")
+    @MXBeanParametersDescriptions("Force deactivation. Can lead to data loss.")
     public void deactivate(boolean force);
 
     /**
@@ -401,11 +404,10 @@ public interface IgniteMXBean {
      */
     @Deprecated
     @MXBeanDescription(
-        "Execute activate or deactivate process. Deprecated. Use activate() / deactivate(). Deactivation may require flag 'force'."
+        "Execute activate or deactivate process. Deprecated. " +
+            "Use activate() / deactivate(). Deactivation may require flag 'force'."
     )
-    @MXBeanParametersNames(
-        "active"
-    )
+    @MXBeanParametersNames("active")
     public void active(boolean active);
 
     /**
@@ -433,9 +435,13 @@ public interface IgniteMXBean {
      * @throws JMException Thrown if undeploy failed.
      */
     @MXBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
-    public void undeployTaskFromGrid(
-        @MXBeanParameter(name = "taskName", description = "Name of the task to undeploy.") String taskName
-    ) throws JMException;
+    @MXBeanParametersNames(
+        "taskName"
+    )
+    @MXBeanParametersDescriptions(
+        "Name of the task to undeploy."
+    )
+    public void undeployTaskFromGrid(String taskName) throws JMException;
 
     /**
      * A shortcut method that executes given task assuming single {@code java.lang.String} argument
@@ -448,10 +454,19 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("A shortcut method that executes given task assuming single " +
         "String argument and String return type. Returns Task return value (assumed of String type).")
-    public String executeTask(
-        @MXBeanParameter(name = "taskName", description = "Name of the task to execute.") String taskName,
-        @MXBeanParameter(name = "arg", description = "Single task execution argument (can be null).") String arg
-    ) throws JMException;
+    @MXBeanParametersNames(
+        {
+            "taskName",
+            "arg"
+        }
+    )
+    @MXBeanParametersDescriptions(
+        {
+            "Name of the task to execute.",
+            "Single task execution argument (can be null)."
+        }
+    )
+    public String executeTask(String taskName, String arg) throws JMException;
 
     /**
      * Pings node with given host name to see if it is alive.
@@ -461,9 +476,13 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Pings node with given host name to see if it is alive. " +
         "Returns whether or not node is alive.")
-    public boolean pingNodeByAddress(
-        @MXBeanParameter(name = "host", description = "Host name or IP address of the node to ping.") String host
-    );
+    @MXBeanParametersNames(
+        "host"
+    )
+    @MXBeanParametersDescriptions(
+        "Host name or IP address of the node to ping."
+    )
+    public boolean pingNodeByAddress(String host);
 
     /**
      * Gets a formatted instance of configured discovery SPI implementation.
@@ -638,21 +657,36 @@ public interface IgniteMXBean {
      * @param procFromNioThread {@code True} to process requests in NIO threads.
      */
     @MXBeanDescription("Runs IO latency test against all remote server nodes in cluster.")
+    @MXBeanParametersNames(
+        {
+            "warmup",
+            "duration",
+            "threads",
+            "maxLatency",
+            "rangesCnt",
+            "payLoadSize",
+            "procFromNioThread"
+        }
+    )
+    @MXBeanParametersDescriptions(
+        {
+            "Warmup duration (millis).",
+            "Test duration (millis).",
+            "Threads count.",
+            "Maximum latency expected (nanos).",
+            "Ranges count for histogram.",
+            "Payload size (bytes).",
+            "Process requests in NIO-threads flag."
+        }
+    )
     void runIoTest(
-        @MXBeanParameter(name = "warmup", description = "Warmup duration (millis).")
-            long warmup,
-        @MXBeanParameter(name = "duration", description = "Test duration (millis).")
-            long duration,
-        @MXBeanParameter(name = "threads", description = "Threads count.")
-            int threads,
-        @MXBeanParameter(name = "maxLatency", description = "Maximum latency expected (nanos).")
-            long maxLatency,
-        @MXBeanParameter(name = "rangesCnt", description = "Ranges count for histogram.")
-            int rangesCnt,
-        @MXBeanParameter(name = "payLoadSize", description = "Payload size (bytes).")
-            int payLoadSize,
-        @MXBeanParameter(name = "procFromNioThread", description = "Process requests in NIO-threads flag.")
-            boolean procFromNioThread
+        long warmup,
+        long duration,
+        int threads,
+        long maxLatency,
+        int rangesCnt,
+        int payLoadSize,
+        boolean procFromNioThread
     );
 
     /**
@@ -679,9 +713,9 @@ public interface IgniteMXBean {
      * See {@link ClusterState}
      */
     @MXBeanDescription("Changes current cluster state.")
-    public void clusterState(
-        @MXBeanParameter(name = "state", description = "New cluster state.") String state
-    );
+    @MXBeanParametersNames("state")
+    @MXBeanParametersDescriptions("New cluster state.")
+    public void clusterState(String state);
 
     /**
      * Gets last cluster state change operation.

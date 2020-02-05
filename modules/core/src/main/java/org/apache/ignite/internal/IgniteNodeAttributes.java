@@ -207,7 +207,7 @@ public final class IgniteNodeAttributes {
         ".event.driven.service.processor.enabled";
 
     /** Flag of in-memory data erasure on deactivation. */
-    public static final String ATTR_KEEP_MEMORY_ON_DEACTIVATION = ATTR_CACHE + ".persistence.keepMemDataOnDeactivation";
+    public static final String ATTR_REUSE_MEMORY_ON_DEACTIVATE = ATTR_CACHE + ".persistence.reuseMemoryOnDeactivation";
 
     /**
      * Enforces singleton.
