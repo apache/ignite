@@ -34,6 +34,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -180,6 +181,15 @@ public final class IgniteSystemProperties {
 
     /** Maximum length for {@code toString()} result. */
     public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
+
+    /**
+     * Boolean flag indicating whether {@link GridToStringBuilder} should throw {@link RuntimeException}
+     * when building string representation of an object or should just print information about exception into the log
+     * and proceed.
+     *
+     * {@code False} by default.
+     */
+    public static final String IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION = "IGNITE_TO_STRING_THROW_RUNTIME_EXCEPTION";
 
     /**
      * Limit collection (map, array) elements number to output.
