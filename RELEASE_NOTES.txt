@@ -1,7 +1,6 @@
 Apache Ignite Release Notes
 ===========================
 
-
 Apache Ignite In-Memory Database and Caching Platform 2.8
 ---------------------------------------------------------
 
@@ -249,23 +248,20 @@ Node.js:
 
 
 Ignite .NET:
-* .NET Core 3.0 supported officially
+* Added Thin Client Partition Awareness
+* Added Thin Client Expiry Policy
+* Added Thin Client Cluster API
+* Added .NET Core 3.x support
+* Added Ignite.NET Dockerfile
+* Added Runnable .NET Core assembly
 * Added ICache.GetLongSize
 * Added IClusterNode.Version
 * Added ICompute.WithExecutor
 * Added IIgnite.GetVersion
-* Added Ignite.NET Dockerfile
-* Added baseline auto-adjust parameters (definition, run-time change)
-* Added missing DataRegionMetrics
-* Added runnable .NET Core assembly
-* Added support expiry policy when creating cache using thin client
 * Added IBinaryObjectBuilder.SetField(name, val, type) overload
-* Added expiry policy property to thin client cache configuration
-* Added the new thin client protocol version - 1.6.0
-* Added withExpiryPolicy method to the .NET client cache API
-* Fixed XMLDoc does not work when using Ignite NuGet from .NET Core
-* Fixed thin client does not connect to old server nodes
-* Implemented partition preload API (PreloadPartition, PreloadPartitionAsync)
+* Added Partition Preload API (PreloadPartition, PreloadPartitionAsync)
+* Fixed JVM thread leak
+* Fixed serialization performance for ISerializable
 
 
 Ignite C++:
@@ -366,6 +362,7 @@ Dependency updates:
 * Updated spring-5.0 to 5.0.16
 * Updated spring-data-2.0 to 2.0.13
 * Moved Flink to ignite-extension
+
 
 Apache Ignite In-Memory Database and Caching Platform 2.7.6
 -----------------------------------------------------------
