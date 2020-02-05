@@ -21,8 +21,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
@@ -74,18 +73,14 @@ public class DeactivateCommand implements Command<Void> {
 
         try (GridClient client = Command.startClient(clientCfg)) {
 
-            //Search for in-memory-only caches. Warn of possible data loss.
+            // Search for in-memory-only caches. Fail if possible data loss.
             if (!force) {
-                String msg = ClusterStateChangeCommand.isClusterReadyForDeactivation((cls) -> {
-                    try {
-                        return TaskExecutor.executeTask(client, cls, null, clientCfg);
-                    }
-                    catch (GridClientException e) {
-                        throw new RuntimeException("Failed to launch task for checking check if cluster is ready for deactivation.", e);
-                    }
-                });
-                if (!msg.isEmpty())
-                    throw new IllegalStateException(msg + " Type --force to proceed.");
+                Boolean readyToDeactivate = TaskExecutor.executeTask(client, VisorCheckDeactivationTask.class,
+                    null, clientCfg);
+
+                if (!readyToDeactivate)
+                    throw new IllegalStateException(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES
+                        + " Please, add --force to deactivate cluster.");
             }
 
             GridClientClusterState state = client.state();

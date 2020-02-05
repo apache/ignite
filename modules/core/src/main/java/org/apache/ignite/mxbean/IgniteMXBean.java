@@ -382,12 +382,8 @@ public interface IgniteMXBean {
     );
 
     /** Activates cluster. */
-    @MXBeanDescription(
-        "Execute activation process."
-    )
-    @MXBeanParametersNames(
-        "active"
-    )
+    @MXBeanDescription("Execute activation process.")
+    @MXBeanParametersNames("active")
     public void activate();
 
     /** Deactivates cluster. */

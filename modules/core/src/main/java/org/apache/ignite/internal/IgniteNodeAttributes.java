@@ -206,6 +206,9 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = ATTR_PREFIX +
         ".event.driven.service.processor.enabled";
 
+    /** Flag of in-memory data erasure on deactivation. */
+    public static final String ATTR_KEEP_MEMORY_ON_DEACTIVATION = ATTR_CACHE + ".persistence.keepMemDataOnDeactivation";
+
     /**
      * Enforces singleton.
      */
