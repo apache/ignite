@@ -34,6 +34,9 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  */
 @Deprecated
 public class DeactivateCommand implements Command<Void> {
+    /**  */
+    private static final String FLAG_FORCE = "--force";
+
     /** Cluster name. */
     private String clusterName;
 
@@ -43,7 +46,7 @@ public class DeactivateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         Command.usage(log, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
-            optional("--force", CMD_AUTO_CONFIRMATION));
+            optional(FLAG_FORCE, CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
@@ -76,7 +79,7 @@ public class DeactivateCommand implements Command<Void> {
 
                 if (!readyToDeactivate)
                     throw new IllegalStateException(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES
-                        + " Please, add --force to deactivate cluster.");
+                        + " Please, add " + FLAG_FORCE + " to deactivate cluster.");
             }
 
             GridClientClusterState state = client.state();
@@ -98,7 +101,7 @@ public class DeactivateCommand implements Command<Void> {
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
-            if ("--force".equalsIgnoreCase(arg)) {
+            if (FLAG_FORCE.equalsIgnoreCase(arg)) {
                 force = true;
                 argIter.nextArg("");
             }
