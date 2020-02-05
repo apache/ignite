@@ -107,13 +107,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Map<String, IgniteInternalFuture> memCleanupTasks = new ConcurrentHashMap<>();
 
     /** Snapshot future. */
-    private volatile IgniteInternalFuture<Boolean> snapshotFut;
+    private IgniteInternalFuture<Boolean> snapshotFut;
 
     /** Checkpoint listener. */
     private final Consumer<Runnable> cpLsnr;
 
     /**
-     *
+     * Dummy constructor.
      */
     public FileRebalanceRoutine() {
         this(null, null, null, null, 0, null);
@@ -148,50 +148,51 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * Initialize and start partition preloading.
+     * Initialize and start partitions preloading.
      */
     public void startPartitionsPreloading() {
         initialize();
 
-        requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>());
+        requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>(remaining.size()));
     }
 
     /**
      * Prepare to start rebalance routine.
      */
     private void initialize() {
-        final Map<String, Set<Long>> regionToParts = new HashMap<>();
+        final Map<DataRegion, Set<Long>> regionToParts = new HashMap<>();
+
+        for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+            for (Map.Entry<Integer, Set<Integer>> grpAssigns : nodeAssigns.getValue().entrySet()) {
+                int grpId = grpAssigns.getKey();
+                Set<Integer> parts = grpAssigns.getValue();
+                DataRegion region = cctx.cache().cacheGroup(grpId).dataRegion();
+
+                Set<Long> regionParts = regionToParts.computeIfAbsent(region, v -> new LinkedHashSet<>());
+
+                for (Integer partId : parts) {
+                    long uniquePartId = uniquePartId(grpId, partId);
+
+                    regionParts.add(uniquePartId);
+
+                    partsToNodes.put(uniquePartId, nodeAssigns.getKey());
+                }
+
+                remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
+            }
+        }
 
         lock.lock();
 
         try {
-            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
-                for (Map.Entry<Integer, Set<Integer>> grpAssign : nodeAssigns.getValue().entrySet()) {
-                    int grpId = grpAssign.getKey();
-                    Set<Integer> parts = grpAssign.getValue();
-                    String region = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
-                    Set<Long> regionParts = regionToParts.computeIfAbsent(region, v -> new LinkedHashSet<>());
-
-                    for (Integer partId : parts) {
-                        long uniquePartId = uniquePartId(grpId, partId);
-
-                        regionParts.add(uniquePartId);
-
-                        partsToNodes.put(uniquePartId, nodeAssigns.getKey());
-                    }
-
-                    remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
-                }
-            }
+            if (isDone())
+                return;
 
             // Start clearing off-heap regions.
-            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet()) {
-                memCleanupTasks.put(e.getKey(),
-                    new MemoryCleaner(e.getValue(), cctx.database().dataRegion(e.getKey()), cctx, log).clearAsync());
+            for (Map.Entry<DataRegion, Set<Long>> e : regionToParts.entrySet()) {
+                memCleanupTasks.put(e.getKey().config().getName(),
+                    new MemoryCleaner(e.getValue(), e.getKey(), cctx, log).clearAsync());
             }
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
         }
         finally {
             lock.unlock();
@@ -203,30 +204,33 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param groups Requested groups.
      */
     private void requestPartitionsSnapshot(Iterator<T2<UUID, Map<Integer, Set<Integer>>>> iter, Set<Integer> groups) {
+        if (!iter.hasNext())
+            return;
+
+        T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns = iter.next();
+
+        UUID nodeId = nodeAssigns.get1();
+        Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
+
+        Set<String> currGroups = new HashSet<>();
+
+        for (Integer grpId : assigns.keySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            currGroups.add(grp.cacheOrGroupName());
+
+            if (!groups.contains(grpId)) {
+                groups.add(grpId);
+
+                grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+            }
+        }
+
         lock.lock();
 
         try {
-            if (isDone() || !iter.hasNext())
+            if (isDone())
                 return;
-
-            T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns = iter.next();
-
-            UUID nodeId = nodeAssigns.get1();
-            Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
-
-            Set<String> currGroups = new HashSet<>();
-
-            for (Integer grpId : assigns.keySet()) {
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                currGroups.add(grp.cacheOrGroupName());
-
-                if (!groups.contains(grpId)) {
-                    groups.add(grpId);
-
-                    grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-                }
-            }
 
             U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + currGroups + "]");
 
@@ -258,7 +262,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      */
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
         try {
-            waitInvalidation(grpId);
+            awaitInvalidation(grpId);
 
             if (isDone())
                 return;
@@ -406,13 +410,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             U.log(log, "Cancelling file rebalancing [topVer=" + topVer + "]");
 
-            IgniteInternalFuture<Boolean> snapshotFut0 = snapshotFut;
-
-            if (snapshotFut0 != null && !snapshotFut0.isDone()) {
+            if (snapshotFut != null && !snapshotFut.isDone()) {
                 if (log.isDebugEnabled())
-                    log.debug("Cancelling snapshot creation [fut=" + snapshotFut0 + "]");
+                    log.debug("Cancelling snapshot creation [fut=" + snapshotFut + "]");
 
-                snapshotFut0.cancel();
+                snapshotFut.cancel();
             }
 
             if (isFailed()) {
@@ -561,7 +563,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param grpId Cache group ID.
      * @throws IgniteCheckedException If the cleanup failed.
      */
-    private void waitInvalidation(int grpId) throws IgniteCheckedException {
+    private void awaitInvalidation(int grpId) throws IgniteCheckedException {
         try {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
             String region = grp.dataRegion().config().getName();
@@ -605,42 +607,34 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     *
+     * Task for clearing off-heap memory region.
      */
     private static class MemoryCleaner extends GridFutureAdapter {
-        /**
-         *
-         */
-        private final Set<Long> parts;
+        /** Set of target groups and partitions. */
+        private final Set<Long> uniqueParts;
 
-        /**
-         *
-         */
+        /** Data region. */
         private final DataRegion region;
 
-        /**
-         *
-         */
+        /** Cache shared context. */
         private final GridCacheSharedContext cctx;
 
-        /**
-         *
-         */
+        /** Logger. */
         private final IgniteLogger log;
 
         /**
-         * @param parts Parts.
+         * @param uniqueParts Set of target groups and partitions.
          * @param region Region.
          * @param cctx Cache shared context.
          * @param log Logger.
          */
         public MemoryCleaner(
-            Set<Long> parts,
+            Set<Long> uniqueParts,
             DataRegion region,
             GridCacheSharedContext cctx,
             IgniteLogger log
         ) {
-            this.parts = parts;
+            this.uniqueParts = uniqueParts;
             this.region = region;
             this.cctx = cctx;
             this.log = log;
@@ -656,31 +650,34 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
                 log.debug("Memory cleanup started [region=" + region.config().getName() + "]");
 
             memEx.clearAsync(
-                (grp, pageId) -> parts.contains(uniquePartId(grp, PageIdUtils.partId(pageId))), true)
-                .listen(c1 -> {
-                    cctx.database().checkpointReadLock();
+                (grpId, pageId) -> uniqueParts.contains(uniquePartId(grpId, PageIdUtils.partId(pageId))), true
+            ).listen(c1 -> {
+                cctx.database().checkpointReadLock();
 
-                    try {
-                        if (log.isDebugEnabled())
-                            log.debug("Memory region cleared [region=" + region.config().getName() + "]");
+                try {
+                    if (log.isDebugEnabled())
+                        log.debug("Memory cleanup finished [region=" + region.config().getName() + "]");
 
-                        invalidatePartitions(parts);
+                    invalidatePartitions(uniqueParts);
 
-                        onDone();
-                    }
-                    catch (RuntimeException | IgniteCheckedException e) {
-                        onDone(e);
-                    }
-                    finally {
-                        cctx.database().checkpointReadUnlock();
-                    }
-                });
+                    onDone();
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(e);
+                }
+                finally {
+                    cctx.database().checkpointReadUnlock();
+                }
+            });
 
             return this;
         }
 
         /**
-         * @param partSet Partition set.
+         * Invalidate page memory and truncate partitions.
+         *
+         * @param partSet Set of invalidated groups and partitions.
+         * @throws IgniteCheckedException If cache or partition with the given ID was not created.
          */
         private void invalidatePartitions(Set<Long> partSet) throws IgniteCheckedException {
             CacheGroupContext grp = null;
