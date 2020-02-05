@@ -231,7 +231,9 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.internal.commandline.ClusterStateChangeCommand;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -302,7 +304,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_ERASURE_ON_DEACTIVATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_KEEP_MEMORY_ON_DEACTIVATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
@@ -1964,7 +1966,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.service() instanceof IgniteServiceProcessor);
 
         //Allows to predict behavior on deactivation.
-        add(ATTR_MEMORY_ERASURE_ON_DEACTIVATION, !getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE));
+        add(ATTR_KEEP_MEMORY_ON_DEACTIVATION, getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE));
     }
 
     /**
@@ -3952,10 +3954,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        if (active)
-            activate();
-        else
-            deactivate(false);
+        cluster().active(active);
     }
 
     /** {@inheritDoc} */
@@ -3965,11 +3964,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void deactivate(boolean force) {
-        //Check if cluster ir ready for deactivation.
-        if (cluster().state() == ClusterState.ACTIVE && !force) {
-            String msg = ClusterStateChangeCommand.isClusterReadyForDeactivation((cls -> compute().execute(cls, null)));
-            if (!msg.isEmpty())
-                throw new IllegalStateException(msg + " Please, enable force flag to deactivate cluster.");
+        // Check if cluster ir ready for deactivation.
+        if ((cluster().state() == ClusterState.ACTIVE || cluster().state() == ClusterState.ACTIVE_READ_ONLY)
+            && !force) {
+            Boolean readyForDeactivation = compute().execute(VisorCheckDeactivationTask.class,
+                new VisorTaskArgument<>(cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toList()),
+                    null, false));
+
+            if (!readyForDeactivation)
+                throw new IllegalStateException(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES
+                    + " Please, enable force flag to deactivate cluster.");
         }
 
         cluster().state(ClusterState.INACTIVE);

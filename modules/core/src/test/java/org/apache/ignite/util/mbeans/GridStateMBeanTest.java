@@ -6,6 +6,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -52,8 +53,9 @@ public class GridStateMBeanTest extends GridCommonAbstractTest {
 
         try {
             mxBean.deactivate(false);
-        } catch (Exception e){
-            assertTrue(e.getMessage().contains("The cluster has at least one cache configured without persistence"));
+        }
+        catch (Exception e) {
+            assertTrue(e.getMessage().contains(VisorCheckDeactivationTask.WARN_DEACTIVATION_IN_MEM_CACHES));
         }
 
         assertTrue(mxBean.active());
