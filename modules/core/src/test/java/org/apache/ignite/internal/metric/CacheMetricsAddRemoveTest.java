@@ -123,6 +123,8 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         checkMetricsNotEmpty(cachePrefix);
 
         destroyCache();
+
+        checkMetricsEmpty(cachePrefix);
     }
 
     /** */

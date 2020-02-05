@@ -1024,7 +1024,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             sharedCtx.removeCacheContext(ctx);
 
-            cache.stop(destroy);
+            cache.stop();
+
+            if (destroy)
+                cache.removeMetrics();
 
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
@@ -1038,7 +1041,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 // Check whether dht cache has been started.
                 if (dht != null) {
-                    dht.stop(destroy);
+                    dht.stop();
+
+                    if (destroy)
+                        dht.removeMetrics();
 
                     GridCacheContext<?, ?> dhtCtx = dht.context();
 
@@ -2063,7 +2069,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             prepareCacheStop(cctx.name(), false, clearDbObjects);
 
             if (!cctx.group().hasCaches())
-                stopCacheGroup(cctx.group().groupId(), clearDbObjects);
+                stopCacheGroup(cctx.group().groupId(), false);
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
