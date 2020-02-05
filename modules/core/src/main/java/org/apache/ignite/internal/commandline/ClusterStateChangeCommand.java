@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.IgniteSystemProperties;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -52,6 +51,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_ERASURE_ON_DEACTIVATION;
 
 /**
  * Command to change cluster state.
@@ -75,8 +75,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     @NotNull public static String isClusterReadyForDeactivation(
         Function<Class<? extends ComputeTask<VisorTaskArgument, Boolean>>, Boolean> taskLauncher) {
 
-        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE)
-            && taskLauncher.apply(FindNotPersistentCachesTask.class)) {
+        if (taskLauncher.apply(FindNotPersistentCachesTask.class)) {
             return "The cluster has at least one cache configured without persistence. " +
                 "During deactivation all data from these caches will be erased!";
         }
@@ -105,12 +104,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        String msg = "Warning: the command will change state of cluster with name \"" + clusterName + "\" to " + state + ".";
-
-        if (state == INACTIVE && !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE))
-            msg += " Make sure there are no caches not backed with persistent storage.";
-
-        return msg;
+        return "Warning: the command will change state of cluster with name \"" + clusterName + "\" to " + state + ".";
     }
 
     /** {@inheritDoc} */
@@ -183,24 +177,25 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         /** */
         @SuppressWarnings("unchecked")
         @Override public Boolean execute() throws IgniteException {
-            //Find data region to set persistent flag.
-            for (String cacheName : ignite.cacheNames()) {
-                CacheConfiguration cacheCfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
+            //Find any node with disabled memory reusage on deactivation/activation.
+            boolean cacheDataCanBeLost = ignite.cluster().forPredicate(node->
+                (Boolean)node.attributes().getOrDefault(ATTR_MEMORY_ERASURE_ON_DEACTIVATION, true))
+                .nodes().stream().findAny().isPresent();
 
-                DataRegionConfiguration regionCfg = cacheCfg.getDataRegionName() == null
-                    ? ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
-                    : Stream.of(ignite.configuration().getDataStorageConfiguration()
-                    .getDataRegionConfigurations()).filter(region -> region.getName().equals(cacheCfg.getDataRegionName()))
-                    .findFirst().orElse(null);
+            if (cacheDataCanBeLost) {
+                //Find data region to set persistent flag.
+                for (String cacheName : ignite.cacheNames()) {
+                    CacheConfiguration cacheCfg = ignite.cache(cacheName).getConfiguration(CacheConfiguration.class);
 
-                if (regionCfg == null)
-                    throw new IgniteException("Failed to check if cluster is ready for deactivation. " +
-                        "While searching for non-persistent caches, " +
-                        "no data region found: \"" + cacheCfg.getDataRegionName() + "\" for cache \"" + cacheName + "\". " +
-                        "Check configurations of memory storage and caches.");
+                    DataRegionConfiguration regionCfg = cacheCfg.getDataRegionName() == null
+                        ? ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration()
+                        : Stream.of(ignite.configuration().getDataStorageConfiguration()
+                        .getDataRegionConfigurations()).filter(region -> region.getName().equals(cacheCfg.getDataRegionName()))
+                        .findFirst().orElse(null);
 
-                if (!regionCfg.isPersistenceEnabled())
-                    return true;
+                    if (regionCfg != null && !regionCfg.isPersistenceEnabled())
+                        return true;
+                }
             }
 
             return false;

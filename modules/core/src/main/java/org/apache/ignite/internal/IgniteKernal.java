@@ -302,6 +302,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_ERASURE_ON_DEACTIVATION;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  * This class represents an implementation of the main Ignite API {@link Ignite} which is expanded by additional
@@ -1960,6 +1962,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         ctx.addNodeAttribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
             ctx.service() instanceof IgniteServiceProcessor);
+
+        //Allows to predict behavior on deactivation.
+        add(ATTR_MEMORY_ERASURE_ON_DEACTIVATION, !getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE));
     }
 
     /**

@@ -28,7 +28,6 @@ import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  * Command to deactivate cluster.
@@ -57,10 +56,7 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will deactivate a cluster \"" + clusterName + "\"." +
-            (IgniteSystemProperties.getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE)
-                ? ""
-                : " Make sure there are no caches not backed with persistent storage.");
+        return "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
     }
 
     /**
