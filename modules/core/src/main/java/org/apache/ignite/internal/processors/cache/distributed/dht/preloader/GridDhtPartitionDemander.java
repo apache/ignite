@@ -178,7 +178,7 @@ public class GridDhtPartitionDemander {
             "stores the last time. The metric displays the value even if there is no rebalancing process.");
 
         mreg.register("RebalancingEvictedPartitionsLeft", () -> rebalanceFut.evictedPartitionsLeft.get(),
-            "The number of evicted partitions before rebalancing start.");
+            "The number of partitions left to be evicted before rebalancing started.");
 
         expectedKeys = mreg.longMetric("RebalancingExpectedKeys",
             "The number of expected keys to rebalance for the whole cache group.");
@@ -1532,6 +1532,9 @@ public class GridDhtPartitionDemander {
             grp.addRebalanceEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
         }
 
+        /**
+         * @param partitions Partitions.
+         */
         public void evictedPartitionsLeft(long partitions) {
             evictedPartitionsLeft.addAndGet(partitions);
         }

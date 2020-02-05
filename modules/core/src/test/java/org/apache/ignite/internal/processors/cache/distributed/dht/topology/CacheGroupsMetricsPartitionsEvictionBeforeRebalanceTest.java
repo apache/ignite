@@ -101,7 +101,7 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @Test
     public void partitionsEvictionBeforeRebalanceTest() throws Exception {
@@ -115,7 +115,7 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
 
         IgniteEx ig1 = startGrid(1);
 
-        supplyMsg.await();
+        U.await(supplyMsg);
 
         ig0.cluster().active(false);
 
@@ -128,7 +128,8 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
 
         U.await(lastPart);
 
-        assertEquals(PARTITION_COUNT, evictedPartitionsLeft.value());
+        assertEquals("The number of partitions left to be evicted before rebalancing started must be equal to total " +
+            "number of partitions in affinity function.", PARTITION_COUNT, evictedPartitionsLeft.value());
 
         LogListener evictionCompleted = LogListener.matches(s -> s.contains("Starting rebalance routine [" + GROUP)).build();
 
@@ -136,15 +137,15 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
 
         startEvict.countDown();
 
-        assertTrue(evictionCompleted.check(3_000));
+        assertTrue("Rebalance routine should be started.", evictionCompleted.check(3_000));
 
-        assertEquals(0, evictedPartitionsLeft.value());
+        assertEquals("After starting rebalance routine, the eviction must be finished.",0, evictedPartitionsLeft.value());
     }
 
     /**
-     * @param ig Ig.
+     * @param node Node.
      */
-    private void loadData(Ignite ig) {
+    private void loadData(Ignite node) {
         List<CacheConfiguration> configs = CACHE_NAMES.stream()
             .map(name -> new CacheConfiguration<>(name)
             .setGroupName(GROUP)
@@ -155,10 +156,10 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
 
         configs.add(configs.get(0).setName(DEFAULT_CACHE_NAME).setGroupName(DEFAULT_CACHE_NAME));
 
-        ig.getOrCreateCaches(configs);
+        node.getOrCreateCaches(configs);
 
         configs.forEach(cfg -> {
-            try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(cfg.getName())) {
+            try (IgniteDataStreamer<Object, Object> streamer = node.dataStreamer(cfg.getName())) {
                 for (int i = 0; i < KEYS_COUNT; i++)
                     streamer.addData(i, i);
 
@@ -168,7 +169,7 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
     }
 
     /**
-     *
+     * Queue for blocking eviction, until the last partition is added to the queue.
      */
     class TestQueue extends PriorityBlockingQueue<PartitionsEvictManager.PartitionEvictionTask> {
 
