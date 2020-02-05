@@ -52,7 +52,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     private Map<String, SecurityPermission[]> cachePerms = new HashMap<>();
 
     /** Security permission set. */
-    private Set<SecurityPermission> secPermSet = new HashSet<>();
+    private Set<SecurityPermission> sysPermSet = new HashSet<>();
 
     /**
      *
@@ -164,7 +164,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
         node.close();
 
-        secPermSet.add(CACHE_CREATE);
+        sysPermSet.add(CACHE_CREATE);
 
         Ignite node1 = startGrid(loginPrefix(isClient) + "_test_node", isClient);
 
@@ -181,7 +181,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         cachePerms.put(TEST_CACHE, EMPTY_PERMS);
         cachePerms.put(FORBIDDEN_CACHE, EMPTY_PERMS);
 
-        secPermSet.add(CACHE_CREATE);
+        sysPermSet.add(CACHE_CREATE);
 
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node", isClient);
 
@@ -197,8 +197,8 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
         node.close();
 
-        secPermSet.remove(CACHE_CREATE);
-        secPermSet.add(CACHE_DESTROY);
+        sysPermSet.remove(CACHE_CREATE);
+        sysPermSet.add(CACHE_DESTROY);
 
         Ignite node1 = startGrid(loginPrefix(isClient) + "_test_node", isClient);
 
@@ -216,7 +216,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         builder.defaultAllowAll(true);
 
         cachePerms.forEach((builder::appendCachePermissions));
-        secPermSet.forEach(builder::appendSystemPermissions);
+        sysPermSet.forEach(builder::appendSystemPermissions);
 
         return startGrid(login, builder.build(), null, isClient);
     }
@@ -230,8 +230,8 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     @Override protected void beforeTest() throws Exception {
         startGridAllowAll("server").cluster().active(true);
 
-        secPermSet.clear();
-        secPermSet.add(JOIN_AS_SERVER);
+        sysPermSet.clear();
+        sysPermSet.add(JOIN_AS_SERVER);
 
         cachePerms.clear();
     }
