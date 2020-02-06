@@ -117,7 +117,6 @@ Ignite:
 * Removed IGNITE_SERVICES_COMPATIBILITY_MODE system property
 * Removed Java 7 and AI 1.x leftovers from IgniteSystemProperties & IgniteProductVersion
 * Replaced IGNITE_BINARY_META_UPDATE_TIMEOUT with IGNITE_WAIT_SCHEMA_UPDATE
-* Service Grid now uses discovery messages for service deployment
 * Massive performance and stability improvements
 
 
