@@ -254,6 +254,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
         LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
         LongMetric receivedBytes =  mreg.findMetric("RebalancingReceivedBytes");
+        LongMetric expectedKeys = mreg.findMetric("RebalancingExpectedKeys");
 
         assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
                 "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
@@ -273,6 +274,9 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertEquals("Until a partition supply message has been delivered, bytes cannot be received.",
             0, receivedBytes.value());
+
+        assertEquals("The expected keys metric must be equal to all keys in the cache group.",
+            allKeysCount, expectedKeys.value());
 
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock();
 
