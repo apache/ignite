@@ -55,8 +55,9 @@ class ClientBinaryMarshaller {
     }
 
     /**
-     * Unmarshal Ignite binary object from input stream.
+     * Unmarshals Ignite binary object from input stream.
      *
+     * @param in Input stream.
      * @return Binary object.
      */
     public <T> T unmarshal(BinaryInputStream in) {

@@ -365,7 +365,8 @@ public class FunctionalTest {
     /**
      * Check that we get the same value from the cache as we put before.
      *
-     * @param thinCache Cache.
+     * @param thinCache Thin client cache.
+     * @param thickCache Thick client cache.
      * @param obj Value of data type to check.
      */
     private void checkDataType(ClientCache<Object, Object> thinCache, IgniteCache<Object, Object> thickCache,

@@ -546,10 +546,10 @@ final class ClientUtils {
 
             return marsh.deserialize(BinaryHeapInputStream.create(obj0.array(), obj0.start()), hnds);
         }
-        else if (obj instanceof BinaryObject )
+        else if (obj instanceof BinaryObject)
             return ((BinaryObject)obj).deserialize();
         else if (BinaryUtils.knownCollection(obj))
-            return unwrapCollection((Collection<Objects>)obj, hnds);
+            return unwrapCollection((Collection<Object>)obj, hnds);
         else if (BinaryUtils.knownMap(obj))
             return unwrapMap((Map<Object, Object>)obj, hnds);
         else if (obj instanceof Object[])
@@ -561,7 +561,7 @@ final class ClientUtils {
     /**
      * Unwrap collection with binary objects.
      */
-    private Collection<Object> unwrapCollection(Collection<Objects> col, BinaryReaderHandles hnds) {
+    private Collection<Object> unwrapCollection(Collection<Object> col, BinaryReaderHandles hnds) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         for (Object obj0 : col)
