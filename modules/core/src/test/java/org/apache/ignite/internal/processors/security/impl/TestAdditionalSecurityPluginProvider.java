@@ -28,10 +28,10 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  */
 public class TestAdditionalSecurityPluginProvider extends TestSecurityPluginProvider {
     /** Security additional attribute name. */
-    public static final String ADDITIONAL_SECURITY_PASSWORD_ATTR = "add.sec.pass";
+    public static final String ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR = "add.sec.cliVer";
 
     /** Security additional attribute value. */
-    public static final String ADDITIONAL_SECURITY_PASSWORD = "secret_password";
+    public static final String ADDITIONAL_SECURITY_CLIENT_VERSION = "client v1";
 
     /** Check ssl certificates. */
     protected final boolean checkAddPass;

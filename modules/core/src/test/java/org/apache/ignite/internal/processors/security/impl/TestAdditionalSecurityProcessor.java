@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 
-import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.ADDITIONAL_SECURITY_PASSWORD;
-import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.ADDITIONAL_SECURITY_PASSWORD_ATTR;
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.ADDITIONAL_SECURITY_CLIENT_VERSION;
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR;
 
 /**
  * Security processor for test.
@@ -53,16 +53,16 @@ public class TestAdditionalSecurityProcessor extends TestSecurityProcessor {
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
         throws IgniteCheckedException {
         if (checkSslCerts && !ctx.localNodeId().equals(node.id())) {
-            String str = node.attribute(ADDITIONAL_SECURITY_PASSWORD_ATTR);
+            String str = node.attribute(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR);
 
             if (str == null) {
-                log.info("Additional password is not found.");
+                log.info("Client version is not found.");
 
                 return null;
             }
 
-            if (!ADDITIONAL_SECURITY_PASSWORD.equals(str)) {
-                log.info("Incorrect additional password.");
+            if (!ADDITIONAL_SECURITY_CLIENT_VERSION.equals(str)) {
+                log.info("Incorrect client version.");
 
                 return null;
             }
@@ -74,21 +74,21 @@ public class TestAdditionalSecurityProcessor extends TestSecurityProcessor {
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
         if (checkSslCerts) {
-            String str = (String) authCtx.nodeAttributes().get(ADDITIONAL_SECURITY_PASSWORD_ATTR);
+            String str = (String) authCtx.nodeAttributes().get(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR);
 
             if (str == null)
-                throw new IgniteAccessControlException("Additional password is not found.");
+                throw new IgniteAccessControlException("Client version is not found.");
 
-            if (ADDITIONAL_SECURITY_PASSWORD.equals(str)) {
+            if (ADDITIONAL_SECURITY_CLIENT_VERSION.equals(str)) {
                 String login = (String) authCtx.credentials().getLogin();
 
                 if (login == null || !login.contains(CLIENT)) {
-                    throw new IgniteAccessControlException("Additional password doesn't correspond with login [login=" +
+                    throw new IgniteAccessControlException("User isn't allowed to use client [login=" +
                         login + ']');
                 }
             }
             else
-                throw new IgniteAccessControlException("Incorrect additional password.");
+                throw new IgniteAccessControlException("Incorrect client version.");
         }
 
         return super.authenticate(authCtx);

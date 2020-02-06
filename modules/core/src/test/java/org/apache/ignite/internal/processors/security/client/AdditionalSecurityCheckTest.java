@@ -61,7 +61,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
+public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
 
@@ -176,7 +176,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testAdditionalPassword() throws Exception {
+    public void testClientInfo() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -203,7 +203,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testAdditionalPasswordGridClientFail() throws Exception {
+    public void testClientInfoGridClientFail() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -222,7 +222,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
                     return null;
                 },
                 GridClientAuthenticationException.class,
-                "Additional password is not found.");
+                "Client version is not found.");
         }
     }
 
@@ -230,7 +230,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testAdditionalPasswordIgniteClientFail() throws Exception {
+    public void testClientInfoIgniteClientFail() throws Exception {
         Ignite ignite = startGrids(2);
 
         assertEquals(2, ignite.cluster().topologyVersion());
@@ -245,7 +245,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
             fail();
         }
         catch (ClientAuthenticationException e) {
-            assertTrue(e.getMessage().contains("Additional password is not found"));
+            assertTrue(e.getMessage().contains("Client version is not found"));
         }
     }
 
@@ -253,7 +253,7 @@ public class AdditionalPasswordCheckTest extends AbstractSecurityTest {
      *
      */
     @Test
-    public void testAdditionalPasswordClientFail() throws Exception {
+    public void testClientInfoClientFail() throws Exception {
         Ignite ignite = startGrids(1);
 
         assertEquals(1, ignite.cluster().topologyVersion());

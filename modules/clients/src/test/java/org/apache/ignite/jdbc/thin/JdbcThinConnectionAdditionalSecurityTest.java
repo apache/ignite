@@ -134,7 +134,7 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
      * @throws Exception If failed.
      */
     @Test
-    public void testConnectionNoAdditionalPassword() throws Exception {
+    public void testConnectionNoClientVersion() throws Exception {
         setSslCtxFactoryToIgnite = true;
         sslCtxFactory = getTestSslContextFactory();
 
@@ -153,7 +153,7 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
 
                     return null;
                 }
-            }, SQLException.class, "Additional password is not found.");
+            }, SQLException.class, "Client version is not found.");
         }
         finally {
             stopAllGrids();
@@ -185,7 +185,7 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
 
                     return null;
                 }
-            }, SQLException.class, "Additional password doesn't correspond with login");
+            }, SQLException.class, "User isn't allowed to use client");
         }
         finally {
             stopAllGrids();
@@ -215,7 +215,7 @@ public class JdbcThinConnectionAdditionalSecurityTest extends JdbcThinAbstractSe
 
                     return null;
                 }
-            }, SQLException.class, "Additional password doesn't correspond with login");
+            }, SQLException.class, "User isn't allowed to use client");
         }
         finally {
             stopAllGrids();

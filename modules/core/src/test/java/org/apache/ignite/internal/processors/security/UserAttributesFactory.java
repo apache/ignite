@@ -22,9 +22,9 @@ import java.util.Map;
 import javax.cache.configuration.Factory;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.
-    ADDITIONAL_SECURITY_PASSWORD;
+    ADDITIONAL_SECURITY_CLIENT_VERSION;
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.
-    ADDITIONAL_SECURITY_PASSWORD_ATTR;
+    ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR;
 
 /**
  * Creates user attributes for thin clients.
@@ -34,7 +34,7 @@ public class UserAttributesFactory implements Factory<Map<String, String>> {
     @Override public Map<String, String> create() {
         HashMap<String, String> map = new HashMap<>();
 
-        map.put(ADDITIONAL_SECURITY_PASSWORD_ATTR, ADDITIONAL_SECURITY_PASSWORD);
+        map.put(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR, ADDITIONAL_SECURITY_CLIENT_VERSION);
 
         return map;
     }

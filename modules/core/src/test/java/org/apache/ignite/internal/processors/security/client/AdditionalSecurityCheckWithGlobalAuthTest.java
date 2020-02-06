@@ -24,7 +24,7 @@ import org.junit.runners.JUnit4;
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-public class AdditionalPasswordCheckWithGlobalAuthTest extends AdditionalPasswordCheckTest {
+public class AdditionalSecurityCheckWithGlobalAuthTest extends AdditionalSecurityCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();

@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQu
 import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryWithTransformerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processors.security.client.AdditionalPasswordCheckTest;
-import org.apache.ignite.internal.processors.security.client.AdditionalPasswordCheckWithGlobalAuthTest;
+import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
@@ -73,8 +73,8 @@ import org.junit.runners.Suite;
     ContinuousQueryWithTransformerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
-    AdditionalPasswordCheckTest.class,
-    AdditionalPasswordCheckWithGlobalAuthTest.class,
+    AdditionalSecurityCheckTest.class,
+    AdditionalSecurityCheckWithGlobalAuthTest.class,
 
     CacheSandboxTest.class,
     DataStreamerSandboxTest.class,
