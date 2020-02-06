@@ -5212,7 +5212,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (m instanceof SortedMap || m instanceof GridSerializableMap)
             return;
 
-        if (curTxDeadlockDetecting(op))
+        Transaction tx = ctx.kernalContext().cache().transactions().tx();
+
+        if (tx != null && !op.canBlockTx(tx.concurrency(), tx.isolation()))
             return;
 
         LT.warn(log, "Unordered map " + m.getClass().getName() +
@@ -5238,30 +5240,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.lastRemoveAllJobFut().get() != null && op == BulkOperation.REMOVE)
             return;
 
-        if (curTxDeadlockDetecting(op))
+        Transaction tx = ctx.kernalContext().cache().transactions().tx();
+
+        if (op == BulkOperation.GET && tx == null)
+            return;
+
+        if (tx != null && !op.canBlockTx(tx.concurrency(), tx.isolation()))
             return;
 
         LT.warn(log, "Unordered collection " + coll.getClass().getName() +
             " is used for " + op.title() + " operation on cache " + name() + ". " +
             "This can lead to a distributed deadlock. Switch to a sorted set like TreeSet instead.");
-    }
-
-    /** */
-    private boolean curTxDeadlockDetecting(BulkOperation op) {
-        Transaction tx = ctx.kernalContext().cache().transactions().tx();
-
-        boolean get = (op == BulkOperation.GET);
-
-        if (tx != null && !tx.implicit() &&
-            ((ctx.tm().deadlockDetectionEnabled() && tx.timeout() > 0L) ||
-            (tx.concurrency() == OPTIMISTIC && tx.isolation() == SERIALIZABLE) ||
-            (get && tx.concurrency() == PESSIMISTIC && tx.isolation() == READ_COMMITTED)))
-            return true;
-
-        if (get && tx == null)
-            return true;
-
-        return false;
     }
 
     /** */
@@ -5274,6 +5263,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         public String title() {
             return name().toLowerCase() + "All";
+        }
+
+        /** */
+        public boolean canBlockTx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
+            if (concurrency == OPTIMISTIC && isolation == SERIALIZABLE)
+                return false;
+
+            if (this == GET && concurrency == PESSIMISTIC && isolation == READ_COMMITTED)
+                return false;
+
+            return true;
         }
     }
 
