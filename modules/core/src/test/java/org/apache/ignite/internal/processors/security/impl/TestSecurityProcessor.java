@@ -22,23 +22,32 @@ import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
@@ -46,8 +55,11 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  * Security processor for test.
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
+    /** V2 security subject for authenticated node. */
+    public static final String ATTR_SECURITY_CONTEXT = IgniteNodeAttributes.ATTR_PREFIX + ".security.context";
+
     /** Permissions. */
-    public static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+    private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
     /** Sandbox permissions. */
     private static final Map<SecurityCredentials, Permissions> SANDBOX_PERMS = new ConcurrentHashMap<>();
@@ -80,7 +92,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         if (!PERMS.containsKey(cred))
             return null;
 
-        return new TestSecurityContext(
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(REMOTE_NODE)
                 .setId(node.id())
@@ -89,6 +101,38 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setPerms(PERMS.get(cred))
                 .sandboxPermissions(SANDBOX_PERMS.get(cred))
         );
+
+        try {
+            Map<String, Object> attrs = new HashMap<>(node.attributes());
+
+            attrs.put(ATTR_SECURITY_CONTEXT, U.marshal(ctx.marshallerContext().jdkMarshaller(), res));
+
+            ((TcpDiscoveryNode)node).setAttributes(attrs);
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    @Override public SecurityContext securityContext(UUID subjId) {
+        ClusterNode node = ctx.discovery().getInjectedDiscoverySpi().getNode(subjId);
+
+        if(node == null)
+            return null;
+
+        byte[] subjBytes = node.attribute(ATTR_SECURITY_CONTEXT);
+
+        if (subjBytes == null)
+            throw new SecurityException("Security context isn't certain.");
+
+        try {
+            return U.unmarshal(ctx.marshallerContext().jdkMarshaller(), subjBytes, U.resolveClassLoader(ctx.config()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new SecurityException("Failed to get security context.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -173,4 +217,117 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public boolean sandboxEnabled() {
         return true;
     }
+
+    public static class TestSecurityProcessorDelegator extends GridProcessorAdapter implements GridSecurityProcessor {
+        private final GridSecurityProcessor original;
+
+        public TestSecurityProcessorDelegator(GridKernalContext ctx,
+            GridSecurityProcessor original) {
+            super(ctx);
+
+            this.original = original;
+        }
+
+        @Override public SecurityContext authenticateNode(ClusterNode node,
+            SecurityCredentials cred) throws IgniteCheckedException {
+            return original.authenticateNode(node, cred);
+        }
+
+        @Override public SecurityContext securityContext(UUID subjId) {
+            return original.securityContext(subjId);
+        }
+
+        @Override public void authorize(String name, SecurityPermission perm,
+            SecurityContext securityCtx) throws SecurityException {
+            original.authorize(name, perm, securityCtx);
+        }
+
+        @Override public boolean isGlobalNodeAuthentication() {
+            return original.isGlobalNodeAuthentication();
+        }
+
+        @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+            return original.authenticate(ctx);
+        }
+
+        @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+            return original.authenticatedSubjects();
+        }
+
+        @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+            return original.authenticatedSubject(subjId);
+        }
+
+        @Override public void onSessionExpired(UUID subjId) {
+            original.onSessionExpired(subjId);
+        }
+
+        @Override @Deprecated public boolean enabled() {
+            return original.enabled();
+        }
+
+        @Override public boolean sandboxEnabled() {
+            return original.sandboxEnabled();
+        }
+
+        @Override public void start() throws IgniteCheckedException {
+            original.start();
+        }
+
+        @Override public void stop(boolean cancel) throws IgniteCheckedException {
+            original.stop(cancel);
+        }
+
+        @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+            original.onKernalStart(active);
+        }
+
+        @Override public void onKernalStop(boolean cancel) {
+            original.onKernalStop(cancel);
+        }
+
+        @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+            original.collectJoiningNodeData(dataBag);
+        }
+
+        @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+            original.collectGridNodeData(dataBag);
+        }
+
+        @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+            original.onGridDataReceived(data);
+        }
+
+        @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
+            original.onJoiningNodeDataReceived(data);
+        }
+
+        @Override public void printMemoryStats() {
+            original.printMemoryStats();
+        }
+
+        @Override public IgniteNodeValidationResult validateNode(
+            ClusterNode node) {
+            return original.validateNode(node);
+        }
+
+        @Override public IgniteNodeValidationResult validateNode(
+            ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData) {
+            return original.validateNode(node, discoData);
+        }
+
+        @Override @Nullable public DiscoveryDataExchangeType discoveryDataType() {
+            return original.discoveryDataType();
+        }
+
+        @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+            original.onDisconnected(reconnectFut);
+        }
+
+        @Override public IgniteInternalFuture<?> onReconnected(
+            boolean clusterRestarted) throws IgniteCheckedException {
+            return original.onReconnected(clusterRestarted);
+        }
+    }
+
 }

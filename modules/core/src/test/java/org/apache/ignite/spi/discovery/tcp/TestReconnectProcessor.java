@@ -81,6 +81,11 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm,
         @Nullable SecurityContext securityCtx) throws SecurityException {
 

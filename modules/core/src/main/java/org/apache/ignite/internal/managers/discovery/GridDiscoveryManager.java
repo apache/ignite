@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -111,6 +112,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -164,10 +166,12 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
+import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
@@ -487,6 +491,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                     catch (IgniteCheckedException e) {
                         throw U.convertException(e);
+                    }
+                }
+
+                @Override public SecurityContext securityContext(ClusterNode node) {
+                    return ctx.security().securityContext(node.attribute(ATTR_SECURITY_SUBJECT_ID));
+                }
+
+                @Override public void canJoinAsServer(SecurityContext secCtx)
+                    throws SecurityException {
+                    try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
+                        ctx.security().authorize(null, JOIN_AS_SERVER);
                     }
                 }
 

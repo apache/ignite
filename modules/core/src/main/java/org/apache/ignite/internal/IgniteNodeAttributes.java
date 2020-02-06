@@ -147,8 +147,8 @@ public final class IgniteNodeAttributes {
     /** Security credentials attribute name. Attribute is not available via public API. */
     public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
 
-    /** V2 security subject for authenticated node. */
-    public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
+    /** Security subject id. */
+    public static final String ATTR_SECURITY_SUBJECT_ID = ATTR_PREFIX + ".security.subject.id";
 
     /** Client mode flag. */
     public static final String ATTR_CLIENT_MODE = ATTR_PREFIX + ".cache.client";

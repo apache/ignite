@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityException;
 
 /**
  * Node authenticator.
@@ -38,10 +39,23 @@ public interface DiscoverySpiNodeAuthenticator {
     public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteException;
 
     /**
+     * Gets security context.
+     *
+     * @param node Cluster node.
+     * @return Security context or null if not found.
+     */
+    public SecurityContext securityContext(ClusterNode node);
+
+    /**
+     * Authorizes operation.
+     */
+    public void canJoinAsServer(SecurityContext secCtx) throws SecurityException;
+
+    /**
      * Gets global node authentication flag.
      *
-     * @return {@code True} if all nodes in topology should authenticate joining node, {@code false} if only
-     *      coordinator should do the authentication.
+     * @return {@code True} if all nodes in topology should authenticate joining node, {@code false} if only coordinator
+     * should do the authentication.
      */
     public boolean isGlobalNodeAuthentication();
 }

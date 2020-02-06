@@ -77,6 +77,14 @@ public interface GridSecurityProcessor extends GridProcessor {
     public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
+     * Gets security context.
+     *
+     * @param subjId Security subject id.
+     * @return Security context or null if not found.
+     */
+    public SecurityContext securityContext(UUID subjId);
+
+    /**
      * Authorizes grid operation.
      *
      * @param name Cache name or task class name.

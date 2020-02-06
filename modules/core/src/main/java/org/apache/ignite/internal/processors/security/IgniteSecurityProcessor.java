@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security;
 
 import java.security.Security;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSa
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -43,14 +43,15 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_ID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
  * Default IgniteSecurity implementation.
@@ -107,13 +108,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID nodeId) {
-        return withContext(
-            secCtxs.computeIfAbsent(nodeId,
-                uuid -> nodeSecurityContext(
-                    marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
-                )
-            )
-        );
+        return withContext(secCtxs.computeIfAbsent(nodeId, secPrc::securityContext));
     }
 
     /** {@inheritDoc} */
@@ -126,9 +121,24 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return secPrc.securityContext(subjId);
+    }
+
+    /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
         throws IgniteCheckedException {
-        return secPrc.authenticateNode(node, cred);
+        SecurityContext res = secPrc.authenticateNode(node, cred);
+
+        if (res != null) {
+            Map<String, Object> attrs = new HashMap<>(node.attributes());
+
+            attrs.put(ATTR_SECURITY_SUBJECT_ID, res.subject().id());
+
+            ((TcpDiscoveryNode)node).setAttributes(attrs);
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -316,7 +326,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
+        return secPrc.securityContext(ctx.discovery().localNode().attribute(ATTR_SECURITY_SUBJECT_ID));
     }
 
     /**
