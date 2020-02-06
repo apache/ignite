@@ -201,12 +201,12 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
         //Allowing to remove uncompressed wal segment until this.
         wal.notchLastCheckpointPtr(lastPointer);
 
-        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
-            wal.log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE], 1));
-
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ignite.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
         ignite.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
+
+        for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
+            wal.log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE], 1));
 
         // Awaiting of zipping of the desirable segment.
         assertTrue(GridTestUtils.waitForCondition(walZipSegment::exists, 15_000));
