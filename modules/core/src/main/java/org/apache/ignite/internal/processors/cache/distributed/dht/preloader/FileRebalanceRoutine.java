@@ -107,13 +107,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     private final Map<String, IgniteInternalFuture> memCleanupTasks = new ConcurrentHashMap<>();
 
     /** Snapshot future. */
-    private volatile IgniteInternalFuture<Boolean> snapshotFut;
+    private IgniteInternalFuture<Boolean> snapshotFut;
 
     /** Checkpoint listener. */
     private final Consumer<Runnable> cpLsnr;
 
     /**
-     *
+     * Dummy constructor.
      */
     public FileRebalanceRoutine() {
         this(null, null, null, null, 0, null);
@@ -148,50 +148,51 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * Initialize and start partition preloading.
+     * Initialize and start partitions preloading.
      */
     public void startPartitionsPreloading() {
         initialize();
 
-        requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>());
+        requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>(remaining.size()));
     }
 
     /**
      * Prepare to start rebalance routine.
      */
     private void initialize() {
-        final Map<String, Set<Long>> regionToParts = new HashMap<>();
+        final Map<DataRegion, Set<Long>> regionToParts = new HashMap<>();
+
+        for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
+            for (Map.Entry<Integer, Set<Integer>> grpAssigns : nodeAssigns.getValue().entrySet()) {
+                int grpId = grpAssigns.getKey();
+                Set<Integer> parts = grpAssigns.getValue();
+                DataRegion region = cctx.cache().cacheGroup(grpId).dataRegion();
+
+                Set<Long> regionParts = regionToParts.computeIfAbsent(region, v -> new LinkedHashSet<>());
+
+                for (Integer partId : parts) {
+                    long uniquePartId = uniquePartId(grpId, partId);
+
+                    regionParts.add(uniquePartId);
+
+                    partsToNodes.put(uniquePartId, nodeAssigns.getKey());
+                }
+
+                remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
+            }
+        }
 
         lock.lock();
 
         try {
-            for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : orderedAssgnments) {
-                for (Map.Entry<Integer, Set<Integer>> grpAssigns : nodeAssigns.getValue().entrySet()) {
-                    int grpId = grpAssigns.getKey();
-                    Set<Integer> parts = grpAssigns.getValue();
-                    String region = cctx.cache().cacheGroup(grpId).dataRegion().config().getName();
-                    Set<Long> regionParts = regionToParts.computeIfAbsent(region, v -> new LinkedHashSet<>());
-
-                    for (Integer partId : parts) {
-                        long uniquePartId = uniquePartId(grpId, partId);
-
-                        regionParts.add(uniquePartId);
-
-                        partsToNodes.put(uniquePartId, nodeAssigns.getKey());
-                    }
-
-                    remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
-                }
-            }
+            if (isDone())
+                return;
 
             // Start clearing off-heap regions.
-            for (Map.Entry<String, Set<Long>> e : regionToParts.entrySet()) {
-                memCleanupTasks.put(e.getKey(),
-                    new MemoryCleaner(e.getValue(), cctx.database().dataRegion(e.getKey()), cctx, log).clearAsync());
+            for (Map.Entry<DataRegion, Set<Long>> e : regionToParts.entrySet()) {
+                memCleanupTasks.put(e.getKey().config().getName(),
+                    new MemoryCleaner(e.getValue(), e.getKey(), cctx, log).clearAsync());
             }
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
         }
         finally {
             lock.unlock();
@@ -203,30 +204,33 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param groups Requested groups.
      */
     private void requestPartitionsSnapshot(Iterator<T2<UUID, Map<Integer, Set<Integer>>>> iter, Set<Integer> groups) {
+        if (!iter.hasNext())
+            return;
+
+        T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns = iter.next();
+
+        UUID nodeId = nodeAssigns.get1();
+        Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
+
+        Set<String> currGroups = new HashSet<>();
+
+        for (Integer grpId : assigns.keySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+            currGroups.add(grp.cacheOrGroupName());
+
+            if (!groups.contains(grpId)) {
+                groups.add(grpId);
+
+                grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
+            }
+        }
+
         lock.lock();
 
         try {
-            if (isDone() || !iter.hasNext())
+            if (isDone())
                 return;
-
-            T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns = iter.next();
-
-            UUID nodeId = nodeAssigns.get1();
-            Map<Integer, Set<Integer>> assigns = nodeAssigns.get2();
-
-            Set<String> currGroups = new HashSet<>();
-
-            for (Integer grpId : assigns.keySet()) {
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                currGroups.add(grp.cacheOrGroupName());
-
-                if (!groups.contains(grpId)) {
-                    groups.add(grpId);
-
-                    grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-                }
-            }
 
             U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + currGroups + "]");
 
@@ -406,13 +410,11 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
             U.log(log, "Cancelling file rebalancing [topVer=" + topVer + "]");
 
-            IgniteInternalFuture<Boolean> snapshotFut0 = snapshotFut;
-
-            if (snapshotFut0 != null && !snapshotFut0.isDone()) {
+            if (snapshotFut != null && !snapshotFut.isDone()) {
                 if (log.isDebugEnabled())
-                    log.debug("Cancelling snapshot creation [fut=" + snapshotFut0 + "]");
+                    log.debug("Cancelling snapshot creation [fut=" + snapshotFut + "]");
 
-                snapshotFut0.cancel();
+                snapshotFut.cancel();
             }
 
             if (isFailed()) {
