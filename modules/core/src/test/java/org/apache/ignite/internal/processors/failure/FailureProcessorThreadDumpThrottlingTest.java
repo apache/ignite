@@ -80,7 +80,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext failureCtx =
                 new FailureContext(SYSTEM_WORKER_BLOCKED, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
         assertTrue(lsnr.check());
@@ -95,14 +95,14 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
 
         IgniteEx ignite = startGrid(0);
 
-        LogListener lsnr = LogListener.matches(THREAD_DUMP_MSG).times(3).build();
+        LogListener lsnr = LogListener.matches(THREAD_DUMP_MSG).times(2).build();
 
         testLog.registerListener(lsnr);
 
         FailureContext failureCtx =
                 new FailureContext(SYSTEM_WORKER_BLOCKED, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
         assertTrue(lsnr.check());
@@ -118,7 +118,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         IgniteEx ignite = startGrid(0);
 
         LogListener dumpLsnr = LogListener.matches(THREAD_DUMP_MSG).times(2).build();
-        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(4).build();
+        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(2).build();
 
         testLog.registerListener(dumpLsnr);
         testLog.registerListener(throttledLsnr);
@@ -126,12 +126,12 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext failureCtx =
                 new FailureContext(SYSTEM_WORKER_BLOCKED, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
-        U.sleep(1000);
+        U.sleep(3000);
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 2; i++)
             ignite.context().failure().process(failureCtx);
 
         assertTrue(dumpLsnr.check());
@@ -148,7 +148,7 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         IgniteEx ignite = startGrid(0);
 
         LogListener dumpLsnr = LogListener.matches(THREAD_DUMP_MSG).times(4).build();
-        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(8).build();
+        LogListener throttledLsnr = LogListener.matches("Thread dump is hidden").times(4).build();
 
         testLog.registerListener(dumpLsnr);
         testLog.registerListener(throttledLsnr);
@@ -159,15 +159,15 @@ public class FailureProcessorThreadDumpThrottlingTest extends GridCommonAbstract
         FailureContext opTimeoutFailureCtx =
                 new FailureContext(SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error"));
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             ignite.context().failure().process(workerBlockedFailureCtx);
 
             ignite.context().failure().process(opTimeoutFailureCtx);
         }
 
-        U.sleep(1000);
+        U.sleep(3000);
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             ignite.context().failure().process(workerBlockedFailureCtx);
 
             ignite.context().failure().process(opTimeoutFailureCtx);
