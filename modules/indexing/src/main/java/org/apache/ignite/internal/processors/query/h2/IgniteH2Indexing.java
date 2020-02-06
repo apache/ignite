@@ -2052,7 +2052,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (F.eq(dataTableEntry.getKey().schema(), schemaName)) {
                 GridH2Table h2Tbl = dataTableEntry.getValue();
 
-                if (h2Tbl.containsUserIndex(idxName))
+                if (h2Tbl.userIndex(idxName) != null)
                     return h2Tbl;
             }
         }
@@ -2931,5 +2931,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public LongRunningQueryManager longRunningQueries() {
         return longRunningQryMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long indexSize(String schemaName, String idxName) throws IgniteCheckedException {
+        GridH2Table tbl = dataTableForIndex(schemaName, idxName);
+
+        if (tbl == null)
+            return 0;
+
+        H2TreeIndex idx = (H2TreeIndex)tbl.userIndex(idxName);
+
+        return idx == null ? 0 : idx.size();
     }
 }

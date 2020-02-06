@@ -878,6 +878,24 @@ public class H2TreeIndex extends GridH2IndexBase {
     };
 
     /**
+     * Returns number of elements in the tree by scanning pages of the bottom (leaf) level.
+     *
+     * @return Number of elements in the tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long size() throws IgniteCheckedException {
+        long ret = 0;
+
+        for (int i = 0; i < segmentsCount(); i++) {
+            final H2Tree tree = treeForRead(i);
+
+            ret += tree.size();
+        }
+
+        return ret;
+    }
+
+    /**
      * Interface for {@link H2Tree} factory class.
      */
     public interface H2TreeFactory {
