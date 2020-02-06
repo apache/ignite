@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.List;
+
 /**
  *
  */
@@ -25,5 +27,5 @@ public interface QueryPlanFactory {
      * @param ctx Planning context.
      * @return Query plan.
      */
-    QueryPlan create(PlanningContext ctx);
+    List<QueryPlan> create(PlanningContext ctx);
 }

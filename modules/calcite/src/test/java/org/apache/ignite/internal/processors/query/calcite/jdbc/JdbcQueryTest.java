@@ -45,7 +45,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSimpleQuery() throws SQLException {
-        stmt.execute("CREATE TABLE Person(\"id\" int primary key, \"name\" varchar)");
+        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
         doSleep(1000);
 

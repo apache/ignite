@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 
 /**
- *
+ * Regular query or DML
  */
 public interface MultiStepPlan extends QueryPlan {
     /**

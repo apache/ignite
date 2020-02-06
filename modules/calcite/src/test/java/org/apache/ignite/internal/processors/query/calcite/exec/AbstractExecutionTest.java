@@ -163,13 +163,13 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean prepareMarshal(Message msg) {
-            return true;
+        @Override protected void prepareMarshal(Message msg) {
+            // No-op;
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean prepareUnmarshal(Message msg) {
-            return true;
+        @Override protected void prepareUnmarshal(Message msg) {
+            // No-op;
         }
     }
 }

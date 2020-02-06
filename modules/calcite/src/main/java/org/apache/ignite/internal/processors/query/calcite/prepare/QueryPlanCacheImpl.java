@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -38,7 +39,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
-    private volatile Map<CacheKey, QueryPlan> cache;
+    private volatile Map<CacheKey, List<QueryPlan>> cache;
 
     /**
      * @param ctx Kernal context.
@@ -69,20 +70,23 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public QueryPlan queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
-        Map<CacheKey, QueryPlan> cache = this.cache;
+    /** {@inheritDoc}
+     * @return*/
+    @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
+        Map<CacheKey, List<QueryPlan>> cache = this.cache;
 
-        QueryPlan template = cache.get(key);
+        List<QueryPlan> template = cache.get(key);
 
         if (template != null)
-            return template.clone(ctx.createCluster());
+            return Commons.transform(template, t-> t.clone(ctx.createCluster()));
+        else {
+            List<QueryPlan> prepared = factory.create(ctx);
 
-        QueryPlan plan = factory.create(ctx);
+            if (prepared.size() == 1) // do not cache multiline queries.
+                cache.putIfAbsent(key, Commons.transform(prepared, p -> p.clone(Commons.EMPTY_CLUSTER)));
 
-        cache.putIfAbsent(key, plan.clone(Commons.EMPTY_CLUSTER));
-
-        return plan;
+            return prepared;
+        }
     }
 
     /**

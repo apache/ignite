@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.AbstractConverter;
 
 /**
  * Ignite convention trait.
@@ -37,12 +35,6 @@ public class IgniteConvention extends Convention.Impl {
     /** {@inheritDoc} */
     @Override public ConventionTraitDef getTraitDef() {
         return ConventionTraitDef.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void register(RelOptPlanner planner) {
-        // This convention relies on AbstractConverter logic, so, ExpandConversionRule need to be registered.
-        planner.addRule(AbstractConverter.ExpandConversionRule.INSTANCE);
     }
 
     /** {@inheritDoc} */

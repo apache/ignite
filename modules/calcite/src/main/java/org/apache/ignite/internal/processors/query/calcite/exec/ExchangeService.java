@@ -42,7 +42,7 @@ public interface ExchangeService extends Service {
      * @param batchId Batch ID.
      * @param rows Data rows.
      */
-    void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows);
+    void sendBatch(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows);
 
     /**
      * Acknowledges a batch with given ID is processed.
@@ -54,7 +54,7 @@ public interface ExchangeService extends Service {
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
+    void acknowledge(Inbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
 
     /**
      * Sends cancel request.
@@ -66,5 +66,5 @@ public interface ExchangeService extends Service {
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
+    void cancel(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
 }

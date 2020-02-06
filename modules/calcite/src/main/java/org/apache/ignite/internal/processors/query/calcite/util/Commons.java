@@ -30,6 +30,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
@@ -165,7 +166,23 @@ public final class Commons {
     /**
      * @param o Object to close.
      */
-    public static void close(Object o) {
+    public static void close(Object o) throws Exception {
+        if (o instanceof AutoCloseable)
+            ((AutoCloseable) o).close();
+    }
+
+    /**
+     * @param o Object to close.
+     */
+    public static void close(Object o, IgniteLogger log) {
+        if (o instanceof AutoCloseable)
+            U.close((AutoCloseable) o, log);
+    }
+
+    /**
+     * @param o Object to close.
+     */
+    public static void closeQuiet(Object o) {
         if (o instanceof AutoCloseable)
             U.closeQuiet((AutoCloseable) o);
     }
@@ -174,7 +191,7 @@ public final class Commons {
      * @param o Object to close.
      * @param e Exception, what causes close.
      */
-    public static void close(Object o, @Nullable Exception e) {
+    public static void closeQuiet(Object o, @Nullable Exception e) {
         if (!(o instanceof AutoCloseable))
             return;
 

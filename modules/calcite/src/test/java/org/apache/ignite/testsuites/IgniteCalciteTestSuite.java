@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.query.calcite.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.OutboxTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -34,7 +35,8 @@ import org.junit.runners.Suite;
     OutboxTest.class,
     ExecutionTest.class,
     ContinuousExecutionTest.class,
-    CalciteQueryProcessorTest.class
+    CalciteQueryProcessorTest.class,
+    JdbcQueryTest.class
 })
 public class IgniteCalciteTestSuite {
 }

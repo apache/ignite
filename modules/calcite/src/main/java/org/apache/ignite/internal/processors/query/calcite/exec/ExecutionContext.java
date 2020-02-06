@@ -116,6 +116,13 @@ public class ExecutionContext implements DataContext {
         return cancelled;
     }
 
+    /**
+     * @return Originating node ID.
+     */
+    public UUID originatingNodeId() {
+        return parent().originatingNodeId();
+    }
+
     /** {@inheritDoc} */
     @Override public SchemaPlus getRootSchema() {
         return ctx.schema();

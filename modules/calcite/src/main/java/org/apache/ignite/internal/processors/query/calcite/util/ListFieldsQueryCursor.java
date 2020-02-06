@@ -100,6 +100,6 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Commons.close(it);
+        Commons.closeQuiet(it);
     }
 }

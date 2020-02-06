@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -77,16 +78,16 @@ public interface MailboxRegistry extends Service {
     /**
      * Returns all registered inboxes for provided query ID.
      *
-     * @param queryId Query ID.
+     * @param queryId Query ID. {@code null} means return all registered inboxes.
      * @return Registered inboxes.
      */
-    List<Inbox<?>> inboxes(UUID queryId);
+    Collection<Inbox<?>> inboxes(@Nullable UUID queryId);
 
     /**
      * Returns all registered outboxes for provided query ID.
      *
-     * @param queryId Query ID.
+     * @param queryId Query ID. {@code null} means return all registered outboxes.
      * @return Registered outboxes.
      */
-    List<Outbox<?>> outboxes(UUID queryId);
+    Collection<Outbox<?>> outboxes(@Nullable UUID queryId);
 }

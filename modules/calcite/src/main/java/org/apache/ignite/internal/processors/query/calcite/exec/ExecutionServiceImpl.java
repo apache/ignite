@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,21 +29,25 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
-import org.apache.calcite.util.Pair;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -52,6 +57,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
@@ -62,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCancelRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
@@ -72,7 +79,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlanImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
@@ -139,6 +145,9 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** */
     private ExchangeService exchangeService;
+
+    /** */
+    private ClosableIteratorsHolder iteratorsHolder;
 
     /** */
     private final Map<UUID, QueryInfo> running;
@@ -321,23 +330,36 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return exchangeManager;
     }
 
+    /**
+     * @param iteratorsHolder Iterators holder.
+     */
+    public void iteratorsHolder(ClosableIteratorsHolder iteratorsHolder) {
+        this.iteratorsHolder = iteratorsHolder;
+    }
+
+    /**
+     * @return Iterators holder.
+     */
+    public ClosableIteratorsHolder iteratorsHolder() {
+        return iteratorsHolder;
+    }
+
     /** {@inheritDoc} */
-    @Override public FieldsQueryCursor<List<?>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params) {
-        UUID queryId = UUID.randomUUID();
-
+    @Override public List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params) {
         PlanningContext pctx = createContext(ctx, schema, query, params);
-
-        QueryPlan plan = prepare(pctx);
-
-        if (plan.type() == QueryPlan.Type.QUERY)
-            return execute(queryId, (MultiStepPlan) plan, pctx);
-
-        throw new AssertionError("Unexpected plan type: " + plan);
+        RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER));
+        try (IgnitePlanner ignored = pctx.planner()) {
+            return Commons.transform(prepare(pctx), p -> executeSingle(UUID.randomUUID(), pctx, p));
+        }
+        finally {
+            RelMetadataQuery.THREAD_PROVIDERS.remove();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID queryId) {
-        mailboxRegistry().outboxes(queryId).forEach(Outbox::cancel);
+        mailboxRegistry().outboxes(queryId).forEach(this::executeCancel);
+        mailboxRegistry().inboxes(queryId).forEach(this::executeCancel);
 
         QueryInfo info = running.get(queryId);
 
@@ -350,6 +372,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         localNodeId(ctx.localNodeId());
         exchangeManager(ctx.cache().context().exchange());
         eventManager(ctx.event());
+        iteratorsHolder(new ClosableIteratorsHolder(log));
 
         CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
 
@@ -373,6 +396,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         messageService().register((n,m) -> onMessage(n, (QueryCancelRequest) m), MessageType.QUERY_CANCEL_REQUEST);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
+        iteratorsHolder().init();
     }
 
     /** {@inheritDoc} */
@@ -380,6 +405,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         eventManager().removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
         running.clear();
+
+        iteratorsHolder().tearDown();
     }
 
     /** */
@@ -397,7 +424,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         return PlanningContext.builder()
             .localNodeId(localNodeId())
-            .parentContext(Commons.convert(qryCtx)) // TODO Connection config on the basis of query context
+            .parentContext(Commons.convert(qryCtx))
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schemaName != null
                     ? schemaHolder().schema().getSubSchema(schemaName)
@@ -407,6 +434,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             .query(query)
             .parameters(params)
             .topologyVersion(topologyVersion())
+            .cancelGroup(cancelGroup(qryCtx))
             .logger(log)
             .build();
     }
@@ -436,50 +464,59 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private QueryPlan prepare(PlanningContext ctx) {
+    private List<QueryPlan> prepare(PlanningContext ctx) {
         return queryPlanCache().queryPlan(ctx, new CacheKey(ctx.schemaName(), ctx.query()), this::prepare0);
     }
 
     /** */
-    private QueryPlan prepare0(PlanningContext ctx) {
-        IgnitePlanner planner = ctx.planner();
-
+    private List<QueryPlan> prepare0(PlanningContext ctx) {
         try {
             String query = ctx.query();
 
             assert query != null;
 
-            // Parse
-            SqlNode sqlNode = planner.parse(query);
+            // Parse query.
+            SqlNode sqlNode = ctx.planner().parse(query);
 
-            if (SqlKind.QUERY.contains(sqlNode.getKind()))
-                return prepareQuery(ctx, sqlNode);
+            if (single(sqlNode))
+                return Collections.singletonList(prepareSingle(sqlNode, ctx));
 
-            throw new IgniteSQLException("Unsupported operation [querySql=\"" + query + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            List<SqlNode> nodes = ((SqlNodeList) sqlNode).getList();
+            List<QueryPlan> res = new ArrayList<>(nodes.size());
+
+            for (SqlNode node : nodes)
+                res.add(prepareSingle(node, ctx));
+
+            return res;
         }
         catch (IgniteSQLException e) {
-            Commons.close(planner, e);
             throw e;
         }
         catch (SqlParseException e) {
-            IgniteSQLException ex = new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
-            Commons.close(planner, ex);
-            throw ex;
+            throw new IgniteSQLException("Failed to parse query.", IgniteQueryErrorCode.PARSING, e);
         }
         catch (ValidationException e) {
-            IgniteSQLException ex = new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
-            Commons.close(planner, ex);
-            throw ex;
+            throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
         }
         catch (Exception e) {
-            IgniteSQLException ex = new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
-            Commons.close(planner, ex);
-            throw ex;
+            throw new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
         }
     }
 
     /** */
-    private QueryPlan prepareQuery(PlanningContext ctx, SqlNode sqlNode) throws ValidationException {
+    private QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
+        assert single(sqlNode);
+
+        ctx.planner().reset();
+
+        if (SqlKind.QUERY.contains(sqlNode.getKind()))
+            return prepareQuery(sqlNode, ctx);
+
+        throw new IgniteSQLException("Unsupported operation [querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /** */
+    private QueryPlan prepareQuery(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         // Validate
@@ -491,19 +528,131 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         RelNode rel = planner.convert(sqlNode);
 
         // Transformation chain
-        rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+        rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
         RelTraitSet desired = rel.getCluster().traitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single())
             .simplify();
 
-        IgniteRel igniteRel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+        IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
         return new MultiStepPlanImpl(fragments, fieldsMetadata(validated, ctx));
+    }
+
+    /** */
+    private FieldsQueryCursor<List<?>> executeSingle(UUID queryId, PlanningContext pctx, QueryPlan plan) {
+        if (plan.type() == QueryPlan.Type.QUERY)
+            return executeQuery(queryId, (MultiStepPlan) plan, pctx);
+
+        throw new AssertionError("Unexpected plan type: " + plan);
+    }
+
+    /** */
+    private FieldsQueryCursor<List<?>> executeQuery(UUID queryId, MultiStepPlan plan, PlanningContext pctx) {
+        plan.init(mappingService(), pctx);
+
+        List<Fragment> fragments = plan.fragments();
+
+        // Local execution
+        Fragment local = F.first(fragments);
+
+        if (U.assertionsEnabled()) {
+            assert local != null;
+
+            NodesMapping mapping = local.mapping();
+
+            assert mapping != null;
+
+            List<UUID> nodes = mapping.nodes();
+
+            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
+        }
+
+        ExecutionContext ectx = new ExecutionContext(taskExecutor(), pctx, queryId, local.fragmentId(),
+            local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(pctx.parameters()));
+
+        Node<Object[]> node = new Implementor(partitionService(), mailboxRegistry(), exchangeService(), failureProcessor(), ectx, log).go(local.root());
+
+        assert !(node instanceof SenderNode);
+
+        QueryInfo info = new QueryInfo(ectx, fragments, node);
+
+        // register query
+        register(info);
+
+        // start local execution
+        info.consumer.request();
+
+        // start remote execution
+        if (fragments.size() > 1) {
+            RelOp<IgniteRel, RelGraph> converter = new RelToGraphConverter();
+
+            for (int i = 1; i < fragments.size(); i++) {
+                Fragment fragment = fragments.get(i);
+
+                boolean error = false;
+
+                for (UUID nodeId : fragment.mapping().nodes()) {
+                    if (error)
+                        info.onResponse(nodeId, fragment.fragmentId(), new QueryCancelledException());
+                    else {
+                        try {
+                            QueryStartRequest req = new QueryStartRequest(
+                                queryId,
+                                fragment.fragmentId(),
+                                pctx.schemaName(),
+                                converter.go(fragment.root()),
+                                pctx.topologyVersion(),
+                                fragment.mapping().partitions(nodeId),
+                                pctx.parameters());
+
+                            messageService().send(nodeId, req);
+                        }
+                        catch (Exception e) {
+                            info.onResponse(nodeId, fragment.fragmentId(), e);
+                            error = true;
+                        }
+                    }
+                }
+
+                if (error) {
+                    info.awaitAllReplies();
+
+                    throw new AssertionError(); // Previous call must throw an exception
+                }
+            }
+        }
+
+        return new ListFieldsQueryCursor<>(info.iterator(), Arrays::asList, plan.fieldsMetadata());
+    }
+
+    /** */
+    private void register(QueryInfo info) {
+        UUID queryId = info.ctx.queryId();
+        PlanningContext pctx = info.ctx.parent();
+
+        running.put(queryId, info);
+
+        if (pctx.cancelGroup() == null || pctx.cancelGroup().add(info))
+            return;
+
+        running.remove(queryId);
+
+        throw new IgniteSQLException(QueryCancelledException.ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED);
+    }
+
+    /** */
+    private QueryCancelGroup cancelGroup(@Nullable QueryContext qryCtx) {
+        GridQueryCancel cancel;
+
+        if (qryCtx == null || (cancel = qryCtx.unwrap(GridQueryCancel.class)) == null)
+            return null;
+
+        return new QueryCancelGroup(cancel, failureProcessor());
     }
 
     /** */
@@ -533,94 +682,21 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> execute(UUID queryId, MultiStepPlan plan, PlanningContext pctx) {
-        plan.init(mappingService(), pctx);
-
-        // Local execution
-        Fragment local = F.first(plan.fragments());
-
-        if (U.assertionsEnabled()) {
-            assert local != null;
-
-            NodesMapping mapping = local.mapping();
-
-            assert mapping != null;
-
-            List<UUID> nodes = mapping.nodes();
-
-            assert nodes != null && nodes.size() == 1 && F.first(nodes).equals(pctx.localNodeId());
-        }
-
-        Object[] params = pctx.parameters();
-
-        ExecutionContext ectx = new ExecutionContext(
-            taskExecutor(), pctx, queryId, local.fragmentId(), local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(params)
-        );
-
-        Node<Object[]> node = new Implementor(partitionService(), mailboxRegistry(), exchangeService(), failureProcessor(), ectx, log).go(local.root());
-
-        assert !(node instanceof SenderNode);
-
-        QueryInfo info = new QueryInfo(ectx, local.root().getRowType(), new ConsumerNode(ectx, node, this::onConsumerClose));
-
-        if (plan.fragments().size() == 1)
-            running.put(queryId, info);
-        else {
-            // remote execution
-            RelOp<IgniteRel, RelGraph> converter = new RelToGraphConverter();
-            List<Pair<UUID, QueryStartRequest>> requests = new ArrayList<>();
-
-            String schema = pctx.schemaName();
-
-            for (Fragment remote : plan.fragments().subList(1, plan.fragments().size())) {
-                long id = remote.fragmentId();
-                NodesMapping mapping = remote.mapping();
-                RelGraph graph = converter.go(remote.root());
-
-                for (UUID nodeId : mapping.nodes()) {
-                    info.addFragment(nodeId, id);
-
-                    QueryStartRequest req = new QueryStartRequest(
-                        queryId,
-                        id,
-                        schema,
-                        graph,
-                        pctx.topologyVersion(),
-                        mapping.partitions(nodeId),
-                        params);
-
-                    requests.add(Pair.of(nodeId, req));
-                }
-            }
-
-            running.put(queryId, info);
-
-            // start remote execution
-            for (Pair<UUID, QueryStartRequest> pair : requests)
-                messageService().send(pair.left, pair.right);
-        }
-
-        // start local execution
-        info.consumer.request();
-
-        info.awaitAllReplies();
-
-        // TODO weak map to stop query on cursor collected by GC.
-        return new ListFieldsQueryCursor<>(info.<Object[]>iterator(), Arrays::asList, plan.fieldsMetadata());
+    private boolean single(SqlNode sqlNode) {
+        return !(sqlNode instanceof SqlNodeList);
     }
 
     /** */
-    protected void onMessage(UUID nodeId, QueryStartRequest msg) {
+    private void onMessage(UUID nodeId, QueryStartRequest msg) {
         assert nodeId != null && msg != null;
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
-
+        RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER));
         try (IgnitePlanner planner = ctx.planner()) {
             IgniteRel root = planner.convert(msg.plan());
 
             assert root instanceof IgniteSender : root;
 
-            // TODO do we need a local optimisation phase here?
             ExecutionContext execCtx = new ExecutionContext(
                 taskExecutor(),
                 ctx,
@@ -639,7 +715,22 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId()));
         }
         catch (Exception ex) {
-            messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
+            cancelQuery(msg.queryId());
+
+            if (ex instanceof ClusterTopologyCheckedException)
+                return;
+
+            try {
+                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
+            }
+            catch (IgniteCheckedException e) {
+                e.addSuppressed(ex);
+
+                U.warn(log, "Failed to send reply. [nodeId=" + nodeId + ']', e);
+            }
+        }
+        finally {
+            RelMetadataQuery.THREAD_PROVIDERS.remove();
         }
     }
 
@@ -671,10 +762,28 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     /** */
     private void onNodeLeft(UUID nodeId) {
         running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
+
+        final Predicate<Node<?>> p = new OriginatingFilter(nodeId);
+
+        mailboxRegistry().outboxes(null).stream()
+            .filter(p).forEach(this::executeCancel);
+
+        mailboxRegistry().inboxes(null).stream()
+            .filter(p).forEach(this::executeCancel);
     }
 
     /** */
-    private static class RemoteFragmentKey {
+    private void executeCancel(Node<?> node) {
+        node.context().execute(node::cancel);
+    }
+
+    /** */
+    private enum QueryState {
+        RUNNING, CANCELLING, CANCELLED
+    }
+
+    /** */
+    private static final class RemoteFragmentKey {
         /** */
         private final UUID nodeId;
 
@@ -710,17 +819,9 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private enum QueryState {
-        RUNNING, CANCELLING, CANCELLED
-    }
-
-    /** */
     private final class QueryInfo implements QueryCancellable {
         /** */
         private final ExecutionContext ctx;
-
-        /** */
-        private final RelDataType type;
 
         /** */
         private final ConsumerNode consumer;
@@ -738,41 +839,36 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private Throwable error;
 
         /** */
-        private QueryInfo(ExecutionContext ctx, RelDataType type, ConsumerNode consumer) {
+        private QueryInfo(ExecutionContext ctx, List<Fragment> fragments, Node<Object[]> root) {
             this.ctx = ctx;
-            this.type = type;
-            this.consumer = consumer;
+
+            consumer = new ConsumerNode(ctx, root, ExecutionServiceImpl.this::onConsumerClose);
 
             remotes = new HashSet<>();
             waiting = new HashSet<>();
 
+            for (int i = 1; i < fragments.size(); i++) {
+                Fragment fragment = fragments.get(i);
+                long id = fragment.fragmentId();
+                List<UUID> nodes = fragment.mapping().nodes();
+
+                remotes.addAll(nodes);
+
+                for (UUID node : nodes)
+                    waiting.add(new RemoteFragmentKey(node, id));
+            }
+
             state = QueryState.RUNNING;
+        }
+
+        /** */
+        public Iterator<Object[]> iterator() {
+            return iteratorsHolder().iterator(consumer);
         }
 
         /** {@inheritDoc} */
         @Override public void doCancel() {
             cancel();
-        }
-
-        /** */
-        private ConsumerNode localNode() {
-            return consumer;
-        }
-
-        /** */
-        private RelDataType type() {
-            return type;
-        }
-
-        /** */
-        private <T> Iterator<T> iterator() {
-            return (Iterator<T>) consumer;
-        }
-
-        /** */
-        private void addFragment(UUID nodeId, long fragmentId) {
-            remotes.add(nodeId);
-            waiting.add(new RemoteFragmentKey(nodeId, fragmentId));
         }
 
         /** */
@@ -819,8 +915,21 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             if (cancelLocal)
                 consumer.cancel();
 
-            if (cancelRemote)
-                messageService().send(remotes, new QueryCancelRequest(ctx.queryId()));
+            if (cancelRemote) {
+                QueryCancelRequest msg = new QueryCancelRequest(ctx.queryId());
+
+                for (UUID remote : remotes) {
+                    try {
+                        messageService().send(remote, msg);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        U.warn(log, e.getMessage(), e);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                }
+            }
 
             if (state0 == QueryState.CANCELLED)
                 running.remove(ctx.queryId());
@@ -880,6 +989,23 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             if (cancel)
                 cancel();
+        }
+    }
+
+    /** */
+    private static class OriginatingFilter implements Predicate<Node<?>> {
+        /** */
+        private final UUID nodeId;
+
+        /** */
+        private OriginatingFilter(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean test(Node<?> node) {
+            // Uninitialized inbox doesn't know originating node ID.
+            return Objects.equals(node.context().originatingNodeId(), nodeId);
         }
     }
 }

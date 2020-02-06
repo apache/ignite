@@ -37,7 +37,7 @@ public interface ExecutionService extends Service {
      * @param params Query parameters.
      * @return Query cursor.
      */
-    FieldsQueryCursor<List<?>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params);
+    List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params);
 
     /**
      * Cancels a running query.
