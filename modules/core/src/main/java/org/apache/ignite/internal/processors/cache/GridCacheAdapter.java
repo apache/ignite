@@ -108,7 +108,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -164,6 +163,7 @@ import static org.apache.ignite.internal.processors.cache.CacheOperationContext.
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -665,7 +665,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // no matter what references these futures are holding.
         lastFut = null;
 
-        ctx.kernalContext().metric().remove(MetricUtils.cacheMetricsRegistryName(ctx.name(), isNear()));
+        if (!ctx.kernalContext().isStopping())
+            ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()));
     }
 
     /**
@@ -6688,7 +6689,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /** Injected grid instance. */
         @IgniteInstanceResource
-        protected Ignite ignite;
+        protected IgniteEx ignite;
 
         /** Affinity topology version. */
         protected final AffinityTopologyVersion topVer;
@@ -6712,7 +6713,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!waitAffinityReadyFuture())
                 return null;
 
-            IgniteInternalCache cache = ((IgniteEx)ignite).context().cache().cache(cacheName);
+            IgniteInternalCache cache = ignite.context().cache().cache(cacheName);
 
             return localExecute(cache);
         }
@@ -6729,7 +6730,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @return {@code True} if topology check passed.
          */
         private boolean waitAffinityReadyFuture() {
-            GridCacheProcessor cacheProc = ((IgniteEx)ignite).context().cache();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
             AffinityTopologyVersion locTopVer = cacheProc.context().exchange().readyAffinityVersion();
 
@@ -6741,7 +6742,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ((IgniteEx)ignite).context().closure().runLocalSafe(new Runnable() {
+                            ignite.context().closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
                                     jobCtx.callcc();
                                 }

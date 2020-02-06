@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
@@ -41,27 +40,12 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
 
     public static final long WAIT_TIMEOUT = 30_000L;
 
-    private boolean client = false;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (client)
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGrids(2);
-
-        client = true;
-
-        startGrid("client");
+        startClientGrid("client");
     }
 
     @Override protected void afterTest() throws Exception {

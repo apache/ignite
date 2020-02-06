@@ -64,8 +64,6 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
 
             cfg.setCacheConfiguration(cacheCfg);
         }
-        else
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -89,7 +87,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         withCache = false;
 
         for (int i = NODES_CNT; i < 2 * NODES_CNT; i++)
-            startGrid(i);
+            startClientGrid(i);
     }
 
     /**

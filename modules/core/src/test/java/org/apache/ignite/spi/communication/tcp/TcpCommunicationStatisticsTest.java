@@ -32,9 +32,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.util.typedef.CO;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -44,6 +46,10 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME;
 
 /**
  * Test for TcpCommunicationSpi statistics.
@@ -56,11 +62,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
+        IgniteMessageFactoryImpl.registerCustom(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
     }
 
     /**
@@ -95,6 +97,8 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         TcpCommunicationSpi spi = new SynchronizedCommunicationSpi();
 
         cfg.setCommunicationSpi(spi);
@@ -112,10 +116,10 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "SPIs",
             SynchronizedCommunicationSpi.class.getSimpleName());
 
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
-        if (mbeanServer.isRegistered(mbeanName))
-            return MBeanServerInvocationHandler.newProxyInstance(mbeanServer, mbeanName, TcpCommunicationSpiMBean.class,
+        if (mbeanSrv.isRegistered(mbeanName))
+            return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TcpCommunicationSpiMBean.class,
                 true);
         else
             fail("MBean is not registered: " + mbeanName.getCanonicalName());
@@ -132,15 +136,28 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         startGrids(2);
 
         try {
+            Object node0consistentId = grid(0).localNode().consistentId();
+            Object node1consistentId = grid(1).localNode().consistentId();
+
+            String node0regName = MetricUtils.metricName(
+                COMMUNICATION_METRICS_GROUP_NAME,
+                node0consistentId.toString()
+            );
+
+            String node1regName = MetricUtils.metricName(
+                COMMUNICATION_METRICS_GROUP_NAME,
+                node1consistentId.toString()
+            );
+
             // Send custom message from node0 to node1.
             grid(0).context().io().sendToGridTopic(grid(1).cluster().localNode(), GridTopic.TOPIC_IO_TEST, new GridTestMessage(), GridIoPolicy.PUBLIC_POOL);
 
             latch.await(10, TimeUnit.SECONDS);
 
-            ClusterGroup clusterGroupNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
+            ClusterGroup clusterGrpNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
 
             // Send job from node0 to node1.
-            grid(0).compute(clusterGroupNode1).call(new IgniteCallable<Boolean>() {
+            grid(0).compute(clusterGrpNode1).call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return Boolean.TRUE;
                 }
@@ -179,6 +196,25 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
                 assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getName()).longValue());
                 assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getName()).longValue());
+
+                MetricRegistry mreg0 = grid(0).context().metric().registry(node1regName);
+                MetricRegistry mreg1 = grid(1).context().metric().registry(node0regName);
+
+                LongAdderMetric sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
+                assertNotNull(sentMetric);
+                assertEquals(mbean0.getSentMessagesCount(), sentMetric.value());
+
+                LongAdderMetric rcvMetric = mreg1.findMetric(RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
+                assertNotNull(rcvMetric);
+                assertEquals(mbean1.getReceivedMessagesCount(), rcvMetric.value());
+
+                stopGrid(1);
+
+                mreg0 = grid(0).context().metric().registry(node1regName);
+
+                sentMetric = mreg0.findMetric(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME);
+                assertNotNull(sentMetric); // Automatically generated by MetricRegistryCreationListener.
+                assertEquals(0, sentMetric.value());
             }
         }
         finally {

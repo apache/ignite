@@ -34,7 +34,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <OutputPath>bin\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Apache.Ignite.Core.xml</DocumentationFile>
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
@@ -57,6 +57,8 @@
     <Compile Include="Cache\IQueryMetrics.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IClientCluster.cs" />
+    <Compile Include="Client\IClientClusterGroup.cs" />
+    <Compile Include="Client\IClientClusterNode.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
@@ -83,17 +85,30 @@
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Client\ClientContextBase.cs" />
+    <Compile Include="Impl\Client\ClientOpExtensions.cs" />
+    <Compile Include="Impl\Client\ClientRequestContext.cs" />
+    <Compile Include="Impl\Client\ClientResponseContext.cs" />
+    <Compile Include="Impl\Client\ClientUtils.cs" />
     <Compile Include="Impl\Client\Cluster\ClientCluster.cs" />
-    <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCachePartitionAwarenessGroup.cs" />
     <Compile Include="Impl\Client\Cache\ClientCachePartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheTopologyPartitionMap.cs" />
     <Compile Include="Impl\Client\Cache\ClientRendezvousAffinityFunction.cs" />
     <Compile Include="Impl\Client\ClientFlags.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientClusterGroup.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientClusterGroupProjection.cs" />
+    <Compile Include="Impl\Client\Cluster\ClientClusterNode.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
+    <Compile Include="Impl\Client\MinVersionAttribute.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
+    <Compile Include="Impl\Log\NoopLogger.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedThread.cs" />
+    <Compile Include="Log\ConsoleLogger.cs" />
+    <Compile Include="Log\IDateTimeProvider.cs" />
+    <Compile Include="Log\LocalDateTimeProvider.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
     <Compile Include="Configuration\ThinClientConfiguration.cs" />
@@ -118,7 +133,6 @@
     <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\Client\ClientFailoverSocket.cs" />
-    <Compile Include="Impl\Client\IClientSocket.cs" />
     <Compile Include="Impl\Cluster\BaselineNode.cs" />
     <Compile Include="Ssl\SslContextFactory.cs" />
     <Compile Include="Impl\Ssl\SslFactorySerializer.cs" />
@@ -242,6 +256,7 @@
     <Compile Include="Cluster\IClusterNode.cs" />
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
     <Compile Include="Common\IgniteException.cs" />
+    <Compile Include="Common\IgniteExperimentalAttribute.cs" />
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Impl\Binary\Io\IBinaryStreamProcessor.cs" />

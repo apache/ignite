@@ -18,7 +18,6 @@
 package org.apache.ignite.services;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -78,9 +77,7 @@ public class ServiceThreadPoolSelfTest extends GridCommonAbstractTest {
     public void testExecution() throws Exception {
         startGrid(0); // Server.
 
-        Ignition.setClientMode(true);
-
-        Ignite ignite = startGrid(); // Client.
+        Ignite ignite = startClientGrid(); // Client.
 
         ignite.services().deployClusterSingleton("my-service", new MyServiceImpl());
 

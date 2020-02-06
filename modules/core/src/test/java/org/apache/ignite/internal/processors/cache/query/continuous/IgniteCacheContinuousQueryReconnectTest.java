@@ -45,9 +45,6 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
     /** */
     private static final AtomicInteger cnt = new AtomicInteger();
 
-    /** */
-    private volatile boolean isClient = false;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -60,9 +57,6 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
         ccfg.setBackups(2);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if (isClient)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -131,11 +125,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
             }
         });
 
-        isClient = true;
-
-        Ignite client = startGrid(1);
-
-        isClient = false;
+        Ignite client = startClientGrid(1);
 
         IgniteCache<Object, Object> cache1 = srv1.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> clCache = client.cache(DEFAULT_CACHE_NAME);
@@ -176,11 +166,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         stopGrid(1); // Client node.
 
-        isClient = true;
-
-        client = startGrid(4);
-
-        isClient = false;
+        client = startClientGrid(4);
 
         clCache = client.cache(DEFAULT_CACHE_NAME);
 

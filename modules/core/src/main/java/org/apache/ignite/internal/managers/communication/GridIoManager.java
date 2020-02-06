@@ -498,6 +498,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         List<MessageFactory> compMsgs = new ArrayList<>();
 
+        compMsgs.add(new GridIoMessageFactory());
+
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactory f = compType.messageFactory();
 
@@ -508,7 +510,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
 
-        msgFactory = new GridIoMessageFactory(msgs);
+        msgFactory = new IgniteMessageFactoryImpl(msgs);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -1398,14 +1400,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             return;
         }
 
-        if (plc == GridIoPolicy.SYSTEM_POOL && msg.partition() != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getStripedExecutorService().execute(msg.partition(), c);
+        final int part = msg.partition(); // Store partition to avoid possible recalculation.
+
+        if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
+            ctx.getStripedExecutorService().execute(part, c);
 
             return;
         }
 
-        if (plc == GridIoPolicy.DATA_STREAMER_POOL && msg.partition() != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getDataStreamerExecutorService().execute(msg.partition(), c);
+        if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
+            ctx.getDataStreamerExecutorService().execute(part, c);
 
             return;
         }
@@ -2231,9 +2235,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        assert F.find(nodes, null, F.localNode(locNodeId)) == null :
-            "Internal Ignite code should never call the method with local node in a node list.";
-
         IgniteCheckedException err = null;
 
         for (ClusterNode node : nodes) {

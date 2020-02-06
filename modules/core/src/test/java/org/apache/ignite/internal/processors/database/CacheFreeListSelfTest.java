@@ -529,7 +529,8 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             metaPageId,
             true,
             null,
-            new GridTestKernalContext(log)
+            new GridTestKernalContext(log),
+            null
         );
     }
 
@@ -621,11 +622,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int cacheId() {
             return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cacheId(int cacheId) {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */

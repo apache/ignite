@@ -26,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -297,10 +297,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
                                 }
 
                                 if (backup == backup1) {
-                                    // Stop all backups first or recovery will commit a transaction on backups.
+                                    blockRecovery();
+
                                     stopGrid(skipCheckpoint, txTop.get2().get(0).name());
                                     stopGrid(skipCheckpoint, txTop.get2().get(1).name());
-                                    stopAllGrids();
+                                    stopAllGrids(); // Stop all remaining nodes.
                                 }
 
                                 return true;
@@ -320,7 +321,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
             System.setProperty(IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY, "true");
 
         try {
-            // Start only backups.
+            // Start only backups in given order.
             startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[0]).name());
             startGrid(txTop.get(PARTITION_ID).get2().get(backupsStartOrder[1]).name());
 
@@ -344,7 +345,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
         if (expectAliveNodes == 1) {
             IgniteEx node = (IgniteEx)G.allGrids().iterator().next();
 
-            PartitionTxUpdateCounterImpl cntr = (PartitionTxUpdateCounterImpl)counter(PARTITION_ID, node.name());
+            PartitionUpdateCounterTrackingImpl cntr = (PartitionUpdateCounterTrackingImpl)counter(PARTITION_ID, node.name());
 
             assertTrue(cntr.sequential());
         }

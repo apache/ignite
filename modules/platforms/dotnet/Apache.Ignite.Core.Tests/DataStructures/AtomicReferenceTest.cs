@@ -197,7 +197,9 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             /** */
             public int Foo { get; set; }
 
-            /** <inheritdoc /> */
+            /// <summary>
+            /// Determines whether the specified object is equal to the current object.
+            /// </summary>
             private bool Equals(SerializableObj other)
             {
                 return Foo == other.Foo;

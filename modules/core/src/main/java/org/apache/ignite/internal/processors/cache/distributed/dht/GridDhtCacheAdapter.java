@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,8 +30,6 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -231,6 +232,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 GridCacheEntryEx entry;
 
                 while (true) {
+                    ctx.shared().database().checkpointReadLock();
+
                     try {
                         entry = ctx.dht().entryEx(k);
 
@@ -276,6 +279,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         res.addMissed(k);
 
                         break;
+                    }
+                    finally {
+                        ctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }
@@ -624,15 +630,22 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
-        if (p != null)
+        final IgniteBiPredicate<K, V> pred;
+
+        if (p != null) {
             ctx.kernalContext().resource().injectGeneric(p);
+
+            pred = SecurityUtils.sandboxedProxy(ctx.kernalContext(), IgniteBiPredicate.class, p);
+        }
+        else
+            pred = null;
 
         try {
             ctx.store().loadCache(new CI3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver) {
                     assert ver == null;
 
-                    loadEntry(key, val, ver0, p, topVer, replicate, plc);
+                    loadEntry(key, val, ver0, pred, topVer, replicate, plc);
                 }
             }, args);
 

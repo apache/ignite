@@ -63,8 +63,6 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(igniteInstanceName.startsWith(CLIENT));
-
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
             setCacheMode(CacheMode.PARTITIONED).
             setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).
@@ -90,7 +88,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
         doTestCommitError(() -> {
             try {
-                return startGrid("client");
+                return startClientGrid(CLIENT);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -107,7 +105,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
         doTestCommitError(() -> {
             try {
-                return startGrid("client");
+                return startClientGrid(CLIENT);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -137,7 +135,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
         Ignite ignite = factory.get();
 
         if (ignite == null)
-            ignite = startGrid("client");
+            ignite = startClientGrid(CLIENT);
 
         assertNotNull(ignite.cache(DEFAULT_CACHE_NAME));
 

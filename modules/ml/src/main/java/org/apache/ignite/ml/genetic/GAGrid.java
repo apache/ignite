@@ -131,7 +131,7 @@ public class GAGrid {
      */
     private Chromosome createChromosome(int numOfGenes) {
         long[] genes = new long[numOfGenes];
-        List<Long> keys = new ArrayList<Long>();
+        List<Long> keys = new ArrayList<>();
         int k = 0;
         while (k < numOfGenes) {
             long key = selectGene(k);
@@ -148,7 +148,7 @@ public class GAGrid {
     /**
      * Perform crossover
      *
-     * @param leastFitKeys List of primary keys for Chromsomes that are considered 'least fit'
+     * @param leastFitKeys List of primary keys for Chromosomes that are considered 'least fit'
      */
     private void crossover(List<Long> leastFitKeys) {
         this.ignite.compute().execute(new CrossOverTask(this.cfg), leastFitKeys);
@@ -163,7 +163,7 @@ public class GAGrid {
         // keep track of current generation
         int generationCnt = 1;
 
-        Chromosome fittestChomosome;
+        Chromosome fittestChromosome;
 
         initializeGenePopulation();
 
@@ -180,32 +180,32 @@ public class GAGrid {
 
         Long key = map.keySet().iterator().next();
 
-        fittestChomosome = populationCache.get(key);
+        fittestChromosome = populationCache.get(key);
 
         // while NOT terminateCondition met
-        while (!(cfg.getTerminateCriteria().isTerminationConditionMet(fittestChomosome, averageFitnessScore,
+        while (!(cfg.getTerminateCriteria().isTerminationConditionMet(fittestChromosome, averageFitnessScore,
             generationCnt))) {
             generationCnt += 1;
 
             // We will crossover/mutate over chromosomes based on selection method
-            List<Long> selectedKeysforCrossMutaton = selection(map);
+            List<Long> selectedKeystoreCrossMutation = selection(map);
 
             // Cross Over
-            crossover(selectedKeysforCrossMutaton);
+            crossover(selectedKeystoreCrossMutation);
 
             // Mutate
-            mutation(selectedKeysforCrossMutaton);
+            mutation(selectedKeystoreCrossMutation);
 
             // Calculate Fitness
-            calculateFitness(selectedKeysforCrossMutaton);
+            calculateFitness(selectedKeystoreCrossMutation);
 
             // Retrieve chromosomes in order by fitness value
             map = getChromosomesByFittest();
 
             key = map.keySet().iterator().next();
-            
+
             // Retreive the first chromosome from the list
-            fittestChomosome = populationCache.get(key);
+            fittestChromosome = populationCache.get(key);
 
             // Calculate average fitness value of population
             averageFitnessScore = calculateAverageFitness();
@@ -213,7 +213,7 @@ public class GAGrid {
             // End Loop
 
         }
-        return fittestChomosome;
+        return fittestChromosome;
     }
 
     /**
@@ -233,7 +233,7 @@ public class GAGrid {
 
         // Execute query to retrieve keys for ALL Chromosomes by fittnessScore
         QueryCursor<List<?>> cursor = populationCache.query(new SqlFieldsQuery(fittestSQL));
-    
+
         List<List<?>> res = cursor.getAll();
 
         for (List row : res) {
@@ -241,7 +241,7 @@ public class GAGrid {
             Double fitnessScore = (Double)row.get(1);
             orderChromKeysByFittest.put(key, fitnessScore);
         }
-        
+
         return orderChromKeysByFittest;
     }
 
@@ -309,7 +309,7 @@ public class GAGrid {
      *
      * As result, we are interested in least fit chromosomes.
      *
-     * @param keys List of primary keys for respective Chromsomes
+     * @param keys List of primary keys for respective Chromosomes
      * @return List of primary Keys for respective Chromosomes that are considered least fit
      */
     private List<Long> selectByElitism(List<Long> keys) {
@@ -331,9 +331,9 @@ public class GAGrid {
 
         return keys.subList(truncateCnt, keys.size());
     }
-    
+
     /**
-     * Roulette Wheel selection 
+     * Roulette Wheel selection
      *
      * @param map Map of keys/fitness scores
      * @return List of primary Keys for respective chromosomes that will breed
@@ -352,7 +352,7 @@ public class GAGrid {
         if (cfg.getChromosomeCriteria() == null)
             return (selectAnyGene());
         else
-            return (selectGeneByChromsomeCriteria(k));
+            return (selectGeneByChromosomeCriteria(k));
     }
 
     /**
@@ -361,7 +361,7 @@ public class GAGrid {
      * @param k Gene index in Chromosome
      * @return Primary key of respective Gene
      */
-    private long selectGeneByChromsomeCriteria(int k) {
+    private long selectGeneByChromosomeCriteria(int k) {
         List<Gene> genes = new ArrayList<>();
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
@@ -396,8 +396,8 @@ public class GAGrid {
     /**
      * Select chromosomes
      *
-     * @param map Map of keys/fitness scores for respective Chromsomes
-     * @return List of primary keys for respective Chromsomes
+     * @param map Map of keys/fitness scores for respective Chromosomes
+     * @return List of primary keys for respective Chromosomes
      */
     private List<Long> selection(LinkedHashMap map) {
         List<Long> selectedKeys = new ArrayList<>();
@@ -408,7 +408,7 @@ public class GAGrid {
         GAGridConstants.SELECTION_METHOD selectionMtd = cfg.getSelectionMtd();
 
         switch (selectionMtd) {
-            case SELECTON_METHOD_ELETISM:
+            case SELECTION_METHOD_ELITISM:
                 selectedKeys = selectByElitism(chromosomeKeys);
                 break;
             case SELECTION_METHOD_TRUNCATION:
@@ -419,7 +419,7 @@ public class GAGrid {
                 copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
 
                 // copy more fit keys to rest of population
-                break; 
+                break;
             case SELECTION_METHOD_ROULETTE_WHEEL:
               selectedKeys = this.selectByRouletteWheel(map);
 

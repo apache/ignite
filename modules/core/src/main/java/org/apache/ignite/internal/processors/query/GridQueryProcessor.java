@@ -1029,7 +1029,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
             ((CacheObjectBinaryProcessorImpl)cacheObjProc)
                 .binaryContext()
-                .descriptorForClass(cls, false, false, true);
+                .registerClass(cls, true, false, true);
         }
     }
 
@@ -1581,7 +1581,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
 
-                    cctx.group().metrics().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+                    cctx.group().metrics().addIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
 
                     visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
                 }

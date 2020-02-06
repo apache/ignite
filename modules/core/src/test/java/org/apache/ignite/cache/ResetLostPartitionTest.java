@@ -110,16 +110,6 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             .setIndexedTypes(String.class, String.class);
     }
 
-    /** Client configuration */
-    private IgniteConfiguration getClientConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /**
      * Test to restore lost partitions after grid reactivation.
      *

@@ -62,7 +62,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
 
         new Thread(this::startServer).start();
 
-        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid(getConfiguration("client"));
 
         IgniteServices services = client.services();
 

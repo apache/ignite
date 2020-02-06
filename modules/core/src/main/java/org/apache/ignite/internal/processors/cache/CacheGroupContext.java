@@ -46,8 +46,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCach
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -68,7 +66,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -184,9 +181,6 @@ public class CacheGroupContext {
     /** Statistics holder to track IO operations for data pages. */
     private final IoStatisticsHolder statHolderData;
 
-    /** */
-    private volatile boolean hasAtomicCaches;
-
     /** Cache group metrics. */
     private final CacheGroupMetricsImpl metrics;
 
@@ -263,8 +257,6 @@ public class CacheGroupContext {
             statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mmgr);
             statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mmgr);
         }
-
-        hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -366,9 +358,6 @@ public class CacheGroupContext {
 
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
-
-        if (!hasAtomicCaches)
-            hasAtomicCaches = cctx.config().getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -1296,31 +1285,20 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return {@code True} if group has atomic caches.
-     */
-    public boolean hasAtomicCaches() {
-        return hasAtomicCaches;
-    }
-
-    /**
-     * @return {@code True} if need create temporary tombstones entries for removed data.
-     */
-    public boolean supportsTombstone() {
-        return !mvccEnabled && !isLocal();
-    }
-
-    /**
-     * @param part Partition.
-     * @return {@code True} if need create tombstone for remove in given partition.
-     */
-    public boolean shouldCreateTombstone(@Nullable GridDhtLocalPartition part) {
-        return part != null && supportsTombstone() && part.state() == GridDhtPartitionState.MOVING;
-    }
-
-    /**
      * @return Metrics.
      */
     public CacheGroupMetricsImpl metrics() {
         return metrics;
+    }
+
+    /**
+     * Removes statistics metrics registries.
+     */
+    public void removeIOStatistic() {
+        if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
+
+        if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
     }
 }

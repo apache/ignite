@@ -49,8 +49,8 @@ import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.sql.SqlViewMetricExporterSpi;
-import org.junit.Assert;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static java.sql.Types.DATE;
@@ -69,6 +69,10 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+
+    /** URL with partition awareness enabled. */
+    public static final String URL_PARTITION_AWARENESS =
+        "jdbc:ignite:thin://127.0.0.1:10800..10801?partitionAwareness=true";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -349,7 +353,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.VIEWS",
                 "SYS.TABLE_COLUMNS",
                 "SYS.VIEW_COLUMNS",
-                "SYS.CONTINUOUS_QUERIES"
+                "SYS.CONTINUOUS_QUERIES",
+                "SYS.STRIPED_THREADPOOL_QUEUE",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE",
+                "SYS.CACHE_GROUP_PAGE_LISTS",
+                "SYS.DATA_REGION_PAGE_LISTS"
             ))
         );
     }
@@ -752,6 +760,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TABLES.VALUE_ALIAS.null.2147483647",
                 "SYS.TABLES.KEY_TYPE_NAME.null.2147483647",
                 "SYS.TABLES.VALUE_TYPE_NAME.null.2147483647",
+                "SYS.TABLES.IS_INDEX_REBUILD_IN_PROGRESS.null.1",
                 "SYS.METRICS.NAME.null.2147483647",
                 "SYS.METRICS.VALUE.null.2147483647",
                 "SYS.METRICS.DESCRIPTION.null.2147483647",
@@ -851,7 +860,27 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CONTINUOUS_QUERIES.ROUTINE_ID.null.2147483647",
                 "SYS.CONTINUOUS_QUERIES.REMOTE_FILTER.null.2147483647",
                 "SYS.CONTINUOUS_QUERIES.CACHE_NAME.null.2147483647",
-                "SYS.CONTINUOUS_QUERIES.LOCAL_LISTENER.null.2147483647"
+                "SYS.CONTINUOUS_QUERIES.LOCAL_LISTENER.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.STRIPE_INDEX.null.10",
+                "SYS.STRIPED_THREADPOOL_QUEUE.DESCRIPTION.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
+                "SYS.STRIPED_THREADPOOL_QUEUE.TASK_NAME.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.STRIPE_INDEX.null.10",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.DESCRIPTION.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.THREAD_NAME.null.2147483647",
+                "SYS.DATASTREAM_THREADPOOL_QUEUE.TASK_NAME.null.2147483647",
+                "SYS.CACHE_GROUP_PAGE_LISTS.CACHE_GROUP_ID.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.PARTITION_ID.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.NAME.null.2147483647",
+                "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_NUMBER.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.BUCKET_SIZE.null.19",
+                "SYS.CACHE_GROUP_PAGE_LISTS.STRIPES_COUNT.null.10",
+                "SYS.CACHE_GROUP_PAGE_LISTS.CACHED_PAGES_COUNT.null.10",
+                "SYS.DATA_REGION_PAGE_LISTS.NAME.null.2147483647",
+                "SYS.DATA_REGION_PAGE_LISTS.BUCKET_NUMBER.null.10",
+                "SYS.DATA_REGION_PAGE_LISTS.BUCKET_SIZE.null.19",
+                "SYS.DATA_REGION_PAGE_LISTS.STRIPES_COUNT.null.10",
+                "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10"
             ));
 
             Assert.assertEquals(expectedCols, actualSystemCols);
@@ -1207,8 +1236,17 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
-            assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite database product version.",
+                conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite driver version.",
+                conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+
+        try (Connection conn = DriverManager.getConnection(URL_PARTITION_AWARENESS)) {
+            assertEquals("Unexpected ignite database product version.",
+                conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite driver version.",
+                conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
         }
     }
 

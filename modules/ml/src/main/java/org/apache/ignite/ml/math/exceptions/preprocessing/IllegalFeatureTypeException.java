@@ -27,11 +27,11 @@ public class IllegalFeatureTypeException extends IgniteException {
     private static final long serialVersionUID = 12342524542660L;
 
     /**
-     * @param illegalClass The illegal type.
+     * @param illegalCls The illegal type.
      * @param illegalVal The illegal value.
-     * @param desiredClass The desired type.
+     * @param desiredCls The desired type.
      */
-    public IllegalFeatureTypeException(Class illegalClass, Object illegalVal, Class desiredClass) {
-        super("The type of feature " + illegalClass + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredClass);
+    public IllegalFeatureTypeException(Class illegalCls, Object illegalVal, Class desiredCls) {
+        super("The type of feature " + illegalCls + " is illegal. The found value is: " + illegalVal + " The type of label should be " + desiredCls);
     }
 }
