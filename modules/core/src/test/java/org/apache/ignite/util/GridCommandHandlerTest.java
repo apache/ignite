@@ -319,17 +319,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
             .setDataRegionName("non-persistent-dataRegion"));
 
-        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE))
-            assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive"));
-        else {
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--set-state", "inactive"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--set-state", "inactive"));
 
-            assertTrue(ignite.cluster().active());
-            assertEquals(ACTIVE, ignite.cluster().state());
-            assertContains(log, testOut.toString(), "During deactivation all data from these caches will be erased!");
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+        assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
 
-            assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive", "--force"));
-        }
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive", "--force"));
 
         assertFalse(ignite.cluster().active());
         assertEquals(INACTIVE, ignite.cluster().state());
