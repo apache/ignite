@@ -2065,7 +2065,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             initLock.lock();
 
             try {
-                delegate = null;
+                assert delegate == null : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
 
                 CacheDataStore store = init0(false);
 

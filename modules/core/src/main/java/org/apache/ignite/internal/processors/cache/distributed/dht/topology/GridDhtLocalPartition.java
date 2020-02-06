@@ -77,7 +77,6 @@ import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
@@ -941,10 +940,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         File dest = new File(pageStore.getFileAbsolutePath());
 
+        assert !dest.exists() : "dest=" + dest + ", exists=" + pageStore.exists();
+
         if (log.isDebugEnabled())
             log.debug("Moving snapshot [from=" + snapshot + " , to=" + dest + " , size=" + snapshot.length() + "]");
 
-        Files.move(snapshot.toPath(), dest.toPath(), REPLACE_EXISTING);
+        Files.move(snapshot.toPath(), dest.toPath());
 
         store.reinit();
     }
