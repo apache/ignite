@@ -52,6 +52,9 @@ public class SecurityUtils {
         "is not equal to remote node's grid security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
+    /** Ignite internal package. */
+    public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal";
+
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
@@ -170,7 +173,7 @@ public class SecurityUtils {
     /**
      * @return True if class of {@code target} is a system type.
      */
-    private static boolean isSystemType(GridKernalContext ctx, Object target) {
+    public static boolean isSystemType(GridKernalContext ctx, Object target) {
         Class cls = target instanceof GridInternalWrapper
             ? ((GridInternalWrapper)target).userObject().getClass()
             : target.getClass();

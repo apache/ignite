@@ -142,14 +142,14 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                 if (addrs.size() == 1) {
                     SingleAddressConnectFuture fut = new SingleAddressConnectFuture(i);
 
-                    fut.init(addrs.iterator().next(), node.id());
+                    fut.init(addrs.iterator().next(), node.consistentId(), node.id());
 
                     futs[i] = fut;
                 }
                 else {
                     MultipleAddressesConnectFuture fut = new MultipleAddressesConnectFuture(i);
 
-                    fut.init(addrs, node.id());
+                    fut.init(addrs, node.consistentId(), node.id());
 
                     futs[i] = fut;
                 }
@@ -292,9 +292,10 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
         /**
          * @param addr Node address.
+         * @param consistentId Consistent if of the node.
          * @param rmtNodeId Id of node to open connection check session with.
          */
-        public void init(InetSocketAddress addr, UUID rmtNodeId) {
+        public void init(InetSocketAddress addr, Object consistentId, UUID rmtNodeId) {
             boolean connect;
 
             try {
@@ -317,7 +318,10 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                 sesMeta = new GridLeanMap<>(3);
 
                 // Set dummy key to identify connection-check outgoing connection.
-                sesMeta.put(TcpCommunicationSpi.CONN_IDX_META, new ConnectionKey(rmtNodeId, -1, -1, true));
+                ConnectionKey connKey = new ConnectionKey(rmtNodeId, -1, -1, true);
+
+                sesMeta.put(TcpCommunicationSpi.CONN_IDX_META, connKey);
+                sesMeta.put(TcpCommunicationSpi.CONSISTENT_ID_META, consistentId);
                 sesMeta.put(SES_FUT_META, this);
 
                 nioSrvr.createSession(ch, sesMeta, true, new IgniteInClosure<IgniteInternalFuture<GridNioSession>>() {
@@ -422,9 +426,10 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
         /**
          * @param addrs Node addresses.
+         * @param consistentId Consistent if of the node.
          * @param rmtNodeId Id of node to open connection check session with.
          */
-        void init(Collection<InetSocketAddress> addrs, UUID rmtNodeId) {
+        void init(Collection<InetSocketAddress> addrs, Object consistentId, UUID rmtNodeId) {
             SingleAddressConnectFuture[] futs = new SingleAddressConnectFuture[addrs.size()];
 
             for (int i = 0; i < addrs.size(); i++) {
@@ -442,7 +447,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
             int idx = 0;
 
             for (InetSocketAddress addr : addrs) {
-                futs[idx++].init(addr, rmtNodeId);
+                futs[idx++].init(addr, consistentId, rmtNodeId);
 
                 if (resCnt == Integer.MAX_VALUE)
                     return;

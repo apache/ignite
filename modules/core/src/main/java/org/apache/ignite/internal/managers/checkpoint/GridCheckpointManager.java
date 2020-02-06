@@ -354,7 +354,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
             return state;
         }
         catch (IgniteSpiException e) {
-            throw new IgniteCheckedException(S.INCLUDE_SENSITIVE ?
+            throw new IgniteCheckedException(S.includeSensitive() ?
                 ("Failed to load checkpoint: " + key) : "Failed to load checkpoint", e);
         }
     }
@@ -407,7 +407,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
                 msg = "Checkpoint removed";
             }
-            if (S.INCLUDE_SENSITIVE)
+            if (S.includeSensitive())
                 msg += ": " + key;
 
             ctx.event().record(new CheckpointEvent(ctx.discovery().localNode(), msg, type, key));

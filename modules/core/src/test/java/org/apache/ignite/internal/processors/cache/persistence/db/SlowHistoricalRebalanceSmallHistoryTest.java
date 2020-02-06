@@ -43,8 +43,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  *
  */
@@ -113,16 +111,12 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /**
@@ -132,6 +126,7 @@ public class SlowHistoricalRebalanceSmallHistoryTest extends GridCommonAbstractT
     public void testReservation() throws Exception {
         IgniteEx ig = startGrid(0);
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         ig.getOrCreateCache(new CacheConfiguration<>(SLOW_REBALANCE_CACHE)

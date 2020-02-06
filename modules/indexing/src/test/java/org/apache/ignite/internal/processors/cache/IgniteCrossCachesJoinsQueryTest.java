@@ -42,7 +42,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,9 +71,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     private static final int NODES = 5;
 
     /** */
-    private boolean client;
-
-    /** */
     private Data data;
 
     /** Tested qry. */
@@ -88,15 +84,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
     /** */
     private static Random rnd;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void createCaches() {
@@ -113,9 +100,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
 
         awaitPartitionMapExchange();
 

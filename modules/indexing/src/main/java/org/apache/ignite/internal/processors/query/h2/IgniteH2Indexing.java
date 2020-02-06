@@ -53,19 +53,10 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.SqlIndexViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlSchemaViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlTableViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -79,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -185,14 +177,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.spi.systemview.view.SqlIndexView;
-import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
-import org.apache.ignite.spi.systemview.view.SqlQueryView;
-import org.apache.ignite.spi.systemview.view.SqlSchemaView;
-import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
-import org.apache.ignite.spi.systemview.view.SqlTableView;
-import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
-import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
@@ -1201,7 +1185,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             fail = true;
 
-            ClusterReadOnlyModeCheckedException roEx = X.cause(e, ClusterReadOnlyModeCheckedException.class);
+            IgniteClusterReadOnlyException roEx = X.cause(e, IgniteClusterReadOnlyException.class);
 
             if (roEx != null) {
                 throw new IgniteSQLException(
@@ -1789,6 +1773,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public void closeCacheOnClient(String cacheName) {
+        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheName);
+
+        // Only for SQL caches.
+        if (cacheInfo != null) {
+            parser.clearCache();
+
+            cacheInfo.clearCacheContext();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String schema(String cacheName) {
         return schemaMgr.schemaName(cacheName);
     }
@@ -2067,15 +2063,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         this.ctx = ctx;
-
-        ctx.systemView().registerWalker(SqlSchemaView.class, new SqlSchemaViewWalker());
-        ctx.systemView().registerWalker(SqlTableView.class, new SqlTableViewWalker());
-        ctx.systemView().registerWalker(SqlViewView.class, new SqlViewViewWalker());
-        ctx.systemView().registerWalker(SqlIndexView.class, new SqlIndexViewWalker());
-        ctx.systemView().registerWalker(SqlTableColumnView.class, new SqlTableColumnViewWalker());
-        ctx.systemView().registerWalker(SqlViewColumnView.class, new SqlViewColumnViewWalker());
-        ctx.systemView().registerWalker(SqlQueryView.class, new SqlQueryViewWalker());
-        ctx.systemView().registerWalker(SqlQueryHistoryView.class, new SqlQueryHistoryViewWalker());
 
         partReservationMgr = new PartitionReservationManager(ctx);
 

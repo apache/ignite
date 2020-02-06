@@ -239,6 +239,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part.awaitDestroy();
 
                     part = top.localPartition(p, topVer, true);
+
+                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
+
+                    part.resetUpdateCounter();
                 }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
@@ -309,8 +313,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty())
+        if (!assignments.isEmpty()) {
             ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
+
+            assert exchFut == null || !exchFut.rebalanced() :
+                "Unexpected rebalance on rebalanced cluster " +
+                    "[top=" + topVer + ", grp=" + grp.groupId() + ", assignments=" + assignments + "]";
+        }
 
         return assignments;
     }

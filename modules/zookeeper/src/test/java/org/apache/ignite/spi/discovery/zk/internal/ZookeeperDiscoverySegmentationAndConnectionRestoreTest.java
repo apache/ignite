@@ -83,9 +83,7 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
 
         node0.cluster().active(true);
 
-        helper.clientMode(true);
-
-        final IgniteEx client = startGrid(2);
+        final IgniteEx client = startClientGrid(2);
 
         //first transaction
         client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 0);

@@ -19,9 +19,12 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryWithTransformerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
@@ -32,6 +35,7 @@ import org.apache.ignite.internal.processors.security.compute.closure.Distribute
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
@@ -52,6 +56,7 @@ import org.junit.runners.Suite;
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
     ThinClientPermissionCheckTest.class,
+    ContinuousQueryPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -61,6 +66,8 @@ import org.junit.runners.Suite;
     EntryProcessorRemoteSecurityContextCheckTest.class,
     DataStreamerRemoteSecurityContextCheckTest.class,
     CacheLoadRemoteSecurityContextCheckTest.class,
+    ContinuousQueryRemoteSecurityContextCheckTest.class,
+    ContinuousQueryWithTransformerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
 
@@ -69,7 +76,8 @@ import org.junit.runners.Suite;
     ComputeSandboxTest.class,
     DoPrivilegedOnRemoteNodeTest.class,
     IgniteOperationsInsideSandboxTest.class,
-    SecuritySubjectPermissionsTest.class
+    SecuritySubjectPermissionsTest.class,
+    AccessToClassesInsideInternalPackageTest.class,
 })
 public class SecurityTestSuite {
 }

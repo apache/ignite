@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -38,6 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -62,15 +62,15 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
 
         Random random = new Random(1);
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid(2);
+        Ignite client = startClientGrid(2);
 
         int ctr = 0;
 
+        int testDuration = GridTestUtils.SF.applyLB(30_000, 10_000);
+
         long time0 = System.currentTimeMillis();
 
-        while ((System.currentTimeMillis() - time0) < 30_000) {
+        while ((System.currentTimeMillis() - time0) < testDuration) {
             String cacheName = CACHE + ctr++;
 
             IgniteCache<Long, Value> cache = client.getOrCreateCache(new CacheConfiguration<Long, Value>(cacheName)

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChang
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.ClusterActivationEventTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.ClusterActivationEventWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAllBaselineNodesOnlineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebal
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsReserveWalSegmentsWithCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlDeactivateOnHighloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteShutdownOnSupplyMessageFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.SlowHistoricalRebalanceSmallHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointFailBeforeWriteMarkTest;
@@ -81,6 +83,8 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest;
+import org.apache.ignite.internal.processors.cluster.ClusterStateChangeEventTest;
+import org.apache.ignite.internal.processors.cluster.ClusterStateChangeEventWithPersistenceTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -121,6 +125,9 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, ClientAffinityAssignmentWithBaselineTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteAbsentEvictionNodeOutOfBaselineTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClusterActivationEventTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterActivationEventWithPersistenceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateChangeEventTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateChangeEventWithPersistenceTest.class, ignoredTests);
 
         return suite;
     }
@@ -244,5 +251,7 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, FsyncWalRolloverDoesNotBlockTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsPartitionsStateRecoveryTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlDeactivateOnHighloadTest.class, ignoredTests);
     }
 }
