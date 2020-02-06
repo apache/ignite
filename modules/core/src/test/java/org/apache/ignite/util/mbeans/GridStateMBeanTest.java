@@ -10,29 +10,10 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 
 /** MBean test of cluster state operations. */
 public class GridStateMBeanTest extends GridCommonAbstractTest {
-    /** */
-    protected boolean persistenceEnabled = false;
-
-    /** */
-    protected boolean activeAtStart = false;
-
-    /** */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClusterStateOnStart(activeAtStart ? ACTIVE : INACTIVE);
-        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-        if(dsCfg==null)
-            cfg.setDataStorageConfiguration(dsCfg = new DataStorageConfiguration());
-
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(persistenceEnabled);
-
-        return cfg;
-    }
-
     /**
      * Test deactivation works via JMX
      *
@@ -40,38 +21,25 @@ public class GridStateMBeanTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotDeactivated() throws Exception {
-        persistenceEnabled = false;
-        activeAtStart = true;
-
         Ignite ignite = startGrids(1);
         IgniteMXBean mxBean = (IgniteMXBean)ignite;
 
         assertTrue(mxBean.active());
         assertEquals(ACTIVE.name(), mxBean.clusterState());
 
-        ignite.createCache("non-persistent-cache");
-
         try {
+            // There is at least the system cache. Might be internal caches. Difficult to predict data erasure.
             mxBean.deactivate(false);
         }
         catch (Exception e) {
-            assertTrue(e.getMessage().contains(GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING));
+            assertTrue(e.getMessage().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
         }
 
         assertTrue(mxBean.active());
         assertEquals(ACTIVE.name(), mxBean.clusterState());
 
-        ignite.destroyCache("non-persistent-cache");
-
-        mxBean.deactivate(false);
-
-        assertFalse(mxBean.active());
-        assertEquals(INACTIVE.name(), mxBean.clusterState());
-
         mxBean.activate();
         assertTrue(mxBean.active());
-
-        ignite.createCache("non-persistent-cache");
 
         mxBean.deactivate(true);
 

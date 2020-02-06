@@ -13,13 +13,13 @@ This utility can do the following commands:
     control.(sh|bat) --activate
 
   Deactivate cluster (deprecated. Use --set-state instead):
-    control.(sh|bat) --deactivate [--yes]
+    control.(sh|bat) --deactivate [--force] [--yes]
 
   Print current cluster state:
     control.(sh|bat) --state
 
   Change cluster state:
-    control.(sh|bat) --set-state INACTIVE|ACTIVE|ACTIVE_READ_ONLY [--yes]
+    control.(sh|bat) --set-state INACTIVE|ACTIVE|ACTIVE_READ_ONLY [--force] [--yes]
 
     Parameters:
       ACTIVE            - Activate cluster. Cache updates are allowed.

@@ -39,7 +39,9 @@ import static org.apache.ignite.internal.processors.cluster.GridClusterStateProc
  * Command to change cluster state.
  */
 public class ClusterStateChangeCommand implements Command<ClusterState> {
-    /**  */
+    /**
+     * Forces cluster deactivation wihtout checking of safety of the operation.
+     * */
     static final String FORCE_COMMAND = "--force";
 
     /** New cluster state */
@@ -60,7 +62,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
         params.put(ACTIVE_READ_ONLY.toString(), "Activate cluster. Cache updates are denied.");
 
         Command.usage(log, "Change cluster state:", SET_STATE, params, or((Object[])ClusterState.values()),
-            optional(FORCE_COMMAND, CMD_AUTO_CONFIRMATION));
+            optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
