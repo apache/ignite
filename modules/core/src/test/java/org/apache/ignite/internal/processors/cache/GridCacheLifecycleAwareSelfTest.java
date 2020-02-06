@@ -285,6 +285,16 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterGridStart(Ignite ignite) {
+        super.afterGridStart(ignite);
+
+        TestEvictionFilter filter = (TestEvictionFilter)ignite.cache(CACHE_NAME)
+            .getConfiguration(CacheConfiguration.class).getEvictionFilter();
+
+        lifecycleAwares.add(filter);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -338,8 +348,6 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         TestEvictionFilter evictionFilter = new TestEvictionFilter();
 
         ccfg.setEvictionFilter(evictionFilter);
-
-        lifecycleAwares.add(evictionFilter);
 
         TestAffinityKeyMapper mapper = new TestAffinityKeyMapper();
 
