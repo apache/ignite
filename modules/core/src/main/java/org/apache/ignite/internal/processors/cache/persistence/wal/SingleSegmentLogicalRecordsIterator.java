@@ -18,8 +18,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -136,59 +134,10 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Set for handling WAL record types. */
-        public static final Set<WALRecord.RecordType> skip = new HashSet<>();
-
-        /**
-         *  Fills up set with RecordType-s, which have to be skipped.
-         */
-        static {
-            skip.add(WALRecord.RecordType.PAGE_RECORD);
-            skip.add(WALRecord.RecordType.INIT_NEW_PAGE_RECORD);
-            skip.add(WALRecord.RecordType.DATA_PAGE_INSERT_RECORD);
-            skip.add(WALRecord.RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD);
-            skip.add(WALRecord.RecordType.DATA_PAGE_REMOVE_RECORD);
-            skip.add(WALRecord.RecordType.DATA_PAGE_SET_FREE_LIST_PAGE);
-            skip.add(WALRecord.RecordType.MVCC_DATA_PAGE_MARK_UPDATED_RECORD);
-            skip.add(WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD);
-            skip.add(WALRecord.RecordType.MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD);
-            skip.add(WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT);
-            skip.add(WALRecord.RecordType.BTREE_META_PAGE_ADD_ROOT);
-            skip.add(WALRecord.RecordType.BTREE_META_PAGE_CUT_ROOT);
-            skip.add(WALRecord.RecordType.BTREE_INIT_NEW_ROOT);
-            skip.add(WALRecord.RecordType.BTREE_PAGE_RECYCLE);
-            skip.add(WALRecord.RecordType.BTREE_PAGE_INSERT);
-            skip.add(WALRecord.RecordType.BTREE_FIX_LEFTMOST_CHILD);
-            skip.add(WALRecord.RecordType.BTREE_FIX_COUNT);
-            skip.add(WALRecord.RecordType.BTREE_PAGE_REPLACE);
-            skip.add(WALRecord.RecordType.BTREE_PAGE_REMOVE);
-            skip.add(WALRecord.RecordType.BTREE_PAGE_INNER_REPLACE);
-            skip.add(WALRecord.RecordType.BTREE_FIX_REMOVE_ID);
-            skip.add(WALRecord.RecordType.BTREE_FORWARD_PAGE_SPLIT);
-            skip.add(WALRecord.RecordType.BTREE_EXISTING_PAGE_SPLIT);
-            skip.add(WALRecord.RecordType.BTREE_PAGE_MERGE);
-            skip.add(WALRecord.RecordType.PAGES_LIST_SET_NEXT);
-            skip.add(WALRecord.RecordType.PAGES_LIST_SET_PREVIOUS);
-            skip.add(WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE);
-            skip.add(WALRecord.RecordType.PAGES_LIST_ADD_PAGE);
-            skip.add(WALRecord.RecordType.PAGES_LIST_REMOVE_PAGE);
-            skip.add(WALRecord.RecordType.META_PAGE_INIT);
-            skip.add(WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS);
-            skip.add(WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V2);
-            skip.add(WALRecord.RecordType.TRACKING_PAGE_DELTA);
-            skip.add(WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID);
-            skip.add(WALRecord.RecordType.META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID);
-            skip.add(WALRecord.RecordType.META_PAGE_UPDATE_NEXT_SNAPSHOT_ID);
-            skip.add(WALRecord.RecordType.META_PAGE_UPDATE_LAST_ALLOCATED_INDEX);
-            skip.add(WALRecord.RecordType.PAGE_LIST_META_RESET_COUNT_RECORD);
-            skip.add(WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD);
-            skip.add(WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT2);
-            skip.add(WALRecord.RecordType.ROTATED_ID_PART_RECORD);
-        }
 
         /** {@inheritDoc} */
         @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
-            return !skip.contains(type);
+            return type.purpose() == WALRecord.RecordPurpose.LOGICAL || type == WALRecord.RecordType.CHECKPOINT_RECORD;
         }
     }
 }
