@@ -4528,8 +4528,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             isCancelled = true;
 
             synchronized (this) {
-                scheduledCp.reason = "shutdown";
-
                 notifyAll();
             }
         }

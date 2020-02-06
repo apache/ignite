@@ -586,7 +586,7 @@ public class GridH2Table extends TableBase {
      * @param idx Index in list.
      * @return Index.
      */
-    public GridH2IndexBase index(int idx) {
+    private GridH2IndexBase index(int idx) {
         return (GridH2IndexBase)idxs.get(idx);
     }
 
@@ -919,17 +919,17 @@ public class GridH2Table extends TableBase {
      * Check whether user index with provided name exists.
      *
      * @param idxName Index name.
-     * @return the index of the user index, or {@code -1} if the user index does not occur.
+     * @return {@code True} if exists.
      */
-    public int containsUserIndex(String idxName) {
+    public boolean containsUserIndex(String idxName) {
         for (int i = 2; i < idxs.size(); i++) {
             Index idx = idxs.get(i);
 
             if (idx.getName().equalsIgnoreCase(idxName))
-                return i;
+                return true;
         }
 
-        return -1;
+        return false;
     }
 
     /** {@inheritDoc} */

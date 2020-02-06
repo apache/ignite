@@ -68,7 +68,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -3872,29 +3872,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public GridQueryTypeDescriptor updateIndex(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException,
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         lockEntry();
 
         try {
             if (isInternal())
-                return null;
+                return;
 
             checkObsolete();
 
             CacheDataRow row = cctx.offheap().read(this);
 
-            if (row != null) {
+            if (row != null)
                 clo.apply(row);
-
-                return cctx.kernalContext().query().typeByValue(cctx.cache().name(),
-                    cctx.cacheObjectContext(), row.key(), row.value(), true);
-            }
         }
         finally {
             unlockEntry();
         }
-        return null;
     }
 
     /** {@inheritDoc} */
