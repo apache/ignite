@@ -4,6 +4,10 @@ Apache Ignite Release Notes
 Apache Ignite In-Memory Database and Caching Platform 2.8
 ---------------------------------------------------------
 
+Ignite Experimental API:
+* Added MetricExporterSpi API an exporter of Ignite metric information to the external recepient
+* Extended IgniteCache API with withReadRepair to perform backup nodes consistency check on each cache get attempt
+
 
 Ignite:
 * Added @IgniteExperimental API annotation to notify users about unstable API
@@ -19,7 +23,7 @@ Ignite:
 * Added ability to set default parallelism of rebuild indexes in configuration
 * Added ability to track system/user time held in the transaction
 * Added binary mode (withKeepBinary) to Data Structures Queue
-* Added cache mode which allows reads with consistency check and fix
+* Added a withReadRepair for IgniteCache to perform backup nodes consistency check on each cache get attempt
 * Added cache validation logic on primary node instead of near node
 * Added cluster activation/deactivation events
 * Added configuration for explicit plugins providing (via spring configuration)
@@ -38,15 +42,15 @@ Ignite:
 * Added support for Kubernetes discovery for non-ready pods
 * Added support for spring data update/delete operations
 * Added support logical recovery phase outside of PME
-* Added support of best effort affinity for thin clients (partition awareness)
-* Added support of node discovery through AWS ELB
+* Added support best effort affinity for thin clients (partition awareness)
+* Added support node discovery through AWS ELB
 * Added transaction label to transaction cache events (e.g. EVT_TX_STARTED, EVT_TX_COMMITTED)
 * Added transactions support to thin clients
 * Added 'limit' as a parameter for TextQuery constructor and builder
 * Added ignite-spring-data_2.2 module to be used with Spring Framework 5.2.x and Spring Data 2.2.x
 * Added integration with hibernate 5.3
 * Added support for non-blocking PME on node left
-* Ass support for IgniteSpark skipStore option for internal dataStreamer (IgniteRdd and Ignite DataFrame)
+* Added support for IgniteSpark skipStore option for internal dataStreamer (IgniteRdd and Ignite DataFrame)
 * Avoid synchronous initialization of storage managers during PME
 * Fixed B+Tree corruption caused by byte array values
 * Fixed ComputeJob cancel method executes with the wrong SecurityContext
