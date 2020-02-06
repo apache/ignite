@@ -77,9 +77,10 @@ public class DeactivateCommand implements Command<Void> {
                 Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
                     null, clientCfg);
 
-                if (!readyToDeactivate)
+                if (!readyToDeactivate) {
                     throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
                         + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
+                }
             }
 
             GridClientClusterState state = client.state();

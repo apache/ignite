@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util;
 
+import com.sun.tools.javac.util.Assert;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -50,15 +51,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -81,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -103,6 +109,7 @@ import org.apache.ignite.IgniteSystemProperties;
 
 import static java.io.File.separatorChar;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -227,6 +234,49 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(), "Cluster state changed to ACTIVE");
     }
 
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(false);
+        return cfg;
+    }
+
+    @Test
+    public void testDataPresent() throws Exception {
+        System.setProperty(IGNITE_REUSE_MEMORY_ON_DEACTIVATE, "true");
+
+        IgniteEx i = startGrid(0);
+
+        String name = "non-persistent-cache";
+
+        i.createCache(name).put(1L, 1L);
+
+        assertEquals(1L, i.cache(name).get(1L));
+
+        i.cluster().state(ClusterState.INACTIVE);
+        i.cluster().state(ClusterState.ACTIVE);
+
+        assertEquals(1L, i.cache(name).get(1L)); //Assertion error here!
+    }
+
+    @Test
+    public void testChangeState() throws Exception {
+        // We assume reuse-mem-on-deactivate is on.
+        System.setProperty(IGNITE_REUSE_MEMORY_ON_DEACTIVATE, "true");
+
+        Ignite ignite = startGrids(3);
+
+        // A cache without persistence
+        IgniteCache cache = ignite.createCache("non-persistent-cache");
+        assertNull(((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getDataRegionName());
+
+        cache.put(1L,1L);
+
+        ignite.cluster().state(INACTIVE);
+        ignite.cluster().state(ACTIVE);
+
+        assertEquals( 1L, cache.get(1L) );
+    }
+
     /**
      * Test deactivation works via control.sh
      *
@@ -287,7 +337,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             assertTrue(ignite.cluster().active());
             assertEquals(ACTIVE, ignite.cluster().state());
-            assertContains(log, testOut.toString(), "During deactivation all data from these caches will be erased!");
+            assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
 
             assertEquals(EXIT_CODE_OK, execute("--deactivate", "--force"));
         }

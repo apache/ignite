@@ -299,6 +299,7 @@ import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REUSE_MEMORY_ON_DEACTIVATE;
@@ -3962,11 +3963,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public void deactivate(boolean force) {
         // Check if cluster is ready for deactivation.
-        if (cluster().state() != ClusterState.INACTIVE && !force) {
-
-            if (!context().state().isDeactivationSafe())
-                throw new IllegalStateException(GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING
-                    + " Please, enable force flag to deactivate cluster.");
+        if (!force && !context().state().isDeactivationSafe()) {
+            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                + " Please, enable force flag to deactivate cluster.");
         }
 
         cluster().state(ClusterState.INACTIVE);
