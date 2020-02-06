@@ -1,4 +1,4 @@
-# Apache Ignite C++ SDK
+# Apache Ignite C++
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a>
 
@@ -72,6 +72,9 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 * Ignite C++ starts the JVM in the same process and communicates with it via JNI.
 * .NET, C++ and Java nodes can join the same cluster, use the same caches, and interoperate using common binary protocol.
 * Java compute jobs can execute on any node (Java, .NET, C++).
+* C++ compute jobs can only execute on C++ nodes.
+
+There is also C++ Thin Client (see `IgniteClient`), which does not start JVM and does not require Java on machine.
 
 ## Ignite Components
 
@@ -79,7 +82,6 @@ You can view Apache Ignite as a collection of independent, well-integrated compo
  scalability of your application.
 
 Some of these components include:
-* [Advanced Clustering](#advanced-clustering)
 * [Data Grid](#data-grid-jcache)
 * [SQL Database](#sql-database)
 * [Compute Grid](#compute-grid)

@@ -30,6 +30,9 @@ namespace ignite
 {
     class IgniteBinding;
 
+    /**
+     * @cond HIDDEN_SYMBOLS
+     */
     namespace impl
     {
         namespace cache
@@ -41,6 +44,9 @@ namespace ignite
             }
         }
     }
+    /**
+     * @endcond
+     */
 
     namespace cache
     {

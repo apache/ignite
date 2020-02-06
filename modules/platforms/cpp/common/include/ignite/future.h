@@ -29,12 +29,18 @@
 
 namespace ignite
 {
+    /**
+     * @cond HIDDEN_SYMBOLS
+     */
     namespace common
     {
         // Forward declaration
         template<typename T>
         class Promise;
     }
+    /**
+     * @endcond
+     */
 
     /**
      * Future class template. Used to get result of the asynchroniously
