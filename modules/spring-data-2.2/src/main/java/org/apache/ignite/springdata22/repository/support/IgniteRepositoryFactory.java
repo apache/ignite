@@ -28,6 +28,8 @@ import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata22.repository.query.IgniteQuery;
 import org.apache.ignite.springdata22.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata22.repository.query.IgniteRepositoryQuery;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -35,6 +37,9 @@ import org.springframework.data.repository.core.support.AbstractEntityInformatio
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
+import org.springframework.expression.Expression;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -44,6 +49,8 @@ import org.springframework.util.StringUtils;
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite instance */
     private Ignite ignite;
+    /** Spring application context */
+    private ApplicationContext ctx;
 
     /** Mapping of a repository to a cache. */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
@@ -53,8 +60,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param ignite
      */
-    public IgniteRepositoryFactory(Ignite ignite) {
+    public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
         this.ignite = ignite;
+        this.ctx = ctx;
     }
 
     /**
@@ -63,8 +71,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param cfg Ignite configuration.
      */
-    public IgniteRepositoryFactory(IgniteConfiguration cfg) {
+    public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
         this.ignite = Ignition.start(cfg);
+        this.ctx = ctx;
     }
 
     /**
@@ -73,8 +82,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param springCfgPath A path to Ignite configuration.
      */
-    public IgniteRepositoryFactory(String springCfgPath) {
+    public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
         this.ignite = Ignition.start(springCfgPath);
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -107,10 +117,36 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig " +
             "annotation to map this repository to the underlying cache.");
-
-        repoToCache.put(repoItf, annotation.cacheName());
-
+//        https://stackoverflow.com/questions/11616316/programmatically-evaluate-a-bean-expression-with-spring-expression-language
+        String cacheName = null;
+        if (!looksLikeExpression(annotation.cacheName())) {
+            cacheName = annotation.cacheName();
+        }
+        else {
+            SpelExpressionParser parser = new SpelExpressionParser();
+            Expression expression = parser.parseExpression(annotation.cacheName());
+            StandardEvaluationContext ec = new StandardEvaluationContext();
+            ec.setBeanResolver(new BeanFactoryResolver(ctx.getAutowireCapableBeanFactory()));
+            cacheName = (String)expression.getValue(ec);
+        }
+        repoToCache.put(repoItf, cacheName);
         return super.getRepositoryMetadata(repoItf);
+    }
+
+    /**
+     * The method tryes to identify SpEL extression
+     * @see <a href="https://docs.spring.io/spring/docs/5.0.16.RELEASE/spring-framework-reference/core.html#expressions">SpEL</a>
+     * @param expression
+     * @return
+     */
+
+    private boolean looksLikeExpression(String expression) {
+        boolean looksLikeExpression = expression.contains("@") || expression.contains("#")
+            || expression.contains("$") || expression.contains("?") || expression.contains("(")
+            || expression.contains(")") || expression.contains("'") || expression.contains("{")
+            || expression.contains("}") || expression.contains(">") || expression.contains("<")
+            || expression.contains("=");
+        return looksLikeExpression;
     }
 
     /** {@inheritDoc} */
