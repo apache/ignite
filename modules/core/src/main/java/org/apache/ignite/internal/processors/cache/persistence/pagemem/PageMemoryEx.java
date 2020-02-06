@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -82,6 +83,18 @@ public interface PageMemoryEx extends PageMemory {
      * @throws IgniteCheckedException If failed.
      */
     public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException;
+
+    /**
+     * @see #acquirePage(int, long)
+     * Sets additional flag indicating that page was not found in memory and had to be allocated.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param pageAllocated Flag is set if new page was allocated in offheap memory.
+     * @return Page.
+     * @throws IgniteCheckedException
+     */
+    public long acquirePage(int grpId, long pageId, AtomicBoolean pageAllocated) throws IgniteCheckedException;
 
     /**
      * @see #acquirePage(int, long)
@@ -175,4 +188,9 @@ public interface PageMemoryEx extends PageMemory {
      * Calculates throttling condition.
      */
     public boolean shouldThrottle();
+
+    /**
+     * Total pages can be placed to memory.
+     */
+    public long totalPages();
 }

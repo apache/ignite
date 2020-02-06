@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.security.cache.closure;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -54,50 +54,40 @@ public class EntryProcessorRemoteSecurityContextCheckTest extends AbstractCacheO
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, 1)
-            .expect(SRV_CHECK, 1)
-            .expect(SRV_ENDPOINT, 1)
-            .expect(CLNT_ENDPOINT, 1);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
     @Test
     public void test() {
-        runAndCheck(grid(SRV_INITIATOR), operations());
-        runAndCheck(grid(CLNT_INITIATOR), operations());
+        runAndCheck(operations());
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToRun() {
-        return Collections.singletonList(nodeId(SRV_RUN));
+    @Override protected Collection<String> nodesToRun() {
+        return Collections.singletonList(SRV_RUN);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> nodesToCheck() {
-        return Collections.singletonList(nodeId(SRV_CHECK));
+    @Override protected Collection<String> nodesToCheck() {
+        return Collections.singletonList(SRV_CHECK);
     }
 
     /**
      * @return Stream of runnables to call invoke methods.
      */
     private Stream<IgniteRunnable> operations() {
-        final Integer key = prmKey(grid(SRV_CHECK));
+        final Integer key = primaryKey(grid(SRV_CHECK));
 
-        return Stream.<IgniteRunnable>of(
-            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invoke(key, createRunner()),
+        return Stream.of(
+            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invoke(key, operationCheck()),
 
-            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAll(singleton(key), createRunner()),
+            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAll(singleton(key), operationCheck()),
 
-            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAsync(key, createRunner()).get(),
+            () -> localIgnite().<Integer, Integer>cache(CACHE_NAME).invokeAsync(key, operationCheck()).get(),
 
             () -> localIgnite().<Integer, Integer>cache(CACHE_NAME)
-                .invokeAllAsync(singleton(key), createRunner()).get()
-        ).map(RegisterExecAndForward::new);
+                .invokeAllAsync(singleton(key), operationCheck()).get()
+        );
     }
 }

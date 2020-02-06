@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -96,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -110,7 +112,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -273,11 +275,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
+    /** List of exchange aware components. */
+    private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
+
     /** Histogram of PME durations. */
-    private volatile HistogramMetric durationHistogram;
+    private volatile HistogramMetricImpl durationHistogram;
 
     /** Histogram of blocking PME durations. */
-    private volatile HistogramMetric blockingDurationHistogram;
+    private volatile HistogramMetricImpl blockingDurationHistogram;
+
+    /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
+    private volatile long rebalanceDelay;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -1201,6 +1209,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * Registers component that will be notified on every partition map exchange.
+     *
+     * @param comp Component to be registered.
+     */
+    public void registerExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.add(comp);
+    }
+
+    /**
+     * Removes exchange aware component from list of listeners.
+     *
+     * @param comp Component to be registered.
+     */
+    public void unregisterExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.remove(comp);
+    }
+
+    /**
+     * @return List of registered exchange listeners.
+     */
+    public List<PartitionsExchangeAware> exchangeAwareComponents() {
+        return U.sealList(exchangeAwareComps);
+    }
+
+    /**
      * Partition refresh callback for selected cache groups.
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
@@ -2119,7 +2152,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (warnings.canAddMessage()) {
                             warnings.add(longRunningTransactionWarning(tx, curTime));
 
-                            if (ltrDumpLimiter.allowAction(tx))
+                            if (cctx.tm().txOwnerDumpRequestsAllowed()
+                                && !Optional.ofNullable(cctx.kernalContext().config().isClientMode()).orElse(false)
+                                && tx.local()
+                                && tx.state() == TransactionState.ACTIVE
+                                && ltrDumpLimiter.allowAction(tx))
                                 dumpLongRunningTransaction(tx);
                         }
                         else
@@ -2200,76 +2237,74 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param tx Transaction.
      */
     private void dumpLongRunningTransaction(IgniteInternalTx tx) {
-        if (cctx.tm().txOwnerDumpRequestsAllowed() && tx.local() && tx.state() == TransactionState.ACTIVE) {
-            Collection<UUID> masterNodeIds = tx.masterNodeIds();
+        Collection<UUID> masterNodeIds = tx.masterNodeIds();
 
-            if (masterNodeIds.size() == 1) {
-                UUID nearNodeId = masterNodeIds.iterator().next();
+        if (masterNodeIds.size() == 1) {
+            UUID nearNodeId = masterNodeIds.iterator().next();
 
-                long txOwnerThreadId = tx.threadId();
+            long txOwnerThreadId = tx.threadId();
 
-                Ignite ignite = cctx.kernalContext().grid();
+            Ignite ignite = cctx.kernalContext().grid();
 
-                ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
+            ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
-                String txRequestInfo = String.format(
-                    "[xidVer=%s, nodeId=%s]",
-                    tx.xidVersion().toString(),
-                    nearNodeId.toString()
-                );
+            String txRequestInfo = String.format(
+                "[xidVer=%s, nodeId=%s]",
+                tx.xidVersion().toString(),
+                nearNodeId.toString()
+            );
 
-                if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
-                    IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+            if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
+                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
 
-                    try {
-                        compute
-                            .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
-                            .listen(new IgniteInClosure<IgniteFuture<String>>() {
-                                @Override public void apply(IgniteFuture<String> strIgniteFut) {
-                                    String traceDump = null;
+                try {
+                    compute
+                        .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
+                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
+                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
+                                String traceDump = null;
 
-                                    try {
-                                        traceDump = strIgniteFut.get();
-                                    }
-                                    catch (ClusterGroupEmptyException e) {
-                                        U.error(
-                                            diagnosticLog,
-                                            "Could not get thread dump from transaction owner because near node " +
-                                                    "is now out of topology. " + txRequestInfo
-                                        );
-                                    }
-                                    catch (Exception e) {
-                                        U.error(
-                                            diagnosticLog,
-                                            "Could not get thread dump from transaction owner near node " + txRequestInfo,
-                                            e
-                                        );
-                                    }
-
-                                    if (traceDump != null) {
-                                        U.warn(
-                                            diagnosticLog,
-                                            String.format(
-                                                "Dumping the near node thread that started transaction %s\n%s",
-                                                txRequestInfo,
-                                                traceDump
-                                            )
-                                        );
-                                    }
+                                try {
+                                    traceDump = strIgniteFut.get();
                                 }
-                            });
-                    }
-                    catch (Exception e) {
-                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
-                    }
+                                catch (ClusterGroupEmptyException e) {
+                                    U.error(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner because near node " +
+                                                "is out of topology now. " + txRequestInfo
+                                    );
+                                }
+                                catch (Exception e) {
+                                    U.error(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner near node " + txRequestInfo,
+                                        e
+                                    );
+                                }
+
+                                if (traceDump != null) {
+                                    U.warn(
+                                        diagnosticLog,
+                                        String.format(
+                                            "Dumping the near node thread that started transaction %s\n%s",
+                                            txRequestInfo,
+                                            traceDump
+                                        )
+                                    );
+                                }
+                            }
+                        });
                 }
-                else {
-                    U.warn(
-                        diagnosticLog,
-                        "Could not send dump request to transaction owner near node: node does not support this feature. " +
-                            txRequestInfo
-                    );
+                catch (Exception e) {
+                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
                 }
+            }
+            else {
+                U.warn(
+                    diagnosticLog,
+                    "Could not send dump request to transaction owner near node: node does not support this feature. " +
+                        txRequestInfo
+                );
             }
         }
     }
@@ -2476,6 +2511,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     ) {
         this.exchMergeTestWaitVer = exchMergeTestWaitVer;
         this.mergedEvtsForTest = mergedEvtsForTest;
+    }
+
+    /**
+     * @param delay Rebalance delay.
+     */
+    public void rebalanceDelay(long delay) {
+        this.rebalanceDelay = delay;
     }
 
     /**
@@ -2814,12 +2856,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /** @return Histogram of PME durations metric. */
-    public HistogramMetric durationHistogram() {
+    public HistogramMetricImpl durationHistogram() {
         return durationHistogram;
     }
 
     /** @return Histogram of blocking PME durations metric. */
-    public HistogramMetric blockingDurationHistogram() {
+    public HistogramMetricImpl blockingDurationHistogram() {
         return blockingDurationHistogram;
     }
 
@@ -3307,6 +3349,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             rebTopVer = NONE;
 
                         if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
+                            if (rebalanceDelay > 0)
+                                U.sleep(rebalanceDelay);
+
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();

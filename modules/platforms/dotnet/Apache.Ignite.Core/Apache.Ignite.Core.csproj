@@ -256,6 +256,7 @@
     <Compile Include="Cluster\IClusterNode.cs" />
     <Compile Include="Cluster\IClusterNodeFilter.cs" />
     <Compile Include="Common\IgniteException.cs" />
+    <Compile Include="Common\IgniteExperimentalAttribute.cs" />
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Impl\Binary\Io\IBinaryStreamProcessor.cs" />

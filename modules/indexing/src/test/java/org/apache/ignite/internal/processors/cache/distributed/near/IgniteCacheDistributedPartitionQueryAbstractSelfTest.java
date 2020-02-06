@@ -168,9 +168,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
         cfg.setCacheConfiguration(clientCfg, depoCfg, regionCfg);
 
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
-        else {
+        if (!"client".equals(gridName)) {
             Integer reg = regionForGrid(gridName);
 
             cfg.setUserAttributes(F.asMap(REGION_ATTR_NAME, reg));
@@ -313,7 +311,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
         startGridsMultiThreaded(GRIDS_COUNT);
 
-        startGrid("client");
+        startClientGrid("client");
 
         // Fill caches.
         int clientId = 1;
