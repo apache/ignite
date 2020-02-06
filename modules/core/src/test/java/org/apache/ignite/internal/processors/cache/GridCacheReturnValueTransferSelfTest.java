@@ -42,9 +42,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests transform for extra traffic.
  */
 public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest {
-    /** Distribution mode. */
-    private boolean cache;
-
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
@@ -67,9 +64,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
         cfg.setCacheConfiguration(ccfg);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        if (!cache)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -108,13 +102,8 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
             backups = b;
 
-            cache = true;
-
             startGrids(2);
-
-            cache = false;
-
-            startGrid(2);
+            startClientGrid(2);
 
             failDeserialization = false;
 

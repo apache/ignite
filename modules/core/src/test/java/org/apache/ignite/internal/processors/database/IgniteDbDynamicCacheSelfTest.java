@@ -46,9 +46,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        if (gridName.equals("client"))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 

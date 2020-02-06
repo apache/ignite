@@ -47,9 +47,6 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestIgniteInstanceName(SRV_CNT).equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         cfg.setMarshaller(null);
 
         return cfg;
@@ -59,7 +56,8 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(NODES);
+        startGridsMultiThreaded(NODES - 1);
+        startClientGrid(SRV_CNT);
     }
 
     /**

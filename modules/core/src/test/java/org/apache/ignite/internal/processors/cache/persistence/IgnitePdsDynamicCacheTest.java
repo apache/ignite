@@ -51,9 +51,6 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 

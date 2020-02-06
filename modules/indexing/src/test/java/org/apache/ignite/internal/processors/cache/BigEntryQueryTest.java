@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -63,9 +62,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
 
         Random random = new Random(1);
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid(2);
+        Ignite client = startClientGrid(2);
 
         int ctr = 0;
 

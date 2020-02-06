@@ -126,16 +126,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = igniteInstanceName.startsWith("client");
-
-        cfg.setClientMode(client);
-
         if (persistenceEnabled())
             cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(LOG_ONLY).setPageSize(1024).
                 setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                     setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
-        if (!client) {
+        if (!igniteInstanceName.startsWith("client")) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
             if (nearCacheEnabled())
@@ -191,7 +187,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * @throws Exception If f nodeailed.
      */
     private Ignite startClient() throws Exception {
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 

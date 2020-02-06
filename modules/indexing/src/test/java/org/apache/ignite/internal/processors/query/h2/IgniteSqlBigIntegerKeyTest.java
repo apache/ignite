@@ -50,7 +50,7 @@ public class IgniteSqlBigIntegerKeyTest extends AbstractIndexingCommonTest {
 
         startGrid("server");
 
-        Ignite cli = startGrid(getConfiguration("client").setClientMode(true));
+        Ignite cli = startClientGrid("client");
 
         IgniteCache<Object, Object> cache = cli.getOrCreateCache(new CacheConfiguration<>()
             .setIndexedTypes(BigInteger.class, Student.class)
