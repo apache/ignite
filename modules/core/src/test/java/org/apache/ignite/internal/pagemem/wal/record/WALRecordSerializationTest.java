@@ -47,7 +47,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.record
 /**
  * Tests of serialization and deserialization of all WAL record types {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
  *
- * It checks that all records can be successfully deserialized from early serialized record included serialization via compaction.
+ * It checks that all records can be successfully deserialized from early serialized record included serialization via
+ * compaction.
  */
 public class WALRecordSerializationTest extends GridCommonAbstractTest {
     /** Wal segment size. */
@@ -196,10 +197,9 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
         // Spam WAL to move all data records to compressible WAL zone.
         for (int i = 0; i < WAL_SEGMENT_SIZE / DFLT_PAGE_SIZE * 2; i++)
-            lastPointer = wal.log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE], 1));
+            wal.log(new PageSnapshot(new FullPageId(-1, -1), new byte[DFLT_PAGE_SIZE], 1));
 
-        //Allowing to remove uncompressed wal segment until this.
-        wal.notchLastCheckpointPtr(lastPointer);
+        ignite.getOrCreateCache("generateDirtyPages");
 
         // WAL archive segment is allowed to be compressed when it's at least one checkpoint away from current WAL head.
         ignite.context().cache().context().database().wakeupForCheckpoint("Forced checkpoint").get();
