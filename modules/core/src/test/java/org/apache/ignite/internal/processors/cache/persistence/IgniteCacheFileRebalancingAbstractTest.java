@@ -65,7 +65,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
@@ -433,68 +432,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         verifyCache(ignite1, idxLdr);
         verifyCache(ignite1, sharedLdr1);
         verifyCache(ignite1, sharedLdr2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Ignore
-    @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-    public void testHistoricalWithFileRebalancing() throws Exception {
-        assert backups() >= 2;
-
-        IgniteEx ignite0 = startGrid(0, false);
-        IgniteEx ignite1 = startGrid(1, false);
-        IgniteEx ignite2 = startGrid(2, true);
-
-        ignite0.cluster().active(true);
-
-        List<ClusterNode> baseline = new ArrayList<>(3);
-
-        baseline.add(ignite0.localNode());
-        baseline.add(ignite1.localNode());
-        baseline.add(ignite2.localNode());
-
-        for (int i = 0; i < 20_000; i++)
-            ignite0.cache(INDEXED_CACHE).put(i, new TestValue(i, i, i));
-
-        forceCheckpoint(ignite0);
-
-        String inst2Name = ignite2.name();
-
-        stopGrid(1);
-        stopGrid(2);
-
-        for (int i = 20_000; i < 25_000; i++)
-            ignite0.cache(INDEXED_CACHE).put(i, new TestValue(i, i, i));
-
-        cleanPersistenceDir(inst2Name);
-
-        CountDownLatch startLatch = new CountDownLatch(1);
-
-        IgniteInternalFuture fut1 = GridTestUtils.runAsync( () -> {
-            startLatch.await(AWAIT_TIME_SECONDS, TimeUnit.SECONDS);
-
-            startGrid(1);
-
-            return null;
-        });
-
-        IgniteInternalFuture fut2 = GridTestUtils.runAsync( () -> {
-            startLatch.await(AWAIT_TIME_SECONDS, TimeUnit.SECONDS);
-
-            startGrid(2);
-
-            return null;
-        });
-
-        startLatch.countDown();
-
-        fut1.get();
-        fut2.get();
-
-        awaitPartitionMapExchange();
     }
 
     /**
