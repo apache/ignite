@@ -66,10 +66,6 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
 
-        if (getTestIgniteInstanceName(CLIENT_NODE_WITH_EXT_CLASS_LOADER).equals(igniteInstanceName)
-            || getTestIgniteInstanceName(CLIENT_NODE).equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         if (extClsLdrGrids.contains(igniteInstanceName))
             cfg.setClassLoader(extClsLdr);
 
@@ -119,9 +115,9 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
-        startGrid(CLIENT_NODE);
+        startClientGrid(CLIENT_NODE);
 
-        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
+        startClientGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
         ignite(SERVER_NODE).services().serviceDescriptors();
 
@@ -135,9 +131,9 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     public void testServiceDeployment2() throws Exception {
         startGrid(SERVER_NODE);
 
-        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
+        startClientGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
-        startGrid(CLIENT_NODE);
+        startClientGrid(CLIENT_NODE);
 
         startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
     }
@@ -151,9 +147,9 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         startGrid(SERVER_NODE);
 
-        startGrid(CLIENT_NODE);
+        startClientGrid(CLIENT_NODE);
 
-        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
+        startClientGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
     }
 
     /**

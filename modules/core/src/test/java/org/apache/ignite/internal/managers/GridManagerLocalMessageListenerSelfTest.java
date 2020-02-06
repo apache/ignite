@@ -22,11 +22,9 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
-import org.apache.ignite.internal.util.typedef.CO;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -48,11 +46,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     private static final short DIRECT_TYPE = 210;
 
     static {
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridIoUserMessage();
-            }
-        });
+        IgniteMessageFactoryImpl.registerCustom(DIRECT_TYPE, GridIoUserMessage::new);
     }
 
     /** {@inheritDoc} */
@@ -180,7 +174,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
         private IgniteSpiContext spiCtx;
 
         /** Test message topic. **/
-        private String TEST_TOPIC = "test_topic";
+        private static final String TEST_TOPIC = "test_topic";
 
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
@@ -192,6 +186,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
             this.spiCtx = spiCtx;
 
@@ -203,6 +198,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         }
 
+        /** {@inheritDoc} */
         @Override public void onContextDestroyed0() {
             spiCtx.removeLocalMessageListener(TEST_TOPIC, new IgniteBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {

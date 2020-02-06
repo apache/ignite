@@ -65,8 +65,6 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
         if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             CacheConfiguration ccfg = getCacheConfiguration();
 
             cfg.setCacheConfiguration(ccfg);
@@ -153,7 +151,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         try {
             startGrid(SERVER_ID);
 
-            Ignite client = startGrid(CLIENT_ID);
+            Ignite client = startClientGrid(CLIENT_ID);
 
             checkTopology(2);
 

@@ -142,8 +142,8 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
      */
     @Test
     public void testSetTxTimeoutOnClientDuringPartitionMapExchange() throws Exception {
-        IgniteEx ig = (IgniteEx) startGrids(2);
-        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+        IgniteEx ig = startGrids(2);
+        IgniteEx client = startClientGrid(getConfiguration("client"));
 
         checkSetTxTimeoutDuringPartitionMapExchange(client);
     }
