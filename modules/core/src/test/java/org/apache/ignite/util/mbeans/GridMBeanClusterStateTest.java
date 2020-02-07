@@ -34,11 +34,13 @@ public class GridMBeanClusterStateTest extends GridCommonAbstractTest {
 
         assertThrows(log, () -> {
             mxBean.active(false);
+
             return null;
         }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
 
         assertThrows(log, () -> {
             mxBean.clusterState(INACTIVE.name(), false);
+
             return null;
         }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
 

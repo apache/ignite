@@ -261,7 +261,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testDeactivateNonPersistent() throws Exception {
-        deactivateNonPersistent( true );
+        checkDeactivateNonPersistent( true );
     }
 
     /**
@@ -271,7 +271,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testSetInactiveonPersistent() throws Exception {
-        deactivateNonPersistent( false );
+        checkDeactivateNonPersistent(false);
     }
 
     /**
@@ -279,7 +279,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      *
      *  @param usingDeprecatedDeactivate deactivates cluster using deprecated "deactivate" command.
      */
-    private void deactivateNonPersistent(boolean usingDeprecatedDeactivate) throws Exception {
+    private void checkDeactivateNonPersistent(boolean usingDeprecatedDeactivate) throws Exception {
         dataRegionConfiguration = new DataRegionConfiguration()
             .setName("non-persistent-dataRegion")
             .setPersistenceEnabled(false);
