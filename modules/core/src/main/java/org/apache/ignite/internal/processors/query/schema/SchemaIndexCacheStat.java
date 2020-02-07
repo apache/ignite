@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 
 /**
- *
+ * Class for accumulation of record types and number of indexed records in index tree.
  */
 public class SchemaIndexCacheStat {
     /**
      * Indexed types.
      */
-    public Set<String> types = new HashSet<>();
+    public final Map<String, QueryTypeDescriptorImpl> types = new HashMap<>();
+
     /**
      * Indexed keys.
      */

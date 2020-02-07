@@ -1218,7 +1218,10 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_GRP_STATE_LAZY_STORE = "IGNITE_DISABLE_GRP_STATE_LAZY_STORE";
 
     /**
-     * Enables extended logging of indexes rebuild process. Default {@code false}.
+     * Enables extended logging of indexes create/rebuild process. Default {@code false}.
+     * <p/>
+     * <b>Warning</b>: enabling that option can lead to performance degradation of index creation, rebuilding and  node
+     * restart.
      */
     public static final String IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING = "IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING";
 
