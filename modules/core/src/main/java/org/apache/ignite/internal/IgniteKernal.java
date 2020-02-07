@@ -3948,8 +3948,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        if (!active)
-            checkDeactivation();
+        if (!active && !ctx.state().isDeactivationSafe()) {
+            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                + " To force changing of cluster state call " +
+                "clusterState(\"" + INACTIVE.name().toLowerCase() + "\", true).");
+        }
 
         cluster().active(active);
     }
@@ -4749,25 +4752,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void clusterState(String state) {
+        clusterState(state, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public void clusterState(String state, boolean force) {
         ClusterState newState = ClusterState.valueOf(state);
 
-        if (newState == INACTIVE && !force)
-            checkDeactivation();
-
-        cluster().state(newState);
-    }
-
-    /**
-     * Check if cluster is ready for deactivation.
-     *
-     * @throws IllegalStateException if deactivation is unsafe.
-     */
-    private void checkDeactivation() {
-        if (!context().state().isDeactivationSafe()) {
+        if (newState == INACTIVE && !force && !ctx.state().isDeactivationSafe()) {
             throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
                 + " Please, enable force flag to deactivate cluster.");
         }
+
+        cluster().state(newState);
     }
 
     /** {@inheritDoc} */

@@ -702,8 +702,20 @@ public interface IgniteMXBean {
      * See {@link ClusterState}
      */
     @MXBeanDescription("Changes current cluster state.")
+    @MXBeanParametersNames("state")
+    @MXBeanParametersDescriptions("New cluster state.")
+    public void clusterState(String state);
+
+    /**
+     * Changes current cluster state. Can skip checking safety of the operation.
+     *
+     * @param state String representation of new cluster state.
+     * @param force Disables checking of operation safety.
+     * See {@link ClusterState}
+     */
+    @MXBeanDescription("Changes current cluster state.")
     @MXBeanParametersNames({"state", "force"})
-    @MXBeanParametersDescriptions({"New cluster state.", "Skip checking of safety of the operation."})
+    @MXBeanParametersDescriptions({"New cluster state.", "Disables checking of operation safety."})
     public void clusterState(String state, boolean force);
 
     /**
