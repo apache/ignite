@@ -135,10 +135,13 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setPageSize(1024).
+            setDefaultDataRegionConfiguration(new DataRegionConfiguration().
+                setInitialSize(200 * MB).setMaxSize(200 * MB)));
+
         if (persistenceEnabled())
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(LOG_ONLY).setPageSize(1024).
-                setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
-                    setInitialSize(100 * MB).setMaxSize(100 * MB)));
+            cfg.getDataStorageConfiguration().setWalMode(LOG_ONLY).getDefaultDataRegionConfiguration()
+                .setPersistenceEnabled(true);
 
         if (!client) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
@@ -639,7 +642,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         final int txSize = 200;
 
         for (int k = 0; k < txSize; k++)
-            grid(0).cache(CACHE_NAME).put(k, (long)0);
+            grid(0).cache(CACHE_NAME).put(k, 0L);
 
         final long seed = System.currentTimeMillis();
 
