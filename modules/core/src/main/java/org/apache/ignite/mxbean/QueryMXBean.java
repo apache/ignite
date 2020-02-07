@@ -18,11 +18,13 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
 
 /**
- * Continuous query MXBean interface.
+ * Query MXBean interface.
  */
-public interface ContinuousQueryMXBean {
+public interface QueryMXBean {
     /**
      * @param id Continuous query id.
      * @see ContinuousQueryView#routineId()
@@ -30,5 +32,20 @@ public interface ContinuousQueryMXBean {
     @MXBeanDescription("Kills continuous query by the identifier.")
     @MXBeanParametersNames("id")
     @MXBeanParametersDescriptions("Continuous query id.")
-    public void cancel(String id);
+    public void cancelContinuous(String id);
+
+    /**
+     * @param id SQL query id.
+     * @see SqlQueryView#queryId()
+     */
+    @MXBeanDescription("Kills SQL query by the identifier.")
+    @MXBeanParametersNames("id")
+    @MXBeanParametersDescriptions("SQL query id.")
+    void cancelSQL(Long id);
+
+    /**
+     * @param id Scan query id.
+     * @see ScanQueryView#queryId()
+     */
+    void cancelScan(Long id);
 }
