@@ -140,7 +140,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -725,8 +724,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+        try(IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")

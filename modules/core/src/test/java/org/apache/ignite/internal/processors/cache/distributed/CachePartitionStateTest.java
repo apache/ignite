@@ -50,9 +50,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class CachePartitionStateTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
@@ -60,8 +57,6 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        cfg.setClientMode(client);
 
         if (ccfg != null) {
             cfg.setCacheConfiguration(ccfg);
@@ -170,9 +165,7 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
 
         checkRebalance(DEFAULT_CACHE_NAME, true);
 
-        client = true;
-
-        Ignite clientNode = startGrid(4);
+        Ignite clientNode = startClientGrid(4);
 
         checkPartitionsState(assign0, DEFAULT_CACHE_NAME, OWNING);
 
@@ -181,8 +174,6 @@ public class CachePartitionStateTest extends GridCommonAbstractTest {
         checkPartitionsState(assign0, DEFAULT_CACHE_NAME, OWNING);
 
         checkRebalance(DEFAULT_CACHE_NAME, true);
-
-        client = false;
 
         startGrid(5);
 
