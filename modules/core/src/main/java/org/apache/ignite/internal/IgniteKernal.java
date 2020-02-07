@@ -302,8 +302,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.IgniteCach
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REUSE_MEMORY_ON_DEACTIVATE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 
 /**
  * This class represents an implementation of the main Ignite API {@link Ignite} which is expanded by additional
@@ -1962,9 +1960,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         ctx.addNodeAttribute(ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED,
             ctx.service() instanceof IgniteServiceProcessor);
-
-        // Allows to predict behavior on deactivation.
-        add(ATTR_REUSE_MEMORY_ON_DEACTIVATE, getBoolean(IGNITE_REUSE_MEMORY_ON_DEACTIVATE));
     }
 
     /**
