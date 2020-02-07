@@ -113,9 +113,11 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
 
             ignite.cluster().active(true);
 
+            doSleep(500);
+
             long putsAfter = ignite.cache("test0").metrics().getCachePuts();
 
-            assertEquals(0, putsAfter);
+            assertEquals(1, putsAfter);
         }
         finally {
             stopAllGrids();
