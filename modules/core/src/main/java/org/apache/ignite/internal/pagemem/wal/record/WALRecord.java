@@ -223,8 +223,8 @@ public abstract class WALRecord {
         /** Partition meta page containing update counter gaps. */
         PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL),
 
-        /** Reserved WAL record for compatibility purpose. */
-        RESERVED_WAL_RECORD(59, PHYSICAL),
+        /** Init root meta page (with flags and created version) */
+        BTREE_META_PAGE_INIT_ROOT_V3(59),
 
         /** Master key change record. */
         MASTER_KEY_CHANGE_RECORD(60, LOGICAL);
