@@ -1724,6 +1724,19 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testDisabledFeatures() throws Exception {
+        assertInvalid(url + "?disabledFeatures=unknownFeature",
+            "Unknown feature: unknownFeature");
+
+        try (Connection conn = DriverManager.getConnection(url + "?disabledFeatures=reserved")) {
+
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
