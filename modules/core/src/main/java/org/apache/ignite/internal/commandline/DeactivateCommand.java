@@ -71,7 +71,6 @@ public class DeactivateCommand implements Command<Void> {
         log.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
-
             // Search for in-memory-only caches. Fail if possible data loss.
             if (!force) {
                 Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,

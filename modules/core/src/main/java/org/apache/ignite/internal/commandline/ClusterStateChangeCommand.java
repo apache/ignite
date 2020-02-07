@@ -39,9 +39,7 @@ import static org.apache.ignite.internal.processors.cluster.GridClusterStateProc
  * Command to change cluster state.
  */
 public class ClusterStateChangeCommand implements Command<ClusterState> {
-    /**
-     * Forces cluster deactivation wihtout checking of safety of the operation.
-     * */
+    /** Forces cluster deactivation wihtout checking of safety of the operation. */
     static final String FORCE_COMMAND = "--force";
 
     /** New cluster state */
