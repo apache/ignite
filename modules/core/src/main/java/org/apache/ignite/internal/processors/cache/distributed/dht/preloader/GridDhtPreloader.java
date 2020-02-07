@@ -202,7 +202,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partitions; p++) {
-            if (ctx.exchange().hasPendingExchange()) {
+            if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchId);
