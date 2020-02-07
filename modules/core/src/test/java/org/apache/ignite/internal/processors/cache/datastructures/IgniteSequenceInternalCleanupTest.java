@@ -48,10 +48,7 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode("client".equals(igniteInstanceName));
-
         cfg.setMetricsUpdateFrequency(10);
-
         cfg.setActiveOnStart(false);
 
         AtomicConfiguration atomicCfg = atomicConfiguration();

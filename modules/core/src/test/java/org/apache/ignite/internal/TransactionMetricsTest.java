@@ -101,11 +101,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        IgniteConfiguration clientConf = getConfiguration(getTestIgniteInstanceName(2));
-
-        clientConf.setClientMode(true);
-
-        IgniteEx client = startGrid(clientConf);
+        IgniteEx client = startClientGrid(getConfiguration(getTestIgniteInstanceName(2)));
 
         awaitPartitionMapExchange();
 

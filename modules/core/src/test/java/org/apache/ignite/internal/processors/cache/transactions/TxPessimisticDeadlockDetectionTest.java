@@ -75,9 +75,6 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /** Custom start key. */
     private static final IncrementalTestObject CUSTOM_START_KEY = new KeyObject(1);
 
-    /** Client mode flag. */
-    private static boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -97,8 +94,6 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
         cfg.setDataStorageConfiguration(memCfg);
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -106,14 +101,10 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = false;
-
         startGridsMultiThreaded(NODES_CNT);
 
-        client = true;
-
         for (int i = 0; i < NODES_CNT; i++)
-            startGrid(i + NODES_CNT);
+            startClientGrid(i + NODES_CNT);
     }
 
     /**

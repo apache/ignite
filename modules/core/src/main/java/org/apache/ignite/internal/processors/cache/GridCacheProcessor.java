@@ -516,8 +516,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param grp Cache group.
+     * @param destroy Group destroy flag.
      */
-    private void cleanup(CacheGroupContext grp) {
+    private void cleanup(CacheGroupContext grp, boolean destroy) {
         CacheConfiguration cfg = grp.config();
 
         for (Object obj : grp.configuredUserObjects())
@@ -533,9 +534,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        grp.metrics().remove();
+        if (destroy) {
+            grp.metrics().remove();
 
-        grp.removeIOStatistic();
+            grp.removeIOStatistic();
+        }
 
         cachesInfo.cleanupRemovedGroup(grp.groupId());
     }
@@ -760,7 +763,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         for (CacheGroupContext grp : cacheGrps.values())
-            stopCacheGroup(grp.groupId());
+            stopCacheGroup(grp.groupId(), false);
     }
 
     /**
@@ -1023,6 +1026,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
+            if (destroy)
+                cache.removeMetrics();
+
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
             if (!clearDbObjects)
@@ -1036,6 +1042,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 // Check whether dht cache has been started.
                 if (dht != null) {
                     dht.stop();
+
+                    if (destroy)
+                        dht.removeMetrics();
 
                     GridCacheContext<?, ?> dhtCtx = dht.context();
 
@@ -2060,7 +2069,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             prepareCacheStop(cctx.name(), false, clearDbObjects);
 
             if (!cctx.group().hasCaches())
-                stopCacheGroup(cctx.group().groupId());
+                stopCacheGroup(cctx.group().groupId(), false);
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
@@ -2744,15 +2753,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
 
-        List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop = exchActions.cacheGroupsToStop().stream()
+        List<IgniteBiTuple<CacheGroupContext, Boolean>> grpsToStop = exchActions.cacheGroupsToStop().stream()
             .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
             .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
             .collect(Collectors.toList());
 
-        grpToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
+        grpsToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
 
         if (!exchActions.cacheStopRequests().isEmpty())
-            removeOffheapListenerAfterCheckpoint(grpToStop);
+            removeOffheapListenerAfterCheckpoint(grpsToStop);
 
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
@@ -2769,7 +2778,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             gctx.preloader().pause();
 
                         try {
-
                             if (gctx != null) {
                                 final String msg = "Failed to wait for topology update, cache group is stopping.";
 
@@ -2817,11 +2825,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteException(msg, e);
         }
 
-        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpToStop)
-            stopCacheGroup(grp.get1().groupId());
+        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop)
+            stopCacheGroup(grp.get1().groupId(), grp.get2());
 
         if (!sharedCtx.kernalContext().clientNode())
-            sharedCtx.database().onCacheGroupsStopped(grpToStop);
+            sharedCtx.database().onCacheGroupsStopped(grpsToStop);
 
         if (exchActions.deactivate())
             sharedCtx.deactivate();
@@ -2920,23 +2928,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param grpId Group ID.
+     * @param destroy Group destroy flag.
      */
-    private void stopCacheGroup(int grpId) {
+    private void stopCacheGroup(int grpId, boolean destroy) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
 
         if (grp != null)
-            stopCacheGroup(grp);
+            stopCacheGroup(grp, destroy);
     }
 
     /**
      * @param grp Cache group.
+     * @param destroy Group destroy flag.
      */
-    private void stopCacheGroup(CacheGroupContext grp) {
+    private void stopCacheGroup(CacheGroupContext grp, boolean destroy) {
         grp.stopGroup();
 
         U.stopLifecycleAware(log, grp.configuredUserObjects());
 
-        cleanup(grp);
+        cleanup(grp, destroy);
     }
 
     /**
@@ -3282,7 +3292,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.affinity().stopCacheOnReconnect(cache.context());
 
             if (!grp.hasCaches()) {
-                stopCacheGroup(grp);
+                stopCacheGroup(grp, false);
 
                 sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
             }
