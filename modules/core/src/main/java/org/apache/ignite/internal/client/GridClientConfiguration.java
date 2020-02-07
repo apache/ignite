@@ -915,6 +915,8 @@ public class GridClientConfiguration {
     }
 
     /**
+     * Returns user attributes which can be used on server node.
+     *
      * @return User attributes.
      */
     public Map<String, String> getUserAttributes() {
@@ -922,9 +924,15 @@ public class GridClientConfiguration {
     }
 
     /**
-     * User attributes can be used in custom authenticator to authenticate clients by checking attributes.
+     * Sets user attributes which can be used to send additional info to the server nodes.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
      *
      * @param userAttrs User attributes.
+     * @return {@code this} for chaining.
      */
     public GridClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
         this.userAttrs = userAttrs;
