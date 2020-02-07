@@ -251,7 +251,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         guard();
 
         try {
-            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, securityAwareBiPredicate(p));
 
             return new IgniteFutureImpl<>(ctx.continuous().startRoutine(hnd,
                 false,

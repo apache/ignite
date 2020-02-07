@@ -22,16 +22,22 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
- *
+ * Testing operation security context when the remoute listener of IgniteMessaging is executed on remote nodes.
+ * <p>
+ * The initiator node broadcasts a task to 'run' nodes that register the remoute listener on check nodes. That listener
+ * is executed on 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification
+ * that operation security context is the initiator context.
  */
 public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** Server node to change cache state. */
@@ -71,7 +77,30 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
 
     /** */
     @Test
-    public void test() throws Exception {
+    public void testRemoteListen() {
+        BiFunction<IgniteMessaging, String, UUID> f = new BiFunction<IgniteMessaging, String, UUID>() {
+            @Override public UUID apply(IgniteMessaging m, String t) {
+                return m.remoteListen(t, listener());
+            }
+        };
+
+        execute(f);
+    }
+
+    /** */
+    @Test
+    public void testRemoteListenAsync() {
+        BiFunction<IgniteMessaging, String, UUID> f = new BiFunction<IgniteMessaging, String, UUID>() {
+            @Override public UUID apply(IgniteMessaging m, String t) {
+                return m.remoteListenAsync(t, listener()).get();
+            }
+        };
+
+        execute(f);
+    }
+
+    /** */
+    private void execute(BiFunction<IgniteMessaging, String, UUID> func) {
         runAndCheck(() -> {
             Ignite loc = Ignition.localIgnite();
 
@@ -81,15 +110,7 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
 
             String topic = "test_topic_" + idx;
 
-            UUID id = messaging.remoteListen(topic, (uuid, o) -> {
-                VERIFIER.register(OPERATION_CHECK);
-
-                compute(Ignition.localIgnite(), endpointIds()).broadcast(() -> VERIFIER.register(OPERATION_ENDPOINT));
-
-                SYNCHRONIZED_SET.add(o);
-
-                return true;
-            });
+            UUID id = func.apply(messaging, topic);
 
             try {
                 grid(SRV).message().send(topic, idx);
@@ -100,6 +121,19 @@ public class MessagingRemoteSecurityContextCheckTest extends AbstractRemoteSecur
                 messaging.stopRemoteListen(id);
             }
         });
+    }
+
+    /** */
+    private IgniteBiPredicate<UUID, ?> listener() {
+        return (uuid, o) -> {
+            VERIFIER.register(OPERATION_CHECK);
+
+            compute(Ignition.localIgnite(), endpointIds()).broadcast(() -> VERIFIER.register(OPERATION_ENDPOINT));
+
+            SYNCHRONIZED_SET.add(o);
+
+            return true;
+        };
     }
 
     /** */
