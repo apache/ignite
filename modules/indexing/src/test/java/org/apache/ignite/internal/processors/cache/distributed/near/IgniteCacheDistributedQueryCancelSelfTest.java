@@ -65,9 +65,6 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(ccfg);
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -81,7 +78,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     /** */
     @Test
     public void testQueryCancelsOnGridShutdown() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -135,7 +132,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     /** */
     @Test
     public void testQueryResponseFailCode() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
 
             CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             cfg.setSqlFunctionClasses(Functions.class);

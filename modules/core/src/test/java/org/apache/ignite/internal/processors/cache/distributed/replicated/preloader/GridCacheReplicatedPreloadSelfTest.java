@@ -84,9 +84,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     private volatile boolean extClassloadingAtCfg = false;
 
     /** */
-    private volatile boolean isClient = false;
-
-    /** */
     private volatile boolean useExtClassLoader = false;
 
     /** Disable p2p. */
@@ -129,9 +126,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         if (getTestIgniteInstanceName(1).equals(igniteInstanceName) || useExtClassLoader ||
             cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
-
-        if (isClient)
-            cfg.setClientMode(true);
 
         if (cutromEvt) {
             int[] evts = new int[EVTS_ALL.length + 1];
@@ -387,9 +381,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g2 = startGrid(2);  // Checks deserialization at node join.
 
-            isClient = true;
-
-            Ignite g3 = startGrid(3);
+            Ignite g3 = startClientGrid(3);
 
             IgniteCache<Integer, Object> cache1 = g1.cache(DEFAULT_CACHE_NAME);
             IgniteCache<Integer, Object> cache2 = g2.cache(DEFAULT_CACHE_NAME);
@@ -425,7 +417,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            isClient = false;
             useExtClassLoader = false;
         }
     }
@@ -442,9 +433,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            isClient = true;
-
-            Ignite g3 = startGrid(3);
+            Ignite g3 = startClientGrid(3);
 
             CacheConfiguration cfg = defaultCacheConfiguration();
 
@@ -464,7 +453,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            isClient = false;
             useExtClassLoader = false;
         }
     }
@@ -481,9 +469,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            isClient = true;
-
-            Ignite g3 = startGrid(3);
+            Ignite g3 = startClientGrid(3);
 
             CacheConfiguration cfg = defaultCacheConfiguration();
 
@@ -503,7 +489,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
         finally {
             extClassloadingAtCfg = false;
-            isClient = false;
             useExtClassLoader = false;
         }
     }

@@ -71,6 +71,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -98,9 +99,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 2;
-
-    /** */
-    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -151,10 +149,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setCacheConfiguration(ccfg);
 
-        if (client) {
-            cfg.setClientMode(client);
+        if (cfg.isClientMode() == TRUE)
             ((TcpDiscoverySpi)(cfg.getDiscoverySpi())).setForceServerMode(true);
-        }
 
         return cfg;
     }
@@ -166,7 +162,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     protected IgniteEx startClient() throws Exception {
-        return startGrid(getConfiguration(CLIENT_INSTANCE_NAME).setClientMode(true));
+        return startClientGrid(getConfiguration(CLIENT_INSTANCE_NAME));
     }
 
     /**
@@ -174,9 +170,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     @Test
     public void testAtomicLongFailsWhenServersLeft() throws Exception {
-        client = true;
-
-        Ignite ignite = startGrid(gridCount());
+        Ignite ignite = startClientGrid(gridCount());
 
         new Timer().schedule(new TimerTask() {
             @Override public void run() {
@@ -748,9 +742,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testReentrantLockFailsWhenServersLeft(final boolean fair) throws Exception {
-        client = true;
-
-        Ignite client = startGrid(gridCount());
+        Ignite client = startClientGrid(gridCount());
 
         Ignite server = grid(0);
 

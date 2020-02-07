@@ -39,7 +39,7 @@ public class GridServiceDeploymentExceptionPropagationTest extends GridCommonAbs
     @Test
     public void testExceptionPropagation() throws Exception {
         try (IgniteEx srv = startGrid("server")) {
-            try (Ignite client = startGrid("client", getConfiguration("client").setClientMode(true))) {
+            try (Ignite client = startClientGrid("client", getConfiguration("client"))) {
                 final String srvcName = "my-service";
 
                 try {
