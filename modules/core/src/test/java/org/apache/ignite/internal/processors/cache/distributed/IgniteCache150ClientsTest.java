@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +29,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -59,10 +59,16 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setNetworkTimeout(30_000);
         cfg.setConnectorConfiguration(null);
-        cfg.setPeerClassLoadingEnabled(false);
-        cfg.setTimeServerPortRange(200);
 
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketWriteTimeout(200);
+        cfg.setDataStreamerThreadPoolSize(0);
+        cfg.setManagementThreadPoolSize(2);
+        cfg.setPeerClassLoadingThreadPoolSize(1);
+        cfg.setIgfsThreadPoolSize(0);
+        cfg.setPublicThreadPoolSize(2);
+        cfg.setStripedPoolSize(2);
+        cfg.setSystemThreadPoolSize(2);
+        cfg.setUtilityCachePoolSize(2);
+
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -110,8 +116,6 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void test150Clients() throws Exception {
-        fail("https://ggsystems.atlassian.net/browse/GG-21405");
-
         Ignite srv = startGrid(0);
 
         assertFalse(srv.configuration().isClientMode());
@@ -120,6 +124,8 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
         final AtomicInteger idx = new AtomicInteger(1);
 
+        final AtomicInteger reallyStarted = new AtomicInteger(1);
+
         final CountDownLatch latch = new CountDownLatch(CLIENTS);
 
         final List<String> cacheNames = new ArrayList<>();
@@ -127,52 +133,52 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHES; i++)
             cacheNames.add("cache-" + i);
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                boolean cnt = false;
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            boolean cnt = false;
 
-                try {
-                    Ignite ignite = startGrid(idx.getAndIncrement());
+            try {
+                Ignite ignite = startGrid(idx.getAndIncrement());
 
-                    assertTrue(ignite.configuration().isClientMode());
-                    assertTrue(ignite.cluster().localNode().isClient());
+                reallyStarted.incrementAndGet();
 
+                assertTrue(ignite.configuration().isClientMode());
+                assertTrue(ignite.cluster().localNode().isClient());
+
+                latch.countDown();
+
+                cnt = true;
+
+                log.info("Started [node=" + ignite.name() + ", left=" + latch.getCount() + ']');
+
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                while (latch.getCount() > 0) {
+                    U.sleep(1000);
+
+                    IgniteCache<Object, Object> cache = ignite.cache(cacheNames.get(rnd.nextInt(0, CACHES)));
+
+                    Integer key = rnd.nextInt(0, 100_000);
+
+                    cache.put(key, 0);
+
+                    assertNotNull(cache.get(key));
+                }
+
+                return null;
+            }
+            finally {
+                if (!cnt)
                     latch.countDown();
-
-                    cnt = true;
-
-                    log.info("Started [node=" + ignite.name() + ", left=" + latch.getCount() + ']');
-
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-                    while (latch.getCount() > 0) {
-                        Thread.sleep(1000);
-
-                        IgniteCache<Object, Object> cache = ignite.cache(cacheNames.get(rnd.nextInt(0, CACHES)));
-
-                        Integer key = rnd.nextInt(0, 100_000);
-
-                        cache.put(key, 0);
-
-                        assertNotNull(cache.get(key));
-                    }
-
-                    return null;
-                }
-                finally {
-                    if (!cnt)
-                        latch.countDown();
-                }
             }
         }, CLIENTS, "start-client");
 
         fut.get();
 
-        log.info("Started all clients.");
+        log.info("Started " + reallyStarted.get() + " clients.");
 
-        waitForTopology(CLIENTS + 1);
+        waitForTopology(reallyStarted.get());
 
-        checkNodes(CLIENTS + 1);
+        checkNodes(reallyStarted.get());
     }
 
     /**
