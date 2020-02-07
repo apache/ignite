@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.Metric;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
@@ -519,7 +520,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /**
      * @param rateTimeInterval Time interval (in milliseconds) used to calculate allocation/eviction rate.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public void rateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
 
@@ -533,7 +536,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Sets number of subintervals the whole rateTimeInterval will be split into to calculate allocation rate.
      *
      * @param subInts Number of subintervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public void subIntervals(int subInts) {
         assert subInts > 0;
 

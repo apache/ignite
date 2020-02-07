@@ -62,6 +62,12 @@ This utility can do the following commands:
   View diagnostic information in a cluster. For more details type:
     control.(sh|bat) --diagnostic
 
+  Print the current master key name:
+    control.(sh|bat) --encryption get_master_key_name
+
+  Change the master key:
+    control.(sh|bat) --encryption change_master_key newMasterKeyName
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

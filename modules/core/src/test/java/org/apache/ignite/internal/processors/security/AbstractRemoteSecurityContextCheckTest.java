@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -40,7 +39,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 
-import static org.apache.ignite.Ignition.localIgnite;
+import static org.apache.ignite.internal.IgnitionEx.localIgnite;
 
 /**
  *
@@ -73,6 +72,15 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /** Verifier to check results of tests. */
     protected static final Verifier VERIFIER = new Verifier();
 
+    /** Start operation. */
+    protected static final String OPERATION_START = "start";
+
+    /** Check operation. */
+    protected static final String OPERATION_CHECK = "check";
+
+    /** Endpoint operation. */
+    protected static final String OPERATION_ENDPOINT = "endpoint";
+
     /**
      * @return IgniteCompute is produced by passed node for cluster group that contains nodes with ids from collection.
      */
@@ -81,24 +89,52 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /**
+     * @return Collection of initiator nodes names.
+     */
+    protected Collection<IgniteEx> initiators() {
+        return Arrays.asList(grid(SRV_INITIATOR), grid(CLNT_INITIATOR));
+    }
+
+    /**
      * @return Collection of feature call nodes ids.
      */
-    protected Collection<UUID> nodesToRun() {
-        return Arrays.asList(nodeId(SRV_RUN), nodeId(CLNT_RUN));
+    protected final Collection<UUID> nodesToRunIds() {
+        return nodesToRun().stream().map(this::nodeId).collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of feature call nodes names.
+     */
+    protected Collection<String> nodesToRun() {
+        return Arrays.asList(SRV_RUN, CLNT_RUN);
     }
 
     /**
      * @return Collection of feature transit nodes ids.
      */
-    protected Collection<UUID> nodesToCheck() {
-        return Arrays.asList(nodeId(SRV_CHECK), nodeId(CLNT_CHECK));
+    protected final Collection<UUID> nodesToCheckIds() {
+        return nodesToCheck().stream().map(this::nodeId).collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of feature transit nodes names.
+     */
+    protected Collection<String> nodesToCheck() {
+        return Arrays.asList(SRV_CHECK, CLNT_CHECK);
     }
 
     /**
      * @return Collection of endpont nodes ids.
      */
-    protected Collection<UUID> endpoints() {
-        return Arrays.asList(nodeId(SRV_ENDPOINT), nodeId(CLNT_ENDPOINT));
+    protected final Collection<UUID> endpointIds() {
+        return endpoints().stream().map(this::nodeId).collect(Collectors.toList());
+    }
+
+    /**
+     * @return Collection of endpont nodes names.
+     */
+    protected Collection<String> endpoints() {
+        return Arrays.asList(SRV_ENDPOINT, CLNT_ENDPOINT);
     }
 
     /**
@@ -112,32 +148,43 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     /**
      * Setups expected behavior to passed verifier.
      */
-    protected abstract void setupVerifier(Verifier verifier);
+    protected void setupVerifier(final Verifier verifier) {
+        Collection<String> toRuns = nodesToRun();
+
+        Collection<String> toChecks = nodesToCheck();
+
+        toRuns.forEach(n -> verifier.expect(n, OPERATION_START, 1));
+        toChecks.forEach(n -> verifier.expect(n, OPERATION_CHECK, toRuns.size()));
+        endpoints().forEach(n -> verifier.expect(n, OPERATION_ENDPOINT, toChecks.size() * toRuns.size()));
+    }
 
     /**
-     * @param initiator Node that initiates an execution.
      * @param op Operation.
      */
-    protected void runAndCheck(IgniteEx initiator, IgniteRunnable op) {
-        runAndCheck(initiator, Stream.of(op));
+    protected void runAndCheck(IgniteRunnable op) {
+        runAndCheck(Stream.of(op));
     }
 
     /**
      * Sets up VERIFIER, performs the runnable and checks the result.
      *
-     * @param initiator Node that initiates an execution.
      * @param ops Operations.
      */
-    protected void runAndCheck(IgniteEx initiator, Stream<IgniteRunnable> ops) {
-        ops.forEach(r -> {
-            VERIFIER.clear().initiator(initiator);
+    protected void runAndCheck(Stream<IgniteRunnable> ops) {
+        ops.forEach(
+            r -> initiators().forEach(
+                initiator -> {
+                    VERIFIER.initiator(initiator);
 
-            setupVerifier(VERIFIER);
+                    setupVerifier(VERIFIER);
 
-            compute(initiator, nodesToRun()).broadcast(r);
+                    compute(initiator, nodesToRunIds())
+                        .broadcast((IgniteRunnable)new RegisterExecAndForward<>(OPERATION_START, r, endpointIds()));
 
-            VERIFIER.checkResult();
-        });
+                    VERIFIER.checkResult();
+                }
+            )
+        );
     }
 
     /**
@@ -147,12 +194,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /**
          * Map that contains an expected behaviour.
          */
-        private final Map<String, T2<Integer, Integer>> expInvokes = new HashMap<>();
+        private final Map<T2<String, String>, T2<Integer, AtomicInteger>> expInvokes = new ConcurrentHashMap<>();
 
         /**
-         * List of registered security subjects.
+         * Checked errors.
          */
-        private final List<T2<UUID, String>> registeredSubjects = new ArrayList<>();
+        private final Collection<String> errors = new ConcurrentLinkedQueue<>();
 
         /**
          * Expected security subject id.
@@ -160,75 +207,81 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID expSecSubjId;
 
         /** */
-        public Verifier clear() {
-            registeredSubjects.clear();
+        private Verifier() {
+            // No-op.
+        }
+
+        /** */
+        private void clear() {
             expInvokes.clear();
 
-            expSecSubjId = null;
+            errors.clear();
 
-            return this;
+            expSecSubjId = null;
         }
 
         /**
-         * Adds expected behaivior the method {@link #register} will be invoke exp times on the node with
-         * passed name.
+         * Adds expected behaivior the method {@link #register} will be invoke expected times on the node with passed
+         * name and the passed operation name.
          *
          * @param nodeName Node name.
+         * @param opName Operation name.
          * @param num Expected number of invokes.
          */
-        public Verifier expect(String nodeName, int num) {
-            expInvokes.put(nodeName, new T2<>(num, 0));
+        public Verifier expect(String nodeName, String opName, int num) {
+            expInvokes.put(new T2<>(nodeName, opName), new T2<>(num, new AtomicInteger()));
 
             return this;
         }
 
         /**
-         * Registers a security subject referred for {@code localIgnite} and increments invoke counter.
+         * Registers a security subject referred for {@code localIgnite} with the passed operation name and increments
+         * invoke counter.
+         *
+         * @param opName Operation name.
          */
-        public void register() {
-            register((IgniteEx)localIgnite());
-        }
+        public void register(String opName) {
+            if (expSecSubjId == null) {
+                error("SubjectId cannot be null.");
 
-        /**
-         * Registers a security subject referred for the passed {@code ignite} and increments invoke counter.
-         */
-        public synchronized void register(IgniteEx ignite) {
-            registeredSubjects.add(new T2<>(secSubjectId(ignite), ignite.name()));
+                return;
+            }
 
-            expInvokes.computeIfPresent(ignite.name(), (name, t2) -> {
-                Integer val = t2.getValue();
+            IgniteEx ignite = localIgnite();
 
-                t2.setValue(++val);
+            UUID actualSubjId = secSubjectId(ignite);
 
-                return t2;
-            });
+            if (!expSecSubjId.equals(actualSubjId)) {
+                error("Actual subjectId does not equal expected subjectId " + "[expected=" + expSecSubjId +
+                    ", actual=" + actualSubjId + "].");
+
+                return;
+            }
+
+            T2<Integer, AtomicInteger> v = expInvokes.get(new T2<>(ignite.name(), opName));
+
+            if (v != null)
+                v.get2().incrementAndGet();
+            else
+                error("Unexpected registration parameters [node=" + ignite.name() + ", opName=" + opName + "].");
         }
 
         /**
          * Checks result of test and clears expected behavior.
          */
         public void checkResult() {
-            registeredSubjects.forEach(t ->
-                assertEquals("Invalide security context on node " + t.get2(),
-                    expSecSubjId, t.get1())
-            );
+            if(!errors.isEmpty())
+                throw new AssertionError(errors.stream().reduce((s1, s2) -> s1 + "\n" + s2).get());
 
-            expInvokes.forEach((key, value) ->
-                assertEquals("Node " + key + ". Execution of register: ",
-                    value.get1(), value.get2()));
-
-            clear();
-        }
-
-        /** */
-        private Verifier expectSubjId(UUID expSecSubjId) {
-            this.expSecSubjId = expSecSubjId;
-
-            return this;
+            expInvokes.forEach((k, v) -> assertEquals("Node \"" + k.get1() + '\"' +
+                (k.get2() != null ? ", operation \"" + k.get2() + '\"' : "") +
+                ". Execution of register: ", v.get1(), Integer.valueOf(v.get2().get())));
         }
 
         /** */
         public Verifier initiator(IgniteEx initiator) {
+            clear();
+
             expSecSubjId = secSubjectId(initiator);
 
             return this;
@@ -238,6 +291,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private UUID secSubjectId(IgniteEx node) {
             return node.context().security().securityContext().subject().id();
         }
+
+        /**
+         * @param msg Error message.
+         */
+        private void error(String msg) {
+            errors.add(msg);
+        }
     }
 
     /** */
@@ -246,10 +306,11 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         private RegisterExecAndForward<K, V> instance;
 
         /**
+         * @param opName Operation name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        public ExecRegisterAndForwardAdapter(Collection<UUID> endpoints) {
-            instance = new RegisterExecAndForward<>(endpoints);
+        public ExecRegisterAndForwardAdapter(String opName, Collection<UUID> endpoints) {
+            instance = new RegisterExecAndForward<>(null, opName, endpoints);
         }
 
         /** {@inheritDoc} */
@@ -259,13 +320,13 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner(String srvName) {
-        return new RegisterExecAndForward<>(srvName, endpoints());
+    protected <K, V> RegisterExecAndForward<K, V> operationCheck(String srvName) {
+        return new RegisterExecAndForward<>(srvName, OPERATION_CHECK, endpointIds());
     }
 
     /** */
-    protected <K, V> RegisterExecAndForward<K, V> createRunner() {
-        return new RegisterExecAndForward<>(endpoints());
+    protected <K, V> RegisterExecAndForward<K, V> operationCheck() {
+        return new RegisterExecAndForward<>(null, OPERATION_CHECK, endpointIds());
     }
 
     /** */
@@ -277,35 +338,32 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
         /** Expected local node name. */
         private final String node;
 
+        /** Operation name. */
+        private final String opName;
+
         /** Collection of endpoint node ids. */
         private final Collection<UUID> endpoints;
 
         /**
-         * @param runnable Runnable.
-         */
-        public RegisterExecAndForward(IgniteRunnable runnable) {
-            this.runnable = Objects.requireNonNull(runnable);
-            node = null;
-            endpoints = Collections.emptyList();
-        }
-
-        /**
          * @param node Expected local node name.
+         * @param opName Operation name.
          * @param endpoints Collection of endpont nodes ids.
          */
-        public RegisterExecAndForward(String node, Collection<UUID> endpoints) {
-            this.node = node;
-            this.endpoints = endpoints;
-            runnable = null;
+        private RegisterExecAndForward(String node, String opName, Collection<UUID> endpoints) {
+            this(node, opName, null, endpoints);
         }
 
-        /**
-         * @param endpoints Collection of endpont nodes ids.
-         */
-        public RegisterExecAndForward(Collection<UUID> endpoints) {
+        /** */
+        private RegisterExecAndForward(String opName, IgniteRunnable runnable, Collection<UUID> endpoints) {
+            this(null, opName, runnable, endpoints);
+        }
+
+        /** */
+        private RegisterExecAndForward(String node, String opName, IgniteRunnable runnable, Collection<UUID> endpoints) {
+            this.node = node;
+            this.opName = opName;
+            this.runnable = runnable;
             this.endpoints = endpoints;
-            runnable = null;
-            node = null;
         }
 
         /** {@inheritDoc} */
@@ -320,12 +378,12 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             Ignite loc = localIgnite();
 
             if (node == null || node.equals(loc.name())) {
-                VERIFIER.register();
+                VERIFIER.register(opName);
 
                 if (runnable != null)
                     runnable.run();
                 else
-                    compute(loc, endpoints).broadcast(() -> VERIFIER.register());
+                    compute(loc, endpoints).broadcast(() -> VERIFIER.register(OPERATION_ENDPOINT));
             }
         }
 
@@ -341,7 +399,7 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
             run();
 
             if (k instanceof Cache.Entry)
-                return (V) ((Cache.Entry)k).getValue();
+                return (V)((Cache.Entry)k).getValue();
 
             return null;
         }

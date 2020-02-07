@@ -46,6 +46,9 @@ public abstract class GridCommandHandlerClusterByClassAbstractTest extends GridC
         super.beforeTestsStarted();
 
         crd = startGrids(SERVER_NODE_CNT);
+
+        crd.cluster().baselineAutoAdjustEnabled(false);
+
         client = startGrid(CLIENT_NODE_NAME_PREFIX);
 
         crd.cluster().active(true);

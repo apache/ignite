@@ -50,10 +50,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        cfg.setClientMode(igniteInstanceName.equals("client"));
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -72,7 +69,7 @@ public class TxRollbackOnMapOnInvalidTopologyTest extends GridCommonAbstractTest
 
         startGridsMultiThreaded(GRIDS);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */

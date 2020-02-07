@@ -39,9 +39,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 
 /** */
 public class SqlQueriesTopologyMappingTest extends AbstractIndexingCommonTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -52,8 +49,7 @@ public class SqlQueriesTopologyMappingTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setClientMode(client);
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
     /** */
@@ -123,10 +119,7 @@ public class SqlQueriesTopologyMappingTest extends AbstractIndexingCommonTest {
         blockRebalanceSupplyMessages(ign0, DEFAULT_CACHE_NAME, getTestIgniteInstanceName(1));
 
         startGrid(1);
-
-        client = true;
-
-        startGrid(10);
+        startClientGrid(10);
 
         for (Ignite ign : G.allGrids()) {
             List<List<?>> res = ign.cache(DEFAULT_CACHE_NAME)
@@ -150,10 +143,7 @@ public class SqlQueriesTopologyMappingTest extends AbstractIndexingCommonTest {
         cache.put(1, 2);
 
         startGrid(1);
-
-        client = true;
-
-        startGrid(10);
+        startClientGrid(10);
 
         for (Ignite ign : G.allGrids()) {
             List<List<?>> res = ign.cache(DEFAULT_CACHE_NAME)

@@ -33,12 +33,14 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -51,6 +53,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -141,7 +145,6 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(true);
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
@@ -156,7 +159,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        IgniteEx igniteClient = startGrid(getClientConfiguration("client"));
+        IgniteEx igniteClient = startClientGrid(getClientConfiguration("client"));
 
         Random random = new Random();
 
@@ -333,6 +336,37 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         AtomicBoolean done = new AtomicBoolean();
         AtomicReference<Throwable> error = new AtomicReference<>();
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+
+        AtomicLong pageListCacheLimitHolder = db.pageListCacheLimitHolder(ignite.context().cache()
+            .cache(DEFAULT_CACHE_NAME).context().dataRegion());
+
+        long initPageListCacheLimit = pageListCacheLimitHolder.get();
+
+        // Add listener after cache is started, so this listener will be triggered after listener for cache.
+        db.addCheckpointListener(new DbCheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Check under checkpoint write lock that page list cache limit is correctly restored.
+                // Need to wait for condition here, since checkpointer can store free-list metadata asynchronously.
+                if (!waitForCondition(() -> initPageListCacheLimit == pageListCacheLimitHolder.get(), 1_000L)) {
+                    IgniteCheckedException e = new IgniteCheckedException("Page list cache limit doesn't restored " +
+                        "correctly [init=" + initPageListCacheLimit + ", cur=" + pageListCacheLimitHolder.get() + ']');
+
+                    error.set(e);
+
+                    throw e;
+                }
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+        });
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             Random rnd = new Random();

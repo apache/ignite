@@ -65,9 +65,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
     private static final String CUSTOM_WORK_DIR_NAME_PATTERN = "node%s_workDir";
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private String customWorkSubDir;
 
     /** {@inheritDoc} */
@@ -78,8 +75,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         if (customWorkSubDir != null)
             cfg.setWorkDirectory(Paths.get(U.defaultWorkDirectory(), customWorkSubDir).toString());
-
-        cfg.setClientMode(clientMode);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -381,8 +376,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testStaticMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
-
         startGrids(2);
 
         Ignite ignite0 = grid(0);
@@ -457,7 +450,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testDynamicMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
         //1: start two nodes, add single BinaryObject
         startGrids(2);
 
@@ -524,8 +516,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testBinaryEnumMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
-
         Ignite ignite0 = startGrids(2);
 
         ignite0.active(true);
@@ -552,9 +542,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         ignite0.active(true);
 
-        clientMode = true;
-
-        startGrid(3);
+        startClientGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -566,8 +554,6 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
      */
     @Test
     public void testMixedMetadataIsRestoredOnRestart() throws Exception {
-        clientMode = false;
-
         //1: starts 4 nodes one by one and adds java classes and classless BinaryObjects
         // to the same replicated cache from different nodes.
         // Examines all objects in cache (field values and metadata).
@@ -617,9 +603,7 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
         examineDynamicMetadata(4, contentExaminer0, contentExaminer1, structureExaminer1);
 
         //2: starts up client node and performs the same set of checks from all nodes including client
-        clientMode = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         examineStaticMetadata(5);
 
