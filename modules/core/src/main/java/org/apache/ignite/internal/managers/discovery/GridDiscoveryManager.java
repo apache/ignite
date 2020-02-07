@@ -2473,6 +2473,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ((IgniteDiscoverySpi)spi).resolveCommunicationFailure(node, err);
     }
 
+    /**
+     * Resolves by ID cluster node which is alive or has recently left the cluster.
+     *
+     * @param nodeId Node id.
+     * @return resolved node, or <code>null</code> if node not found.
+     */
+    public ClusterNode historicalNode(UUID nodeId) {
+        for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
+            ClusterNode node = discoCache.node(nodeId);
+
+            if (node != null)
+                return node;
+        }
+
+        return null;
+    }
+
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
