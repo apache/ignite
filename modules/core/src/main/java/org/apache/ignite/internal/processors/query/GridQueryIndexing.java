@@ -361,7 +361,9 @@ public interface GridQueryIndexing {
      *
      * @param schemaName Schema name.
      * @param idxName Index name.
-     * @return Index size (Number of elements).
+     * @return Index size (Number of elements) or {@code 0} if index not found.
      */
-    long indexSize(String schemaName, String idxName) throws IgniteCheckedException;
+    default long indexSize(String schemaName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
 }

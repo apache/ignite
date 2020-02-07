@@ -34,19 +34,21 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
 import static org.apache.ignite.IgniteSystemProperties.INDEX_REBUILDING_PARALLELISM;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -63,10 +65,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Count of rows, being processed within a single checkpoint lock. */
     private static final int BATCH_SIZE = 1000;
 
-    //TODO: field is not final for testability. This should be fixed.
     /** Is extra index rebuild logging enabled. */
-    private static boolean IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED =
-        IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
+    private final boolean collectStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -136,26 +136,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> fut = null;
 
         if (parallelism > 1) {
-            fut = new GridCompoundFuture<>(new IgniteReducer<SchemaIndexCacheStat, SchemaIndexCacheStat>() {
-                private final SchemaIndexCacheStat res = new SchemaIndexCacheStat();
-
-                @Override public boolean collect(SchemaIndexCacheStat msg) {
-                    synchronized (res) {
-                        if (msg != null) {
-                            res.scanned += msg.scanned;
-                            res.types.addAll(msg.types);
-                        }
-                    }
-
-                    return true;
-                }
-
-                @Override public SchemaIndexCacheStat reduce() {
-                    synchronized (res) {
-                        return res;
-                    }
-                }
-            });
+            fut = new GridCompoundFuture<>(new SchemaIndexCacheStatFutureReducer());
 
             for (int i = 1; i < parallelism; i++)
                 fut.add(processPartitionsAsync(parts, clo, i));
@@ -163,16 +144,16 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             fut.markInitialized();
         }
 
-        final SchemaIndexCacheStat stat0 = processPartitions(parts, clo, 0);
+        final SchemaIndexCacheStat stat = processPartitions(parts, clo, 0);
 
-        if (fut != null) {
+        if (fut != null && stat != null) {
             final SchemaIndexCacheStat st = fut.get();
 
-            stat0.scanned += st.scanned;
-            stat0.types.addAll(st.types);
+            stat.scanned += st.scanned;
+            stat.types.putAll(st.types);
         }
 
-        printIndexStats(stat0);
+        printIndexStats(stat);
     }
 
     /**
@@ -181,38 +162,35 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param stat Index cache stats.
      * @throws IgniteCheckedException if failed to get index size.
      */
-    private void printIndexStats(SchemaIndexCacheStat stat) throws IgniteCheckedException {
-        if (!IS_EXTRA_INDEX_REBUILD_LOGGING_ENABLED)
+    private void printIndexStats(@Nullable SchemaIndexCacheStat stat) throws IgniteCheckedException {
+        if (stat == null)
             return;
 
-        StringBuilder res = new StringBuilder();
+        SB res = new SB();
 
-        res.append("Details for cache rebuilding [name=" + cctx.cache().name()
-            + ", grpName=" + cctx.group().name() + ']');
-        res.append(U.nl());
-        res.append("   Scanned rows " + stat.scanned + ", visited types " + stat.types);
-        res.append(U.nl());
+        res.a("Details for cache rebuilding [name=" + cctx.cache().name() + ", grpName=" + cctx.group().name() + ']');
+        res.a(U.nl());
+        res.a("   Scanned rows " + stat.scanned + ", visited types " + stat.types.keySet());
+        res.a(U.nl());
 
         final GridQueryIndexing idx = cctx.kernalContext().query().getIndexing();
 
-        for (String type0 : stat.types) {
-            final QueryTypeDescriptorImpl type = cctx.kernalContext().query().typeByName(type0);
+        for (QueryTypeDescriptorImpl type : stat.types.values()) {
+            res.a("        Type name=" + type.name());
+            res.a(U.nl());
 
-            res.append("        Type name=" + type.name());
-            res.append(U.nl());
+            final String pk = "_key_PK";
 
-            String pk = "_key_PK";
-
-            res.append("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), pk));
-            res.append(U.nl());
+            res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), pk));
+            res.a(U.nl());
 
             final Map<String, GridQueryIndexDescriptor> indexes = type.indexes();
 
             for (GridQueryIndexDescriptor descriptor : indexes.values()) {
                 final long size = idx.indexSize(type.schemaName(), descriptor.name());
 
-                res.append("            Index: name=" + descriptor.name() + ", size=" + size);
-                res.append(U.nl());
+                res.a("            Index: name=" + descriptor.name() + ", size=" + size);
+                res.a(U.nl());
             }
         }
 
@@ -244,24 +222,25 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param parts Partitions.
      * @param clo Closure.
      * @param remainder Remainder.
-     * @return Index statistics.
+     * @return Index rebuild statistics or {@code null}, if
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING} is {@code false}.
      * @throws IgniteCheckedException If failed.
      */
-    private SchemaIndexCacheStat processPartitions(List<GridDhtLocalPartition> parts, SchemaIndexCacheVisitorClosure clo,
+    @Nullable private SchemaIndexCacheStat processPartitions(List<GridDhtLocalPartition> parts, SchemaIndexCacheVisitorClosure clo,
         int remainder)
         throws IgniteCheckedException {
 
-        SchemaIndexCacheStat tmp = new SchemaIndexCacheStat();
+        SchemaIndexCacheStat stat = collectStat ? new SchemaIndexCacheStat() : null;
 
         for (int i = 0, size = parts.size(); i < size; i++) {
             if (stop)
                 break;
 
             if ((i % parallelism) == remainder)
-                processPartition(parts.get(i), clo, tmp);
+                processPartition(parts.get(i), clo, stat);
         }
 
-        return tmp;
+        return stat;
     }
 
     /**
@@ -269,11 +248,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      *
      * @param part Partition.
      * @param clo Index closure.
-     * @param res String builder to accumulate details.
+     * @param stat Index build statistics accumulator (can be {@code null}).
      * @throws IgniteCheckedException If failed.
      */
-    private void processPartition(GridDhtLocalPartition part, SchemaIndexCacheVisitorClosure clo, SchemaIndexCacheStat res)
-        throws IgniteCheckedException {
+    private void processPartition(
+        GridDhtLocalPartition part,
+        SchemaIndexCacheVisitorClosure clo,
+        @Nullable SchemaIndexCacheStat stat
+    ) throws IgniteCheckedException {
         checkCancelled();
 
         boolean reserved = false;
@@ -302,10 +284,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                         locked = true;
                     }
 
-                    final GridQueryTypeDescriptor type = processKey(key, clo);
-
-                    if (type != null)
-                        res.types.add(type.name());
+                    processKey(key, clo, stat);
 
                     if (++cntr % BATCH_SIZE == 0) {
                         cctx.shared().database().checkpointReadUnlock();
@@ -317,7 +296,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                         break;
                 }
 
-                res.scanned += cntr;
+                if (stat != null)
+                    stat.scanned += cntr;
             }
             finally {
                 if (locked)
@@ -337,10 +317,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      *
      * @param key Key.
      * @param clo Closure.
-     * @return Type descriptor.
+     * @param stat Index build statistics accumulator (can be {@code null}).
      * @throws IgniteCheckedException If failed.
      */
-    private GridQueryTypeDescriptor processKey(KeyCacheObject key, SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
+    private void processKey(
+        KeyCacheObject key,
+        SchemaIndexCacheVisitorClosure clo,
+        @Nullable SchemaIndexCacheStat stat
+    ) throws IgniteCheckedException {
         while (true) {
             try {
                 checkCancelled();
@@ -348,11 +332,13 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    return entry.updateIndex(clo);
+                    entry.updateIndex(clo, stat);
                 }
                 finally {
                     entry.touch();
                 }
+
+                break;
             }
             catch (GridDhtInvalidPartitionException ignore) {
                 break;
@@ -361,8 +347,6 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 // No-op.
             }
         }
-
-        return null;
     }
 
     /**
@@ -405,8 +389,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
          * @param fut Future.
          */
         @SuppressWarnings("unchecked")
-        public AsyncWorker(List<GridDhtLocalPartition> parts, SchemaIndexCacheVisitorClosure clo, int remainder,
-            GridFutureAdapter<SchemaIndexCacheStat> fut) {
+        public AsyncWorker(
+            List<GridDhtLocalPartition> parts,
+            SchemaIndexCacheVisitorClosure clo,
+            int remainder,
+            GridFutureAdapter<SchemaIndexCacheStat> fut
+        ) {
             super(cctx.igniteInstanceName(), "parallel-idx-worker-" + cctx.cache().name() + "-" + remainder,
                 cctx.logger(AsyncWorker.class));
 
@@ -435,6 +423,36 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             }
             finally {
                 fut.onDone(err);
+            }
+        }
+    }
+
+    /**
+     * Reducer for parallel index rebuild.
+     */
+    private static class SchemaIndexCacheStatFutureReducer implements IgniteReducer<SchemaIndexCacheStat, SchemaIndexCacheStat> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**  */
+        private final SchemaIndexCacheStat res = new SchemaIndexCacheStat();
+
+        /** {@inheritDoc} */
+        @Override public boolean collect(SchemaIndexCacheStat stat) {
+            if (stat != null) {
+                synchronized (res) {
+                    res.scanned += stat.scanned;
+                    res.types.putAll(stat.types);
+                }
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SchemaIndexCacheStat reduce() {
+            synchronized (res) {
+                return res;
             }
         }
     }
