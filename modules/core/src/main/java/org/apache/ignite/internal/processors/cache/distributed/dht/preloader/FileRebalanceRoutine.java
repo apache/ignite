@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -191,7 +192,9 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
             // Start clearing off-heap regions.
             for (Map.Entry<DataRegion, Set<Long>> e : regionToParts.entrySet()) {
                 memCleanupTasks.put(e.getKey().config().getName(),
-                    new MemoryCleaner(e.getValue(), e.getKey(), cctx, log).clearAsync());
+                    new GridFinishedFuture<>(true));
+
+                //new MemoryCleaner(e.getValue(), e.getKey(), cctx, log).clearAsync()
             }
         }
         finally {
@@ -401,6 +404,10 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
         try {
             if (!super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel))
                 return false;
+
+            // Dummy routine - no additional actions required.
+            if (orderedAssgnments == null)
+                return true;
 
             if (!isCancelled() && !isFailed()) {
                 U.log(log, "The final persistence rebalance is done [result=" + res + ']');

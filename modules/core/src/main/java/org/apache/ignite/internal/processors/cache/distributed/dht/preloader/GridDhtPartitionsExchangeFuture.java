@@ -2356,8 +2356,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
 
-                if (cctx.preloader() != null)
-                    cctx.preloader().onExchangeDone(this);
+//                if (cctx.preloader() != null)
+//                    cctx.preloader().onExchangeDone(this);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
@@ -3176,6 +3176,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
+        log.info(">>>> assignPartitionStates");
+
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
@@ -3669,6 +3671,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 timeBag.finishGlobalStage("Ideal affinity diff calculation (enforced)");
             }
+
+            cctx.preloader().beforeTopologyUpdate(resTopVer, this, null);
 
             for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                 if (!grpCtx.isLocal())
@@ -4437,6 +4441,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert partHistSuppliers.isEmpty();
 
         partHistSuppliers.putAll(msg.partitionHistorySuppliers());
+
+//        System.out.println("part hist suppliers: " + msg.partitionHistorySuppliers());
+//        if (grp != null)
+        System.out.println("partHistSuppliers empty=" + partHistSuppliers.isEmpty());
+
+        cctx.preloader().beforeTopologyUpdate(msg.topologyVersion(), this, msg);
 
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
