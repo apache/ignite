@@ -222,6 +222,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
+
+        System.setProperty("h2.objectCache", "false"); // Disable H2 object cache
     }
 
     /** Default number of attempts to re-run DELETE and UPDATE queries in case of concurrent modifications of values. */
