@@ -245,6 +245,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_I
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
@@ -3947,23 +3948,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
+        if (!active)
+            checkDeactivation();
+
         cluster().active(active);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void activate() {
-        cluster().state(ClusterState.ACTIVE);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void deactivate(boolean force) {
-        // Check if cluster is ready for deactivation.
-        if (!force && !context().state().isDeactivationSafe()) {
-            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
-                + " Please, enable force flag to deactivate cluster.");
-        }
-
-        cluster().state(ClusterState.INACTIVE);
     }
 
     /** */
@@ -4761,10 +4749,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void clusterState(String state) {
+    @Override public void clusterState(String state, boolean force) {
         ClusterState newState = ClusterState.valueOf(state);
 
+        if (newState == INACTIVE && !force)
+            checkDeactivation();
+
         cluster().state(newState);
+    }
+
+    /**
+     * Check if cluster is ready for deactivation.
+     *
+     * @throws IllegalStateException if deactivation is unsafe.
+     */
+    private void checkDeactivation() {
+        if (!context().state().isDeactivationSafe()) {
+            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                + " Please, enable force flag to deactivate cluster.");
+        }
     }
 
     /** {@inheritDoc} */

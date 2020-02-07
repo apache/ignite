@@ -1,6 +1,9 @@
 package org.apache.ignite.util.mbeans;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -8,9 +11,10 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** MBean test of cluster state operations. */
-public class GridStateMBeanTest extends GridCommonAbstractTest {
+public class GridMBeanClusterStateTest extends GridCommonAbstractTest {
     /**
      * Test deactivation works via JMX
      *
@@ -18,27 +22,30 @@ public class GridStateMBeanTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotDeactivated() throws Exception {
-        Ignite ignite = startGrids(1);
+        IgniteEx ignite = startGrids(2);
         IgniteMXBean mxBean = (IgniteMXBean)ignite;
 
-        assertTrue(mxBean.active());
-        assertEquals(ACTIVE.name(), mxBean.clusterState());
-
-        try {
-            // There is at least the system cache. Might be internal caches. Difficult to predict data erasure.
-            mxBean.deactivate(false);
-        }
-        catch (Exception e) {
-            assertTrue(e.getMessage().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
-        }
+        IgniteCache<?, ?> cache = ignite.createCache("non-persistent-cache");
 
         assertTrue(mxBean.active());
         assertEquals(ACTIVE.name(), mxBean.clusterState());
 
-        mxBean.activate();
-        assertTrue(mxBean.active());
+        assertFalse(ignite.context().state().isDeactivationSafe());
 
-        mxBean.deactivate(true);
+        assertThrows(log, () -> {
+            mxBean.active(false);
+            return null;
+        }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        assertThrows(log, () -> {
+            mxBean.clusterState(INACTIVE.name(), false);
+            return null;
+        }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        assertTrue(mxBean.active());
+        assertEquals(ACTIVE.name(), mxBean.clusterState());
+
+        mxBean.clusterState(INACTIVE.name(), true);
 
         assertFalse(mxBean.active());
         assertEquals(INACTIVE.name(), mxBean.clusterState());

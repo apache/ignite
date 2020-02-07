@@ -42,7 +42,7 @@ import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
-import org.apache.ignite.util.mbeans.GridStateMBeanTest;
+import org.apache.ignite.util.mbeans.GridMBeanClusterStateTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -83,7 +83,7 @@ import org.junit.runners.Suite;
 
     EncryptionMXBeanTest.class,
 
-    GridStateMBeanTest.class
+    GridMBeanClusterStateTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

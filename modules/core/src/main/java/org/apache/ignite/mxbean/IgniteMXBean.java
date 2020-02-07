@@ -388,26 +388,15 @@ public interface IgniteMXBean {
     )
     public boolean pingNode(String nodeId);
 
-    /** Activates cluster. */
-    @MXBeanDescription("Execute activation process.")
-    public void activate();
-
-    /** Deactivates cluster. */
-    @MXBeanDescription("Execute deactivation process.")
-    @MXBeanParametersNames("force")
-    @MXBeanParametersDescriptions("Force deactivation. Can lead to data loss.")
-    public void deactivate(boolean force);
-
     /**
      * @param active Activate/DeActivate flag.
-     * @deprecated Use {@link #activate()} and {@link #deactivate(boolean)} instead.
      */
-    @Deprecated
     @MXBeanDescription(
-        "Execute activate or deactivate process. Deprecated. " +
-            "Use activate() / deactivate(). Deactivation may require flag 'force'."
+        "Execute activate or deactivate process."
     )
-    @MXBeanParametersNames("active")
+    @MXBeanParametersNames(
+        "active"
+    )
     public void active(boolean active);
 
     /**
@@ -713,9 +702,9 @@ public interface IgniteMXBean {
      * See {@link ClusterState}
      */
     @MXBeanDescription("Changes current cluster state.")
-    @MXBeanParametersNames("state")
-    @MXBeanParametersDescriptions("New cluster state.")
-    public void clusterState(String state);
+    @MXBeanParametersNames({"state", "force"})
+    @MXBeanParametersDescriptions({"New cluster state.", "Skip checking of safety of the operation."})
+    public void clusterState(String state, boolean force);
 
     /**
      * Gets last cluster state change operation.

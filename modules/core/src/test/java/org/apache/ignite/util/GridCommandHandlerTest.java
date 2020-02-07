@@ -255,50 +255,31 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * Test deactivation works via control.sh when a non-persistent cache involved.
+     * Test "deactivate" via control.sh when a non-persistent cache involved.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testDeactivateNonPersistent() throws Exception {
-        dataRegionConfiguration = new DataRegionConfiguration()
-            .setName("non-persistent-dataRegion")
-            .setPersistenceEnabled(false);
-
-        Ignite ignite = startGrids(1);
-
-        assertFalse(ignite.cluster().active());
-        assertEquals(INACTIVE, ignite.cluster().state());
-
-        ignite.cluster().state(ACTIVE);
-
-        assertTrue(ignite.cluster().active());
-        assertEquals(ACTIVE, ignite.cluster().state());
-
-        injectTestSystemOut();
-
-        ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
-            .setDataRegionName("non-persistent-dataRegion"));
-
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--deactivate"));
-
-        assertTrue(ignite.cluster().active());
-        assertEquals(ACTIVE, ignite.cluster().state());
-        assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
-
-        assertEquals(EXIT_CODE_OK, execute("--deactivate", "--force"));
-
-        assertFalse(ignite.cluster().active());
-        assertEquals(INACTIVE, ignite.cluster().state());
+        deactivateNonPersistent( true );
     }
 
     /**
-     * Test deactivation works via control.sh and --set-state command when a non-persistent cache involved.
+     * Test "set-state inactive" via control.sh when a non-persistent cache involved.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testDeactivateNonPersistentWithSetState() throws Exception {
+    public void testSetInactiveonPersistent() throws Exception {
+        deactivateNonPersistent( false );
+    }
+
+    /**
+     * Launches "deactivate" of "set-state inactive"  works via control.sh when a non-persistent cache involved.
+     *
+     *  @param usingDeprecatedDeactivate deactivates cluster using deprecated "deactivate" command.
+     */
+    private void deactivateNonPersistent(boolean usingDeprecatedDeactivate) throws Exception {
         dataRegionConfiguration = new DataRegionConfiguration()
             .setName("non-persistent-dataRegion")
             .setPersistenceEnabled(false);
@@ -313,18 +294,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(ignite.cluster().active());
         assertEquals(ACTIVE, ignite.cluster().state());
 
-        injectTestSystemOut();
-
         ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
             .setDataRegionName("non-persistent-dataRegion"));
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--set-state", "inactive"));
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, usingDeprecatedDeactivate
+            ? execute("--deactivate")
+            : execute("--set-state", "inactive"));
 
         assertTrue(ignite.cluster().active());
         assertEquals(ACTIVE, ignite.cluster().state());
         assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
 
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "inactive", "--force"));
+        assertEquals(EXIT_CODE_OK, usingDeprecatedDeactivate
+            ? execute("--deactivate", "--force")
+            : execute("--set-state", "inactive", "--force"));
 
         assertFalse(ignite.cluster().active());
         assertEquals(INACTIVE, ignite.cluster().state());
