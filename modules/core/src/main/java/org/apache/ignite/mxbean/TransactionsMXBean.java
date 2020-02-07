@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 
 /**
  * Transactions MXBean interface.
@@ -67,6 +68,15 @@ public interface TransactionsMXBean {
     )
     public String getActiveTransactions(Long minDuration, Integer minSize, String prj,
         String consistentIds, String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill);
+
+    /**
+     * @param xid Transaction xid.
+     * @see TransactionView#xid()
+     */
+    @MXBeanDescription("Kills transactions by the identifier.")
+    @MXBeanParametersNames("xid")
+    @MXBeanParametersDescriptions("Transaction XID.")
+    public void cancel(String xid);
 
     /**
      * Gets transaction timeout on partition map exchange.

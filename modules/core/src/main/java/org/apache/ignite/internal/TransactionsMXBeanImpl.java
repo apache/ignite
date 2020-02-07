@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
@@ -113,6 +114,24 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
         }
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel(String xid) {
+        A.notNull(xid, "xid");
+
+        VisorTxTaskArg arg = new VisorTxTaskArg(VisorTxOperation.KILL,
+            1, null, null, null, null, null, xid, null, null, null);
+
+        try {
+            IgniteCompute compute = ctx.cluster().get().compute();
+
+            Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
+                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
