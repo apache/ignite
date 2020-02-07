@@ -386,10 +386,13 @@ public class RecordV1Serializer implements RecordSerializer {
                 size = in0.io().size();
             }
             catch (IOException ignore) {
-                // No-op. It just for information. Fail calculate file size.
+                // It just for information. Fail calculate file size.
+                e.addSuppressed(ignore);
             }
 
-            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + " size: " + size, e);
+            throw new IgniteCheckedException(
+                "Failed to read WAL record at position: " + startPos + ", size: " + size + ", expectedPtr: " + expPtr, e
+            );
         }
     }
 
