@@ -1,8 +1,6 @@
 package org.apache.ignite.util.mbeans;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -34,6 +32,12 @@ public class GridMBeanClusterStateTest extends GridCommonAbstractTest {
 
         assertThrows(log, () -> {
             mxBean.active(false);
+
+            return null;
+        }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        assertThrows(log, () -> {
+            mxBean.clusterState(INACTIVE.name());
 
             return null;
         }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);

@@ -4753,7 +4753,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void clusterState(String state) {
-        clusterState(state, false);
+        ClusterState newState = ClusterState.valueOf(state);
+
+        if (newState == INACTIVE && !ctx.state().isDeactivationSafe()) {
+            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                + " To force changing of cluster state call " +
+                "clusterState(\"" + INACTIVE.name().toLowerCase() + "\", true).");
+        }
+
+        cluster().state(newState);
     }
 
     /** {@inheritDoc} */

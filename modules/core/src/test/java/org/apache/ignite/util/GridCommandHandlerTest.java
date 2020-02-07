@@ -260,8 +260,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @throws Exception If failed.
      */
     @Test
-    public void testDeactivateNonPersistent() throws Exception {
-        checkDeactivateNonPersistent( true );
+    public void testDeactivateNonPNersistent() throws Exception {
+        checkDeactivateNonPersistent("--deactivate");
     }
 
     /**
@@ -271,15 +271,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testSetInactiveonPersistent() throws Exception {
-        checkDeactivateNonPersistent(false);
+        checkDeactivateNonPersistent("--set-state", "inactive");
     }
 
     /**
-     * Launches "deactivate" of "set-state inactive"  works via control.sh when a non-persistent cache involved.
+     * Launches cluster deactivation. Works via control.sh when a non-persistent cache involved.
      *
-     *  @param usingDeprecatedDeactivate deactivates cluster using deprecated "deactivate" command.
+     *  @param cmd Certain command to deactivate cluster.
      */
-    private void checkDeactivateNonPersistent(boolean usingDeprecatedDeactivate) throws Exception {
+    private void checkDeactivateNonPersistent(String... cmd) throws Exception {
         dataRegionConfiguration = new DataRegionConfiguration()
             .setName("non-persistent-dataRegion")
             .setPersistenceEnabled(false);
@@ -299,17 +299,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, usingDeprecatedDeactivate
-            ? execute("--deactivate")
-            : execute("--set-state", "inactive"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
 
         assertTrue(ignite.cluster().active());
         assertEquals(ACTIVE, ignite.cluster().state());
         assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
 
-        assertEquals(EXIT_CODE_OK, usingDeprecatedDeactivate
-            ? execute("--deactivate", "--force")
-            : execute("--set-state", "inactive", "--force"));
+        List<String> forceCmd = new ArrayList<>(Arrays.asList(cmd));
+        forceCmd.add("--force");
+
+        assertEquals(EXIT_CODE_OK, execute(forceCmd));
 
         assertFalse(ignite.cluster().active());
         assertEquals(INACTIVE, ignite.cluster().state());
