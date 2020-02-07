@@ -132,9 +132,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      */
     @Test
     public void testClientOnlyNode() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 10; i++)
@@ -156,9 +154,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
                 i++;
             }
-        }
-        finally {
-            stopGrid("client");
         }
     }
 
@@ -356,9 +351,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      */
     @Test
     public void testNodeLeft() throws Exception {
-        Ignite client = startGrid("client");
-
-        try {
+        try (Ignite client = startClientGrid("client")) {
             assertTrue(client.configuration().isClientMode());
 
             IgniteCache<Integer, Integer> cache = jcache(client, Integer.class, Integer.class);
@@ -404,9 +397,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             assertEquals(0, mapNode1.size());
             assertEquals(0, mapNode2.size());
             assertEquals(0, mapNode3.size());
-        }
-        finally {
-            stopGrid("client");
         }
     }
 
