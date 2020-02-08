@@ -117,11 +117,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.EnableStatistics(true);
             cache.Put(key, 1);
             cache.Get(key);
-
             Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
-
             var metrics = cache.GetMetrics();
-
             Assert.AreEqual(1, metrics.Size);
             Assert.AreEqual(1, metrics.CacheSize);
             Assert.AreEqual(1, metrics.CacheGets);

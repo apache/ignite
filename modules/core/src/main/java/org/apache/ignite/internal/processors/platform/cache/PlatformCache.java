@@ -354,7 +354,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public static final int OP_SIZE_LONG_LOC = 92;
 
     /** */
-    public static final int OP_ENABLE_STATISTICS = 94;
+    public static final int OP_ENABLE_STATISTICS = 93;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
