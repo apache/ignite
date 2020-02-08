@@ -17,10 +17,18 @@
 
 package org.apache.ignite.springdata.misc;
 
+/**
+ * The bean with cache names
+ */
 public class CacheNamesBean {
 
     private String personCacheName;
 
+    /**
+     * Get name of cache for persons
+     *
+     * @return name of cache
+     */
     public String getPersonCacheName() {
         return personCacheName;
     }

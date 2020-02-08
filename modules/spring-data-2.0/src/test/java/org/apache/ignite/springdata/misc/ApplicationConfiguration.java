@@ -34,6 +34,9 @@ import org.apache.ignite.springdata20.repository.config.EnableIgniteRepositories
 @EnableIgniteRepositories
 public class ApplicationConfiguration {
 
+    /**
+     * The bean with cache names
+     */
     @Bean
     public CacheNamesBean cacheNames() {
         CacheNamesBean bean = new CacheNamesBean();
