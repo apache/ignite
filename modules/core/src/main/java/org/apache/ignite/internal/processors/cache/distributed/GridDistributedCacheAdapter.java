@@ -409,8 +409,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * @param cacheName Cache name.
          * @param topVer Topology version.
          * @param skipStore Skip store flag.
+         * @param keepBinary Keep binary flag.
          */
-        GlobalRemoveAllJob(
+        private GlobalRemoveAllJob(
             String cacheName,
             @NotNull AffinityTopologyVersion topVer,
             boolean skipStore,
