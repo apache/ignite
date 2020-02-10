@@ -72,8 +72,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
         this.ignite = ignite;
+
         this.ctx = ctx;
+
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
         this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
     }
 
@@ -85,8 +88,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
         this.ignite = Ignition.start(cfg);
+
         this.ctx = ctx;
+
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
         this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
     }
 
@@ -98,8 +104,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
         this.ignite = Ignition.start(springCfgPath);
+
         this.ctx = ctx;
+
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
         this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
     }
 
@@ -148,7 +157,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @return the result of execution of the SpEL expression
      */
     @NotNull private String evaluateExpression(String spelExpression) {
-        return (String)resolver.evaluate(spelExpression,beanExpressionContext);
+        return (String)resolver.evaluate(spelExpression, beanExpressionContext);
     }
 
     /** {@inheritDoc} */
