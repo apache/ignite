@@ -696,8 +696,6 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
                 if (modificationStartedLatch.getCount() > 0)
                     modificationStartedLatch.countDown();
-
-
             }
         });
 
@@ -745,8 +743,6 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
                 if (modificationStartedLatch.getCount() > 0)
                     modificationStartedLatch.countDown();
-
-
             }
         });
 
