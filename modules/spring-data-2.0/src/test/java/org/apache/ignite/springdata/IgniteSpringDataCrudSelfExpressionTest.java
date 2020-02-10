@@ -87,6 +87,7 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
     }
+
     @Test
     public void testPutGet() {
         Person person = new Person("some_name", "some_surname");
