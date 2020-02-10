@@ -27,6 +27,8 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFailoverTxSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryBufferCleanupTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryWithTransformerBufferCleanupTest;
 
 /**
  * Test suite for cache queries.
@@ -51,6 +53,9 @@ public class IgniteCacheQuerySelfTestSuite4 extends TestSuite {
 
         suite.addTestSuite(StaticCacheDdlTest.class);
         suite.addTestSuite(StaticCacheDdlKeepStaticConfigurationTest.class);
+
+        suite.addTestSuite(ContinuousQueryBufferCleanupTest.class);
+        suite.addTestSuite(ContinuousQueryWithTransformerBufferCleanupTest.class);
 
         return suite;
     }
