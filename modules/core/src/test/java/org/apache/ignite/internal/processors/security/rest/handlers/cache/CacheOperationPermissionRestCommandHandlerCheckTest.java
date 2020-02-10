@@ -483,7 +483,13 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cleanPersistenceDir();
     }
 
-    /** */
+    /**
+     * Starts new grid with given configuration and activate cluster.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
     private IgniteEx startGridAndActivate(IgniteConfiguration cfg) throws Exception {
         IgniteEx ex = startGrid(cfg);
 
