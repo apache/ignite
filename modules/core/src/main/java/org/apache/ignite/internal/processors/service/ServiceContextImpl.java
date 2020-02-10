@@ -22,9 +22,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
@@ -56,8 +59,9 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private final ExecutorService exe;
 
-    /** Methods reflection cache. */
-    private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
+    /** Method-bound utility cache. */
+    private final ConcurrentMap<GridServiceMethodReflectKey, IgniteBiTuple<Method, HistogramMetricImpl>> mtds =
+        new ConcurrentHashMap<>();
 
     /** Service. */
     @GridToStringExclude
@@ -136,22 +140,67 @@ public class ServiceContextImpl implements ServiceContext {
      * @return Method.
      */
     @Nullable Method method(GridServiceMethodReflectKey key) {
-        Method mtd = mtds.get(key);
+        IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = methodRecord(key);
+
+        Method mtd = mtdRecord.get1();
 
         if (mtd == null) {
-            try {
-                mtd = svc.getClass().getMethod(key.methodName(), key.argTypes());
+            synchronized (mtdRecord) {
+                mtd = mtdRecord.get1();
 
-                mtd.setAccessible(true);
-            }
-            catch (NoSuchMethodException ignored) {
-                mtd = NULL_METHOD;
-            }
+                if (mtd == null) {
+                    try {
+                        mtd = svc.getClass().getMethod(key.methodName(), key.argTypes());
 
-            mtds.put(key, mtd);
+                        mtd.setAccessible(true);
+                    }
+                    catch (NoSuchMethodException ignored) {
+                        mtd = NULL_METHOD;
+                    }
+
+                    mtdRecord.set1(mtd);
+                }
+            }
         }
 
         return mtd == NULL_METHOD ? null : mtd;
+    }
+
+    /**
+     * @param key Method key.
+     * @param histogrammInitiator The initiator if the histogramm is not initialized yet.
+     * @return Invocation histogramm.
+     */
+    @Nullable HistogramMetricImpl invokeHistogramm(GridServiceMethodReflectKey key,
+        Supplier<HistogramMetricImpl> histogrammInitiator) {
+        IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = methodRecord(key);
+
+        HistogramMetricImpl histogramm = mtdRecord.get2();
+
+        if (histogramm == null) {
+            synchronized (mtdRecord) {
+                histogramm = mtdRecord.get2();
+
+                if (histogramm == null)
+                    mtdRecord.set2(histogramm = histogrammInitiator.get());
+            }
+        }
+
+        return histogramm;
+    }
+
+    /** TODO : comment. */
+    private IgniteBiTuple<Method, HistogramMetricImpl> methodRecord(GridServiceMethodReflectKey key) {
+        IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = mtds.get(key);
+
+        if (mtdRecord == null) {
+            IgniteBiTuple<Method, HistogramMetricImpl> prevRecord = mtds.putIfAbsent(key,
+                mtdRecord = new IgniteBiTuple<>());
+
+            mtdRecord = prevRecord == null ? mtdRecord : prevRecord;
+        }
+
+        return mtdRecord;
     }
 
     /**

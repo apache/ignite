@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +65,9 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -92,6 +98,8 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.service.GridServiceProxy.callAndMeasureServiceMethod;
 
 /**
  * Ignite service processor.
@@ -112,6 +120,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** */
     public static final String SVCS_VIEW_DESC = "Services";
+
+    /** */
+    public static final String SERVICE_METRICS_INVOCATIONS = metricName("services", "metrics", "invocations");
+
+    /** */
+    private static final String HIST_INVOCATION_DESCR = "Duration of method durations in milliseconds.";
+
+    /** */
+    private static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {1, 10, 50, 200, 1000};
 
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
@@ -885,8 +902,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 for (ServiceContextImpl ctx : ctxs) {
                     Service srvc = ctx.service();
 
-                    if (srvc != null)
-                        return (T)srvc;
+                    if (srvc != null) {
+                        return (T)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
+                            Stream.of(srvc.getClass().getInterfaces()).filter(Service.class::isAssignableFrom)
+                                .toArray(Class[]::new), new LocalInvocationHandler(ctx, this.ctx.service()));
+                    }
                 }
 
                 return null;
@@ -974,6 +994,39 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
 
         return false;
+    }
+
+    /**
+     * Finds and/or creates a histogramm to register method durations.
+     *
+     * @param srvcName Name of the service.
+     * @param method Method to measure.
+     * @return The histogramm for service method timings.
+     */
+    HistogramMetricImpl invocationsMetric(String srvcName, Method method) {
+        MetricRegistry metricRegistry = ctx.metric().registry(metricName(SERVICE_METRICS_INVOCATIONS, srvcName));
+
+        if (metricRegistry == null)
+            return null;
+
+        HistogramMetricImpl histogramMetric = null;
+
+        // Add unique metric name. For the counter @see #methodMetricName(Method, int).
+        for (int i = 1; i < 4; ++i) {
+            String methodMetricName = methodMetricName(method, i);
+
+            synchronized (metricRegistry) {
+                if (metricRegistry.findMetric(methodMetricName) == null) {
+                    histogramMetric = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
+                        HIST_INVOCATION_DESCR);
+                    break;
+                }
+            }
+        }
+
+        assert histogramMetric != null;
+
+        return histogramMetric;
     }
 
     /** {@inheritDoc} */
@@ -1205,7 +1258,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            serviceMetrics().registerMetrics( srvc, srvcCtx );
+            registerMetrics(srvc, srvcCtx);
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1327,13 +1380,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     throw e;
             }
             finally {
-                serviceMetrics().unregisterMetrics( srvc );
-
                 try {
                     this.ctx.resource().cleanup(srvc);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to clean up service (will ignore): " + ctx.name(), e);
+                }
+                finally {
+                    unregisterMetrics(ctx);
                 }
             }
         }
@@ -1761,6 +1815,92 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
+     * @param method Method for the invocation timings.
+     * @param packageNameDepth Level of package name abbreviation. @see #packageAbbreviatedName(Class, int).
+     * @return Matric name for {@code method}
+     */
+    private String methodMetricName(Method method, int packageNameDepth) {
+        StringBuilder sb = new StringBuilder();
+
+        // Lets add name of return type. It is not a signature. Would be better for human readability.
+        sb.append(method.getReturnType() == null ? Void.class.getSimpleName() :
+            packageAbbreviatedName(method.getReturnType(), packageNameDepth));
+        sb.append(" ");
+        sb.append(method.getName());
+        sb.append("(");
+        sb.append(Stream.of(method.getParameterTypes()).map(t->packageAbbreviatedName(t.getClass(), packageNameDepth))
+            .collect(Collectors.joining(", ")));
+        sb.append(")");
+
+        return sb.toString();
+    }
+
+    /**
+     * @param packageNameDepth Level of types package name exhibition of the parameters and return type:
+     *                         <pre>
+     *                             0 - wont add parameter names;
+     *                             1 - add only first char of each name in the package;
+     *                             2 - add first and last char of each name in the package;
+     *                             Any other - add full package name.
+     *                         </pre>
+     * @return A fine name of the type.
+     */
+    private static String packageAbbreviatedName(Class<?> cl, int packageNameDepth){
+        if(packageNameDepth==0)
+            return cl.getSimpleName();
+
+        if(packageNameDepth>2)
+            return cl.getName();
+
+        String[] pkgNameParts = cl.getName().split("\\.");
+
+        StringBuilder sb = new StringBuilder();
+
+        for(int i=0; i<pkgNameParts.length-1; ++i){
+            // For {@code packageNameDepth} == 1, add first char.
+           sb.append(pkgNameParts[i].charAt(0));
+
+            // For {@code packageNameDepth} == 2, add last char.
+            if (packageNameDepth > 1 && pkgNameParts[i].length() > 1)
+                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length()-1));
+
+            sb.append(".");
+        }
+
+        // Add name ot the class.
+        sb.append(pkgNameParts.length == 0 ? cl.getName() : pkgNameParts[pkgNameParts.length - 1]);
+
+        return sb.toString();
+    }
+
+    /**
+     * Registers metrics for timings of method invocations. Traverces all methods of service-related interfaces.
+     *
+     * @param srvc Service for ivocations measurement.
+     * @param srvcCtx Context of {@code srvc}.
+     */
+    private void registerMetrics(Service srvc, ServiceContext srvcCtx) {
+        MetricRegistry metricRegistry = ctx.metric().registry(metricName(SERVICE_METRICS_INVOCATIONS, srvcCtx.name()));
+
+        for (Class<?> iface : srvc.getClass().getInterfaces()) {
+            if (!Service.class.isAssignableFrom(iface))
+                continue;
+
+            for (Method m : iface.getMethods()) {
+                if (m.getDeclaringClass().equals(Service.class))
+                    continue;
+
+                invocationsMetric(srvcCtx.name(), m);
+            }
+        }
+    }
+
+    /** TODO : implment */
+    void unregisterMetrics(ServiceContext srvcCtx) {
+        ctx.metric().remove(metricName(SERVICE_METRICS_INVOCATIONS, srvcCtx.name()));
+    }
+
+    /**
      * @param name Service name.
      * @return Mapped service descriptor. Possibly {@code null} if not found.
      */
@@ -1804,5 +1944,32 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void leaveBusy() {
         opsLock.readLock().unlock();
+    }
+
+    /**
+     * Invocation proxy handler for a service to measure durations of its methods.
+     * Reuses {@link GridServiceProxy#callAndMeasureServiceMethod(ServiceProcessorAdapter, ServiceContextImpl,
+     * GridServiceMethodReflectKey, Method, Object)}
+     */
+    private static class LocalInvocationHandler implements InvocationHandler {
+        /** */
+        private final ServiceContextImpl srvCtx;
+
+        /** */
+        private final ServiceProcessorAdapter srvcProc;
+
+        /** */
+        private LocalInvocationHandler(ServiceContextImpl srvc, ServiceProcessorAdapter srvcProc) {
+            this.srvCtx = srvc;
+            this.srvcProc = srvcProc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
+            if (mtd.getDeclaringClass().equals(Service.class))
+                return mtd.invoke(srvCtx.service(), args);
+
+            return callAndMeasureServiceMethod(srvcProc, srvCtx, null, mtd, args);
+        }
     }
 }
