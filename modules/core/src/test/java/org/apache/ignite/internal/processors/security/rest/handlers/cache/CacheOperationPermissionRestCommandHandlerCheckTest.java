@@ -44,6 +44,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.*;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -121,7 +122,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
         cachePerms.put(FORBIDDEN_CACHE_NAME, EMPTY_PERMS);
 
-        startGrid(getConfiguration()).cluster().active(true);
+        startGridAndActivate(getConfiguration());
 
         checkCacheCreate();
     }
@@ -178,7 +179,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT});
         cachePerms.put(FORBIDDEN_CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
 
-        startGrid(getConfiguration()).cluster().active(true);
+        startGridAndActivate(getConfiguration());
 
         checkCacheCreate();
 
@@ -230,7 +231,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT, CACHE_READ});
         cachePerms.put(FORBIDDEN_CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT});
 
-        startGrid(getConfiguration()).cluster().active(true);
+        startGridAndActivate(getConfiguration());
 
         checkCacheCreate();
 
@@ -270,7 +271,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT, CACHE_READ, CACHE_REMOVE});
         cachePerms.put(FORBIDDEN_CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_PUT, CACHE_READ});
 
-        startGrid(getConfiguration()).cluster().active(true);
+        startGridAndActivate(getConfiguration());
 
         checkCacheCreate();
 
@@ -322,7 +323,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cachePerms.put(CACHE_NAME, new SecurityPermission[] {CACHE_CREATE, CACHE_DESTROY});
         cachePerms.put(FORBIDDEN_CACHE_NAME, new SecurityPermission[] {CACHE_CREATE});
 
-        startGrid(getConfiguration()).cluster().active(true);
+        startGridAndActivate(getConfiguration());
 
         checkCacheCreate();
 
@@ -487,10 +488,12 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     /**
      * {@inheritDoc}
      */
-    @Override protected IgniteEx startGrid(IgniteConfiguration cfg) throws Exception {
-        IgniteEx ex = super.startGrid(cfg);
+    private IgniteEx startGridAndActivate(IgniteConfiguration cfg) throws Exception {
+        IgniteEx ex = startGrid(cfg);
 
         hnd = new GridCacheCommandHandler(ex.context());
+
+        ex.cluster().state(ACTIVE);
 
         return ex;
     }

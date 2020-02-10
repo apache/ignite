@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.io.IOException;
+import java.util.Arrays;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,6 +28,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
@@ -37,49 +39,42 @@ import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVE
 /** */
 public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends JettyRestProcessorCommonSelfTest {
     /** Default user. */
-    protected static final String DFLT_USER = "ignite";
+    private static final String DFLT_USER = "ignite";
 
     /** Default password. */
-    protected static final String DFLT_PWD = "ignite";
+    private static final String DFLT_PWD = "ignite";
 
     /** Status. */
-    protected static final String STATUS = "successStatus";
+    private static final String STATUS = "successStatus";
 
     /** Success status. */
-    protected static final String SUCCESS_STATUS = "0";
+    private static final String SUCCESS_STATUS = "0";
 
     /** Error status. */
-    protected static final String ERROR_STATUS = "1";
+    private static final String ERROR_STATUS = "1";
 
     /** Empty permission. */
-    protected static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+    private static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
 
     /** Cache name for tests. */
-    protected static final String CACHE_NAME = "TEST_CACHE";
+    private static final String CACHE_NAME = "TEST_CACHE";
 
     /** Create cache name. */
-    protected static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
+    private static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
 
     /** Forbidden cache. */
-    protected static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
+    private static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
 
     /** New cache. */
-    protected static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
+    private static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
 
     /**
      * {@inheritDoc}
      */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-        grid(0).cluster().active(true);
-    }
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-        cleanPersistenceDir();
+        grid(0).cluster().state(ACTIVE);
     }
 
     /**
@@ -89,9 +84,11 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
         dsCfg.setWalMode(NONE);
 
         DataRegionConfiguration testDataRegionCfg = new DataRegionConfiguration();
+
         testDataRegionCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(testDataRegionCfg);
@@ -117,17 +114,38 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
      * @throws Exception If failed.
      */
     @Test
-    public void testGetOrCreateDestroyCache() throws Exception {
+    public void testGetOrCreate() throws Exception {
+        getOrCreateCaches();
+
+        assertTrue(grid(0).cacheNames().containsAll(
+            Arrays.asList(NEW_TEST_CACHE, CACHE_NAME, CREATE_CACHE_NAME)));
+
+        assertFalse(grid(0).cacheNames().contains(FORBIDDEN_CACHE_NAME));
+    }
+
+    /** */
+    private void getOrCreateCaches() throws Exception {
         // This won't fail since defaultAllowAll is true.
         assertEquals(SUCCESS_STATUS,
             (jsonField(content(NEW_TEST_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
 
         assertEquals(SUCCESS_STATUS,
             (jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
+
         assertEquals(SUCCESS_STATUS,
             (jsonField(content(CREATE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
 
         checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), CACHE_CREATE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDestroyCache() throws Exception {
+        getOrCreateCaches();
+
+        assertTrue(grid(0).cacheNames().containsAll(Arrays.asList(CREATE_CACHE_NAME, NEW_TEST_CACHE, CACHE_NAME)));
 
         // This won't fail since defaultAllowAll is true.
         assertEquals(SUCCESS_STATUS,
@@ -138,6 +156,11 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
 
         checkFailWithError(content(CREATE_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
         checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
+
+        assertFalse(grid(0).cacheNames().contains(CACHE_NAME));
+        assertFalse(grid(0).cacheNames().contains(NEW_TEST_CACHE));
+
+        assertTrue(grid(0).cacheNames().contains(CREATE_CACHE_NAME));
     }
 
     /**
@@ -163,8 +186,9 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
      * @param perm Missing permission.
      * @throws IOException If failed.
      */
-    protected void checkFailWithError(String json, SecurityPermission perm) throws IOException {
+    private void checkFailWithError(String json, SecurityPermission perm) throws IOException {
         assertEquals(ERROR_STATUS, jsonField(json, STATUS));
+
         assertTrue(jsonField(json, "error").contains("err=Authorization failed [perm=" + perm));
     }
 }

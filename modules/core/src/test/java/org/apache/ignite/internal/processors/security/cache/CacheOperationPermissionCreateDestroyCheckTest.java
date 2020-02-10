@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.*;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -40,13 +41,13 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
     /** New test cache. */
-    protected static final String NEW_TEST_CACHE = "NEW_CACHE";
+    private static final String NEW_TEST_CACHE = "NEW_CACHE";
 
     /** Cache name. */
-    protected static final String TEST_CACHE = "TEST_CACHE";
+    private static final String TEST_CACHE = "TEST_CACHE";
 
     /** Forbidden cache. */
-    protected static final String FORBIDDEN_CACHE = "FORBIDDEN_CACHE";
+    private static final String FORBIDDEN_CACHE = "FORBIDDEN_CACHE";
 
     /** Cache permissions. */
     private Map<String, SecurityPermission[]> cachePerms = new HashMap<>();
@@ -54,57 +55,43 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** Security permission set. */
     private Set<SecurityPermission> sysPermSet = new HashSet<>();
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCreateCachePermissionsOnServerNode() throws Exception {
         testCreateCachePermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDestroyCachePermissionsOnServerNode() throws Exception {
         testDestroyCachePermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCreateCachePermissionsOnClientNode() throws Exception {
         testCreateCachePermissions(true);
     }
 
-    /**
-        *
-        */
+    /** */
     @Test
     public void testDestroyCachePermissionsOnClientNode() throws Exception {
         testDestroyCachePermissions(true);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCreateSystemPermissionsOnServerNode() throws Exception {
         testCreateSystemPermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDestruySystemPermissionsOnServerNode() throws Exception {
         testCreateSystemPermissions(false);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDestroySystemPermissionsOnClientNode() throws Exception {
         testDestroySystemPermissions(true);
@@ -213,6 +200,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      */
     protected IgniteEx startGrid(String login, boolean isClient) throws Exception {
         SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create();
+
         builder.defaultAllowAll(true);
 
         cachePerms.forEach((builder::appendCachePermissions));
@@ -222,23 +210,19 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridAllowAll("server").cluster().active(true);
-
         sysPermSet.clear();
         sysPermSet.add(JOIN_AS_SERVER);
 
         cachePerms.clear();
+
+        startGridAllowAll("server").cluster().state(ACTIVE);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
         cleanPersistenceDir();
     }
 
