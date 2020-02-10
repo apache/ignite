@@ -27,22 +27,22 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 /** */
 public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
     /** Login. */
-    private final String login;
+    protected final String login;
 
     /** Password. */
-    private final String pwd;
+    protected final String pwd;
 
     /** Permissions. */
-    private final SecurityPermissionSet perms;
+    protected final SecurityPermissionSet perms;
 
     /** */
     private final Permissions sandboxPerms;
 
     /** Global authentication. */
-    private final boolean globalAuth;
+    protected final boolean globalAuth;
 
     /** Users security data. */
-    private final TestSecurityData[] clientData;
+    protected final TestSecurityData[] clientData;
 
     /** */
     public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
