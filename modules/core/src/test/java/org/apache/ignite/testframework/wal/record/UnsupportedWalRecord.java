@@ -15,9 +15,32 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.testframework.wal.record;
+
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * This package contain cache with persistence implementation. <br>
- * See also
- * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence">GitHub Package Readme</a>
+ * The wrapper of record type which isn't supported anymore.
  */
-package org.apache.ignite.internal.processors.cache.persistence;
+public class UnsupportedWalRecord extends WALRecord {
+    /** **/
+    private final RecordType recordType;
+
+    /**
+     * @param type Record type.
+     */
+    public UnsupportedWalRecord(RecordType type) {
+        recordType = type;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return recordType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(UnsupportedWalRecord.class, this, "super", super.toString());
+    }
+}
