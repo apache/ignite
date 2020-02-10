@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -95,17 +96,24 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate(AuthenticationContext ctx) {
-        if (!PERMS.containsKey(ctx.credentials()))
+    @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+        if (ctx.credentials() == null || ctx.credentials().getLogin() == null)
             return null;
 
-        TestSecurityContext res = new TestSecurityContext(
+        SecurityPermissionSet perms = PERMS.get(ctx.credentials());
+
+        if (perms == null) {
+            perms = new SecurityBasicPermissionSet();
+            ((SecurityBasicPermissionSet) perms).setDefaultAllowAll(true);
+        }
+
+        SecurityContext res = new TestSecurityContext(
             new TestSecuritySubject()
                 .setType(ctx.subjectType())
                 .setId(ctx.subjectId())
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
-                .setPerms(PERMS.get(ctx.credentials()))
+                .setPerms(perms)
         );
 
         SECURITY_CONTEXTS.put(res.subject().id(), res);

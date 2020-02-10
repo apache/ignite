@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
@@ -25,6 +24,9 @@ import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionC
 import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
@@ -47,6 +49,8 @@ import org.junit.runners.Suite;
     ScanQueryPermissionCheckTest.class,
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
+    ThinClientPermissionCheckTest.class,
+    ThinClientPermissionCheckSecurityTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
     ComputeTaskRemoteSecurityContextCheckTest.class,
@@ -60,7 +64,8 @@ import org.junit.runners.Suite;
     ThinClientSecurityContextOnRemoteNodeTest.class,
 
     InvalidServerTest.class,
-    IgniteSecurityProcessorTest.class
+    AdditionalSecurityCheckTest.class,
+    AdditionalSecurityCheckWithGlobalAuthTest.class,
 })
 public class SecurityTestSuite {
 }

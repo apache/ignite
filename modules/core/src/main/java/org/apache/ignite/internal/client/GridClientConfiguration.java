@@ -124,6 +124,9 @@ public class GridClientConfiguration {
     /** Daemon flag. */
     private boolean daemon;
 
+    /** User attributes. */
+    private Map<String, String> userAttrs;
+
     /**
      * Creates default configuration.
      */
@@ -157,6 +160,7 @@ public class GridClientConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
+        userAttrs = cfg.getUserAttributes();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }
@@ -908,5 +912,31 @@ public class GridClientConfiguration {
      */
     public boolean isDaemon() {
         return daemon;
+    }
+
+    /**
+     * Returns user attributes which can be used on server node.
+     *
+     * @return User attributes.
+     */
+    public Map<String, String> getUserAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * Sets user attributes which can be used to send additional info to the server nodes.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
+     *
+     * @param userAttrs User attributes.
+     * @return {@code this} for chaining.
+     */
+    public GridClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
+
+        return this;
     }
 }

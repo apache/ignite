@@ -19,42 +19,36 @@ package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
-/** */
-public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
-    /** Login. */
-    protected final String login;
+/**
+ *
+ */
+public class TestAdditionalSecurityPluginProvider extends TestSecurityPluginProvider {
+    /** Security additional attribute name. */
+    public static final String ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR = "add.sec.cliVer";
 
-    /** Password. */
-    protected final String pwd;
+    /** Security additional attribute value. */
+    public static final String ADDITIONAL_SECURITY_CLIENT_VERSION = "client v1";
 
-    /** Permissions. */
-    protected final SecurityPermissionSet perms;
-
-    /** Global authentication. */
-    protected final boolean globalAuth;
-
-    /** Users security data. */
-    protected final TestSecurityData[] clientData;
+    /** Check ssl certificates. */
+    protected final boolean checkAddPass;
 
     /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms, boolean globalAuth,
-        TestSecurityData... clientData) {
-        this.login = login;
-        this.pwd = pwd;
-        this.perms = perms;
-        this.globalAuth = globalAuth;
-        this.clientData = clientData.clone();
+    public TestAdditionalSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+        boolean globalAuth, boolean checkAddPass, TestSecurityData... clientData) {
+        super(login, pwd, perms, globalAuth, clientData);
+
+        this.checkAddPass = checkAddPass;
     }
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-        return new TestSecurityProcessor(ctx,
+        return new TestAdditionalSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms),
             Arrays.asList(clientData),
-            globalAuth);
+            globalAuth,
+            checkAddPass);
     }
 }
