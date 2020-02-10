@@ -1445,6 +1445,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 "[grp=" + grp.cacheOrGroupName() + ", exchVer=" + exchangeVer + ", fullMap=" + fullMapString() + ']');
         }
 
+        log.info("update 1");
+
         assert partMap != null;
 
         ctx.database().checkpointReadLock();
@@ -1823,6 +1825,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         GridDhtPartitionMap parts,
         boolean force
     ) {
+        if (grp.cacheOrGroupName().contains("indexed"))
+            U.dumpStack("update 2 grp="+grp.cacheOrGroupName());
+
         if (log.isDebugEnabled()) {
             log.debug("Updating single partition map [grp=" + grp.cacheOrGroupName() + ", exchId=" + exchId +
                 ", parts=" + mapString(parts) + ']');

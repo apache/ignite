@@ -48,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -117,7 +119,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      *
      * @param exchFut Exchange future.
      */
-    public void beforeTopologyUpdate(AffinityTopologyVersion resVer, GridDhtPartitionsExchangeFuture exchFut, GridDhtPartitionsFullMessage msg) {
+    public void beforeTopologyUpdate(
+        AffinityTopologyVersion resVer,
+        GridDhtPartitionsExchangeFuture exchFut,
+        GridDhtPartitionsFullMessage msg
+    ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
         assert exchFut != null;
 
@@ -148,7 +154,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             forced = exchFut.resetLostPartitionFor(grp.cacheOrGroupName()) ||
                 grp.affinity().cachedVersions().contains(rebTopVer);
         }
-//exchFut.topologyVersion()
+
         AffinityTopologyVersion lastAffChangeTopVer =
             cctx.exchange().lastAffinityChangedTopologyVersion(resVer);
 
@@ -187,9 +193,18 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
             boolean disable = !hasIdleParttition && fileRebalanceApplicable(grp, exchFut, resVer, msg);
 
+
             for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (disable)
+                if (disable) {
+                    // todo only for debugging
+                    try {
+                        assert !cctx.pageStore().exists(grp.groupId(), part.id());
+                    } catch (IgniteCheckedException ignore) {
+                        // No-op.
+                    }
+
                     part.disable();
+                }
                 else
                     part.enable();
             }

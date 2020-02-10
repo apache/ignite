@@ -942,7 +942,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         File dest = new File(pageStore.getFileAbsolutePath());
 
-        assert !dest.exists() : "dest=" + dest + ", exists=" + pageStore.exists();
+        assert !dest.exists() : "dest=" + dest;
 
         if (log.isDebugEnabled())
             log.debug("Moving snapshot [from=" + snapshot + " , to=" + dest + " , size=" + snapshot.length() + "]");

@@ -1427,6 +1427,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable IgniteDhtPartitionsToReloadMap partsToReload,
         Collection<CacheGroupContext> grps
     ) {
+        U.dumpStack(">>>> Create part message");
+
         AffinityTopologyVersion ver = exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE;
 
         final GridDhtPartitionsFullMessage m =
