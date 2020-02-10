@@ -45,6 +45,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.spi.metric.HistogramMetric;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 
@@ -422,12 +425,23 @@ public class GridServiceProxy<T> implements Serializable {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
+            HistogramMetricImpl metric =
+                ((IgniteEx)ignite).context().service().serviceMetrics().serviceInvocationsHist(svcName, mtd);
+
+            long time = U.currentTimeMillis();
+
+            Object callResult;
+
             try {
-                return mtd.invoke(svcCtx.service(), args);
+                callResult = mtd.invoke(svcCtx.service(), args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
             }
+
+            metric.value(U.currentTimeMillis() - time);
+
+            return callResult;
         }
 
         /** {@inheritDoc} */

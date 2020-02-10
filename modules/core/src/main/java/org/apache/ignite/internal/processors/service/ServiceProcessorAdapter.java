@@ -36,11 +36,15 @@ import org.apache.ignite.services.ServiceDescriptor;
  * Adapter for different service processor implementations.
  */
 public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
+    /** TODO : comment */
+    protected ServiceMetrics srvcMetrics;
+
     /**
      * @param ctx Kernal context.
      */
     protected ServiceProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
+        srvcMetrics = new ServiceMetrics(ctx.metric());
     }
 
     /**
@@ -106,6 +110,9 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @return Collection of service descriptors.
      */
     public abstract Collection<ServiceDescriptor> serviceDescriptors();
+
+    /** TODO : comment */
+    public ServiceMetrics serviceMetrics(){ return srvcMetrics; }
 
     /**
      * @param name Service name.

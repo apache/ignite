@@ -1205,6 +1205,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
+            serviceMetrics().registerMetrics( srvc, srvcCtx );
+
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
 
@@ -1325,6 +1327,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     throw e;
             }
             finally {
+                serviceMetrics().unregisterMetrics( srvc );
+
                 try {
                     this.ctx.resource().cleanup(srvc);
                 }
