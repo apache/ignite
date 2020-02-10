@@ -29,8 +29,11 @@ import org.apache.ignite.springdata22.repository.query.IgniteQuery;
 import org.apache.ignite.springdata22.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata22.repository.query.IgniteRepositoryQuery;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.expression.BeanFactoryResolver;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -38,8 +41,6 @@ import org.springframework.data.repository.core.support.AbstractEntityInformatio
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
-import org.springframework.expression.Expression;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -54,6 +55,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Spring application context */
     private ApplicationContext ctx;
 
+    /** Spring application context */
+    private DefaultListableBeanFactory beanFactory;
+
     /** Mapping of a repository to a cache. */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
 
@@ -65,6 +69,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
         this.ignite = ignite;
         this.ctx = ctx;
+        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
     }
 
     /**
@@ -76,6 +81,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
         this.ignite = Ignition.start(cfg);
         this.ctx = ctx;
+        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
     }
 
     /**
@@ -87,6 +93,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
         this.ignite = Ignition.start(springCfgPath);
         this.ctx = ctx;
+        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
     }
 
     /** {@inheritDoc} */
@@ -119,9 +126,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig " +
             "annotation to map this repository to the underlying cache.");
-        String cacheName = annotation.cacheName();
-        if (isSpelExpression(annotation.cacheName()))
-            cacheName = executeExpression(annotation.cacheName());
+        String cacheName = executeExpression(annotation.cacheName());
 
         repoToCache.put(repoItf, cacheName);
 
@@ -135,11 +140,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @return the result of execution of the SpEL expression
      */
     @NotNull private String executeExpression(String  spelExpression) {
-        SpelExpressionParser parser = new SpelExpressionParser();
-        Expression expression = parser.parseExpression(spelExpression);
+        StandardBeanExpressionResolver resolver = new StandardBeanExpressionResolver();
         StandardEvaluationContext ec = new StandardEvaluationContext();
         ec.setBeanResolver(new BeanFactoryResolver(ctx.getAutowireCapableBeanFactory()));
-        return (String)expression.getValue(ec);
+        return (String)resolver.evaluate(spelExpression,new BeanExpressionContext(beanFactory,null));
     }
 
     /**
