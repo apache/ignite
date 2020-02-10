@@ -72,8 +72,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
         this.ignite = ignite;
+
         this.ctx = ctx;
+
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
         this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
     }
 
@@ -85,8 +88,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
         this.ignite = Ignition.start(cfg);
+
         this.ctx = ctx;
+
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
         this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
     }
 
@@ -98,8 +104,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
         this.ignite = Ignition.start(springCfgPath);
+
         this.ctx = ctx;
+
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
         this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
     }
 
@@ -148,22 +157,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @return the result of execution of the SpEL expression
      */
     @NotNull private String evaluateExpression(String spelExpression) {
-        return (String)resolver.evaluate(spelExpression,beanExpressionContext);
-    }
-
-    /**
-     * The method tryes to identify that the expression looks like SpEL extression
-     *
-     * @param expression string with a expression
-     * @return true if the string contains attributes of SpEL expression
-     * @see <a href="https://docs.spring.io/spring/docs/5.0.16.RELEASE/spring-framework-reference/core.html#expressions">SpEL</a>
-     */
-    private boolean isSpelExpression(String expression) {
-        return expression.contains("@") || expression.contains("#")
-            || expression.contains("$") || expression.contains("?") || expression.contains("(")
-            || expression.contains(")") || expression.contains("'") || expression.contains("{")
-            || expression.contains("}") || expression.contains(">") || expression.contains("<")
-            || expression.contains("=");
+        return (String)resolver.evaluate(spelExpression, beanExpressionContext);
     }
 
     /** {@inheritDoc} */
