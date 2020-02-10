@@ -87,6 +87,12 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** */
     @Test
+    public void testCreateSystemPermissionsOnClientNode() throws Exception {
+        testCreateSystemPermissions(true);
+    }
+
+    /** */
+    @Test
     public void testDestroySystemPermissionsOnServerNode() throws Exception {
         testDestroySystemPermissions(false);
     }
@@ -184,7 +190,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
         node.close();
 
-        sysPermSet.remove(CACHE_CREATE);
         sysPermSet.add(CACHE_DESTROY);
 
         Ignite node1 = startGrid(loginPrefix(isClient) + "_test_node", isClient);
