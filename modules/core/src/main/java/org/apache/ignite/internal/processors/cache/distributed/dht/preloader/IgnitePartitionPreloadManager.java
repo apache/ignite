@@ -181,7 +181,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 if (log.isDebugEnabled())
                     log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
-//                if (!(hasIdleParttition = hasIdleParttition(grp)))
+                if (!(hasIdleParttition = hasIdleParttition(grp)))
                     continue;
             }
 
@@ -210,7 +210,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             }
         }
     }
-
 
     /**
      * Callback on exchange done.

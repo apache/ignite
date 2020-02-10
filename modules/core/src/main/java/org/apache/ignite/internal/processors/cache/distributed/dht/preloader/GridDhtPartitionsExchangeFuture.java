@@ -4444,7 +4444,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
 //        System.out.println("part hist suppliers: " + msg.partitionHistorySuppliers());
 //        if (grp != null)
-        System.out.println("partHistSuppliers empty=" + partHistSuppliers.isEmpty());
+        log.info("partHistSuppliers empty=" + partHistSuppliers.isEmpty());
 
         cctx.preloader().beforeTopologyUpdate(msg.topologyVersion(), this, msg);
 

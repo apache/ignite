@@ -552,8 +552,8 @@ public class FilePageStore implements PageStore {
                             try {
                                 File cfgFile = pathProvider.apply().toFile();
 
-                                if (cfgFile.toString().contains("indexed"))
-                                    U.dumpStack("create partition: " + cfgFile);
+//                                if (cfgFile.toString().contains("indexed"))
+//                                    U.dumpStack("create partition: " + cfgFile);
 
                                 this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
