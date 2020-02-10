@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 /**
  * Provides MBean method parameters names.
  */
+@Deprecated
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})

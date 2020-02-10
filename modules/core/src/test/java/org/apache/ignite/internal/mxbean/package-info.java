@@ -15,32 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
-
-import org.apache.ignite.IgniteEncryption;
-
 /**
- * Encryption features MBean.
+ * <!-- Package description. -->
+ * Contains internal tests for mxbeans stuff.
  */
-@MXBeanDescription("MBean that provides access to encryption features.")
-public interface EncryptionMXBean {
-    /**
-     * Gets the current master key name.
-     *
-     * @return Master key name.
-     * @see IgniteEncryption#getMasterKeyName()
-     */
-    @MXBeanDescription("Current master key name.")
-    public String getMasterKeyName();
 
-    /**
-     * Starts master key change process.
-     *
-     * @param masterKeyName Master key name.
-     * @see IgniteEncryption#changeMasterKey(String)
-     */
-    @MXBeanDescription("Change master key name.")
-    public void changeMasterKey(
-        @MXBeanParameterInfo(name = "masterKeyName", description = "Master key name.") String masterKeyName
-    );
-}
+package org.apache.ignite.internal.mxbean;

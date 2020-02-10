@@ -17,30 +17,27 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.IgniteEncryption;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Encryption features MBean.
+ * Provides name and description for MBean method argument.
  */
-@MXBeanDescription("MBean that provides access to encryption features.")
-public interface EncryptionMXBean {
-    /**
-     * Gets the current master key name.
-     *
-     * @return Master key name.
-     * @see IgniteEncryption#getMasterKeyName()
-     */
-    @MXBeanDescription("Current master key name.")
-    public String getMasterKeyName();
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.PARAMETER})
+public @interface MXBeanParameterInfo {
 
     /**
-     * Starts master key change process.
-     *
-     * @param masterKeyName Master key name.
-     * @see IgniteEncryption#changeMasterKey(String)
+     * Argument name.
      */
-    @MXBeanDescription("Change master key name.")
-    public void changeMasterKey(
-        @MXBeanParameterInfo(name = "masterKeyName", description = "Master key name.") String masterKeyName
-    );
+    String name();
+
+    /**
+     * Argument description.
+     */
+    String description();
 }

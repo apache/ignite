@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.mxbean;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ import javax.management.MBeanParameterInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.StandardMBean;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MXBeanParameterInfo;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
@@ -98,7 +100,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                     assert !str.trim().isEmpty() : "Method description cannot be empty: " + mtd;
 
                     // Enforce proper English.
-                    assert Character.isUpperCase(str.charAt(0)) == true :
+                    assert Character.isUpperCase(str.charAt(0)) :
                         "Description must start with upper case: " + str;
 
                     assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
@@ -126,7 +128,7 @@ public class IgniteStandardMXBean extends StandardMBean {
             assert !str.trim().isEmpty();
 
             // Enforce proper English.
-            assert Character.isUpperCase(str.charAt(0)) == true : str;
+            assert Character.isUpperCase(str.charAt(0)) : str;
             assert str.charAt(str.length() - 1) == '.' : str;
         }
 
@@ -149,7 +151,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert !str.trim().isEmpty();
 
                 // Enforce proper English.
-                assert Character.isUpperCase(str.charAt(0)) == true : str;
+                assert Character.isUpperCase(str.charAt(0)) : str;
                 assert str.charAt(str.length() - 1) == '.' : str;
             }
         }
@@ -179,11 +181,23 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert !str.trim().isEmpty();
 
                 // Enforce proper English.
-                assert Character.isUpperCase(str.charAt(0)) == true : str;
+                assert Character.isUpperCase(str.charAt(0)) : str;
                 assert str.charAt(str.length() - 1) == '.' : str;
+            } else {
+                MXBeanParameterInfo argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
+
+                if (argumentInfoAnnotation != null) {
+                    str = argumentInfoAnnotation.description();
+
+                    assert str != null;
+                    assert !str.trim().isEmpty();
+
+                    // Enforce proper English.
+                    assert Character.isUpperCase(str.charAt(0)) : str;
+                    assert str.charAt(str.length() - 1) == '.' : str;
+                }
             }
-        }
-        catch (SecurityException | ClassNotFoundException ignored) {
+        } catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -207,13 +221,45 @@ public class IgniteStandardMXBean extends StandardMBean {
 
                 assert str != null;
                 assert !str.trim().isEmpty();
+            } else {
+                MXBeanParameterInfo argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
+
+                if (argumentInfoAnnotation != null) {
+                    str = argumentInfoAnnotation.name();
+
+                    assert str != null;
+                    assert !str.trim().isEmpty();
+                }
             }
-        }
-        catch (SecurityException | ClassNotFoundException ignored) {
+        } catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
         return str;
+    }
+
+    /**
+     * Gets MXBeanArgumentInfo annotation instance from
+     * method if possible, otherwise returns null.
+     *
+     * @param m   Method instance.
+     * @param seq The sequence number of the argument considered
+     *            ("0" for the first parameter, "1" for the second parameter,
+     *            etc...)
+     * @return MXBeanArgumentInfo annotation instance.
+     */
+    private MXBeanParameterInfo getMXBeanArgumentAnnotation(Method m, int seq) {
+        Annotation[][] annotations = m.getParameterAnnotations();
+
+        assert seq < annotations.length;
+
+        for (Annotation annotation : annotations[seq]) {
+            if (annotation instanceof MXBeanParameterInfo) {
+                return (MXBeanParameterInfo) annotation;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -254,7 +300,7 @@ public class IgniteStandardMXBean extends StandardMBean {
      */
     @SuppressWarnings("unchecked")
     private Method findMethod(Class itf, String methodName, Class[] params) {
-        assert itf.isInterface() == true;
+        assert itf.isInterface();
 
         Method res = null;
 

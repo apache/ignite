@@ -39,13 +39,9 @@ public interface IgnitionMXBean {
      * @see org.apache.ignite.Ignition#state(String)
      */
     @MXBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
-    @MXBeanParametersNames(
-        "name"
-    )
-    @MXBeanParametersDescriptions(
-        "Name of grid instance."
-    )
-    public String getState(String name);
+    public String getState(
+        @MXBeanParameterInfo(name = "name", description = "Name of grid instance.") String name
+    );
 
     /**
      * Stops default grid instance.
@@ -60,13 +56,10 @@ public interface IgnitionMXBean {
      */
     @MXBeanDescription("Stops default grid instance. Return true if default grid instance was " +
         "indeed stopped, false otherwise (if it was not started).")
-    @MXBeanParametersNames(
-        "cancel"
-    )
-    @MXBeanParametersDescriptions(
-        "If true then all jobs currently executing on default grid will be cancelled."
-    )
-    public boolean stop(boolean cancel);
+    public boolean stop(
+        @MXBeanParameterInfo(name = "cancel",
+            description = "If true then all jobs currently executing on default grid will be cancelled.") boolean cancel
+    );
 
     /**
      * Stops named Ignite instance. If {@code cancel} flag is set to {@code true} then
@@ -89,18 +82,12 @@ public interface IgnitionMXBean {
      */
     @MXBeanDescription("Stops Ignite instance by name. Cancels running jobs if cancel is true. Returns true if named " +
         "Ignite instance was indeed found and stopped, false otherwise.")
-    @MXBeanParametersNames(
-        {
-            "name",
-            "cancel"
-        })
-    @MXBeanParametersDescriptions(
-        {
-            "Grid instance name to stop.",
-            "Whether or not running jobs should be cancelled."
-        }
-    )
-    public boolean stop(String name, boolean cancel);
+    public boolean stop(
+        @MXBeanParameterInfo(name = "name", description = "Grid instance name to stop.")
+            String name,
+        @MXBeanParameterInfo(name = "cancel", description = "Whether or not running jobs should be cancelled.")
+            boolean cancel
+    );
 
     /**
      * Stops <b>all</b> started grids. If {@code cancel} flag is set to {@code true} then
@@ -118,13 +105,10 @@ public interface IgnitionMXBean {
      * @see org.apache.ignite.Ignition#stopAll(boolean)
      */
     @MXBeanDescription("Stops all started grids.")
-    @MXBeanParametersNames(
-        "cancel"
-    )
-    @MXBeanParametersDescriptions(
-        "If true then all jobs currently executing on all grids will be cancelled."
-    )
-    public void stopAll(boolean cancel);
+    public void stopAll(
+        @MXBeanParameterInfo(name = "cancel",
+            description = "If true then all jobs currently executing on all grids will be cancelled.") boolean cancel
+    );
 
     /**
      * Restart JVM.
