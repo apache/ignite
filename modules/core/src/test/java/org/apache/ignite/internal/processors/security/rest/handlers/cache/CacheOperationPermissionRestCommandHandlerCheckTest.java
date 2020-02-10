@@ -212,7 +212,8 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         else {
             assertThrowsWithCause(() -> cachePutIfAbsent(NEW_TEST_CACHE, key, val), IgniteCheckedException.class);
             assertThrowsWithCause(() -> cachePut(NEW_TEST_CACHE, key, val), IgniteCheckedException.class);
-            assertThrowsWithCause(() -> cachePutAll(NEW_TEST_CACHE, singletonMap(key, val)), IgniteCheckedException.class);
+            assertThrowsWithCause(() -> cachePutAll(NEW_TEST_CACHE, singletonMap(key, val)),
+                IgniteCheckedException.class);
             assertThrowsWithCause(() -> cacheReplace(NEW_TEST_CACHE, key, val), IgniteCheckedException.class);
         }
     }
@@ -382,15 +383,15 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     }
 
     /** */
-    private Object cacheRestKey(String cacheName, GridRestCommand cmd,
-        String key) throws IgniteCheckedException {
+    private Object cacheRestKey(String cacheName, GridRestCommand cmd, String key) throws IgniteCheckedException {
         return handle(new GridRestCacheRequest().cacheName(cacheName).key(key).command(cmd))
             .get().getResponse();
     }
 
     /** */
-    private Object cacheRestKeyValue(String cacheName, GridRestCommand cmd, String key,
-        String val) throws IgniteCheckedException {
+    private Object cacheRestKeyValue(String cacheName, GridRestCommand cmd, String key, String val)
+        throws IgniteCheckedException {
+
         return handle(new GridRestCacheRequest().cacheName(cacheName).key(key).value(val).command(cmd))
             .get().getResponse();
     }
@@ -437,20 +438,17 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
     }
 
     /** */
-    private Object cacheGetAndPut(String cacheName, String key, String newVal)
-        throws IgniteCheckedException {
+    private Object cacheGetAndPut(String cacheName, String key, String newVal) throws IgniteCheckedException {
         return cacheRestKeyValue(cacheName, GridRestCommand.CACHE_GET_AND_PUT, key, newVal);
     }
 
     /** */
-    private boolean cacheRemove(String cacheName, String key)
-        throws IgniteCheckedException {
+    private boolean cacheRemove(String cacheName, String key) throws IgniteCheckedException {
         return (boolean)cacheRestKey(cacheName, GridRestCommand.CACHE_REMOVE, key);
     }
 
     /** */
-    private Object cacheGetAndRemove(String cacheName, String key)
-        throws IgniteCheckedException {
+    private Object cacheGetAndRemove(String cacheName, String key) throws IgniteCheckedException {
         return cacheRestKey(cacheName, GridRestCommand.CACHE_GET_AND_REMOVE, key);
     }
 
@@ -485,9 +483,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         cleanPersistenceDir();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** */
     private IgniteEx startGridAndActivate(IgniteConfiguration cfg) throws Exception {
         IgniteEx ex = startGrid(cfg);
 
