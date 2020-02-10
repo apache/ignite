@@ -40,7 +40,9 @@ public class ApplicationConfiguration {
     @Bean
     public CacheNamesBean cacheNames() {
         CacheNamesBean bean = new CacheNamesBean();
+
         bean.setPersonCacheName("PersonCache");
+
         return bean;
     }
 
