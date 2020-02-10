@@ -142,7 +142,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /**
-     *  execute a SpEL expression
+     *  evaluate the SpEL expression
      *
      * @param spelExpression SpEL expression
      * @return the result of execution of the SpEL expression
