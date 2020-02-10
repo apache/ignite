@@ -87,8 +87,8 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** */
     @Test
-    public void testDestruySystemPermissionsOnServerNode() throws Exception {
-        testCreateSystemPermissions(false);
+    public void testDestroySystemPermissionsOnServerNode() throws Exception {
+        testDestroySystemPermissions(false);
     }
 
     /** */
