@@ -64,7 +64,7 @@ import static com.amazonaws.util.StringUtils.isNullOrEmpty;
  *
  * <p> Note that this finder is shared.</p>
  *
- * <p> Note that this finder can only be used on AWS EC2 instances that belong on a Load Balanced auto scaling group.</p>
+ * <p> Note that this finder can only be used on AWS EC2 instances that belong on a Load Balancer based auto scaling group.</p>
  *
  * @see TcpDiscoveryAlbIpFinder
  */
