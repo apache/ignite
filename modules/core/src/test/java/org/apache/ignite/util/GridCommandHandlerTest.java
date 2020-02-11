@@ -260,7 +260,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @throws Exception If failed.
      */
     @Test
-    public void testDeactivateNonPNersistent() throws Exception {
+    public void testDeactivateNonPersistent() throws Exception {
         checkDeactivateNonPersistent("--deactivate");
     }
 
@@ -270,7 +270,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @throws Exception If failed.
      */
     @Test
-    public void testSetInactiveonPersistent() throws Exception {
+    public void testSetInactiveNonPersistent() throws Exception {
         checkDeactivateNonPersistent("--set-state", "inactive");
     }
 

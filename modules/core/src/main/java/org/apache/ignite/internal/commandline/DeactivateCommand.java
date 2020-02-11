@@ -44,8 +44,8 @@ public class DeactivateCommand implements Command<Void> {
     private boolean force;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
-        Command.usage(log, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
             optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 
@@ -67,11 +67,11 @@ public class DeactivateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to deactivate.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        log.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            // Search for in-memory-only caches. Fail if possible data loss.
+            // Search for in-memory-only caches. Fails if data loss can occur.
             if (!force) {
                 Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
                     null, clientCfg);
@@ -86,10 +86,10 @@ public class DeactivateCommand implements Command<Void> {
 
             state.active(false);
 
-            log.info("Cluster deactivated.");
+            logger.info("Cluster deactivated");
         }
         catch (Exception e) {
-            log.severe("Failed to deactivate cluster.");
+            logger.severe("Failed to deactivate cluster.");
 
             throw e;
         }

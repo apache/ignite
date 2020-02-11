@@ -245,6 +245,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_I
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
@@ -3948,13 +3949,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        if (!active && !ctx.state().isDeactivationSafe()) {
-            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
-                + " To force changing of cluster state call " +
-                "clusterState(\"" + INACTIVE.name().toLowerCase() + "\", true).");
-        }
-
         cluster().active(active);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void activate(boolean active, boolean force) {
+        clusterState(active ? ACTIVE.name() : INACTIVE.name(), force);
     }
 
     /** */
@@ -4753,15 +4753,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void clusterState(String state) {
-        ClusterState newState = ClusterState.valueOf(state);
-
-        if (newState == INACTIVE && !ctx.state().isDeactivationSafe()) {
-            throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
-                + " To force changing of cluster state call " +
-                "clusterState(\"" + INACTIVE.name().toLowerCase() + "\", true).");
-        }
-
-        cluster().state(newState);
+        clusterState(state, false);
     }
 
     /** {@inheritDoc} */
@@ -4770,7 +4762,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (newState == INACTIVE && !force && !ctx.state().isDeactivationSafe()) {
             throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
-                + " Please, enable force flag to deactivate cluster.");
+                + " To change cluster state on \"" + state + "\" pass the force flag.");
         }
 
         cluster().state(newState);

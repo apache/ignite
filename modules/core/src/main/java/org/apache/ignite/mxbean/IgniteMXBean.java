@@ -389,15 +389,14 @@ public interface IgniteMXBean {
     public boolean pingNode(String nodeId);
 
     /**
-     * @param active Activate/DeActivate flag.
+     * @param active If {@code True}, starts activation process. If {@code False}, starts deactivation process.
+     * @param force If {@code True}, skips checking of operation safety.
      */
-    @MXBeanDescription(
-        "Execute activate or deactivate process."
-    )
-    @MXBeanParametersNames(
-        "active"
-    )
-    public void active(boolean active);
+    @MXBeanDescription("Activates or deactivates cluster. Can skip checking if this operation is safe.")
+    @MXBeanParametersNames({"active", "force"})
+    @MXBeanParametersDescriptions({"If True, starts activation process. If False, starts deactivation process.",
+        "If True, skips checking of operation safety."})
+    public void activate(boolean active, boolean force);
 
     /**
      * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
@@ -710,10 +709,10 @@ public interface IgniteMXBean {
      * Changes current cluster state. Can skip checking safety of the operation.
      *
      * @param state String representation of new cluster state.
-     * @param force If true then skips checking of operation safety.
+     * @param force If {@code True} then skips checking of operation safety.
      * @see ClusterState
      */
-    @MXBeanDescription("Changes current cluster state.")
+    @MXBeanDescription("Changes current cluster state. Can skip checking if this operation is safe.")
     @MXBeanParametersNames({"state", "force"})
     @MXBeanParametersDescriptions({"New cluster state.", "If true then skips checking of operation safety."})
     public void clusterState(String state, boolean force);
