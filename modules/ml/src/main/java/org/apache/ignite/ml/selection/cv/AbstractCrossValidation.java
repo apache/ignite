@@ -17,18 +17,35 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.environment.parallelism.Promise;
+import org.apache.ignite.ml.math.functions.IgniteDoubleConsumer;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.pipeline.PipelineMdl;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
-import org.apache.ignite.ml.selection.paramgrid.*;
+import org.apache.ignite.ml.selection.paramgrid.BruteForceStrategy;
+import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
+import org.apache.ignite.ml.selection.paramgrid.HyperParameterTuningStrategy;
+import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
+import org.apache.ignite.ml.selection.paramgrid.ParameterSetGenerator;
+import org.apache.ignite.ml.selection.paramgrid.RandomStrategy;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
@@ -38,12 +55,6 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.util.genetic.Chromosome;
 import org.apache.ignite.ml.util.genetic.GeneticAlgorithm;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.DoubleConsumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
@@ -59,7 +70,7 @@ import java.util.stream.Collectors;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Double>, K, V> {
+public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Double>, K, V> implements Serializable {
     /** Learning environment builder. */
     protected LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
@@ -300,7 +311,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
         Map<String, Double> paramMap = new HashMap<>();
 
         for (int paramIdx = 0; paramIdx < paramSet.length; paramIdx++) {
-            DoubleConsumer setter = paramGrid.getSetterByIndex(paramIdx);
+            IgniteDoubleConsumer setter = paramGrid.getSetterByIndex(paramIdx);
 
             Double paramVal = paramSet[paramIdx];
             setter.accept(paramVal);
@@ -330,7 +341,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
                 return pnt < from || pnt > to;
             };
 
-            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k,v);
+            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k, v);
 
             DatasetBuilder<K, V> trainSet = datasetBuilderSupplier.apply(trainSetFilter);
             M mdl = trainer.fit(trainSet, preprocessor); //TODO: IGNITE-11580
@@ -361,7 +372,7 @@ public abstract class AbstractCrossValidation<M extends IgniteModel<Vector, Doub
                 return pnt < from || pnt > to;
             };
 
-            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k,v);
+            IgniteBiPredicate<K, V> testSetFilter = (k, v) -> !trainSetFilter.apply(k, v);
 
             DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetFilter);
             PipelineMdl<K, V> mdl = pipeline.fit(datasetBuilder);
