@@ -44,6 +44,9 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** Forbidden cache. */
     private static final String FORBIDDEN_CACHE = "FORBIDDEN_CACHE";
 
+    /** Server node name. */
+    private static final String SERVER = "server";
+
     /** Forbid node name. */
     private static final String FORBID_NAME = "test_node";
 
@@ -189,12 +192,12 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridAllowAll("server");
+        startGridAllowAll(SERVER);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteEx server = grid("server");
+        IgniteEx server = grid(SERVER);
 
         server.cacheNames().forEach(cacheName -> server.cache(cacheName).destroy());
     }
