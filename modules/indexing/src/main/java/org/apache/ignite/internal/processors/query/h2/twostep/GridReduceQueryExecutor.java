@@ -437,6 +437,8 @@ public class GridReduceQueryExecutor {
 
             ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = h2.connections().detachThreadConnection();
 
+            lastRun = r;
+
             Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
@@ -697,9 +699,6 @@ public class GridReduceQueryExecutor {
                     }
                 }
                 else {
-                    assert r != null;
-                    lastRun=r;
-
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
