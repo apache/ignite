@@ -5,11 +5,43 @@ Apache Ignite In-Memory Database and Caching Platform 2.8
 ---------------------------------------------------------
 
 Ignite Experimental API:
-* Added MetricExporterSpi API an exporter of Ignite metric information to the external recipient
+* Added monitoring API - an exporter of Ignite metrics to external recipients
 * Extended IgniteCache API with withReadRepair to perform backup nodes consistency check on each cache get attempt
+* Marked MVCC feature (added by 2.7.0 RELEASE)
 
 
-Ignite:
+Ignite Monitoring:
+* Added support of exposing objects as system views (SQL, JMX exporters supported "out of the box")
+* Added support of storing and updating metrics (JMX, SQL, Log, OpenCensus exporters supported "out of the box")
+* Added SQL query system view
+* Added client connections (JDBC, ODBC, Thin) system view
+* Added cluster nodes system view
+* Added columns system view
+* Added continuous query system view
+* Added free-lists system view
+* Added indexes system view
+* Added metrics for PME timings
+* Added metrics for transaction duration
+* Added metrics to measure cache API performance
+* Added metrics to show index building in progress
+* Added scan query system view
+* Added schemas system view
+* Added striped thread pool queue system view
+* Added support of metrics configuration via JMX
+* Added tables system view
+* Added total time threads parked if checkpoint throttling occurred
+* Added transactions system view
+* Moved CacheGroupMetrics to the new framework
+* Moved ClusterMetricsMxBean to the new framework
+* Moved Communication metrics to the new framework
+* Moved GridJobMetricsProcessor to the new framework
+* Moved GridLocalMetrics to the new framework
+* Moved IgniteMXBean to the new framework
+* Moved QueryMetrics to the new framework
+* Moved TransactionMetricsMxBean to the new framework
+
+
+Ignite Core:
 * Added @IgniteExperimental annotation to notify users about early access API available
 * Added IGNITE_CONSISTENT_ID system property
 * Added IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE system property
