@@ -16,8 +16,7 @@
  */
 
 /**
- * <!-- Package description. -->
- * Contains native process task that encapsulates the logic of starting native process.
+ * <!-- Package description. --> XGBoost model inference examples.
  */
 
-package org.apache.ignite.tensorflow.core.nativerunning.task;
+package org.apache.ignite.examples.ml.inference.xgboost;
