@@ -183,8 +183,6 @@ public class Step_17_Parallel_Genetic_Programming_Search {
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();

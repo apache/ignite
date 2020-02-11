@@ -175,7 +175,7 @@ public class Step_8_CV_with_Param_Grid {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
