@@ -389,8 +389,14 @@ public interface IgniteMXBean {
     public boolean pingNode(String nodeId);
 
     /**
+     * Changes grid state to active or inactive. Can skip checking safety of the operation.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
+     *
      * @param active If {@code True}, starts activation process. If {@code False}, starts deactivation process.
      * @param force If {@code True}, skips checking of operation safety.
+     * @throws IllegalStateException if state stange can lead to data loss and the force flag is not activated.
      */
     @MXBeanDescription("Activates or deactivates cluster. Can skip checking if this operation is safe.")
     @MXBeanParametersNames({"active", "force"})
@@ -696,6 +702,9 @@ public interface IgniteMXBean {
 
     /**
      * Changes current cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
      *
      * @param state String representation of new cluster state.
      * See {@link ClusterState}
@@ -707,6 +716,9 @@ public interface IgniteMXBean {
 
     /**
      * Changes current cluster state. Can skip checking safety of the operation.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
      *
      * @param state String representation of new cluster state.
      * @param force If {@code True} then skips checking of operation safety.

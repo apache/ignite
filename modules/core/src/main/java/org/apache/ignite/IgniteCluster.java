@@ -455,6 +455,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes Ignite grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
      * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
@@ -473,6 +475,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
      * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
      *
      * @param newState New cluster state.
