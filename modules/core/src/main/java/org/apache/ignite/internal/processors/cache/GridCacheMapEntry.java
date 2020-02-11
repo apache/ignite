@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,10 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheStat;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -4899,6 +4898,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         entry.deletedUnlocked(false);
                 }
             }
+            else if (oldVal != null && entry.deletedUnlocked())
+                entry.deletedUnlocked(false);
 
             CacheInvokeEntry<Object, Object> invokeEntry = null;
             IgniteBiTuple<Object, Exception> invokeRes = null;

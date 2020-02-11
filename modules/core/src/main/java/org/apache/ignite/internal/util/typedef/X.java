@@ -492,6 +492,52 @@ public final class X {
     }
 
     /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param msg Message text that should be in cause.
+     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes,
+     *      {@code false} otherwise.
+     */
+    @SafeVarargs
+    public static boolean hasCause(@Nullable Throwable t,  @Nullable String msg, @Nullable Class<?>... cls) {
+        if (t == null || F.isEmpty(cls))
+            return false;
+
+        assert cls != null;
+
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            for (Class<?> c : cls) {
+                if (c.isAssignableFrom(th.getClass())) {
+                    if (msg != null) {
+                        if (th.getMessage() != null && th.getMessage().contains(msg))
+                            return true;
+                        else
+                            continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            for (Throwable n : th.getSuppressed()) {
+                if (hasCause(n, msg, cls))
+                    return true;
+            }
+
+            if (th.getCause() == th)
+                break;
+        }
+
+        return false;
+    }
+
+    /**
      * Checks if passed throwable has given class in one of the suppressed exceptions.
      *
      * @param t Throwable to check (if {@code null}, {@code false} is returned).

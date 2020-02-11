@@ -96,15 +96,15 @@ import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_TRANSACTION_TIME_DUMP_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_PER_SECOND_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TRANSACTION_TIME_DUMP_SAMPLES_COEFFICIENT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
@@ -1091,31 +1091,38 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         Collection<IgniteTxEntry> entries = tx.local() ? tx.allEntries() : tx.writeEntries();
 
         for (IgniteTxEntry entry : entries) {
-            GridCacheEntryEx cached = entry.cached();
-
-            GridCacheContext cacheCtx = entry.context();
-
-            if (cached == null)
-                cached = cacheCtx.cache().peekEx(entry.key());
-
-            if (cached.detached())
-                continue;
+            cctx.database().checkpointReadLock();
 
             try {
-                if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
-                    cacheCtx.cache().removeEntry(cached);
+                GridCacheEntryEx cached = entry.cached();
 
-                if (!tx.near() && isNearEnabled(cacheCtx)) {
-                    GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+                GridCacheContext cacheCtx = entry.context();
 
-                    GridNearCacheEntry e = near.peekExx(entry.key());
+                if (cached == null)
+                    cached = cacheCtx.cache().peekEx(entry.key());
 
-                    if (e != null && e.markObsoleteIfEmpty(null))
-                        near.removeEntry(e);
+                if (cached.detached())
+                    continue;
+
+                try {
+                    if (cached.obsolete() || cached.markObsoleteIfEmpty(tx.xidVersion()))
+                        cacheCtx.cache().removeEntry(cached);
+
+                    if (!tx.near() && isNearEnabled(cacheCtx)) {
+                        GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
+
+                        GridNearCacheEntry e = near.peekExx(entry.key());
+
+                        if (e != null && e.markObsoleteIfEmpty(null))
+                            near.removeEntry(e);
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
                 }
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
+            finally {
+                cctx.database().checkpointReadUnlock();
             }
         }
     }
