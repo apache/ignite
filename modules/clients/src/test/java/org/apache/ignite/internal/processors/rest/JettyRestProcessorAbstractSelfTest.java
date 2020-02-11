@@ -27,6 +27,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.DateFormat;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -62,6 +65,8 @@ import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheClearTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorCacheGetValueTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheGetValueTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheLoadTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
@@ -80,6 +85,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStartTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorDataType;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
@@ -157,6 +163,12 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
+
+    /** Expected message when unsupported key type is specified in {@link VisorCacheGetValueTaskArg}. */
+    private static final String UNSUPPORTED_KEY_TYPE = "No enum constant org.apache.ignite.internal.visor.cache.VisorDataType.UNSUPPORTED";
+
+    /** */
+    private static final AtomicInteger KEY_GEN = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -297,8 +309,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertEquals(STATUS_FAILED, node.get("successStatus").asInt());
         assertFalse(node.get("error").isNull());
         assertTrue(node.get("response").isNull());
-
-        assertEquals(securityEnabled(), !node.get("sessionToken").isNull());
 
         JsonNode error = node.get("error");
 
@@ -1584,6 +1594,243 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
+     * Tests work of VisorCacheGetValueTask via {@link VisorGatewayTask}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testVisorGetCacheValueTask() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
+        Person p = new Person(100, "John", "Doe", 300);
+
+        // Check integer key.
+        jcache().put(1, p);
+
+        String ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME, String.format("{\"type\":\"%s\",\"value\":\"%s\"}", VisorDataType.INT, 1)));
+
+        info("VisorCacheGetValueTask result for Integer key: " + ret);
+
+        JsonNode res = jsonTaskResult(ret);
+
+        String resStr = res.get("result").toString();
+
+        assertTrue(resStr.contains("\"id\":" + p.getId()));
+        assertTrue(resStr.contains("\"orgId\":" + p.getOrganizationId()));
+        assertTrue(resStr.contains("\"firstName\":\"" + p.getFirstName() + "\""));
+        assertTrue(resStr.contains("\"lastName\":\"" + p.getLastName() + "\""));
+        assertTrue(resStr.contains("\"salary\":" + p.getSalary()));
+
+        // Check UUID key.
+        UUID uuidKey = UUID.randomUUID();
+
+        jcache().put(uuidKey, 2);
+
+        ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME,
+                String.format("{\"type\":\"%s\",\"value\":\"%s\"}", VisorDataType.UUID, uuidKey.toString())
+            )
+        );
+
+        info("VisorCacheGetValueTask result for UUID key: " + ret);
+
+        res = jsonTaskResult(ret);
+
+        resStr = res.get("result").toString();
+
+        assertTrue("2".equals(resStr));
+
+        // Check Timestamp key.
+        long timestamp = System.currentTimeMillis();
+
+        jcache().put(new Timestamp(timestamp), 3);
+
+        ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME,
+                String.format("{\"type\":\"%s\",\"value\":\"%s\"}", VisorDataType.TIMESTAMP, timestamp)
+            )
+        );
+
+        info("VisorCacheGetValueTask result for Timestamp key: " + ret);
+
+        res = jsonTaskResult(ret);
+
+        resStr = res.get("result").toString();
+
+        assertTrue("3".equals(resStr));
+
+        //Check Date key.
+        // TODO GG-27443 Sometime cache.put freezes.
+        //jcache().put(new Date(timestamp), 4);
+        //
+        //ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+        //    .setNode(locNode)
+        //    .setTaskArgument(VisorCacheGetValueTaskArg.class)
+        //    .addArguments(DEFAULT_CACHE_NAME,
+        //        String.format("{\"type\":\"%s\",\"value\":\"%s\"}", VisorDataType.DATE_SQL, timestamp)
+        //    )
+        //);
+        //
+        //info("VisorCacheGetValueTask result for Date key: " + ret);
+        //
+        //res = jsonTaskResult(ret);
+        //
+        //resStr = res.get("result").toString();
+        //
+        //assertTrue("4".equals(resStr));
+
+        // Check object key.
+        jcache().put(p, 5);
+
+        ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME,
+                String.format("{" +
+                    "\"type\":\"%s\"," +
+                    "\"value\":{" +
+                        "\"className\":\"%s\"," +
+                        "\"fields\":[" +
+                        "{\"type\":\"INT\",\"name\":\"id\",\"value\":%s}," +
+                        "{\"type\":\"INT\",\"name\":\"orgId\",\"value\":%s}," +
+                        "{\"type\":\"STRING\",\"name\":\"firstName\",\"value\":\"%s\"}," +
+                        "{\"type\":\"STRING\",\"name\":\"lastName\",\"value\":\"%s\"}," +
+                        "{\"type\":\"DOUBLE\",\"name\":\"salary\",\"value\":%s}" +
+                        "]" +
+                    "}" +
+                "}",
+                    VisorDataType.BINARY,
+                    Person.class.getName(),
+                    p.getId(),
+                    p.getOrganizationId(),
+                    p.getFirstName(),
+                    p.getLastName(),
+                    p.getSalary()
+                )
+            )
+        );
+
+        info("VisorCacheGetValueTask result for binary key: " + ret);
+
+        res = jsonTaskResult(ret);
+
+        assertEquals("5", res.get("result").toString());
+
+        // Check composite object key.
+        CompositeKeyExternal key = new CompositeKeyExternal(new CompositeKeyInternal());
+
+        jcache().put(key, 6);
+
+        ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME,
+                String.format("{" +
+                    "\"type\":\"%s\"," +
+                    "\"value\":{" +
+                        "\"className\":\"%s\"," +
+                        "\"fields\":[" +
+                            "{\"type\":\"INT\",\"name\":\"id\",\"value\":%s}," +
+                            "{\"type\":\"BINARY\",\"name\":\"internal\",\"value\":{" +
+                                "\"className\":\"%s\"," +
+                                "\"fields\":[{\"type\":\"INT\",\"name\":\"id\",\"value\":%s}]" +
+                            "}}" +
+                        "]" +
+                    "}" +
+                "}",
+                    VisorDataType.BINARY,
+                    CompositeKeyExternal.class.getName(),
+                    key.getId(),
+                    CompositeKeyInternal.class.getName(),
+                    key.getInternal().getId()
+                )
+            )
+        );
+
+        info("VisorCacheGetValueTask result for binary key: " + ret);
+
+        res = jsonTaskResult(ret);
+
+        assertEquals("6", res.get("result").toString());
+    }
+
+    public void testVisorGetCacheValueForInstantKey() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
+        // Check Instant key.
+        Instant key = Instant.now();
+
+        jcache().put(key, 7);
+
+        String ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME,
+                String.format("{\"type\":\"%s\",\"value\":\"%s.%s\"}",
+                    VisorDataType.INSTANT,
+                    key.getEpochSecond(),
+                    key.getNano()
+                )
+            ));
+
+        info("VisorCacheGetValueTask result for Instant key: " + ret);
+
+        JsonNode res = jsonTaskResult(ret);
+
+        String resStr = res.get("result").toString();
+
+        assertTrue("7".equals(resStr));
+    }
+
+    /**
+     * Tests work of VisorCacheGetValueTask with unsupported key type.
+     *
+     * @throws Exception If failed.
+     */
+    public void testVisorGetCacheValueForUnsupportedKey() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
+        String ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME, "{\"type\":\"UNSUPPORTED\",\"value\":\"1\"}"));
+
+        info("VisorCacheGetValueTask result for unsupported key type: " + ret);
+
+        JsonNode err = jsonTaskErrorResult(ret);
+
+        assertFalse(err.isNull());
+        assertTrue(err.textValue().contains(UNSUPPORTED_KEY_TYPE));
+    }
+
+    /**
+     * Tests work of VisorCacheGetValueTask result with missed value.
+     *
+     * @throws Exception If failed.
+     */
+    public void testVisorGetCacheValueWithMissedValue() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
+        String ret = content(new VisorGatewayArgument(VisorCacheGetValueTask.class)
+            .setNode(locNode)
+            .setTaskArgument(VisorCacheGetValueTaskArg.class)
+            .addArguments(DEFAULT_CACHE_NAME, String.format("{\"type\":\"%s\",\"value\":\"1\"}", VisorDataType.INT)));
+
+        info("VisorCacheGetValueTask result for integer key type with missed value: " + ret);
+
+        JsonNode res = jsonTaskResult(ret);
+
+        assertFalse(res.get("affinityNode").isNull());
+        assertTrue(res.get("result").isNull());
+    }
+
+    /**
      * Tests execution of Visor tasks via {@link VisorGatewayTask}.
      *
      * @throws Exception If failed.
@@ -2733,9 +2980,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * Person class.
      */
     public static class Person implements Serializable {
-        /** Person id. */
-        private static int PERSON_ID = 0;
-
         /** Person ID (indexed). */
         @QuerySqlField(index = true)
         private Integer id;
@@ -2762,7 +3006,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @param salary Salary.
          */
         Person(Integer orgId, String firstName, String lastName, double salary) {
-            id = PERSON_ID++;
+            id = KEY_GEN.getAndIncrement();
 
             this.orgId = orgId;
             this.firstName = firstName;
@@ -2795,7 +3039,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          * @return Salary.
          */
         public double getSalary() {
-
             return salary;
         }
 
@@ -2804,6 +3047,60 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
          */
         public Integer getId() {
             return id;
+        }
+    }
+
+    /**
+     * Class of internal object for conposed key type.
+     */
+    public static class CompositeKeyInternal implements Serializable {
+        /** Object ID (indexed). */
+        @QuerySqlField(index = true)
+        private Integer id;
+
+        /**  */
+        CompositeKeyInternal() {
+            id = KEY_GEN.getAndIncrement();
+        }
+
+        /**
+         * @return Id.
+         */
+        public Integer getId() {
+            return id;
+        }
+    }
+
+    /**
+     * Class of extermal object for composite key type.
+     */
+    public static class CompositeKeyExternal implements Serializable {
+        /** Object ID (indexed). */
+        @QuerySqlField(index = true)
+        private Integer id;
+
+        /** Internal object. */
+        private CompositeKeyInternal internal;
+
+        /**  */
+        CompositeKeyExternal(CompositeKeyInternal internal) {
+            id = KEY_GEN.getAndIncrement();
+
+            this.internal = internal;
+        }
+
+        /**
+         * @return Id.
+         */
+        public Integer getId() {
+            return id;
+        }
+
+        /**
+         * @return Internal object.
+         */
+        public CompositeKeyInternal getInternal() {
+            return internal;
         }
     }
 

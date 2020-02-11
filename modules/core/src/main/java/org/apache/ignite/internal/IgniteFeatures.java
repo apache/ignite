@@ -77,7 +77,10 @@ public enum IgniteFeatures {
     WC_SNAPSHOT_CHAIN_MODE(22),
 
     /** Support of DR-specific visor tasks used by control utility. */
-    DR_CONTROL_UTILITY(25);
+    DR_CONTROL_UTILITY(25),
+
+    /** Cluster has task to get value from cache by key value. */
+    WC_GET_CACHE_VALUE(31);
 
     /**
      * Unique feature identifier.
