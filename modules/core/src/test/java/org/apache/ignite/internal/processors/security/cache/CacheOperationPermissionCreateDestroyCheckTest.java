@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.*;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -46,58 +45,59 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** */
     @Test
-    public void testCreateWithCachePermissionsOnServerNode() throws Exception {
-        testCreateWithCachePermissions(false);
+    public void testCreateCacheWithCachePermissionsOnServerNode() throws Exception {
+        createCacheWithCachePermissions(false);
     }
 
     /** */
     @Test
-    public void testDestroyWithCachePermissionsOnServerNode() throws Exception {
-        testDestroyWithCachePermissions(false);
+    public void testDestroyCacheWithCachePermissionsOnServerNode() throws Exception {
+        destroyCacheWithCachePermissions(false);
     }
 
     /** */
     @Test
-    public void testCreateWithCachePermissionsOnClientNode() throws Exception {
-        testCreateWithCachePermissions(true);
+    public void testCreateCacheWithCachePermissionsOnClientNode() throws Exception {
+        createCacheWithCachePermissions(true);
     }
 
     /** */
     @Test
-    public void testDestroyWithCachePermissionsOnClientNode() throws Exception {
-        testDestroyWithCachePermissions(true);
+    public void testDestroyCacheWithCachePermissionsOnClientNode() throws Exception {
+        destroyCacheWithCachePermissions(true);
     }
 
     /** */
     @Test
-    public void testCreateWithSystemPermissionsOnServerNode() throws Exception {
-        testCreateWithSystemPermissions(false);
+    public void testCreateCacheWithSystemPermissionsOnServerNode() throws Exception {
+        createCacheWithSystemPermissions(false);
     }
 
     /** */
     @Test
     public void testCreateWithSystemPermissionsOnClientNode() throws Exception {
-        testCreateWithSystemPermissions(true);
+        createCacheWithSystemPermissions(true);
     }
 
     /** */
     @Test
-    public void testDestroyWithSystemPermissionsOnServerNode() throws Exception {
-        testDestroyWithSystemPermissions(false);
+    public void testDestroyCacheWithSystemPermissionsOnServerNode() throws Exception {
+        destroyCacheWithSystemPermissions(false);
     }
 
     /** */
     @Test
-    public void testDestroyWithSystemPermissionsOnClientNode() throws Exception {
-        testDestroyWithSystemPermissions(true);
+    public void testDestroyCacheWithSystemPermissionsOnClientNode() throws Exception {
+        destroyCacheWithSystemPermissions(true);
     }
 
     /**
      * @param isClient Is client.
      * @throws Exception If failed.
      */
-    private void testCreateWithCachePermissions(boolean isClient) throws Exception {
+    private void createCacheWithCachePermissions(boolean isClient) throws Exception {
         SecurityPermissionSet secPermSet = SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
             .appendSystemPermissions(JOIN_AS_SERVER)
             .appendCachePermissions(TEST_CACHE, CACHE_CREATE)
             .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS)
@@ -107,9 +107,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
         node.createCache(TEST_CACHE);
 
-        // This won't fail since defaultAllowAll is true.
-        node.createCache(NEW_TEST_CACHE);
-
         assertThrowsWithCause(() -> node.createCache(FORBIDDEN_CACHE), SecurityException.class);
     }
 
@@ -117,7 +114,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      * @param isClient Is client.
      * @throws Exception If failed.
      */
-    private void testDestroyWithCachePermissions(boolean isClient) throws Exception {
+    private void destroyCacheWithCachePermissions(boolean isClient) throws Exception {
         SecurityPermissionSet secPermSet = SecurityPermissionSetBuilder.create()
             .appendSystemPermissions(JOIN_AS_SERVER)
             .appendCachePermissions(TEST_CACHE, CACHE_CREATE, CACHE_DESTROY)
@@ -129,10 +126,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         node.createCache(TEST_CACHE);
         node.cache(TEST_CACHE).destroy();
 
-        // This won't fail since defaultAllowAll is true.
-        node.createCache(NEW_TEST_CACHE);
-        node.cache(NEW_TEST_CACHE).destroy();
-
         node.createCache(FORBIDDEN_CACHE);
         assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), SecurityException.class);
     }
@@ -141,7 +134,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      * @param isClient Is client.
      * @throws Exception If failed.
      */
-    private void testCreateWithSystemPermissions(boolean isClient) throws Exception {
+    private void createCacheWithSystemPermissions(boolean isClient) throws Exception {
         SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create()
             .appendSystemPermissions(JOIN_AS_SERVER)
             .appendCachePermissions(TEST_CACHE, EMPTY_PERMS)
@@ -167,7 +160,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      * @param isClient Is client.
      * @throws Exception If failed.
      */
-    private void testDestroyWithSystemPermissions(boolean isClient) throws Exception {
+    private void destroyCacheWithSystemPermissions(boolean isClient) throws Exception {
         SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create()
             .appendSystemPermissions(JOIN_AS_SERVER, CACHE_CREATE)
             .appendCachePermissions(TEST_CACHE, EMPTY_PERMS)
@@ -178,9 +171,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         node.createCache(TEST_CACHE);
         node.createCache(NEW_TEST_CACHE);
         node.createCache(FORBIDDEN_CACHE);
-
-        // This won't fail since defaultAllowAll is true.
-        node.cache(NEW_TEST_CACHE).destroy();
 
         assertThrowsWithCause(() -> node.cache(TEST_CACHE).destroy(), SecurityException.class);
         assertThrowsWithCause(() -> node.cache(FORBIDDEN_CACHE).destroy(), SecurityException.class);
@@ -205,12 +195,12 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      * @throws Exception If anything failed.
      */
     private Ignite startGrid(SecurityPermissionSet secPermSet, boolean isClient) throws Exception {
-        return startGrid(loginPrefix(isClient) + "_test_node", secPermSet, null, isClient);
+        return startGrid("test_node", secPermSet, null, isClient);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridAllowAll("server").cluster().state(ACTIVE);
+        startGridAllowAll("server");
     }
 
     /** {@inheritDoc} */
@@ -218,12 +208,5 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         stopAllGrids();
 
         cleanPersistenceDir();
-    }
-
-    /**
-     * @param isClient Is client.
-     */
-    protected String loginPrefix(boolean isClient) {
-        return isClient ? "client" : "server";
     }
 }
