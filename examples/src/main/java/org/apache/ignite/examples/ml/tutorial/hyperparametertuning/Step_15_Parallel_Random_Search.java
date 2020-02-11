@@ -186,8 +186,6 @@ public class Step_15_Parallel_Random_Search {
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
