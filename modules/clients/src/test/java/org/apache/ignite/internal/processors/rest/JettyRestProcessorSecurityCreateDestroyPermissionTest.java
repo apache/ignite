@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.io.IOException;
 import java.util.Arrays;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
@@ -28,8 +26,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -65,45 +61,21 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     /** Forbidden cache. */
     private static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
 
-    /** New cache. */
-    private static final String NEW_TEST_CACHE = "NEW_TEST_CACHE";
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        grid(0).cluster().state(ACTIVE);
-    }
-
     /**
      * {@inheritDoc}
      */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-
-        dsCfg.setWalMode(NONE);
-
-        DataRegionConfiguration testDataRegionCfg = new DataRegionConfiguration();
-
-        testDataRegionCfg.setPersistenceEnabled(true);
-
-        dsCfg.setDefaultDataRegionConfiguration(testDataRegionCfg);
-
         PluginProvider pluginProvider = new TestSecurityPluginProvider(DFLT_USER, DFLT_PWD,
             SecurityPermissionSetBuilder.create()
-                .defaultAllowAll(true)
+                .defaultAllowAll(false)
                 .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_DESTROY)
                 .appendCachePermissions(CREATE_CACHE_NAME, CACHE_CREATE)
                 .appendCachePermissions(FORBIDDEN_CACHE_NAME, EMPTY_PERM)
                 .appendSystemPermissions(JOIN_AS_SERVER, ADMIN_CACHE, ADMIN_OPS)
                 .build(), true);
 
-        cfg.setDataStorageConfiguration(dsCfg);
-        cfg.setAuthenticationEnabled(true);
         cfg.setPluginProviders(pluginProvider);
         cfg.setCacheConfiguration(null);
 
@@ -118,17 +90,13 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         getOrCreateCaches();
 
         assertTrue(grid(0).cacheNames().containsAll(
-            Arrays.asList(NEW_TEST_CACHE, CACHE_NAME, CREATE_CACHE_NAME)));
+            Arrays.asList(CACHE_NAME, CREATE_CACHE_NAME)));
 
         assertFalse(grid(0).cacheNames().contains(FORBIDDEN_CACHE_NAME));
     }
 
     /** */
     private void getOrCreateCaches() throws Exception {
-        // This won't fail since defaultAllowAll is true.
-        assertEquals(SUCCESS_STATUS,
-            (jsonField(content(NEW_TEST_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
-
         assertEquals(SUCCESS_STATUS,
             (jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
 
@@ -145,11 +113,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     public void testDestroyCache() throws Exception {
         getOrCreateCaches();
 
-        assertTrue(grid(0).cacheNames().containsAll(Arrays.asList(CREATE_CACHE_NAME, NEW_TEST_CACHE, CACHE_NAME)));
-
-        // This won't fail since defaultAllowAll is true.
-        assertEquals(SUCCESS_STATUS,
-            (jsonField(content(NEW_TEST_CACHE, GridRestCommand.DESTROY_CACHE), STATUS)));
+        assertTrue(grid(0).cacheNames().containsAll(Arrays.asList(CREATE_CACHE_NAME, CACHE_NAME)));
 
         assertEquals(SUCCESS_STATUS,
             (jsonField(content(CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS)));
@@ -158,7 +122,6 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
 
         assertFalse(grid(0).cacheNames().contains(CACHE_NAME));
-        assertFalse(grid(0).cacheNames().contains(NEW_TEST_CACHE));
 
         assertTrue(grid(0).cacheNames().contains(CREATE_CACHE_NAME));
     }
