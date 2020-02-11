@@ -473,6 +473,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes current cluster state to given {@code newState} cluster state.
+     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
      *
      * @param newState New cluster state.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
