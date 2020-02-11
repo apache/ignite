@@ -413,6 +413,8 @@ public class ConnectionManager {
 
             sysConn = null;
         }
+
+        closeConnections();
     }
 
     /**
