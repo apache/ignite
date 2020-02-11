@@ -258,6 +258,13 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
+     * @return Set of identifiers of the remaining groups.
+     */
+    public Set<Integer> remainingGroups() {
+        return remaining.keySet();
+    }
+
+    /**
      * @param nodeId Node ID.
      * @param file Partition snapshot file.
      * @param grpId Cache group ID.

@@ -66,11 +66,13 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * @param rebTopVer Previous rebalance topology version or {@code NONE} if there is no info.
-     * @param exchFut Completed exchange future.
-     * @return {@code True} if rebalance should be started (previous will be interrupted).
+     * Set rebalance version to {@link AffinityTopologyVersion#NONE} if rebalancing should be restarted.
+     *
+     * @param exchFut Exchange future.
+     * @param resVer Exchange result version.
+     * @return {@code True} if the version has been updated or it's already set to {@link AffinityTopologyVersion#NONE}.
      */
-    public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer, GridDhtPartitionsExchangeFuture exchFut);
+    public boolean updateRebalanceVersion(GridDhtPartitionsExchangeFuture exchFut, AffinityTopologyVersion resVer);
 
     /**
      * @param exchId Exchange ID.

@@ -211,8 +211,6 @@ public class GridAffinityAssignmentCache {
 
         head.set(assignment);
 
-        U.dumpStack("initialize aff");
-
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
             if (entry.getKey().compareTo(topVer) <= 0) {
                 if (log.isDebugEnabled())

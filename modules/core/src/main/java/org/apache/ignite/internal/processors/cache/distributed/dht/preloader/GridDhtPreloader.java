@@ -49,6 +49,7 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -152,11 +153,33 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean rebalanceRequired(AffinityTopologyVersion rebTopVer,
-        GridDhtPartitionsExchangeFuture exchFut) {
-        if (ctx.kernalContext().clientNode() || rebTopVer.equals(AffinityTopologyVersion.NONE))
+    @Override public boolean updateRebalanceVersion(
+        GridDhtPartitionsExchangeFuture exchFut,
+        AffinityTopologyVersion resVer
+    ) {
+        AffinityTopologyVersion rebTopVer = ctx.exchange().rebalanceTopologyVersion();
+
+        if (ctx.kernalContext().clientNode())
             return false; // No-op.
 
+        if (rebTopVer.equals(NONE))
+            return true;
+
+        if (rebalanceRequired(rebTopVer, resVer, exchFut)) {
+            ctx.exchange().resetRebalanceVersion();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    private boolean rebalanceRequired(
+        AffinityTopologyVersion rebTopVer,
+        AffinityTopologyVersion resVer,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         if (exchFut.resetLostPartitionFor(grp.cacheOrGroupName()))
             return true;
 
@@ -171,13 +194,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             return true; // Required, since no history info available.
         }
 
-        final IgniteInternalFuture<Boolean> rebFut = rebalanceFuture();
+        IgniteInternalFuture<Boolean> rebFut = rebalanceFuture();
 
         if (rebFut.isDone() && !rebFut.result())
             return true; // Required, previous rebalance cancelled.
 
-        AffinityTopologyVersion lastAffChangeTopVer =
-            ctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
+        if (rebFut.isDone() && !rebFut.result() || (ctx.preloader() != null && ctx.preloader().incompleteRebalance(grp)))
+            return true; // Required, previous rebalance cancelled.
+
+        AffinityTopologyVersion lastAffChangeTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(resVer);
 
         return lastAffChangeTopVer.compareTo(rebTopVer) > 0;
     }

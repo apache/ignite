@@ -3672,11 +3672,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 timeBag.finishGlobalStage("Ideal affinity diff calculation (enforced)");
             }
 
-            cctx.preloader().beforeTopologyUpdate(resTopVer, this, null);
-
             for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                if (!grpCtx.isLocal())
-                    grpCtx.topology().applyUpdateCounters();
+                if (grpCtx.isLocal())
+                    continue;
+
+                boolean rebalanceRequired = grpCtx.preloader().updateRebalanceVersion(this, resTopVer);
+
+                IgnitePartitionPreloadManager preloader = cctx.preloader();
+
+                if (rebalanceRequired && preloader != null && grpCtx.persistenceEnabled()) {
+                    CachePartitionFullCountersMap cntrs = grpCtx.topology().fullUpdateCounters();
+
+                    Map<Integer, Long> globalSizes = grpCtx.topology().globalPartSizes();
+
+                    preloader.beforeTopologyUpdate(grpCtx, this, resTopVer, cntrs, globalSizes);
+                }
+
+                grpCtx.topology().applyUpdateCounters();
             }
 
             timeBag.finishGlobalStage("Apply update counters");
@@ -4442,12 +4454,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         partHistSuppliers.putAll(msg.partitionHistorySuppliers());
 
-//        System.out.println("part hist suppliers: " + msg.partitionHistorySuppliers());
-//        if (grp != null)
-        log.info("partHistSuppliers empty=" + partHistSuppliers.isEmpty());
-
-        cctx.preloader().beforeTopologyUpdate(msg.topologyVersion(), this, msg);
-
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
@@ -4461,8 +4467,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
-                        CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                            grp.topology().partitions());
+                        IgnitePartitionPreloadManager preloader = cctx.preloader();
+
+                        boolean rebalanceRequired = grp.preloader().updateRebalanceVersion(this, resTopVer);
+
+                        CachePartitionFullCountersMap cntrMap =
+                            msg.partitionUpdateCounters(grpId, grp.topology().partitions());
+
+                        if (rebalanceRequired && preloader != null && grp.persistenceEnabled()) {
+                            Map<Integer, Long> globalSizes = msg.partitionSizes(cctx).get(grp.groupId());
+
+                            preloader.beforeTopologyUpdate(grp, this, msg.topologyVersion(), cntrMap, globalSizes);
+                        }
 
                         grp.topology().update(resTopVer,
                             msg.partitions().get(grpId),
