@@ -15,25 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.spi.metric;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned atomic near-cache mode. */
-public class JdbcThinBulkLoadAtomicPartitionedNearSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return true;
-    }
+/**
+ * Histogram metric calculates counts of measurements that gets into each bounds interval.
+ * Note, that {@link #value()} will return array length of {@code bounds.length + 1}.
+ * Last element will contains count of measurements bigger then most right value of bounds.
+ */
+public interface HistogramMetric extends ObjectMetric<long[]> {
+    /** @return Bounds of this histogram. */
+    public long[] bounds();
 }

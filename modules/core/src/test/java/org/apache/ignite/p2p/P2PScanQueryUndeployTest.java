@@ -82,9 +82,6 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new MessageCountingCommunicationSpi());
 
-        if (igniteInstanceName.equals(CLIENT_INSTANCE_NAME))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -119,7 +116,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        Ignite client = startGrid(CLIENT_INSTANCE_NAME);
+        Ignite client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         client.cluster().active(true);
 
@@ -133,7 +130,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
 
         MessageCountingCommunicationSpi.resetDeploymentRequestCounter();
 
-        client = startGrid(CLIENT_INSTANCE_NAME);
+        client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         invokeScanQueryAndStopClient(client, predCls);
     }

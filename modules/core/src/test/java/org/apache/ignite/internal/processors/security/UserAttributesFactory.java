@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import java.util.HashMap;
+import java.util.Map;
+import javax.cache.configuration.Factory;
 
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned atomic mode. */
-public class JdbcThinBulkLoadAtomicPartitionedSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.
+    ADDITIONAL_SECURITY_CLIENT_VERSION;
+import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.
+    ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR;
+
+/**
+ * Creates user attributes for thin clients.
+ */
+public class UserAttributesFactory implements Factory<Map<String, String>> {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
+    @Override public Map<String, String> create() {
+        HashMap<String, String> map = new HashMap<>();
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
+        map.put(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR, ADDITIONAL_SECURITY_CLIENT_VERSION);
 
-    /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return false;
+        return map;
     }
 }

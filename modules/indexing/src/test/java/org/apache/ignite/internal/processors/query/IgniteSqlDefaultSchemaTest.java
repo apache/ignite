@@ -15,25 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import java.util.List;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned transactional near-cache mode. */
-public class JdbcThinBulkLoadTransactionalPartitionedNearSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
+/** Verifies default sql schema through SqlFieldsQuery API. */
+public class IgniteSqlDefaultSchemaTest extends AbstractDefaultSchemaTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return true;
+    @Override protected List<List<?>> execSql(String qry) {
+        return grid(0).context().query()
+            .querySqlFields(new SqlFieldsQuery(qry).setLazy(true), false)
+            .getAll();
     }
 }

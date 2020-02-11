@@ -74,9 +74,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private boolean client;
-
-    /** */
     private static final int NODE_COUNT = 4;
 
     /** */
@@ -102,8 +99,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        client = false;
 
         disableAutoActivation = false;
 
@@ -138,9 +133,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);
-
-        if (client)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -429,13 +421,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ignite;
 
-        if (fromClient) {
-            client = true;
-
-            ignite = startGrid(NODE_COUNT + 10);
-
-            client = false;
-        }
+        if (fromClient)
+            ignite = startClientGrid(NODE_COUNT + 10);
         else
             ignite = grid(0);
 

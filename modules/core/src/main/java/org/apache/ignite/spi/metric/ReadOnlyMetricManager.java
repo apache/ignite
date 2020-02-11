@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.spi.metric;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import java.util.function.Consumer;
 
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned transactional mode. */
-public class JdbcThinBulkLoadTransactionalPartitionedSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
+/**
+ * Read only metric manager.
+ */
+public interface ReadOnlyMetricManager extends Iterable<ReadOnlyMetricRegistry> {
+    /**
+     * Adds listener of metrics registry creation events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return false;
-    }
+    /**
+     * Adds listener of metrics registry remove events.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryRemoveListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 }

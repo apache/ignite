@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for replicated atomic near-cache mode. */
-public class JdbcThinBulkLoadAtomicReplicatedSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+/**
+ * Update counter implementation for MVCC mode.
+ */
+public class PartitionUpdateCounterMvccImpl extends PartitionUpdateCounterTrackingImpl {
+    /**
+     * @param grp Group.
+     */
+    public PartitionUpdateCounterMvccImpl(CacheGroupContext grp) {
+        super(grp);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
+    @Override public long reserve(long delta) {
+        return next(delta);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return false;
+    @Override public long reserved() {
+        return get();
     }
 }

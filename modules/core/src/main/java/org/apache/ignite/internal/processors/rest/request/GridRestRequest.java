@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.request;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -50,6 +51,9 @@ public class GridRestRequest {
 
     /** */
     private AuthorizationContext authCtx;
+
+    /** User attributes. */
+    Map<String, String> userAttrs;
 
     /**
      * @return Destination ID.
@@ -180,6 +184,24 @@ public class GridRestRequest {
         this.authCtx = authCtx;
 
         return this;
+    }
+
+    /**
+     * Gets user attributes.
+     *
+     * @return User attributes.
+     */
+    public Map<String, String> userAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * Gets user attributes.
+     *
+     * @param userAttrs User attributes.
+     */
+    public void userAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
     }
 
     /** {@inheritDoc} */

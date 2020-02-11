@@ -48,8 +48,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
                 }
             };
 
-        runAndCheck(grid(SRV_INITIATOR), operation(consumer, true));
-        runAndCheck(grid(CLNT_INITIATOR), operation(consumer, true));
+        runAndCheck(operation(consumer, true));
     }
 
     /**
@@ -65,8 +64,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
                 }
             };
 
-        runAndCheck(grid(SRV_INITIATOR), operation(consumer));
-        runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
+        runAndCheck(operation(consumer));
     }
 
     /**
@@ -86,8 +84,7 @@ public class ContinuousQueryWithTransformerRemoteSecurityContextCheckTest extend
                 }
             };
 
-        runAndCheck(grid(SRV_INITIATOR), operation(consumer));
-        runAndCheck(grid(CLNT_INITIATOR), operation(consumer));
+        runAndCheck(operation(consumer));
     }
 
     /**

@@ -48,9 +48,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests single / transform messages being sent between nodes in ATOMIC mode.
  */
 public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTest {
-    /** Starting grid index. */
-    private int idx;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -62,12 +59,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
-
         cfg.setCacheConfiguration(cCfg);
-
-        if (idx++ == 0)
-            cfg.setClientMode(true);
-
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         return cfg;
@@ -78,7 +70,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleMessage() throws Exception {
-        startGrids(2);
+        startClientGrid(0);
+        startGrid(1);
 
         try {
             awaitPartitionMapExchange();
@@ -111,7 +104,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleTransformMessage() throws Exception {
-        startGrids(2);
+        startClientGrid(0);
+        startGrid(1);
 
         int cacheId = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).context().cacheId();
 
@@ -154,7 +148,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testSingleFilterMessage() throws Exception {
-        startGrids(2);
+        startClientGrid(0);
+        startGrid(1);
 
         try {
             awaitPartitionMapExchange();

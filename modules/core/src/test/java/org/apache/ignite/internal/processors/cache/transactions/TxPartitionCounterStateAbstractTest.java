@@ -131,10 +131,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         // TODO set this only for historical rebalance tests.
         cfg.setCommunicationSpi(new IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi());
 
-        boolean client = igniteInstanceName.startsWith(CLIENT_GRID_NAME);
-
-        cfg.setClientMode(client);
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
             setWalHistorySize(1000).
             setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).
@@ -142,7 +138,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(persistenceEnabled()).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
-        if (!client)
+        if (!igniteInstanceName.startsWith(CLIENT_GRID_NAME))
             cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
@@ -235,7 +231,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             totalKeys += size;
         }
 
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid(CLIENT_GRID_NAME);
 
         // Preload one key to partition to enable historical rebalance.
         List<Integer> preloadKeys = loadDataToPartition(partId, "client", DEFAULT_CACHE_NAME, PRELOAD_KEYS_CNT, 0);

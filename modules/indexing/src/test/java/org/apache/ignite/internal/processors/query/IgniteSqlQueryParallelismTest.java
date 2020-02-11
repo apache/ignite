@@ -37,9 +37,6 @@ import org.junit.Test;
 @SuppressWarnings("unchecked")
 public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
     /** */
-    private boolean isClient = false;
-
-    /** */
     private int qryParallelism = 4;
 
     /** {@inheritDoc} */
@@ -47,8 +44,6 @@ public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        cfg.setClientMode(isClient);
 
         CacheConfiguration ccfg1 = cacheConfig("pers", Integer.class, Person2.class).setQueryParallelism(qryParallelism);
         CacheConfiguration ccfg2 = cacheConfig("org", Integer.class, Organization.class).setQueryParallelism(qryParallelism);
@@ -95,10 +90,9 @@ public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                isClient = true;
                 qryParallelism = 2;
 
-                Ignite client = startGrid(4);
+                Ignite client = startClientGrid(4);
 
                 return null;
             }

@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -40,19 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static final int SRV_CNT = 3;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -60,11 +47,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRV_CNT);
 
-        client = true;
-
-        startGrid(SRV_CNT);
-
-        client = false;
+        startClientGrid(SRV_CNT);
     }
 
     /**

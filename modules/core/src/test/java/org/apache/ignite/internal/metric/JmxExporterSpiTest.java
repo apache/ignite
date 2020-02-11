@@ -71,7 +71,7 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -140,7 +140,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -725,8 +724,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+        try(IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")
@@ -1000,7 +999,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     private void createTestHistogram(MetricRegistry mreg) {
         long[] bounds = new long[] {50, 500};
 
-        HistogramMetric histogram = mreg.histogram("histogram", bounds, null);
+        HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
 
         histogram.value(10);
         histogram.value(51);

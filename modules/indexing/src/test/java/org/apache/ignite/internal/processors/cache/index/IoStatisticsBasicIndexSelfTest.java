@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -422,7 +423,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     public Set<String> deriveStatisticNames(IgniteEx ignite, IoStatisticsType statType) {
         assert statType != null;
 
-        Stream<MetricRegistry> grpsStream = ioStats(ignite, statType);
+        Stream<ReadOnlyMetricRegistry> grpsStream = ioStats(ignite, statType);
 
         return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
             .filter(m -> m.name().endsWith("name"))
@@ -431,7 +432,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     }
 
     /** @return Stream of MetricGroup for specified {@link statType}. */
-    private Stream<MetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
+    private Stream<ReadOnlyMetricRegistry> ioStats(IgniteEx ignite, IoStatisticsType statType) {
         GridMetricManager mmgr = ignite.context().metric();
 
         return StreamSupport.stream(mmgr.spliterator(), false)

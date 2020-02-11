@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,6 +44,15 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
 
     /** Session token. */
     private byte[] sesTok;
+
+    /** Login. */
+    private String login;
+
+    /** Password. */
+    private String pwd;
+
+    /** User attributes. */
+    Map<String, String> userAttrs;
 
     /** {@inheritDoc} */
     @Override public long requestId() {
@@ -88,14 +98,62 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
         this.sesTok = sesTok;
     }
 
+    /**
+     * @return Login.
+     */
+    public String login() {
+        return login;
+    }
+
+    /**
+     * @param login New login.
+     */
+    public void login(String login) {
+        this.login = login;
+    }
+
+    /**
+     * @return Password.
+     */
+    public String password() {
+        return pwd;
+    }
+
+    /**
+     * @param pwd New password.
+     */
+    public void password(String pwd) {
+        this.pwd = pwd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> userAttributes() {
+        return userAttrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void userAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeByteArray(out, sesTok);
+
+        U.writeString(out, login);
+        U.writeString(out, pwd);
+
+        U.writeMap(out, userAttrs);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sesTok = U.readByteArray(in);
+
+        login = U.readString(in);
+        pwd = U.readString(in);
+
+        userAttrs = U.readMap(in);
     }
 
     /** {@inheritDoc} */

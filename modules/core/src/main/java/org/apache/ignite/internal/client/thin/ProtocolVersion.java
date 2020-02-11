@@ -19,6 +19,9 @@ package org.apache.ignite.internal.client.thin;
 
 /** Thin client protocol version. */
 public final class ProtocolVersion implements Comparable<ProtocolVersion> {
+    /** Protocol version: 1.7.0. User attributes support. */
+    public static final ProtocolVersion V1_7_0 = new ProtocolVersion((short)1, (short)7, (short)0);
+
     /** Protocol version: 1.6.0. Expiration policy support. */
     public static final ProtocolVersion V1_6_0 = new ProtocolVersion((short)1, (short)6, (short)0);
 
@@ -38,7 +41,7 @@ public final class ProtocolVersion implements Comparable<ProtocolVersion> {
     public static final ProtocolVersion V1_0_0 = new ProtocolVersion((short)1, (short)0, (short)0);
 
     /** Current protocol version. */
-    public static final ProtocolVersion CURRENT_VER = V1_6_0;
+    public static final ProtocolVersion CURRENT_VER = V1_7_0;
 
     /** Major. */
     private final short major;

@@ -15,25 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.thin;
+package org.apache.ignite.testframework.wal.record;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** A {@link JdbcThinBulkLoadAbstractSelfTest} for replicated transactional mode. */
-public class JdbcThinBulkLoadTransactionalReplicatedSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+/**
+ * The wrapper of record type which isn't supported anymore.
+ */
+public class UnsupportedWalRecord extends WALRecord {
+    /** **/
+    private final RecordType recordType;
+
+    /**
+     * @param type Record type.
+     */
+    public UnsupportedWalRecord(RecordType type) {
+        recordType = type;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+    @Override public RecordType type() {
+        return recordType;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean nearCache() {
-        return false;
+    @Override public String toString() {
+        return S.toString(UnsupportedWalRecord.class, this, "super", super.toString());
     }
 }

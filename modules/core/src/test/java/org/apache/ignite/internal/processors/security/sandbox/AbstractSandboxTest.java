@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.AllPermission;
 import java.security.CodeSource;
 import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
 import java.util.PropertyPermission;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -124,5 +133,40 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
         assertThrowsWithCause(r, cls);
 
         assertNull(System.getProperty(PROP_NAME));
+    }
+
+    /**
+     * Creates instance of IgniteCallable from passed src string.
+     */
+    protected <T> IgniteCallable<T> callable(Path srcTmpDir, String clsName, String src) {
+        try {
+            URLClassLoader clsLdr = prepareClassLoader(srcTmpDir, clsName + ".java", src);
+
+            Class<?> cls = clsLdr.loadClass(clsName);
+
+            return (IgniteCallable<T>)cls.newInstance();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Prepares class loader.
+     */
+    private URLClassLoader prepareClassLoader(Path srcTmpDir, String clsName, String src) throws Exception {
+        Files.createDirectories(srcTmpDir);
+
+        File srcFile = new File(srcTmpDir.toFile(), clsName);
+
+        Path srcFilePath = Files.write(srcFile.toPath(), src.getBytes(StandardCharsets.UTF_8));
+
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+
+        compiler.run(null, null, null, srcFilePath.toString());
+
+        assertTrue("Failed to remove source file.", srcFile.delete());
+
+        return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
     }
 }
