@@ -159,7 +159,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** */
     @Test
-    public void testCacheCreateDfltAllTrue() throws Exception {
+    public void testCacheCreateWithDfltAllTrue() throws Exception {
         dfltAllowAll = true;
 
         testCacheCreate();
@@ -167,7 +167,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** */
     @Test
-    public void testCacheCreateSysPermCacheCreate() throws Exception {
+    public void testCacheCreateWithSysPermCacheCreate() throws Exception {
         sysPermSet.add(CACHE_CREATE);
 
         testCacheCreate();
@@ -220,7 +220,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** */
     @Test
-    public void testCachePutDfltAllTrue() throws Exception {
+    public void testCachePutWithDfltAllTrue() throws Exception {
         dfltAllowAll = true;
 
         testCachePut();
@@ -239,8 +239,10 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
         checkCachePut();
 
         assertTrue(cacheContainsKey(CACHE_NAME, key));
+
         assertEquals(cacheGet(CACHE_NAME, key), val);
         assertEquals(cacheGetAndPut(CACHE_NAME, key, newVal), val);
+
         assertTrue(cacheGetAll(CACHE_NAME, singletonMap(key, null)).containsValue(newVal));
 
         if (cachePermsContains(FORBIDDEN_CACHE_NAME, CACHE_READ))
@@ -312,7 +314,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** */
     @Test
-    public void testCacheRemoveDfltAllTrue() throws Exception {
+    public void testCacheRemoveWithDfltAllTrue() throws Exception {
         dfltAllowAll = true;
 
         testCacheRemove();
@@ -351,7 +353,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** */
     @Test
-    public void testCacheDestroyDfltAllTrue() throws Exception {
+    public void testCacheDestroyWithDfltAllTrue() throws Exception {
         dfltAllowAll = true;
 
         testCacheDestroy();
@@ -359,7 +361,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** */
     @Test
-    public void testCacheDestroySysPermCacheDestroy() throws Exception {
+    public void testCacheDestroyWithSysPermCacheDestroy() throws Exception {
         sysPermSet.add(CACHE_DESTROY);
 
         testCacheDestroy();
