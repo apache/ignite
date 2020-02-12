@@ -116,7 +116,7 @@ public class RunningQueryManager {
         successQrsCnt = userMetrics.longAdderMetric("success",
             "Number of successfully executed user queries that have been started on this node.");
 
-        failedQrsCnt = userMetrics.longMetric("failed", "Total number of failed by any reason (cancel, oom etc)" +
+        failedQrsCnt = userMetrics.longMetric("failed", "Total number of failed by any reason (cancel, etc)" +
             " queries that have been started on this node.");
 
         canceledQrsCnt = userMetrics.longMetric("canceled", "Number of canceled queries that have been started " +
