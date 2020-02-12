@@ -63,9 +63,6 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
 
         cfg.setConsistentId(gridName);
 
-        if (gridName.contains("client"))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -79,7 +76,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
 
         crd.active(true);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */

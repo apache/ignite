@@ -166,18 +166,16 @@ public class QueryEntityTypeDescriptor {
      * @param failOnDuplicate Fail on duplicate flag.
      */
     public void addProperty(QueryEntityClassProperty prop, boolean key, boolean failOnDuplicate) {
-        String name = prop.fullName();
-
-        if (props.put(name, prop) != null && failOnDuplicate) {
-            throw new CacheException("Property with name '" + name + "' already exists for " +
+        if (props.put(prop.name(), prop) != null && failOnDuplicate) {
+            throw new CacheException("Property with name '" + prop.name() + "' already exists for " +
                 (key ? "key" : "value") + ": " +
                 "QueryEntity [key=" + keyCls.getName() + ", value=" + valCls.getName() + ']');
         }
 
-        fields.put(name, prop.type());
+        fields.put(prop.fullName(), prop.type());
 
         if (key)
-            keyProps.add(name);
+            keyProps.add(prop.fullName());
     }
 
     /**

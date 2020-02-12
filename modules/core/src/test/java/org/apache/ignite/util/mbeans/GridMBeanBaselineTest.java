@@ -43,7 +43,6 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(igniteInstanceName.equals(getTestIgniteInstanceName(CLIENT_IDX)))
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setCheckpointFrequency(2_000)
                 .setDefaultDataRegionConfiguration(
@@ -75,9 +74,9 @@ public class GridMBeanBaselineTest extends GridCommonAbstractTest {
     @Test
     public void testIgniteKernalNodeInBaselineTest() throws Exception {
         try {
-            IgniteEx ignite0 = (IgniteEx)startGrids(NODES);
+            IgniteEx ignite0 = startGrids(NODES);
 
-            startGrid(CLIENT_IDX);
+            startClientGrid(CLIENT_IDX);
 
             ignite0.cluster().active(true);
 

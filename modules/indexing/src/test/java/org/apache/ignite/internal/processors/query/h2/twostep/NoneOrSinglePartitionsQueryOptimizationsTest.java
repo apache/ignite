@@ -75,16 +75,11 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     /** Persons cache. */
     private static IgniteCache<Integer, JoinSqlTestHelper.Person> persCache;
 
-    /** Client mode. */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
-
-        cfg.setClientMode(clientMode);
 
         return cfg;
     }
@@ -116,10 +111,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_COUNT - 1, false);
-
-        clientMode = true;
-
-        startGrid(NODES_COUNT);
+        startClientGrid(NODES_COUNT);
 
         orgCache = ignite(NODES_COUNT).getOrCreateCache(
             new CacheConfiguration<Integer, JoinSqlTestHelper.Organization>(ORG_CACHE_NAME)
