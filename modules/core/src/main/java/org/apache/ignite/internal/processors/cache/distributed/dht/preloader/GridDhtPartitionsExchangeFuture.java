@@ -3176,8 +3176,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
-        log.info(">>>> assignPartitionStates");
-
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
