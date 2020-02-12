@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNea
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheAtomicReplicatedMetricsSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.EvictionPolicyFailureHandlerTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEntryEqualsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicySelfTest;
@@ -113,6 +114,7 @@ public class IgniteCacheMvccTestSuite8 {
         ignoredTests.add(FifoEvictionPolicyFactorySelfTest.class);
         ignoredTests.add(SortedEvictionPolicyFactorySelfTest.class);
         ignoredTests.add(LruEvictionPolicyFactorySelfTest.class);
+        ignoredTests.add(EvictionPolicyFailureHandlerTest.class);
         ignoredTests.add(GridCacheAtomicNearEvictionSelfTest.class);
         ignoredTests.add(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
 
