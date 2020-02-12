@@ -87,7 +87,6 @@ public class SqlStatisticsUserQueriesLongTest extends UserQueriesTestBase {
             CacheException.class,
             mapFailMsg), "failed");
 
-
         SuspendQuerySqlFunctions.refresh();
 
         SuspendQuerySqlFunctions.setProcessRowsToSuspend(1);
@@ -123,7 +122,6 @@ public class SqlStatisticsUserQueriesLongTest extends UserQueriesTestBase {
             () -> cache.query(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID < 200 AND failFunction() = 5")).getAll(),
             CacheException.class,
             mapFailMsg), "failed");
-
 
         SuspendQuerySqlFunctions.refresh();
 
