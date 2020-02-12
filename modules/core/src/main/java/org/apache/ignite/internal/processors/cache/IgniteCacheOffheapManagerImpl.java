@@ -1504,11 +1504,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void reinit() {
-            throw new UnsupportedOperationException("Re-initialization of non-persisted partition is not supported.");
-        }
-
-        /** {@inheritDoc} */
         @Override public int partId() {
             return partId;
         }

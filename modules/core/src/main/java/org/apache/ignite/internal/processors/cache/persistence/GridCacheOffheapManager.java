@@ -27,11 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -1631,8 +1629,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private final boolean exists;
 
-        /** Lock to protect the initialization phase. */
-        private final Lock initLock = new ReentrantLock();
+        /** */
+        private final AtomicBoolean init = new AtomicBoolean();
+
+        /** */
+        private final CountDownLatch latch = new CountDownLatch(1);
 
         /** Currently used data storage state. */
         private final AtomicBoolean active = new AtomicBoolean(true);
@@ -1695,14 +1696,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return null;
             }
 
-            initLock.lock();
-
-            try {
-                delegate0 = delegate;
-
-                if (delegate0 != null)
-                    return delegate0;
-
+            if (init.compareAndSet(false, true)) {
                 IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
 
                 dbMgr.checkpointReadLock();
@@ -1897,10 +1891,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     throw ex;
                 }
                 finally {
+                    latch.countDown();
+
                     dbMgr.checkpointReadUnlock();
                 }
-            } finally {
-                initLock.unlock();
+            }
+            else {
+                U.await(latch);
+
+                delegate0 = delegate;
+
+                if (delegate0 == null)
+                    throw new IgniteCheckedException("Cache store initialization failed.");
             }
 
             return delegate0;
@@ -2056,25 +2058,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void reinit() {
-            assert !active() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
-
-            initLock.lock();
-
-            try {
-                assert delegate == null : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
-
-                CacheDataStore store = init0(false);
-
-                assert store != null;
-            } catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            } finally {
-                initLock.unlock();
-            }
-        }
-
-        /** {@inheritDoc} */
         @Override public int partId() {
             return partId;
         }
@@ -2088,9 +2071,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long fullSize() {
-            if (!active())
-                return 0;
-
             try {
                 CacheDataStore delegate0 = init0(true);
 

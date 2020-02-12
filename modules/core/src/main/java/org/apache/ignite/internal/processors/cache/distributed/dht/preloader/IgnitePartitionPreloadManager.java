@@ -157,7 +157,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 return;
         }
 
-        boolean disable = !hasIdleParttition && fileRebalanceApplicable(resVer, grp, cntrs, globalSizes, suppliers);
+        boolean disable = !hasIdleParttition && filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (disable) {
@@ -371,10 +371,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param globalSizes Global partition sizes.
      * @param suppliers Historical suppliers.
      */
-    private boolean fileRebalanceApplicable(
+    private boolean filePreloadingApplicable(
         AffinityTopologyVersion resVer,
         CacheGroupContext grp,
-        CachePartitionFullCountersMap cntrs, Map<Integer, Long> globalSizes,
+        CachePartitionFullCountersMap cntrs,
+        Map<Integer, Long> globalSizes,
         IgniteDhtPartitionHistorySuppliersMap suppliers
     ) {
         AffinityAssignment aff = grp.affinity().readyAffinity(resVer);
@@ -385,14 +386,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
             if (!aff.get(p).contains(cctx.localNode())) {
-                if (grp.topology().localPartition(p) != null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Detected partition evitction, file rebalancing skipped [grp=" +
-                            grp.cacheOrGroupName() + ", p=" + p + "]");
-                    }
-
-                    assert false;
-                }
+                assert grp.topology().localPartition(p) == null : "Should not start when a partition is evicting";
 
                 continue;
             }
@@ -404,11 +398,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                     hasApplicablePart = true;
             }
 
-            if (grp.topology().localPartition(p).state() != MOVING)
-                return false;
+            assert grp.topology().localPartition(p).state() == MOVING :
+                "grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + grp.topology().localPartition(p).state();
 
-            // Should have partition file supplier to start file rebalancing.
-            if (cntrs.updateCounter(p) == 0 || suppliers.getSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
+            // Should have partition file supplier for all partitions to start file preloading.
+            if (suppliers.getSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
                 return false;
         }
 
