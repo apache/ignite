@@ -1184,6 +1184,7 @@ public class GridSqlQueryParser {
         for (Column col : data.columns) {
             if (cols.containsKey(col.getName()))
                 throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
+
             cols.put(col.getName(), parseColumn(col));
         }
 
