@@ -65,12 +65,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterMvccImpl;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterVolatileImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -2048,10 +2047,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public boolean init() {
-            assert active() : "grp=" + grp.cacheOrGroupName() + ", p=" + partId;
-
             try {
-                return init0(true) != null;
+                return init0(active()) != null;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -2958,6 +2955,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return {@code True} if partition mode was changed, otherwise partition already in the specified mode.
          */
         private boolean changeMode(boolean activeMode) {
+            assert !grp.mvccEnabled() && grp.persistenceEnabled();
+
             if (active.compareAndSet(!activeMode, activeMode)) {
                 if (log.isInfoEnabled()) {
                     log.info("Partition data store mode changed [grp=" + grp.cacheOrGroupName() +
@@ -2968,29 +2967,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
 
                 if (!activeMode) {
-                    initLock.lock();
+                    assert delegate == null : "grp=" + grp.cacheOrGroupName() + " p=" + partId;
 
-                    try {
-                        PartitionUpdateCounter readCntr0;
-
-                        if (grp.mvccEnabled())
-                            readCntr0 = new PartitionUpdateCounterMvccImpl(grp);
-                        else if (!grp.persistenceEnabled())
-                            readCntr0 = new PartitionUpdateCounterTrackingImpl(grp);
-                        else
-                            readCntr0 = new PartitionUpdateCounterVolatileImpl(grp);
-
-                        PartitionUpdateCounter cntr0 = delegate != null ? delegate.partUpdateCounter() : null;
-
-                        if (cntr0 != null)
-                            readCntr0.init(cntr0.get(), cntr0.getBytes());
-
-                        noopModeCntr = readCntr0;
-
-                        delegate = null;
-                    } finally {
-                        initLock.unlock();
-                    }
+                    noopModeCntr = new PartitionUpdateCounterTrackingImpl(grp);
                 }
 
                 return true;

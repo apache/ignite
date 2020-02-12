@@ -3176,8 +3176,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
-        log.info(">>>> assignPartitionStates");
-
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
@@ -3683,9 +3681,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (rebalanceRequired && preloader != null && grpCtx.persistenceEnabled()) {
                     CachePartitionFullCountersMap cntrs = grpCtx.topology().fullUpdateCounters();
 
-                    Map<Integer, Long> globalSizes = grpCtx.topology().globalPartSizes();
+                    Map<Integer, Long> sizes = grpCtx.topology().globalPartSizes();
 
-                    preloader.beforeTopologyUpdate(grpCtx, this, resTopVer, cntrs, globalSizes);
+                    preloader.onExchangeDone(exchActions, resTopVer, grpCtx, cntrs, sizes, partHistSuppliers);
                 }
 
                 grpCtx.topology().applyUpdateCounters();
@@ -4475,9 +4473,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             msg.partitionUpdateCounters(grpId, grp.topology().partitions());
 
                         if (rebalanceRequired && preloader != null && grp.persistenceEnabled()) {
-                            Map<Integer, Long> globalSizes = msg.partitionSizes(cctx).get(grp.groupId());
+                            Map<Integer, Long> sizes = msg.partitionSizes(cctx).get(grp.groupId());
 
-                            preloader.beforeTopologyUpdate(grp, this, msg.topologyVersion(), cntrMap, globalSizes);
+                            preloader.onExchangeDone(exchActions, resTopVer, grp, cntrMap, sizes, partHistSuppliers);
                         }
 
                         grp.topology().update(resTopVer,

@@ -949,7 +949,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         Files.move(snapshot.toPath(), dest.toPath());
 
-        store.reinit();
+        store.init();
     }
 
     /**
