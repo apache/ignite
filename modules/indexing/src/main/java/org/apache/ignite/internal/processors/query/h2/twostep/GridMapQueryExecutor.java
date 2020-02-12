@@ -212,29 +212,27 @@ public class GridMapQueryExecutor {
             final int segment = i;
 
             ctx.closure().callLocal(
-                new Callable<Void>() {
-                    @Override public Void call() {
-                        onQueryRequest0(node,
-                            req.requestId(),
-                            segment,
-                            req.schemaName(),
-                            req.queries(),
-                            cacheIds,
-                            req.topologyVersion(),
-                            partsMap,
-                            parts,
-                            req.pageSize(),
-                            distributedJoins,
-                            enforceJoinOrder,
-                            false,
-                            req.timeout(),
-                            params,
-                            lazy,
-                            req.mvccSnapshot(),
-                            dataPageScanEnabled);
+                (Callable<Void>)() -> {
+                    onQueryRequest0(node,
+                        req.requestId(),
+                        segment,
+                        req.schemaName(),
+                        req.queries(),
+                        cacheIds,
+                        req.topologyVersion(),
+                        partsMap,
+                        parts,
+                        req.pageSize(),
+                        distributedJoins,
+                        enforceJoinOrder,
+                        false,
+                        req.timeout(),
+                        params,
+                        lazy,
+                        req.mvccSnapshot(),
+                        dataPageScanEnabled);
 
-                        return null;
-                    }
+                    return null;
                 },
                 QUERY_POOL);
         }
@@ -779,7 +777,8 @@ public class GridMapQueryExecutor {
                         req.pageSize(),
                         dataPageScanEnabled);
 
-                    sendNextPage(node, msg);
+                    if(msg != null)
+                        sendNextPage(node, msg);
                 }
                 finally {
                     qryCtxRegistry.clearThreadLocal();
