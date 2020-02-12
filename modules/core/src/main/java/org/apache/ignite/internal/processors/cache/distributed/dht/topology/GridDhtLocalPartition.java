@@ -651,12 +651,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Future to signal that this node is no longer an owner or backup.
      */
     public IgniteInternalFuture<?> rent(boolean updateSeq) {
+        return rent(updateSeq, true);
+    }
+
+    /**
+     * Initiates partition eviction process.
+     *
+     * If partition has reservations, eviction will be delayed and continued after all reservations will be released.
+     *
+     * @param updateSeq If {@code true} topology update sequence will be updated after eviction is finished.
+     * @param alwaysReturnRentingFut If {@code true} renting future is returned in any way.
+     * @return Future to signal that this node is no longer an owner or backup or null if corresponding partition
+     * state is {@code RENTING} or {@code EVICTED}.
+     */
+    public IgniteInternalFuture<?> rent(boolean updateSeq, boolean alwaysReturnRentingFut) {
         long state0 = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state0);
 
         if (partState == RENTING || partState == EVICTED)
-            return rent;
+            return alwaysReturnRentingFut ? rent : null;
 
         delayedRentingTopVer = ctx.exchange().readyAffinityVersion().topologyVersion();
 

@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -2436,6 +2437,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param aff Affinity assignments.
      * @return {@code True} if there are local partitions need to be evicted.
      */
+    @SuppressWarnings("unchecked")
     private boolean checkEvictions(long updateSeq, AffinityAssignment aff) {
         if (!ctx.kernalContext().state().evictionsAllowed())
             return false;
@@ -2465,9 +2467,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (nodeIds.containsAll(F.nodeIds(affNodes))) {
                 GridDhtPartitionState state0 = part.state();
 
-                IgniteInternalFuture<?> rentFut = part.rent(false);
+                // There is no need to track a renting future of a partition which is already renting/evicted.
+                IgniteInternalFuture<?> rentFut = part.rent(false, false);
 
-                rentingFutures.add(rentFut);
+                if (rentFut != null)
+                    rentingFutures.add(rentFut);
 
                 updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
@@ -2496,9 +2500,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (locId.equals(n.id())) {
                             GridDhtPartitionState state0 = part.state();
 
-                            IgniteInternalFuture<?> rentFut = part.rent(false);
+                            // There is no need to track a renting future of a partition
+                            // which is already renting/evicted.
+                            IgniteInternalFuture<?> rentFut = part.rent(false, false);
 
-                            rentingFutures.add(rentFut);
+                            if (rentFut != null)
+                                rentingFutures.add(rentFut);
 
                             updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
@@ -2522,15 +2529,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (!rentingFutures.isEmpty()) {
             final AtomicInteger rentingPartitions = new AtomicInteger(rentingFutures.size());
 
-            for (IgniteInternalFuture<?> rentingFuture : rentingFutures) {
-                rentingFuture.listen(f -> {
+            IgniteInClosure c = new IgniteInClosure() {
+                @Override public void apply(Object o) {
                     int remaining = rentingPartitions.decrementAndGet();
 
                     if (remaining == 0) {
                         lock.writeLock().lock();
 
                         try {
-                            this.updateSeq.incrementAndGet();
+                            GridDhtPartitionTopologyImpl.this.updateSeq.incrementAndGet();
 
                             if (log.isDebugEnabled())
                                 log.debug("Partitions have been scheduled to resend [reason=" +
@@ -2542,8 +2549,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             lock.writeLock().unlock();
                         }
                     }
-                });
-            }
+                }
+            };
+
+            for (IgniteInternalFuture<?> rentingFuture : rentingFutures)
+                rentingFuture.listen(c);
         }
 
         return hasEvictedPartitions;
