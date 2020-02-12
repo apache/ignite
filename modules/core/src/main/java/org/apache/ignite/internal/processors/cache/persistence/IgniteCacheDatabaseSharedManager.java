@@ -84,6 +84,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
 /**
  *
@@ -317,6 +318,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         DataRegionConfiguration[] dataRegionCfgs = memCfg.getDataRegionConfigurations();
 
+        boolean persistenceEnabled = CU.isPersistenceEnabled(memCfg);
+
         if (dataRegionCfgs != null) {
             for (DataRegionConfiguration dataRegionCfg : dataRegionCfgs)
                 addDataRegion(memCfg, dataRegionCfg, dataRegionCfg.isPersistenceEnabled());
@@ -333,9 +336,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             createSystemDataRegion(
                 memCfg.getSystemRegionInitialSize(),
                 memCfg.getSystemRegionMaxSize(),
-                CU.isPersistenceEnabled(memCfg)
+                persistenceEnabled
             ),
-            CU.isPersistenceEnabled(memCfg)
+            persistenceEnabled
+        );
+
+        addDataRegion(
+            memCfg,
+            createVolatileDataRegion(
+                memCfg.getSystemRegionInitialSize(),
+                memCfg.getSystemRegionMaxSize()
+            ),
+            false
         );
 
         for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext()))
@@ -476,6 +488,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         res.setInitialSize(sysCacheInitSize);
         res.setMaxSize(sysCacheMaxSize);
         res.setPersistenceEnabled(persistenceEnabled);
+
+        return res;
+    }
+
+    /**
+     * @param volatileCacheInitSize Initial size of PageMemory to be created for volatile cache.
+     * @param volatileCacheMaxSize Maximum size of PageMemory to be created for volatile cache.
+     *
+     * @return {@link DataRegionConfiguration configuration} of DataRegion for volatile cache.
+     */
+    private DataRegionConfiguration createVolatileDataRegion(long volatileCacheInitSize, long volatileCacheMaxSize) {
+        DataRegionConfiguration res = new DataRegionConfiguration();
+
+        res.setName(VOLATILE_DATA_REGION_NAME);
+        res.setInitialSize(volatileCacheInitSize);
+        res.setMaxSize(volatileCacheMaxSize);
+        res.setPersistenceEnabled(false);
 
         return res;
     }
