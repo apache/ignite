@@ -343,11 +343,11 @@ Control utility:
 
 
 ML:
+* Added Gaussian Mixture Model (GMM) trainer with fixed components
 * Added ML logger and env variables in Spark ML Parser
 * Added NamedVectors to replace HashMap in Model
 * Added OneVsRest Trainer to handling cases with multiple class labels in a dataset
 * Added Pipeline support to Cross-Validation process
-* Added example for OneVsRest trainer/model usage
 * Added integration between Ignite SQL and Ignite ML
 * Added new Hyper-parameter tuning via Genetic Algorithm
 * Added parser for parquet file with the instance of DecisionTreeClassificationModel from Spark ML
@@ -359,14 +359,13 @@ ML:
 * Added parser for parquet file with the instance of LinearSVCModel from Spark ML
 * Added parser for parquet file with the instance of RandomForestClassificationModel from Spark ML
 * Added parser for parquet file with the instance of RandomForestRegressionModel from Spark ML
-* Added readme file to SparkModelParser module
 * Added support for using H2O MOJO models for inference and prediction on Ignite data
 * Added support new feature-label extraction API (Vectorizers) to Preprocessor trainers
+* Added various Naive Bayes classifiers
 * Added vector projection
 * Advanced support of categorical features (LabelEncoding, Strings in vectorizers)
 * Fixed the problem with ML Labmdas which are not working in binary builds
 * Implementation of a distributed estimator
-* Import models from MLeap
 * Import models from XGBoost
 * Improve model loading from the directory instead a full path to file with model
 * Improve the PeerClassloading for ml related lambdas
@@ -378,7 +377,6 @@ ML:
 * Provide the recommendation engine to build the recommendation system over the Ignite cache and via SQL operators
 * Replace all label/feature extractors on new vectorizers
 * Stacking for training and inference
-* Switch to per-node TensorFlow worker strategy
 * Unify API for ensemble training algorithms.
 
 
