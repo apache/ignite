@@ -228,7 +228,7 @@ public class MarshallerUtils {
     }
 
     /**
-     * Find all system classes (JDK or Ignite classes) and process them with a given consumer.
+     * Find all system class names (for JDK or Ignite classes) and process them with a given consumer.
      *
      * @param ldr Class loader.
      * @param plugins Plugins.
