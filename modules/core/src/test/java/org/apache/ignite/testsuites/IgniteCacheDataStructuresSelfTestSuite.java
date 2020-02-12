@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDi
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureUniqueNameTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteDataStructureWithJobTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteSequenceInternalCleanupTest;
+import org.apache.ignite.internal.processors.cache.datastructures.OutOfMemoryVolatileRegionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverNoWaitingAcquirerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverSafeReleasePermitsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
@@ -106,6 +107,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteLocalCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalSemaphoreSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalLockSelfTest.class));
+        suite.addTest(new TestSuite(OutOfMemoryVolatileRegionTest.class));
 
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceMultiNodeSelfTest.class));
