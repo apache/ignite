@@ -91,6 +91,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private static final long serialVersionUID = 0L;
 
     /** */
+    static final int ACK_THRESHOLD =
+        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_ACK_THRESHOLD", 100);
+
+    /** */
     static final int BACKUP_ACK_THRESHOLD =
         IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD", 100);
 
@@ -167,6 +171,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** */
     private transient CacheContinuousQueryAcknowledgeBuffer ackBuf;
+
+    /** */
+    private transient CacheContinuousQueryAcknowledgeBackupBuffer ackBufBackup;
 
     /** */
     private transient int cacheId;
@@ -348,6 +355,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         ackBuf = new CacheContinuousQueryAcknowledgeBuffer();
 
+        ackBufBackup = new CacheContinuousQueryAcknowledgeBackupBuffer();
+
         rcvs = new ConcurrentHashMap<>();
 
         this.nodeId = nodeId;
@@ -430,8 +439,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 for (Map.Entry<Integer, Long> e : updateCntrs.entrySet()) {
                     CacheContinuousQueryEventBuffer buf = entryBufs.get(e.getKey());
 
-                    if (buf != null)
+                    if (buf != null) {
                         buf.cleanupBackupQueue(e.getValue());
+
+                        buf.cleanupEntries(e.getValue());
+                    }
                 }
             }
 
@@ -467,7 +479,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void acknowledgeBackupOnTimeout(GridKernalContext ctx) {
-                sendBackupAcknowledge(ackBuf.acknowledgeOnTimeout(), routineId, ctx);
+                sendBackupAcknowledge(ackBufBackup.acknowledgeOnTimeout(), routineId, ctx);
             }
 
             @Override public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt,
@@ -947,7 +959,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     notifyLocalListener(evts, trans);
 
                     if (!internal && !skipPrimaryCheck)
-                        sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
+                        sendBackupAcknowledge(ackBufBackup.onAcknowledged(entry), routineId, ctx);
                 }
                 else {
                     if (!entry.isFiltered())
@@ -1246,7 +1258,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     @Override public void onBatchAcknowledged(final UUID routineId,
         GridContinuousBatch batch,
         final GridKernalContext ctx) {
-        sendBackupAcknowledge(ackBuf.onAcknowledged(batch), routineId, ctx);
+        sendBackupAcknowledge(ackBufBackup.onAcknowledged(batch), routineId, ctx);
+
+        cleanupBuffers(ackBuf.onAcknowledged(batch));
     }
 
     /**
@@ -1290,6 +1304,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * @param updateCntrs Acknowledge information.
+     */
+    private void cleanupBuffers(Map<Integer, Long> updateCntrs) {
+        if (updateCntrs != null) {
+            for (Map.Entry<Integer, Long> e : updateCntrs.entrySet()) {
+                CacheContinuousQueryEventBuffer buf = entryBufs.get(e.getKey());
+
+                if (buf != null)
+                    buf.cleanupEntries(e.getValue());
+            }
         }
     }
 
