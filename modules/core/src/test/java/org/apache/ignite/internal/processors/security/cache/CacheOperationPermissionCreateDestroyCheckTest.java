@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.security.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
@@ -104,7 +103,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
             .appendCachePermissions(TEST_CACHE, CACHE_CREATE)
             .build();
 
-        try(Ignite node = startGrid(TEST_NODE, secPermSet, isClient)) {
+        try (Ignite node = startGrid(TEST_NODE, secPermSet, isClient)) {
             node.createCache(TEST_CACHE);
 
             assertThrowsWithCause(() -> node.createCache(FORBIDDEN_CACHE), SecurityException.class);
@@ -123,7 +122,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         grid(SERVER).createCache(TEST_CACHE);
         grid(SERVER).createCache(FORBIDDEN_CACHE);
 
-        try(Ignite node = startGrid(TEST_NODE, secPermSet, isClient)) {
+        try (Ignite node = startGrid(TEST_NODE, secPermSet, isClient)) {
             node.destroyCache(TEST_CACHE);
 
             assertThrowsWithCause(() -> node.destroyCache(FORBIDDEN_CACHE), SecurityException.class);
@@ -138,7 +137,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         SecurityPermissionSetBuilder builder = getCommonSecurityPermissionSetBuilder()
             .appendSystemPermissions(CACHE_CREATE);
 
-        try(Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
+        try (Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
             node.createCache(TEST_CACHE);
 
             assertThrowsWithCause(() -> node.destroyCache(TEST_CACHE), SecurityException.class);
@@ -155,16 +154,16 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
         grid(SERVER).createCache(TEST_CACHE);
 
-        try(Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
+        try (Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
             node.destroyCache(TEST_CACHE);
         }
     }
 
     /** */
-    private SecurityPermissionSetBuilder getCommonSecurityPermissionSetBuilder(){
-       return SecurityPermissionSetBuilder.create()
-           .defaultAllowAll(false)
-           .appendSystemPermissions(JOIN_AS_SERVER);
+    private SecurityPermissionSetBuilder getCommonSecurityPermissionSetBuilder() {
+        return SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
+            .appendSystemPermissions(JOIN_AS_SERVER);
     }
 
     /** {@inheritDoc} */
@@ -174,7 +173,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteEx server = grid(SERVER);
+        Ignite server = grid(SERVER);
 
         server.cacheNames().forEach(server::destroyCache);
     }
