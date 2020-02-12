@@ -300,7 +300,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                         nodeId));
                             }
 
-                            task.submit(dbMgr::addCheckpointListener, dbMgr::removeCheckpointListener);
+                            task.submit();
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to proccess request of creating a snapshot " +
@@ -815,8 +815,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 snpRunner,
                 snpSndr);
 
-            IgniteInternalFuture<Void> startFut = snpTask.submit(dbMgr::addCheckpointListener,
-                dbMgr::removeCheckpointListener);
+            IgniteInternalFuture<Void> startFut = snpTask.submit();
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one

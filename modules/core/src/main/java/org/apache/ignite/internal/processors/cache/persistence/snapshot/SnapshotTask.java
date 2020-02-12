@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -292,10 +293,9 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
-     * @param adder Register current task on.
-     * @param remover Deregister current taks on.
+     * @return Future which will be completed on snapshot start.
      */
-    public IgniteInternalFuture<Void> submit(Consumer<DbCheckpointListener> adder, Consumer<DbCheckpointListener> remover) {
+    public IgniteInternalFuture<Void> submit() {
         try {
             tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
                 relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
@@ -357,9 +357,9 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                     "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 
-            snpFut.listen(f -> remover.accept(this));
+            snpFut.listen(f -> ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this));
 
-            adder.accept(this);
+            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
         }
         catch (IgniteCheckedException e) {
             close(e);
