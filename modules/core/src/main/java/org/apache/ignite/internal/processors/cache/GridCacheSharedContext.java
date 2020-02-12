@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -629,16 +628,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public boolean deploymentEnabled() {
         return kernalContext().deploy().enabled();
-    }
-
-    /**
-     * @return Data center ID.
-     */
-    public byte dataCenterId() {
-        // Data center ID is same for all caches, so grab the first one.
-        GridCacheContext<?, ?> cacheCtx = F.first(cacheContexts());
-
-        return cacheCtx.dataCenterId();
     }
 
     /**
