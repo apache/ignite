@@ -17,12 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -34,20 +38,32 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForAllFutures;
 
 /**
  * Test TTL worker with persistence enabled
@@ -60,7 +76,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     public static final String GROUP_NAME = "group1";
 
     /** */
-    public static final int PART_SIZE = 32;
+    public static final int PART_SIZE = 2;
 
     /** */
     private static final int EXPIRATION_TIMEOUT = 10;
@@ -70,6 +86,15 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
 
     /** */
     private static final TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final int SMALL_ENTRIES = 10;
+
+    /** */
+    private static final int WORKLOAD_THREADS_CNT = 8;
+
+    /** Fail. */
+    private volatile boolean fail;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -110,8 +135,20 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler() {
+            @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+                fail = true;
+
+                return super.handle(ignite, failureCtx);
+            }
+        };
+    }
+
     /**
      * Returns a new cache configuration with the given name and {@code GROUP_NAME} group.
+     *
      * @param name Cache name.
      * @return Cache configuration.
      */
@@ -165,6 +202,105 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
      */
     public void testTtlIsAppliedAfterRestart() throws Exception {
         loadAndWaitForCleanup(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutOpsIntoCacheWithExpirationConcurrentlyWithCheckpointCompleteSuccessfully() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig0.getOrCreateCache(CACHE_NAME);
+
+        AtomicBoolean timeoutReached = new AtomicBoolean(false);
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ig0.context().cache().context().database();
+
+        IgniteInternalFuture ldrFut = runMultiThreadedAsync(() -> {
+            while (!timeoutReached.get()) {
+                Map map = new TreeMap();
+
+                for (int i = 0; i < SMALL_ENTRIES; i++)
+                    map.put(i, i);
+
+                cache.putAll(map);
+            }
+        }, WORKLOAD_THREADS_CNT, "loader");
+
+        IgniteInternalFuture updaterFut = runMultiThreadedAsync(() -> {
+            while (!timeoutReached.get()) {
+                for (int i = 0; i < SMALL_ENTRIES; i++)
+                    cache.put(i, i * 10);
+            }
+        }, WORKLOAD_THREADS_CNT, "updater");
+
+        IgniteInternalFuture cpWriteLockUnlockFut = runAsync(() -> {
+            ReentrantReadWriteLock lock = U.field(db, "checkpointLock");
+
+            while (!timeoutReached.get()) {
+                try {
+                    lock.writeLock().lockInterruptibly();
+
+                    doSleep(30);
+                }
+                catch (InterruptedException ignored) {
+                    break;
+                }
+                finally {
+                    lock.writeLock().unlock();
+                }
+
+                doSleep(30);
+            }
+        }, "cp-write-lock-holder");
+
+        doSleep(10_000);
+
+        timeoutReached.set(true);
+
+        waitForAllFutures(cpWriteLockUnlockFut, ldrFut, updaterFut);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testConcurrentPutOpsToCacheWithExpirationCompleteSuccesfully() throws Exception {
+        final AtomicBoolean end = new AtomicBoolean();
+
+        final IgniteEx srv = startGrid(0);
+
+        srv.cluster().active(true);
+
+        // Start high workload
+        IgniteInternalFuture loadFut = runMultiThreadedAsync(() -> {
+            while (!end.get() && !fail) {
+                IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
+
+                for (int i = 0; i < SMALL_ENTRIES; i++)
+                    cache.put(i, new byte[1024]);
+
+                //Touch entries.
+                for (int i = 0; i < SMALL_ENTRIES; i++)
+                    cache.get(i); // touch entries
+            }
+        }, WORKLOAD_THREADS_CNT, "high-workload");
+
+        try {
+            // Let's wait some time.
+            loadFut.get(10, TimeUnit.SECONDS);
+        }
+        catch (Exception e) {
+            assertFalse("Failure handler was called. See log above.", fail);
+
+            assertTrue(X.hasCause(e, IgniteFutureTimeoutCheckedException.class));
+        }
+        finally {
+            end.set(true);
+        }
+
+        assertFalse("Failure handler was called. See log above.", fail);
     }
 
     /**
