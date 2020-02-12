@@ -113,16 +113,22 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Callback on exchange done.
+     * Callback on exchange done, should be invoked before initialize file page store.
      *
-     * @param exchFut Exchange future.
+     * @param exchActions Exchange actions.
+     * @param resVer Exchange result version.
+     * @param grp Cache group.
+     * @param cntrs Partition counters.
+     * @param globalSizes Global partition sizes.
+     * @param suppliers Historical suppliers.
      */
-    public void beforeTopologyUpdate(
-        CacheGroupContext grp,
-        GridDhtPartitionsExchangeFuture exchFut,
+    public void onExchangeDone(
+        ExchangeActions exchActions,
         AffinityTopologyVersion resVer,
+        CacheGroupContext grp,
         CachePartitionFullCountersMap cntrs,
-        Map<Integer, Long> globalSizes
+        Map<Integer, Long> globalSizes,
+        IgniteDhtPartitionHistorySuppliersMap suppliers
     ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
 
@@ -134,7 +140,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         assert fileRebalanceRoutine.isDone();
 
-        boolean locJoinBaselineChange = isLocalBaselineChange(exchFut.exchangeActions());
+        boolean locJoinBaselineChange = isLocalBaselineChange(exchActions);
 
         // At this point, cache updates are queued, and we can safely
         // switch partitions to inactive mode and vice versa.
@@ -151,15 +157,15 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 return;
         }
 
-        boolean disable = !hasIdleParttition && fileRebalanceApplicable(grp, exchFut, resVer, cntrs, globalSizes);
+        boolean disable = !hasIdleParttition && fileRebalanceApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (disable) {
-                // todo only for debugging
+                // todo only for debugging - should be removed
                 try {
                     assert !cctx.pageStore().exists(grp.groupId(), part.id());
                 } catch (IgniteCheckedException ignore) {
-                    // No-op.
+                    assert false : "grp=" + grp.groupId() + " p=" + part.id();
                 }
 
                 part.disable();
@@ -359,15 +365,17 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param resVer Exchange result version.
      * @param grp Cache group.
-     * @param exchFut Exchange future.
+     * @param cntrs Partition counters.
+     * @param globalSizes Global partition sizes.
+     * @param suppliers Historical suppliers.
      */
     private boolean fileRebalanceApplicable(
-        CacheGroupContext grp,
-        GridDhtPartitionsExchangeFuture exchFut,
         AffinityTopologyVersion resVer,
-        CachePartitionFullCountersMap cntrs,
-        Map<Integer, Long> globalSizes
+        CacheGroupContext grp,
+        CachePartitionFullCountersMap cntrs, Map<Integer, Long> globalSizes,
+        IgniteDhtPartitionHistorySuppliersMap suppliers
     ) {
         AffinityAssignment aff = grp.affinity().readyAffinity(resVer);
 
@@ -383,7 +391,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                             grp.cacheOrGroupName() + ", p=" + p + "]");
                     }
 
-                    return false;
+                    assert false;
                 }
 
                 continue;
@@ -396,21 +404,13 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                     hasApplicablePart = true;
             }
 
-            if (grp.topology().localPartition(p).state() != MOVING) {
-                log.info("part not moving");
-
+            if (grp.topology().localPartition(p).state() != MOVING)
                 return false;
-            }
 
             // Should have partition file supplier to start file rebalancing.
-            if (exchFut.partitionHistorySupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null) {
-                log.info("no supplier grp="+grp.cacheOrGroupName() + " p="+p + " cntr="+cntrs.updateCounter(p));
-
+            if (cntrs.updateCounter(p) == 0 || suppliers.getSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
                 return false;
-            }
         }
-
-        log.info("hasApplicablePart="+ hasApplicablePart);
 
         return hasApplicablePart;
     }
