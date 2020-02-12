@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,78 +27,68 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRowFactory;
-import org.h2.engine.Session;
 import org.h2.index.Cursor;
-import org.h2.index.IndexType;
+import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.Column;
-import org.h2.table.IndexColumn;
-import org.h2.table.TableFilter;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Unsorted merge index.
  */
-public final class ReduceIndexUnsorted extends ReduceIndex {
-    /** */
-    private static final IndexType TYPE = IndexType.createScan(false);
-
+public class UnsortedReducer extends AbstractReducer {
     /** */
     private final PollableQueue<ReduceResultPage> queue = new PollableQueue<>();
 
     /** */
-    private final AtomicInteger activeSources = new AtomicInteger(-1);
+    private final AtomicInteger activeSourcesCnt = new AtomicInteger(-1);
 
     /** */
     private Iterator<Value[]> iter = Collections.emptyIterator();
 
     /**
+     * Constructor.
+     *
      * @param ctx Context.
-     * @param tbl  Table.
-     * @param name Index name.
      */
-    public ReduceIndexUnsorted(GridKernalContext ctx, ReduceTable tbl, String name) {
-        super(ctx, tbl, name, TYPE, IndexColumn.wrap(tbl.getColumns()));
+    public UnsortedReducer(GridKernalContext ctx) {
+        super(ctx);
     }
 
     /**
      * @param ctx Context.
      * @return Dummy index instance.
      */
-    public static ReduceIndexUnsorted createDummy(GridKernalContext ctx) {
-        return new ReduceIndexUnsorted(ctx);
-    }
-
-    /**
-     * @param ctx Context.
-     */
-    private ReduceIndexUnsorted(GridKernalContext ctx) {
-        super(ctx);
+    public static UnsortedReducer createDummy(GridKernalContext ctx) {
+        return new UnsortedReducer(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
         super.setSources(nodes, segmentsCnt);
 
-        int x = nodes.size() * segmentsCnt;
+        int x = srcNodes.size() * segmentsCnt;
 
-        assert x > 0: x;
+        assert x > 0 : x;
 
-        activeSources.set(x);
+        activeSourcesCnt.set(x);
     }
 
     /** {@inheritDoc} */
     @Override public boolean fetchedAll() {
-        int x = activeSources.get();
+        int x = activeSourcesCnt.get();
 
-        assert x >= 0: x; // This method must not be called if the sources were not set.
+        assert x >= 0 : x; // This method must not be called if the sources were not set.
 
         return x == 0 && queue.isEmpty();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param page Page.
+     */
     @Override protected void addPage0(ReduceResultPage page) {
         assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
 
@@ -108,9 +97,9 @@ public final class ReduceIndexUnsorted extends ReduceIndex {
             queue.add(page);
 
         if (page.isLast()) {
-            int x = activeSources.decrementAndGet();
+            int x = activeSourcesCnt.decrementAndGet();
 
-            assert x >= 0: x;
+            assert x >= 0 : x;
 
             if (x == 0) // Always terminate with empty iterator.
                 queue.add(createDummyLastPage(page));
@@ -118,12 +107,7 @@ public final class ReduceIndexUnsorted extends ReduceIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true, allColumnsSet);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Cursor findAllFetched(List<Row> fetched, SearchRow first, SearchRow last) {
+    @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
         // This index is unsorted: have to ignore bounds.
         return new GridH2Cursor(fetched.iterator());
     }
@@ -131,7 +115,7 @@ public final class ReduceIndexUnsorted extends ReduceIndex {
     /** {@inheritDoc} */
     @Override protected Cursor findInStream(SearchRow first, SearchRow last) {
         // This index is unsorted: have to ignore bounds.
-        return new FetchingCursor(null, null, new Iterator<Row>() {
+        return new FetchingCursor(new Iterator<Row>() {
             @Override public boolean hasNext() {
                 iter = pollNextIterator(queue, iter);
 
@@ -149,8 +133,88 @@ public final class ReduceIndexUnsorted extends ReduceIndex {
     }
 
     /**
+     * Fetching cursor.
      */
-    private static class PollableQueue<X> extends LinkedBlockingQueue<X> implements Pollable<X> {
+    private class FetchingCursor implements Cursor {
+        /** */
+        private Iterator<Row> stream;
+
+        /** */
+        private List<Row> rows;
+
+        /** */
+        private int cur;
+
+        /**
+         * @param stream Stream of all the rows from remote nodes.
+         */
+         FetchingCursor(Iterator<Row> stream) {
+            assert stream != null;
+
+            // Initially we will use all the fetched rows, after we will switch to the last block.
+            rows = fetched;
+
+            this.stream = stream;
+
+            cur--; // Set current position before the first row.
+        }
+
+        /**
+         * Fetch rows from the stream.
+         */
+        private void fetchRows() {
+            // Take the current last block and set the position after last.
+            rows = fetched.lastBlock();
+            cur = rows.size();
+
+            // Fetch stream.
+            if (stream.hasNext()) {
+                fetched.add(requireNonNull(stream.next()));
+
+                // Evict block if we've fetched too many rows.
+                if (fetched.size() == MAX_FETCH_SIZE) {
+                    onBlockEvict(fetched.evictFirstBlock());
+
+                    assert fetched.size() < MAX_FETCH_SIZE;
+                }
+            }
+
+            if (cur == rows.size())
+                cur = Integer.MAX_VALUE; // We were not able to fetch anything. Done.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() {
+            if (cur == Integer.MAX_VALUE)
+                return false;
+
+            if (++cur == rows.size())
+                fetchRows();
+
+            return cur < Integer.MAX_VALUE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row get() {
+            return rows.get(cur);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SearchRow getSearchRow() {
+            return get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean previous() {
+            // Should never be called.
+            throw DbException.getUnsupportedException("previous");
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PollableQueue<X> extends LinkedBlockingQueue<X> implements AbstractReducer.Pollable<X> {
         // No-op.
     }
 }

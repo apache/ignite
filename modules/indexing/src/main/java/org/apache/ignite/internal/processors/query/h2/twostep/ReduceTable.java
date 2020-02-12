@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
-
 import org.apache.ignite.internal.processors.query.h2.opt.H2ScanIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
@@ -61,15 +60,19 @@ public class ReduceTable extends TableBase {
     /**
      * @return Merge index.
      */
-    public ReduceIndex getMergeIndex() {
-        return (ReduceIndex)idxs.get(idxs.size() - 1); // Sorted index must be the last.
+    public Reducer getReducer() {
+        final Index index = idxs.get(idxs.size() - 1);
+
+        assert index instanceof AbstractReduceIndexAdapter : "Reducer index not found.";
+
+        return ((AbstractReduceIndexAdapter)index).reducer(); // Sorted index must be the last.
     }
 
     /**
      * @param idx Index.
      * @return Scan index.
      */
-    public static H2ScanIndex<ReduceIndex> createScanIndex(ReduceIndex idx) {
+    public static H2ScanIndex<AbstractReduceIndexAdapter> createScanIndex(AbstractReduceIndexAdapter idx) {
         return new H2ScanIndex<>(idx);
     }
 
