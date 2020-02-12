@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
 /**
  *
@@ -75,7 +76,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
     }
@@ -91,7 +92,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -112,7 +113,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 2);
+        assertEquals(3, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -136,7 +137,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
-        assertTrue(allMemPlcs.size() == 3);
+        assertEquals(4, allMemPlcs.size());
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
@@ -284,6 +285,9 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         assertTrue("System memory policy is not presented",
                 isMemoryPolicyPresented(allMemPlcs, IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME));
+
+        assertTrue("Volatile memory policy is not presented",
+                isMemoryPolicyPresented(allMemPlcs, VOLATILE_DATA_REGION_NAME));
     }
 
     /**
