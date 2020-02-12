@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
@@ -57,9 +57,8 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
@@ -73,7 +72,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
     /** */
     private final long fileRebalanceThreshold =
-        IgniteSystemProperties.getLong(IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
+        IgniteSystemProperties.getLong(IGNITE_FILE_REBALANCE_THRESHOLD, 0);
 
     /** Lock. */
     private final Lock lock = new ReentrantLock();
@@ -117,49 +116,16 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      *
      * @param exchFut Exchange future.
      */
-    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut) {
+    public void beforeTopologyUpdate(
+        CacheGroupContext grp,
+        GridDhtPartitionsExchangeFuture exchFut,
+        AffinityTopologyVersion resVer,
+        CachePartitionFullCountersMap cntrs,
+        Map<Integer, Long> globalSizes
+    ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
-        assert exchFut != null;
-
-        if (!fileRebalanceEnabled)
-            return;
-
-        GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
-
-        if (cctx.exchange().hasPendingExchange()) {
-            if (log.isDebugEnabled())
-                log.debug("Skipping rebalancing initialization exchange worker has pending exchange: " + exchId);
-
-            return;
-        }
-
-        AffinityTopologyVersion rebTopVer = cctx.exchange().rebalanceTopologyVersion();
 
         FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
-
-        boolean forced = rebTopVer == NONE || exchFut.localJoinExchange() ||
-            (rebRoutine.isCancelled() || rebRoutine.isFailed() || (rebRoutine.isDone() && !rebRoutine.result()));
-
-        Iterator<CacheGroupContext> itr = cctx.cache().cacheGroups().iterator();
-
-        while (!forced && itr.hasNext()) {
-            CacheGroupContext grp = itr.next();
-
-            forced = exchFut.resetLostPartitionFor(grp.cacheOrGroupName()) ||
-                grp.affinity().cachedVersions().contains(rebTopVer);
-        }
-
-        AffinityTopologyVersion lastAffChangeTopVer =
-            cctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
-
-        if (!forced && lastAffChangeTopVer.compareTo(rebTopVer) == 0) {
-            assert lastAffChangeTopVer.compareTo(exchFut.topologyVersion()) != 0;
-
-            if (log.isDebugEnabled())
-                log.debug("Skipping file rebalancing initialization affinity not changed: " + exchId);
-
-            return;
-        }
 
         // Abort the current rebalancing procedure if it is still in progress
         if (!rebRoutine.isDone())
@@ -167,43 +133,49 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         assert fileRebalanceRoutine.isDone();
 
-        boolean locJoinBaselineChange = isLocalBaselineChange(exchFut);
+        boolean locJoinBaselineChange = isLocalBaselineChange(exchFut.exchangeActions());
 
         // At this point, cache updates are queued, and we can safely
         // switch partitions to inactive mode and vice versa.
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (!supports(grp))
-                continue;
+        if (!supports(grp))
+            return;
 
-            boolean hasIdleParttition = false;
+        boolean hasIdleParttition = false;
 
-            if (!locJoinBaselineChange && !required(grp)) {
-                if (log.isDebugEnabled())
-                    log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
+        if (!locJoinBaselineChange) {
+            if (log.isDebugEnabled())
+                log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
 
-                if (!(hasIdleParttition = hasIdleParttition(grp)))
-                    continue;
+            if (!(hasIdleParttition = hasIdleParttition(grp)))
+                return;
+        }
+
+        boolean disable = !hasIdleParttition && fileRebalanceApplicable(grp, exchFut, resVer, cntrs, globalSizes);
+
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+            if (disable) {
+                // todo only for debugging
+                try {
+                    assert !cctx.pageStore().exists(grp.groupId(), part.id());
+                } catch (IgniteCheckedException ignore) {
+                    // No-op.
+                }
+
+                part.disable();
             }
+            else
+                part.enable();
+        }
 
-            boolean disable = !hasIdleParttition && fileRebalanceApplicable(grp, exchFut);
+        if (hasIdleParttition && cctx.kernalContext().query().moduleEnabled()) {
+            for (GridCacheContext ctx : grp.caches()) {
+                IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
 
-            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (disable)
-                    part.disable();
-                else
-                    part.enable();
-            }
+                if (fut != null) {
+                    U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
 
-            if (hasIdleParttition && cctx.kernalContext().query().moduleEnabled()) {
-                for (GridCacheContext ctx : grp.caches()) {
-                    IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
-
-                    if (fut != null) {
-                        U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
-
-                        fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
-                            ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
-                    }
+                    fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
+                        ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
                 }
             }
         }
@@ -342,6 +314,16 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param grp Group.
+     * @return {@code True} If the last rebalance attempt was incomplete for specified cache group.
+     */
+    public boolean incompleteRebalance(CacheGroupContext grp) {
+        FileRebalanceRoutine rebalanceRoutine = fileRebalanceRoutine;
+
+        return rebalanceRoutine.isDone() && rebalanceRoutine.remainingGroups().contains(grp.groupId());
+    }
+
+    /**
      * @param grp Cache group.
      * @return {@code True} if cache group has at least one inactive partition.
      */
@@ -355,14 +337,14 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param exchFut Exchange future.
+     * @param exchangeActions Exchange future.
      * @return {@code True} if the cluster baseline was changed by local node join.
      */
-    private boolean isLocalBaselineChange(GridDhtPartitionsExchangeFuture exchFut) {
-        if (exchFut.exchangeActions() == null)
+    private boolean isLocalBaselineChange(ExchangeActions exchangeActions) {
+        if (exchangeActions == null)
             return false;
 
-        StateChangeRequest req = exchFut.exchangeActions().stateChangeRequest();
+        StateChangeRequest req = exchangeActions.stateChangeRequest();
 
         if (req == null)
             return false;
@@ -379,14 +361,16 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param grp Cache group.
      * @param exchFut Exchange future.
      */
-    private boolean fileRebalanceApplicable(CacheGroupContext grp, GridDhtPartitionsExchangeFuture exchFut) {
-        AffinityAssignment aff = grp.affinity().readyAffinity(exchFut.topologyVersion());
+    private boolean fileRebalanceApplicable(
+        CacheGroupContext grp,
+        GridDhtPartitionsExchangeFuture exchFut,
+        AffinityTopologyVersion resVer,
+        CachePartitionFullCountersMap cntrs,
+        Map<Integer, Long> globalSizes
+    ) {
+        AffinityAssignment aff = grp.affinity().readyAffinity(resVer);
 
         assert aff != null;
-
-        CachePartitionFullCountersMap cntrs = grp.topology().fullUpdateCounters();
-
-        Map<Integer, Long> globalSizes = grp.topology().globalPartSizes();
 
         boolean hasApplicablePart = false;
 
@@ -411,13 +395,21 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                     hasApplicablePart = true;
             }
 
-            if (grp.topology().localPartition(p).state() != MOVING)
+            if (grp.topology().localPartition(p).state() != MOVING) {
+                log.info("part not moving");
+
                 return false;
+            }
 
             // Should have partition file supplier to start file rebalancing.
-            if (exchFut.partitionHistorySupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)
+            if (exchFut.partitionHistorySupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null) {
+                log.info("no supplier grp="+grp.cacheOrGroupName() + " p="+p + " cntr="+cntrs.updateCounter(p));
+
                 return false;
+            }
         }
+
+        log.info("hasApplicablePart="+ hasApplicablePart);
 
         return hasApplicablePart;
     }

@@ -189,6 +189,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     ) {
         super(ENTRY_FACTORY);
 
+//        U.dumpStack("create partition: grp="+grp.cacheOrGroupName() + " p="+id);
+
         this.id = id;
         this.ctx = ctx;
         this.grp = grp;
@@ -460,8 +462,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition mode was changed, otherwise updates already enabled.
      */
     public boolean enable() {
-        if (state() != MOVING)
-            throw new IgniteException("Expected MIVING partition, actual state is " + state());
+//        if (state() != MOVING)
+//            throw new IgniteException("Expected MIVING partition, actual state is " + state());
 
         if (store.enable()) {
             // Clear all on-heap entries before start processing updates.
@@ -940,7 +942,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         File dest = new File(pageStore.getFileAbsolutePath());
 
-        assert !dest.exists() : "dest=" + dest + ", exists=" + pageStore.exists();
+        assert !dest.exists() : "dest=" + dest;
 
         if (log.isDebugEnabled())
             log.debug("Moving snapshot [from=" + snapshot + " , to=" + dest + " , size=" + snapshot.length() + "]");

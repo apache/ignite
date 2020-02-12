@@ -896,6 +896,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             if (recreate)
                 loc.resetUpdateCounter();
+//            else if (ctx.kernalContext().state().clusterState().state() == ACTIVE && ctx.preloader() != null && ctx.preloader().supports(grp))
+//                loc.disable();
 
             long updCntr = cntrMap.updateCounter(p);
 

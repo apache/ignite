@@ -2980,7 +2980,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         else
                             readCntr0 = new PartitionUpdateCounterVolatileImpl(grp);
 
-                        PartitionUpdateCounter cntr0 = delegate.partUpdateCounter();
+                        PartitionUpdateCounter cntr0 = delegate != null ? delegate.partUpdateCounter() : null;
 
                         if (cntr0 != null)
                             readCntr0.init(cntr0.get(), cntr0.getBytes());

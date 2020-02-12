@@ -75,6 +75,14 @@
         </layout>
     </appender>
 
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgnitePartitionPreloadManager">
+        <level value="TRACE"/>
+    </category>
+
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.FileRebalanceRoutinee">
+        <level value="TRACE"/>
+    </category>
+
     <!--
         Uncomment to enable Ignite query execution debugging.
     -->

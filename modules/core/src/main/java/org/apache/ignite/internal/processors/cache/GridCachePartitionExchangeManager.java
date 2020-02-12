@@ -96,9 +96,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgnitePartitionPreloadManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgnitePartitionPreloadManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -1004,6 +1004,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public AffinityTopologyVersion rebalanceTopologyVersion() {
         return rebTopVer;
+    }
+
+    /** */
+    public void resetRebalanceVersion() {
+        rebTopVer = NONE;
     }
 
     /**
@@ -3336,9 +3341,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (grp.isLocal())
                                     continue;
 
-                                if (grp.preloader().rebalanceRequired(rebTopVer, exchFut))
-                                    rebTopVer = NONE;
-
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
@@ -3352,7 +3354,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         // Schedule rebalance if force rebalance or force reassign occurs.
                         if (exchFut == null)
-                            rebTopVer = NONE;
+                            resetRebalanceVersion();;
 
                         if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
                             if (rebalanceDelay > 0)

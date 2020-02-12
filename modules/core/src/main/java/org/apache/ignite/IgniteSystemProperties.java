@@ -748,7 +748,7 @@ public final class IgniteSystemProperties {
     /**
      * File rebalancing is applicable only if the number of entries in the partition is greater than this threshold.
      */
-    public static final String IGNITE_PDS_FILE_REBALANCE_THRESHOLD = "IGNITE_PDS_FILE_REBALANCE_THRESHOLD";
+    public static final String IGNITE_FILE_REBALANCE_THRESHOLD = "IGNITE_PDS_FILE_REBALANCE_THRESHOLD";
 
     /** Ignite page memory concurrency level. */
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";

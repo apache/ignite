@@ -193,7 +193,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -259,7 +259,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private final long fileRebalanceThreshold =
-        getLong(IGNITE_PDS_FILE_REBALANCE_THRESHOLD, 0);
+        getLong(IGNITE_FILE_REBALANCE_THRESHOLD, 0);
 
     /** Value of property for throttling policy override. */
     private final String throttlingPolicyOverride = IgniteSystemProperties.getString(

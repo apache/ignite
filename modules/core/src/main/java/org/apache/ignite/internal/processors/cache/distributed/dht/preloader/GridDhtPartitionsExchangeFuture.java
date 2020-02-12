@@ -2356,8 +2356,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
 
-                if (cctx.preloader() != null)
-                    cctx.preloader().onExchangeDone(this);
+//                if (cctx.preloader() != null)
+//                    cctx.preloader().onExchangeDone(this);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
@@ -3176,6 +3176,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
+        log.info(">>>> assignPartitionStates");
+
         CacheGroupContext grp = cctx.cache().cacheGroup(top.groupId());
 
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
@@ -3671,8 +3673,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                if (!grpCtx.isLocal())
-                    grpCtx.topology().applyUpdateCounters();
+                if (grpCtx.isLocal())
+                    continue;
+
+                boolean rebalanceRequired = grpCtx.preloader().updateRebalanceVersion(this, resTopVer);
+
+                IgnitePartitionPreloadManager preloader = cctx.preloader();
+
+                if (rebalanceRequired && preloader != null && grpCtx.persistenceEnabled()) {
+                    CachePartitionFullCountersMap cntrs = grpCtx.topology().fullUpdateCounters();
+
+                    Map<Integer, Long> globalSizes = grpCtx.topology().globalPartSizes();
+
+                    preloader.beforeTopologyUpdate(grpCtx, this, resTopVer, cntrs, globalSizes);
+                }
+
+                grpCtx.topology().applyUpdateCounters();
             }
 
             timeBag.finishGlobalStage("Apply update counters");
@@ -4451,8 +4467,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
-                        CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                            grp.topology().partitions());
+                        IgnitePartitionPreloadManager preloader = cctx.preloader();
+
+                        boolean rebalanceRequired = grp.preloader().updateRebalanceVersion(this, resTopVer);
+
+                        CachePartitionFullCountersMap cntrMap =
+                            msg.partitionUpdateCounters(grpId, grp.topology().partitions());
+
+                        if (rebalanceRequired && preloader != null && grp.persistenceEnabled()) {
+                            Map<Integer, Long> globalSizes = msg.partitionSizes(cctx).get(grp.groupId());
+
+                            preloader.beforeTopologyUpdate(grp, this, msg.topologyVersion(), cntrMap, globalSizes);
+                        }
 
                         grp.topology().update(resTopVer,
                             msg.partitions().get(grpId),

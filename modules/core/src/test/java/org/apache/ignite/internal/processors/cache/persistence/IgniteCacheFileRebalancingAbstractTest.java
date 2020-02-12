@@ -68,7 +68,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_FILE_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
@@ -76,7 +76,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED
  * File rebalancing tests.
  */
 @WithSystemProperty(key = IGNITE_FILE_REBALANCE_ENABLED, value = "true")
-@WithSystemProperty(key = IGNITE_PDS_FILE_REBALANCE_THRESHOLD, value = "0")
+@WithSystemProperty(key = IGNITE_FILE_REBALANCE_THRESHOLD, value = "0")
 public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCacheRebalancingCommonAbstractTest {
     /** Initial entries count. */
     private static final int INITIAL_ENTRIES_COUNT = 100_000;
