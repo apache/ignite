@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
@@ -389,20 +390,21 @@ public interface IgniteMXBean {
     public boolean pingNode(String nodeId);
 
     /**
-     * Changes grid state to active or inactive. Can skip checking safety of the operation.
+     * Changes grid state to active or inactive.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
-     * @param active If {@code True}, starts activation process. If {@code False}, starts deactivation process.
-     * @param force If {@code True}, skips checking of operation safety.
-     * @throws IllegalStateException if state stange can lead to data loss and the force flag is not activated.
+     * @param active Activate/DeActivate flag.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      */
-    @MXBeanDescription("Activates or deactivates cluster. Can skip checking if this operation is safe.")
-    @MXBeanParametersNames({"active", "force"})
-    @MXBeanParametersDescriptions({"If True, starts activation process. If False, starts deactivation process.",
-        "If True, skips checking of operation safety."})
-    public void activate(boolean active, boolean force);
+    @MXBeanDescription(
+        "Execute activate or deactivate process."
+    )
+    @MXBeanParametersNames(
+        "active"
+    )
+    public void active(boolean active);
 
     /**
      * Checks if Ignite grid is active. If Ignite grid is not active return {@code False}.
@@ -704,9 +706,10 @@ public interface IgniteMXBean {
      * Changes current cluster state.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param state String representation of new cluster state.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * See {@link ClusterState}
      */
     @MXBeanDescription("Changes current cluster state.")
@@ -718,10 +721,11 @@ public interface IgniteMXBean {
      * Changes current cluster state. Can skip checking safety of the operation.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param state String representation of new cluster state.
      * @param force If {@code True} then skips checking of operation safety.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss and the force flag is not set.
      * @see ClusterState
      */
     @MXBeanDescription("Changes current cluster state. Can skip checking if this operation is safe.")

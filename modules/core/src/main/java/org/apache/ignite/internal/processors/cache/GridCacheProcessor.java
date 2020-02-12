@@ -4537,15 +4537,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Collection of in-memory cache descriptors.
-     */
-    public Collection<DynamicCacheDescriptor> inMemoryCaches() {
-        return cachesInfo.registeredCaches().values().stream()
-            .filter(desc -> !isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration()))
-            .collect(Collectors.toList());
-    }
-
-    /**
      * @return Collection of persistent cache group descriptors.
      */
     public Collection<CacheGroupDescriptor> persistentGroups() {

@@ -3,6 +3,8 @@ package org.apache.ignite.util.mbeans;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -32,32 +34,30 @@ public class GridMBeanClusterStateTest extends GridCommonAbstractTest {
 
         assertFalse(ignite.context().state().isDeactivationSafe());
 
-        // Deactivation through the 'code' must not fail.
-        ignite.active(false);
-        assertFalse(ignite.active());
-        assertEquals(INACTIVE.name(), mxBean.clusterState());
-
-        ignite.active(true);
-        assertTrue(ignite.active());
-
         // Manual deactivation must not fail and warn of possible data loss.
         assertThrows(log, () -> {
-            mxBean.activate(false, false);
+            mxBean.active(false);
 
             return null;
-        }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        assertThrows(log, () -> {
+            ignite.active(false);
+
+            return null;
+        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
 
         assertThrows(log, () -> {
             mxBean.clusterState(INACTIVE.name());
 
             return null;
-        }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
 
         assertThrows(log, () -> {
             mxBean.clusterState(INACTIVE.name(), false);
 
             return null;
-        }, Exception.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
 
         assertTrue(ignite.active());
         assertTrue(mxBean.active());
@@ -65,17 +65,6 @@ public class GridMBeanClusterStateTest extends GridCommonAbstractTest {
 
         // Forced deactivation.
         mxBean.clusterState(INACTIVE.name(), true);
-
-        assertFalse(mxBean.active());
-        assertEquals(INACTIVE.name(), mxBean.clusterState());
-
-        mxBean.activate(true, false);
-
-        assertTrue(mxBean.active());
-        assertEquals(ACTIVE.name(), mxBean.clusterState());
-
-        // Forced deactivation.
-        mxBean.activate(false, true);
 
         assertFalse(mxBean.active());
         assertEquals(INACTIVE.name(), mxBean.clusterState());

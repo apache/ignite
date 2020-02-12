@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
@@ -457,11 +458,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Changes Ignite grid state to active or inactive.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see org.apache.ignite.ClusterState#INACTIVE.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link #state(ClusterState)} instead.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
+     * @deprecated Use {@link #state(ClusterState) or {@link #state(ClusterState, boolean)} instead.
      */
     @Deprecated
     public void active(boolean active);
@@ -477,12 +479,26 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Changes current cluster state to given {@code newState} cluster state.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that deactivation of cluster can lead to data loss. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param newState New cluster state.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
      */
     public void state(ClusterState newState) throws IgniteException;
+
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
+     *
+     * @param newState New cluster state.
+     * @param force If {@code True} then skips checking of operation safety.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss and the force flag is not set.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void state(ClusterState newState, boolean force) throws IgniteException;
 
     /**
      * Gets current baseline topology. If baseline topology was not set, will return {@code null}.

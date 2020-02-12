@@ -107,6 +107,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 
 /**
  *
@@ -1664,7 +1665,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * {@code True} If deactivation is safe.
      */
     public boolean isDeactivationSafe() {
-        return ctx.cache().inMemoryCaches().isEmpty();
+        return !ctx.cache().cacheDescriptors().values().stream()
+            .anyMatch(desc ->
+                !isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration()));
     }
 
     /**

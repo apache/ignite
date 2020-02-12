@@ -286,9 +286,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.cluster().active());
-        assertEquals(INACTIVE, ignite.cluster().state());
-
         ignite.cluster().state(ACTIVE);
 
         assertTrue(ignite.cluster().active());

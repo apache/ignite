@@ -24,6 +24,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -663,11 +665,13 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Changes Ignite grid state to active or inactive.
-     * Be aware that deactivation of cluster can lead to data loss. @see org.apache.ignite.ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see org.apache.ignite.ClusterState#INACTIVE.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link IgniteCluster#active(boolean)} instead.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
+     * @deprecated Use {@link IgniteCluster#state(ClusterState)}
+     * or {@link IgniteCluster#state(ClusterState, boolean)} instead.
      */
     @Deprecated
     public void active(boolean active);
