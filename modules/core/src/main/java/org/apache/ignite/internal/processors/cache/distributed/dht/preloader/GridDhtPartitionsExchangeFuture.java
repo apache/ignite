@@ -526,10 +526,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param cntrSince Partition update counter since history supplying is requested.
      * @return ID of history supplier node or null if it doesn't exist.
      */
-    public @Nullable UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
-        if (cntrSince == 0)
-            return null;
-
+    @Nullable public UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
         return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 

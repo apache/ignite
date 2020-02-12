@@ -608,11 +608,6 @@ public interface IgniteCacheOffheapManager {
         boolean init();
 
         /**
-         * Re-initialize data store if it exists.
-         */
-        void reinit();
-
-        /**
          * @return Partition ID.
          */
         int partId();
