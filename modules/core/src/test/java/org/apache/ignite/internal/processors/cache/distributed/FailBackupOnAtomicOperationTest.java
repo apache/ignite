@@ -42,13 +42,9 @@ public class FailBackupOnAtomicOperationTest extends GridCommonAbstractTest {
     /** Persistence. */
     private boolean persistence = false;
 
-    /** Client. */
-    private static boolean client = false;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(client)
             .setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -66,7 +62,6 @@ public class FailBackupOnAtomicOperationTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         persistence = false;
-        client = false;
 
         cleanPersistenceDir();
 
@@ -98,11 +93,7 @@ public class FailBackupOnAtomicOperationTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        client = true;
-
-        Ignite igniteClient = startGrid("client");
-
-        client = false;
+        Ignite igniteClient = startClientGrid("client");
 
         awaitPartitionMapExchange();
 

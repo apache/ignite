@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -52,9 +51,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
 
         server.services().deployNodeSingleton("my-service", new MyService());
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         ComputeTaskFuture<Integer> fut = client.compute().executeAsync(new MyTask(), null);
 

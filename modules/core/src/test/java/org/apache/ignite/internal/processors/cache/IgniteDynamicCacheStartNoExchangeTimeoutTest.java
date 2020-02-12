@@ -61,9 +61,6 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODES - 1)))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -78,7 +75,8 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        startGrids(NODES);
+        startGrids(NODES - 1);
+        startClientGrid(NODES - 1);
 
         awaitPartitionMapExchange();
     }
