@@ -35,9 +35,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
-    /** New test cache. */
-    private static final String NEW_TEST_CACHE = "NEW_CACHE";
-
     /** Cache name. */
     private static final String TEST_CACHE = "TEST_CACHE";
 
@@ -126,6 +123,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      */
     private void destroyCacheWithCachePermissions(boolean isClient) throws Exception {
         SecurityPermissionSet secPermSet = SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
             .appendSystemPermissions(JOIN_AS_SERVER)
             .appendCachePermissions(TEST_CACHE, CACHE_CREATE, CACHE_DESTROY)
             .appendCachePermissions(FORBIDDEN_CACHE, CACHE_CREATE)
@@ -146,6 +144,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      */
     private void createCacheWithSystemPermissions(boolean isClient) throws Exception {
         SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
             .appendSystemPermissions(JOIN_AS_SERVER)
             .appendCachePermissions(TEST_CACHE, EMPTY_PERMS)
             .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS);
@@ -158,7 +157,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         builder.appendSystemPermissions(CACHE_CREATE);
 
         try(Ignite allow = startGrid(ALLOW_NAME, builder.build(), isClient)) {
-            allow.createCache(NEW_TEST_CACHE);
             allow.createCache(FORBIDDEN_CACHE);
         }
     }
@@ -169,13 +167,13 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      */
     private void destroyCacheWithSystemPermissions(boolean isClient) throws Exception {
         SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create()
+            .defaultAllowAll(false)
             .appendSystemPermissions(JOIN_AS_SERVER, CACHE_CREATE)
             .appendCachePermissions(TEST_CACHE, EMPTY_PERMS)
             .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS);
 
         try(Ignite forbidden = startGrid(FORBID_NAME, builder.build(), isClient)) {
             forbidden.createCache(TEST_CACHE);
-            forbidden.createCache(NEW_TEST_CACHE);
             forbidden.createCache(FORBIDDEN_CACHE);
 
             assertThrowsWithCause(() -> forbidden.cache(TEST_CACHE).destroy(), SecurityException.class);
