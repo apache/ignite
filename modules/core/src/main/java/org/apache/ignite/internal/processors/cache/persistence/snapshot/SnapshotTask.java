@@ -504,7 +504,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                 break;
             }
 
-            CacheConfiguration ccfg = gctx.config();
+            CacheConfiguration<?, ?> ccfg = gctx.config();
 
             assert ccfg != null : "Cache configuraction cannot be empty on snapshot creation: " + pair;
 
