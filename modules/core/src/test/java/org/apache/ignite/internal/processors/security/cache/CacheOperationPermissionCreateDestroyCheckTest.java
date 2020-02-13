@@ -149,14 +149,23 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      * @throws Exception If failed.
      */
     private void destroyCacheWithSystemPermissions(boolean isClient) throws Exception {
-        SecurityPermissionSetBuilder builder = getCommonSecurityPermissionSetBuilder()
-            .appendSystemPermissions(CACHE_DESTROY);
+        SecurityPermissionSetBuilder builder = getCommonSecurityPermissionSetBuilder();
 
         grid(SERVER).createCache(TEST_CACHE);
+
+        assertTrue(grid(SERVER).cacheNames().contains(TEST_CACHE));
+
+        try (Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
+            assertThrowsWithCause(() -> node.destroyCache(TEST_CACHE), SecurityException.class);
+        }
+
+        builder.appendSystemPermissions(CACHE_DESTROY);
 
         try (Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
             node.destroyCache(TEST_CACHE);
         }
+
+        assertFalse(grid(SERVER).cacheNames().contains(TEST_CACHE));
     }
 
     /** */
