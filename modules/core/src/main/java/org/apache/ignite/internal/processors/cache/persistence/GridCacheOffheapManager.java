@@ -2792,6 +2792,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 == null)
+                    return;
+
+                delegate0.resetInitialUpdateCounter();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
         @Override public PartitionMetaStorage partStorage() {
             return partStorage;
         }

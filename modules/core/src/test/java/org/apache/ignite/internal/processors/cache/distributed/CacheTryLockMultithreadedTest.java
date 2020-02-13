@@ -40,14 +40,9 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 2;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -66,9 +61,7 @@ public class CacheTryLockMultithreadedTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
     }
 
     /** {@inheritDoc} */

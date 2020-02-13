@@ -43,16 +43,11 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     public static final String EAGER_REGION = "eagerRegion";
 
     /** */
-    protected boolean client = false;
-
-    /** */
     protected boolean lazyAllocation = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDataRegionConfigurations(
@@ -77,7 +72,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     @Test
     public void testLazyMemoryAllocationOnServer() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startSrv()[0];
 
@@ -95,7 +89,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     @Test
     public void testLazyMemoryAllocationOnClient() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startSrv()[0];
 
@@ -104,9 +97,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         checkMemoryAllocated(srvDb.dataRegion(EAGER_REGION).pageMemory());
         checkMemoryNotAllocated(srvDb.dataRegion(LAZY_REGION).pageMemory());
 
-        client = true;
-
-        IgniteEx clnt = startGrid(2);
+        IgniteEx clnt = startClientGrid(2);
 
         IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
 
@@ -125,7 +116,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     @Test
     public void testEagerMemoryAllocationOnServer() throws Exception {
         lazyAllocation = false;
-        client = false;
 
         IgniteEx g = startSrv()[0];
 
@@ -141,7 +131,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     @Test
     public void testEagerMemoryAllocationOnClient() throws Exception {
         lazyAllocation = false;
-        client = false;
 
         IgniteEx srv = startSrv()[0];
 
@@ -150,9 +139,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         checkMemoryAllocated(srvDb.dataRegion(EAGER_REGION).pageMemory());
         checkMemoryAllocated(srvDb.dataRegion(LAZY_REGION).pageMemory());
 
-        client = true;
-
-        IgniteEx clnt = startGrid(2);
+        IgniteEx clnt = startClientGrid(2);
 
         IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
 
@@ -169,7 +156,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
     @Test
     public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
         lazyAllocation = true;
-        client = false;
 
         IgniteEx srv = startSrv()[0];
 
@@ -178,9 +164,7 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
         checkMemoryAllocated(srvDb.dataRegion(EAGER_REGION).pageMemory());
         checkMemoryNotAllocated(srvDb.dataRegion(LAZY_REGION).pageMemory());
 
-        client = true;
-
-        IgniteEx clnt = startGrid(2);
+        IgniteEx clnt = startClientGrid(2);
 
         IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
 

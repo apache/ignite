@@ -112,9 +112,6 @@ import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE
  */
 public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private boolean forceSrvMode;
 
     /** */
@@ -174,7 +171,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(ccfg);
 
         if (clientC != null) {
-            client = clientC.apply(igniteInstanceName);
+            cfg.setClientMode(clientC.apply(igniteInstanceName));
 
             discoSpi.setJoinTimeout(30_000);
         }
@@ -184,8 +181,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(512L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(cfg1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -2249,11 +2244,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         for (int i = 0; i < SRVS; i++)
             startGrid(i);
 
-        client = true;
-
-        startGrid(SRVS);
-
-        client = false;
+        startClientGrid(SRVS);
 
         final List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -2873,13 +2864,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private Ignite startClient(int idx, long topVer) throws Exception {
-        client = true;
-
-        Ignite ignite = startGrid(idx);
+        Ignite ignite = startClientGrid(idx);
 
         assertTrue(ignite.configuration().isClientMode());
-
-        client = false;
 
         calculateAffinity(topVer);
 
@@ -2909,9 +2896,10 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startNode(String name, long topVer, boolean client) throws Exception {
-        this.client = client;
-
-        startGrid(name);
+        if (client)
+            startClientGrid(name);
+        else
+            startGrid(name);
 
         calculateAffinity(topVer);
     }

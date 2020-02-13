@@ -32,7 +32,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
@@ -57,9 +56,6 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     /** Full table name. */
     private static final String FULL_TABLE_NAME = PERSON_SCHEMA + "." + PERSON_CACHE;
 
-    /** Client or server mode for configuration. */
-    protected boolean client;
-
     /** Instance of client node. */
     private static IgniteEx clientNode;
 
@@ -67,21 +63,12 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     private static IgniteEx srvNode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setClientMode(client);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = false;
-
         srvNode = (IgniteEx)startGridsMultiThreaded(1);
 
-        client = true;
-
-        clientNode = startGrid(1);
+        clientNode = startClientGrid(1);
     }
 
     /** {@inheritDoc} */

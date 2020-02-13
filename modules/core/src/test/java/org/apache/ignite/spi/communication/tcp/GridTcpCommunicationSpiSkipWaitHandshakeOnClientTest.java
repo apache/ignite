@@ -56,16 +56,11 @@ public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCo
     /** Fetched tcp port. */
     private volatile int fetchedTcpPort = -1;
 
-    /** Client. */
-    private boolean client = true;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setGridLogger(log);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -93,8 +88,6 @@ public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCo
                 Assert.assertEquals(NODE_ID_MSG_TYPE, respMsgType);
             }
         }
-
-        client = false;
 
         startGrid(1); //This is hack because, stopAllGrids can't interrupt the client node:(
     }

@@ -96,7 +96,6 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     protected void checkMessages(boolean clientMode) throws Exception {
-
         client = clientMode;
 
         startGrids(4);

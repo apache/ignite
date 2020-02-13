@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.lang.reflect.Array;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,6 +38,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.CLEAR_ALL_SPLIT_THRESHOLD;
+import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
 
 /**
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
@@ -242,6 +244,9 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     private void test(Mode mode, int keysCnt) throws Exception {
+        if (forcedMvcc())
+            return;
+
         startUp();
 
         switch (mode) {
@@ -264,14 +269,15 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
                 // Ensure correct no-op clean of CLIENT_ONLY cache.
                 warmCache(cachesPartitioned[2], keysCnt);
-                assert cachesPartitioned[2].localSize() == 0;
-                assert cachesPartitioned[2].localSize() == 0;
+                assert cachesPartitioned[1].localSize(CachePeekMode.ALL) == 0;
+                // XXX I think it was supposed that NEAR cache will only be present on node 1.
+                assert cachesPartitioned[2].localSize(CachePeekMode.PRIMARY) == 0;
 
                 stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
 
-                // Ensure correct clearLocally of NEA_ONLY cache.
+                // Ensure correct clearLocally of NEAR_ONLY cache.
                 warmCache(cachesPartitioned[1], keysCnt);
-                assert cachesPartitioned[1].localSize() != 0;
+                assert cachesPartitioned[1].localSize(CachePeekMode.NEAR) != 0;
                 cachesPartitioned[1].localClearAll(keySet(cachesPartitioned[1]));
                 assert cachesPartitioned[1].localSize() == 0;
                 fillCache(cachesPartitioned[1], keysCnt);
@@ -318,6 +324,8 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
+
+        awaitPartitionMapExchange(true, true, null);
     }
 
     /**

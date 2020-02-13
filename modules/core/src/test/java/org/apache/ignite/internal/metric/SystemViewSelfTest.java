@@ -55,7 +55,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
@@ -124,15 +123,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String TEST_TRANSFORMER = "TestTransformer";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
-        return cfg;
-    }
 
     /** Tests work of {@link SystemView} for caches. */
     @Test
@@ -794,8 +784,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     public void testScanQuery() throws Exception {
         try(IgniteEx g0 = startGrid(0);
             IgniteEx g1 = startGrid(1);
-            IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+            IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")

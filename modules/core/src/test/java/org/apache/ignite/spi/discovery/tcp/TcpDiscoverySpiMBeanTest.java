@@ -58,9 +58,6 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         tcpSpi.setIpFinder(IP_FINDER);
         cfg.setDiscoverySpi(tcpSpi);
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         cfg.setGridLogger(strLog);
 
         return cfg;
@@ -112,7 +109,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
             IgniteEx client;
 
-            client = startGrid("client");
+            client = startClientGrid("client");
 
             MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
 
