@@ -79,6 +79,9 @@ public enum IgniteFeatures {
     /** Support of DR-specific visor tasks used by control utility. */
     DR_CONTROL_UTILITY(25),
 
+    /** Distributed change timeout for dump long operations. */
+    DISTRIBUTED_CHANGE_LONG_OPERATIONS_DUMP_TIMEOUT(30),
+
     /** Cluster has task to get value from cache by key value. */
     WC_GET_CACHE_VALUE(31);
 
