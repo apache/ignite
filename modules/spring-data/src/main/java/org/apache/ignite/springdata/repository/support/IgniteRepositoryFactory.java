@@ -154,22 +154,23 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
     /**
      * @param qry Query string.
-     * @return {@code true} if query is SqlFieldsQuery .
+     * @return {@code true} if query is SqlFieldsQuery.
      */
     private boolean isFieldQuery(String qry) {
-        return isStatement(qry) && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+        String qryUpperCase = qry.toUpperCase();
+        return isStatement(qryUpperCase) && !qryUpperCase.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
     }
 
     /**
      * Evaluates if the query starts with a clause.
      * <code>SELECT, INSERT, UPDATE, MERGE, DELETE</code>
      *
-     * @param qry Query string in upper case.
+     * @param qryUpperCase  Query string in upper case.
      * @return {@code true} if query is full SQL statement.
      */
-    private boolean isStatement(String qry) {
-        return qry.matches("^SELECT.*") || qry.matches("^UPDATE.*") || qry.matches("^DELETE.*") ||
-            qry.matches("^MERGE.*") || qry.matches("^INSERT.*");
+    private boolean isStatement(String qryUpperCase ) {
+        return qryUpperCase.matches("^\\s*SELECT\\b.*") || qryUpperCase.matches("^\\s*UPDATE\\b.*") || qryUpperCase.matches("^\\s*DELETE\\b.*") ||
+               qryUpperCase.matches("^\\s*MERGE\\b.*") || qryUpperCase.matches("^\\s*INSERT\\b.*");
     }
 }
 

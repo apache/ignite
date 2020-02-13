@@ -226,7 +226,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
      *
      */
     private void fillInRepository() {
-        for (int i = 0; i < CACHE_SIZE - 6; i++) {
+        for (int i = 0; i < CACHE_SIZE - 5; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
                 "lastName" + Integer.toHexString((i + 16) % 256)));
         }
@@ -283,10 +283,10 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Delete unique record
+     * Delete unique record using lower case key word
      */
     public void testDeleteQuery() {
-        repo.deleteBySecondName("uniqueLastName");
+        repo.deleteBySecondNameLowerCase("uniqueLastName");
 
         long cntAfter = repo.count();
         assertEquals(CACHE_SIZE - 1, cntAfter);
@@ -312,9 +312,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /**
      * Update with a @Query a record
      */
-    public void testUpdateQuery() {
+    public void testUpdateQueryMixedCase() {
         final String newSecondName = "updatedUniqueSecondName";
-        int cnt = repo.setFixedSecondName(newSecondName, "uniquePerson");
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
 
         assertEquals(1, cnt);
 
