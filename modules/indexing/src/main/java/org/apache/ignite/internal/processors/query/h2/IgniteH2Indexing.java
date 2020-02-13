@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -478,7 +479,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return tbl.luceneIndex().query(qry.toUpperCase(), filters, limit);
             }
             finally {
-                runningQueryManager().unregister(qryId, false);
+                runningQueryManager().unregister(qryId, null);
             }
         }
 
@@ -679,7 +680,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final Object[] args) throws IgniteCheckedException {
         Long qryId = runningQryMgr.register(qry, GridCacheQueryType.SQL_FIELDS, schemaName, true, null);
 
-        boolean fail = false;
+        Exception failReason = null;
 
         try {
             UpdatePlan plan = dml.plan();
@@ -715,13 +716,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return rows.size();
             }
         }
-        catch (IgniteCheckedException e) {
-            fail = true;
+        catch (IgniteException | IgniteCheckedException e) {
+            failReason = e;
 
             throw e;
         }
         finally {
-            runningQryMgr.unregister(qryId, fail);
+            runningQryMgr.unregister(qryId, failReason);
         }
     }
 
@@ -986,18 +987,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         CommandResult res = null;
 
+        Exception failReason = null;
+
         try {
             res = cmdProc.runCommand(qryDesc.sql(), cmdNative, cmdH2, qryParams, cliCtx, qryId);
 
             return res.cursor();
         }
+        catch (IgniteException e) {
+            failReason = e;
+
+            throw e;
+        }
         catch (IgniteCheckedException e) {
+            failReason = e;
+
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qryDesc.sql() +
                 ", err=" + e.getMessage() + ']', e);
         }
         finally {
             if (res == null || res.unregisterRunningQuery())
-                runningQryMgr.unregister(qryId, res == null);
+                runningQryMgr.unregister(qryId, failReason);
         }
     }
 
@@ -1146,7 +1156,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Long qryId = registerRunningQuery(qryDesc, cancel);
 
-        boolean fail = false;
+        Exception failReason = null;
 
         try {
             if (!dml.mvccEnabled() && !updateInTxAllowed && ctx.cache().context().tm().inUserTx()) {
@@ -1182,8 +1192,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }, cancel));
             }
         }
+        catch (IgniteException e) {
+            failReason = e;
+
+            throw e;
+        }
         catch (IgniteCheckedException e) {
-            fail = true;
+            failReason = e;
 
             IgniteClusterReadOnlyException roEx = X.cause(e, IgniteClusterReadOnlyException.class);
 
@@ -1200,7 +1215,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", params=" + Arrays.deepToString(qryParams.arguments()) + "]", e);
         }
         finally {
-            runningQryMgr.unregister(qryId, fail);
+            runningQryMgr.unregister(qryId, failReason);
         }
     }
 
@@ -1282,7 +1297,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return singletonList(cursor);
         }
         catch (Exception e) {
-            runningQryMgr.unregister(qryId, true);
+            runningQryMgr.unregister(qryId, e);
 
             if (e instanceof IgniteCheckedException)
                 throw U.convertException((IgniteCheckedException)e);
@@ -1406,8 +1421,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+                catch (IgniteCheckedException | IgniteSQLException e) {
+                    throw new CacheException(e);
                 }
             };
         }
