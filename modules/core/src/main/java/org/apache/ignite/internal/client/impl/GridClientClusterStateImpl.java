@@ -72,7 +72,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws GridClientException {
-        state(newState, true);
+        state(newState, false);
     }
 
     /** {@inheritDoc} */

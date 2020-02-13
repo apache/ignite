@@ -455,13 +455,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean active();
 
     /**
-     * Changes grid state to active or inactive.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
+     * Changes Ignite grid state to active or inactive.
+     * Fails if the operation is not safe. @see org.apache.ignite.ClusterState#INACTIVE.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
     @Deprecated
@@ -476,11 +475,10 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes current cluster state to given {@code newState} cluster state.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
+     * Fails if the operation is not safe. @see ClusterState#INACTIVE.
      *
      * @param newState New cluster state.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
      * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
@@ -489,13 +487,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes current cluster state to given {@code newState} cluster state.
-     * Fails if the operation is not safe and {@code force} is not set.
+     * Fails if the operation is not safe and <code>force</code> is not set.
      * <p>
      * <b>NOTE:</b>
      * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param newState New cluster state.
      * @param force If {@code True} then skips checking of operation safety.
+     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss and the force flag is not set.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
      */
     public void state(ClusterState newState, boolean force) throws IgniteException;

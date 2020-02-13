@@ -70,7 +70,7 @@ public class GridClientClusterStateRequest extends GridClientAbstractMessage {
         return msg;
     }
 
-    /** Default constructor for the exernalization and the inheritance. */
+    /** Default constructor for the exernalization. */
     public GridClientClusterStateRequest() {
         // No op.
     }

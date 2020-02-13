@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
-import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 
 /**
@@ -44,9 +41,9 @@ public class DeactivateCommand implements Command<Void> {
     private boolean force;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
-        Command.usage(log, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
-            optional(FORCE_COMMAND, CMD_AUTO_CONFIRMATION));
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
+            optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
@@ -67,29 +64,16 @@ public class DeactivateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to deactivate.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        log.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
+            client.state().state(ClusterState.INACTIVE, force);
 
-            // Search for in-memory-only caches. Fail if possible data loss.
-            if (!force) {
-                Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
-                    null, clientCfg);
-
-                if (!readyToDeactivate)
-                    throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
-                        + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
-            }
-
-            GridClientClusterState state = client.state();
-
-            state.active(false);
-
-            log.info("Cluster deactivated.");
+            logger.info("Cluster deactivated");
         }
         catch (Exception e) {
-            log.severe("Failed to deactivate cluster.");
+            logger.severe("Failed to deactivate cluster.");
 
             throw e;
         }

@@ -24,10 +24,8 @@ import org.apache.ignite.cluster.ClusterState;
  */
 public interface GridClientClusterState {
     /**
-     * Changes cluster state to active or inactive.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see org.apache.ignite.ClusterState#INACTIVE.
+     * Changes Ignite grid state to active or inactive.
+     * Fails if the operation is not safe. @see org.apache.ignite.ClusterState#INACTIVE.
      *
      * @param active {@code True} activate, {@code False} deactivate.
      * @deprecated Use {@link #state(ClusterState, boolean)} instead.
@@ -50,9 +48,7 @@ public interface GridClientClusterState {
 
     /**
      * Changes cluster state to {@code newState}.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see org.apache.ignite.ClusterState#INACTIVE.
+     * Fails if the operation is not safe. @see org.apache.ignite.ClusterState#INACTIVE.
      *
      * @param newState New cluster state.
      * @throws GridClientException If the request to change the cluster state failed.
@@ -62,7 +58,7 @@ public interface GridClientClusterState {
     public void state(ClusterState newState) throws GridClientException;
 
     /**
-     * Changes cluster state to {@code newState}. Fails if the operation is not safe and {@code force}
+     * Changes cluster state to {@code newState}. Fails if the operation is not safe and <code>force</code>
      * is {@code False}.
      * <p>
      * <b>NOTE:</b>
