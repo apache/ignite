@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -138,7 +142,6 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         CacheConfiguration cfg4 = new CacheConfiguration()
             .setAffinity(new RendezvousAffinityFunction())
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setName(CACHE4)
             .setCacheMode(CacheMode.REPLICATED)
             .setGroupName(GROUP2);
@@ -245,8 +248,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
 
-        MetricRegistry mreg = ignite1.context().metric()
-            .registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
+        MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
         LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
@@ -375,6 +377,54 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         assertTrue("The rebalancing last cancelled time must be greater than or equal to the start time of the " +
             "cancelled rebalancing [RebalancingStartTime=" + rebalancingStartTime + ", rebalancingLastCancelledTime=" +
             lastCancelledTime.value() + "].", rebalancingStartTime <= lastCancelledTime.value());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalancingExpectedKeys() throws Exception {
+        Map<String, List<String>> cacheGroups = new HashMap<>();
+        cacheGroups.put("group3", Arrays.asList("cache6", "cache7", "cache8", "cache9"));
+        cacheGroups.put("group4", Arrays.asList("cache10", "cache11", "cache12"));
+
+        List<CacheConfiguration> cfgs = cacheGroups.entrySet().stream().flatMap(entry -> entry.getValue().stream()
+            .map(cacheName -> new CacheConfiguration().setAffinity(new RendezvousAffinityFunction()).setName(cacheName)
+            .setCacheMode(CacheMode.REPLICATED).setGroupName(entry.getKey()))).collect(Collectors.toList());
+
+        cacheGroups.put(GROUP2, Arrays.asList(CACHE4, CACHE5));
+
+        IgniteEx ignite0 = startGrid(0);
+        ignite0.createCaches(cfgs);
+
+        List<String> cacheNames = cacheGroups.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+
+        for (String cacheName : cacheNames) {
+            ignite0.getOrCreateCache(cacheName).putAll(Stream.iterate(0, n -> n + 1)
+                .limit(KEYS_COUNT).collect(Collectors.toMap(i -> i, i -> (long)i)));
+        }
+
+       List<Integer> groupIds = cacheGroups.keySet().stream().mapToInt(CU::cacheId).boxed().collect(Collectors.toList());
+
+        TestRecordingCommunicationSpi.spi(ignite0)
+            .blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message msg) {
+                    return (msg instanceof GridDhtPartitionSupplyMessage) &&
+                        groupIds.contains(((GridCacheGroupIdMessage)msg).groupId());
+                }
+            });
+
+        IgniteEx ignite1 = startGrid(1);
+
+        TestRecordingCommunicationSpi.spi(ignite0).waitForBlocked();
+
+        for (String groupName : cacheGroups.keySet()) {
+            LongMetric expectedKeys = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX,
+                groupName)).findMetric("RebalancingExpectedKeys");
+
+            assertEquals("The number of keys for cache group must be known before rebalancing starts.",
+                KEYS_COUNT * cacheGroups.get(groupName).size(), expectedKeys.value());
+        }
     }
 
     /**

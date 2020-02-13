@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -124,9 +123,6 @@ public class GridDhtPartitionDemander {
     /** Rebalancing last cancelled time. */
     private final AtomicLong lastCancelledTime = new AtomicLong(-1);
 
-    /** Rebalancing expected keys. */
-    private final AtomicLongMetric expectedKeys;
-
     /**
      * @param grp Ccahe group.
      */
@@ -180,12 +176,8 @@ public class GridDhtPartitionDemander {
         mreg.register("RebalancingEvictedPartitionsLeft", () -> rebalanceFut.evictedPartitionsLeft.get(),
             "The number of partitions left to be evicted before rebalancing started.");
 
-        expectedKeys = mreg.longMetric("RebalancingExpectedKeys",
+        mreg.register("RebalancingExpectedKeys", () -> rebalanceFut.expectedKeys.get(),
             "The number of expected keys to rebalance for the whole cache group.");
-
-        mreg.register("RebalancingExpectedBytes", () -> (long)(1.0 * expectedKeys.value() *
-            rebalanceFut.receivedBytes.get() / rebalanceFut.receivedKeys.get()),
-            "The number of expected bytes to rebalance  of this cache group.");
     }
 
     /**
@@ -324,7 +316,8 @@ public class GridDhtPartitionDemander {
         if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, lastCancelledTime, oldFut.evictedPartitionsLeft);
+            final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId, lastCancelledTime,
+                oldFut.evictedPartitionsLeft);
 
             if (!grp.localWalEnabled())
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
@@ -344,11 +337,9 @@ public class GridDhtPartitionDemander {
 
             rebalanceFut = fut;
 
-            expectedKeys.reset();
-
             for (GridDhtPartitionDemandMessage msg : assignments.values()) {
                 for (Integer partId : msg.partitions().fullSet())
-                    expectedKeys.add(grp.topology().globalPartSizes().get(partId));
+                    rebalanceFut.expectedKeys.addAndGet(grp.topology().globalPartSizes().get(partId));
 
                 CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
 
@@ -356,7 +347,7 @@ public class GridDhtPartitionDemander {
                     long from = histMap.initialUpdateCounterAt(i);
                     long to = histMap.updateCounterAt(i);
 
-                    expectedKeys.add(to - from);
+                    rebalanceFut.expectedKeys.addAndGet(to - from);
                 }
             }
 
@@ -365,7 +356,7 @@ public class GridDhtPartitionDemander {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
                     metrics.clearRebalanceCounters();
-                    metrics.onRebalancingKeysCountEstimateReceived(expectedKeys.value());
+                    metrics.onRebalancingKeysCountEstimateReceived(rebalanceFut.expectedKeys.get());
                     metrics.startRebalance(0);
                 }
             }
@@ -1255,6 +1246,9 @@ public class GridDhtPartitionDemander {
 
         /** The number of cache group partitions left to be rebalanced. */
         private final AtomicLong partitionsLeft = new AtomicLong(0);
+
+        /** Rebalancing expected keys. */
+        private final AtomicLong expectedKeys = new AtomicLong(0);
 
         /** Rebalancing start time. */
         private volatile long startTime = -1;
