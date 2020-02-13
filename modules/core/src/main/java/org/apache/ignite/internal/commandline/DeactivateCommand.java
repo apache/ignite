@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
@@ -77,7 +78,7 @@ public class DeactivateCommand implements Command<Void> {
                     null, clientCfg);
 
                 if (!readyToDeactivate) {
-                    throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
+                    throw new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
                         + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
                 }
             }
