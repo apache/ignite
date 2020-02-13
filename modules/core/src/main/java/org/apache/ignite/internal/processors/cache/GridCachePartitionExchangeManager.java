@@ -3188,11 +3188,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     busy = true;
 
-                    Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
+                    Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap = null;
 
                     Map<CacheGroupContext, GridDhtPreloaderAssignments> fileAssignsMap = null;
 
-                    IgnitePartitionPreloadManager preloader = cctx.preloader();
+                    IgnitePartitionPreloadManager partPreloadMgr = cctx.preloader();
 
                     boolean forcePreload = false;
 
@@ -3380,13 +3380,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance)
+                                if ((delay == 0 || forcePreload) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                if (!forcePreload && grp.persistenceEnabled() && preloader.required(grp))
-                                    fileAssignsMap.put(grp, assigns);
-                                else
-                                    assignsMap.put(grp.groupId(), assigns);
+                                    if (!forcePreload && grp.persistenceEnabled() && cctx.preloader().required(grp))
+                                        fileAssignsMap.put(grp, assigns);
+
+                                    assignsMap.put(grp, assigns);
+                                }
 
                                 if (resVer == null && !grp.isLocal())
                                     resVer = grp.topology().readyTopologyVersion();
@@ -3404,15 +3405,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
                         Runnable loadFilesStarter = null;
 
-                        if (!fileAssignsMap.isEmpty())
-                            loadFilesStarter = preloader.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
+                        if (partPreloadMgr != null) {
+                            //partPreloadMgr.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
+
+                            loadFilesStarter = partPreloadMgr.addNodeAssignments(resVer, cnt, exchFut, assignsMap);
+
+                            if (loadFilesStarter != null)
+                                loadFilesStarter.run();
+                        }
 
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
 
-                        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-                            int grpId = e.getKey();
+                        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
+                            int grpId = e.getKey().groupId();
 
                             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -3424,11 +3431,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             orderMap.get(order).add(grpId);
                         }
 
-                        Runnable r = loadFilesStarter;
+                        Runnable r = null;
 
-                        List<String> rebList = fileAssignsMap.keySet().stream().sorted(
-                            Comparator.comparingInt((CacheGroupContext g) -> g.config().getRebalanceOrder()).reversed()
-                        ).map(CacheGroupContext::cacheOrGroupName).collect(Collectors.toList());
+                        List<String> rebList = new ArrayList<>();
+//                        fileAssignsMap.keySet().stream().sorted(
+//                            Comparator.comparingInt((CacheGroupContext g) -> g.config().getRebalanceOrder()).reversed()
+//                        ).map(CacheGroupContext::cacheOrGroupName).collect(Collectors.toList());
 
                         boolean assignsCancelled = false;
 
@@ -3441,12 +3449,41 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                                GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
+                                GridDhtPreloaderAssignments assigns = assignsMap.get(grp);
 
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                Runnable cur = grp.preloader().addAssignments(assigns,
+                                boolean forcePreload0 = forcePreload;
+                                long cnt0 = cnt;
+                                Runnable r0 = r;
+                                GridCompoundFuture<Boolean, Boolean> forcedRebFut0 = forcedRebFut;
+
+                                Runnable cur = fileAssignsMap.containsKey(grp) ? () -> {
+                                    cctx.preloader().preloadFuture(grp).listen(
+                                        f -> {
+                                            try {
+                                                GridDhtPreloaderAssignments assigns0 = f.get();
+
+                                                if (assigns0 != null) {
+                                                    grp.preloader().addAssignments(assigns0,
+                                                        forcePreload0,
+                                                        cnt0,
+                                                        r0,
+                                                        forcedRebFut0).run();
+                                                }
+                                                else
+                                                    r0.run();
+//                                                    System.out.println("no hist rebalancing required");
+                                            }
+                                            catch (IgniteCheckedException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    );
+                                } :
+
+                                grp.preloader().addAssignments(assigns,
                                     forcePreload,
                                     cnt,
                                     r,

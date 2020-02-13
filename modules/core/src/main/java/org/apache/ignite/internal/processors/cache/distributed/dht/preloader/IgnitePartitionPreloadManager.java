@@ -188,6 +188,59 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         }
     }
 
+//    /**
+//     * This method initiates new file rebalance process from given {@code assignments} by creating new file
+//     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
+//     * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
+//     *
+//     * @param topVer Current topology version.
+//     * @param rebalanceId Current rebalance id.
+//     * @param exchFut Exchange future.
+//     * @param assignments A map of cache assignments grouped by grpId.
+//     * @return Runnable to execute the chain.
+//     */
+//    public void startPartitionsPreloading(
+//        AffinityTopologyVersion topVer,
+//        long rebalanceId,
+//        GridDhtPartitionsExchangeFuture exchFut,
+//        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
+//    ) {
+//        Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
+//
+//        if (orderedAssigns.isEmpty()) {
+//            if (log.isDebugEnabled())
+//                log.debug("Skipping file rebalancing due to empty assignments.");
+//
+//            return null;
+//        }
+//
+//        if (!cctx.kernalContext().grid().isRebalanceEnabled()) {
+//            if (log.isDebugEnabled())
+//                log.debug("Cancel partition file demand because rebalance disabled on current node.");
+//
+//            return null;
+//        }
+//
+//        FilePreloadingRoutine rebRoutine = filePreloadingRoutine;
+//
+//        lock.lock();
+//
+//        try {
+//            if (!rebRoutine.isDone())
+//                rebRoutine.cancel();
+//
+//            // Start new rebalance session.
+//            filePreloadingRoutine = rebRoutine = new FilePreloadingRoutine(orderedAssigns, topVer, cctx,
+//                exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
+//
+//            rebRoutine::startPartitionsPreloading;
+//        }
+//        finally {
+//            lock.unlock();
+//        }
+//    }
+
+
     /**
      * This method initiates new file rebalance process from given {@code assignments} by creating new file
      * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
@@ -422,7 +475,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             CacheGroupContext grp = e.getKey();
             GridDhtPreloaderAssignments assigns = e.getValue();
 
-            assert required(grp);
+            if (!required(grp))
+                continue;
 
             int order = grp.config().getRebalanceOrder();
 
@@ -443,6 +497,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         }
 
         return ordered;
+    }
+
+    public IgniteInternalFuture<GridDhtPreloaderAssignments> preloadFuture(CacheGroupContext grp) {
+        // todo
+        return filePreloadingRoutine.groupRoutine(grp);
     }
 
     /**

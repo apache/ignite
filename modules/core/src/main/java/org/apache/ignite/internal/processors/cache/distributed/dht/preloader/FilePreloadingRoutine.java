@@ -91,6 +91,9 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
     @GridToStringInclude
     private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
 
+    /** todo */
+    private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpsRoutines = new HashMap<>();
+
     /** Count of partition snapshots received. */
     private final AtomicInteger receivedCnt = new AtomicInteger();
 
@@ -137,13 +140,15 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
         orderedAssgnments = assigns;
         topVer = startVer;
         log = cctx == null ? null : cctx.logger(getClass());
+
+        if (assigns != null)
+            initialize();
     }
 
     /**
      * Initialize and start partitions preloading.
      */
     public void startPartitionsPreloading() {
-        initialize();
 
         requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>(remaining.size()));
     }
@@ -171,6 +176,7 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
                 }
 
                 remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
+                grpsRoutines.put(grpId, new GridFutureAdapter<>());
             }
         }
     }
@@ -354,8 +360,11 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
         // Cache group file rebalancing is finished, historical rebalancing will send separate events.
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
-        if (histAssignments.isEmpty())
+        if (histAssignments.isEmpty()) {
             cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
+
+            grpsRoutines.get(grp.groupId()).onDone();
+        }
         else
             requestHistoricalRebalance(grp, histAssignments);
 
@@ -401,6 +410,9 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
 
                 snapshotFut.cancel();
             }
+
+            for (GridFutureAdapter fut : grpsRoutines.values())
+                fut.onDone();
 
             if (isFailed()) {
                 log.error("File rebalancing failed [topVer=" + topVer + "]", err);
@@ -461,11 +473,13 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
             histAssigns.put(node, msg);
         }
 
-        GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
+        grpsRoutines.get(grp.groupId()).onDone(histAssigns);
 
-        Runnable task = grp.preloader().addAssignments(histAssigns, true, rebalanceId, null, histFut);
-
-        cctx.kernalContext().getSystemExecutorService().submit(task);
+//        GridCompoundFuture<Boolean, Boolean> histFut = new GridCompoundFuture<>(CU.boolReducer());
+//
+//        Runnable task = grp.preloader().addAssignments(histAssigns, true, rebalanceId, null, histFut);
+//
+//        cctx.kernalContext().getSystemExecutorService().submit(task);
     }
 
     /**
@@ -534,6 +548,10 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
         });
 
         return endFut;
+    }
+
+    public IgniteInternalFuture<GridDhtPreloaderAssignments> groupRoutine(CacheGroupContext grp) {
+        return grpsRoutines.get(grp.groupId());
     }
 
     /**

@@ -301,6 +301,9 @@ public class GridDhtPartitionDemander {
         if (log.isDebugEnabled())
             log.debug("Adding partition assignments: " + assignments);
 
+//        if (grp.persistenceEnabled() && ctx.preloader().required(grp))
+//            ctx.preloader().
+
         assert force == (forcedRebFut != null);
 
         long delay = grp.config().getRebalanceDelay();
