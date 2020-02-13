@@ -747,7 +747,8 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             EvictionPolicy plc = createPolicy(0);
 
             validateMbeans(ignite, plc.getClass().getName());
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

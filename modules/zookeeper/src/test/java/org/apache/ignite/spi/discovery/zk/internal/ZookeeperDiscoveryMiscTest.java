@@ -470,7 +470,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             Ignite ignite = startGrid();
 
             validateMbeans(ignite, "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi$ZookeeperDiscoverySpiMBeanImpl");
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

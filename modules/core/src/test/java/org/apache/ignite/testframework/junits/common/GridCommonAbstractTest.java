@@ -2402,12 +2402,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         MBeanServer srv = ignite.configuration().getMBeanServer();
 
         Set<String> beancClsNames = srv.queryMBeans(null, null).stream()
-                                                               .map(ObjectInstance::getClassName)
-                                                               .collect(toSet());
+            .map(ObjectInstance::getClassName)
+            .collect(toSet());
 
         return Arrays.stream(namesToCheck)
-                     .filter(nameToCheck -> beancClsNames.stream().noneMatch(clsName -> clsName.contains(nameToCheck)))
-                     .collect(toSet());
+            .filter(nameToCheck -> beancClsNames.stream().noneMatch(clsName -> clsName.contains(nameToCheck)))
+            .collect(toSet());
     }
 
     /**
@@ -2436,7 +2436,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             try {
                 c = Class.forName(clsName);
-            } catch (ClassNotFoundException e) {
+            }
+            catch (ClassNotFoundException e) {
                 log.warning("Failed to load class: " + clsName);
 
                 continue;
