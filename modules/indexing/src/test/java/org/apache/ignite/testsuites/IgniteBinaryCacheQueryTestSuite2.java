@@ -61,8 +61,6 @@ import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptTxCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndStatementTest;
-import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
-import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlPartOfComplexPkLookupTest;
 import org.apache.ignite.internal.processors.query.SqlQueriesTopologyMappingTest;
 import org.apache.ignite.internal.processors.query.SqlTwoCachesInGroupWithSameEntryTest;
@@ -84,9 +82,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    SqlMergeTest.class,
-    SqlMergeOnClientNodeTest.class,
-
     SqlCacheStartStopTest.class,
 
     SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest.class,

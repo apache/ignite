@@ -416,9 +416,9 @@ public class QueryParser {
                 throw new IgniteSQLException("Failed to get parameters metadata", IgniteQueryErrorCode.UNKNOWN, e);
             }
 
-                // Do actual parsing.
-                if (CommandProcessor.isCommand(prepared)) {
-                    GridSqlStatement cmdH2 = new GridSqlQueryParser(false, log).parse(prepared);
+            // Do actual parsing.
+            if (CommandProcessor.isCommand(prepared)) {
+                GridSqlStatement cmdH2 = new GridSqlQueryParser(false, log).parse(prepared);
 
                 QueryParserResultCommand cmd = new QueryParserResultCommand(null, cmdH2, false);
 
@@ -463,8 +463,8 @@ public class QueryParser {
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
 
-                // Parse SELECT.
-                GridSqlQueryParser parser = new GridSqlQueryParser(false, log);
+            // Parse SELECT.
+            GridSqlQueryParser parser = new GridSqlQueryParser(false, log);
 
             GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
