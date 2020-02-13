@@ -462,8 +462,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition mode was changed, otherwise updates already enabled.
      */
     public boolean enable() {
-//        if (state() != MOVING)
-//            throw new IgniteException("Expected MIVING partition, actual state is " + state());
+        if (state() != MOVING)
+            throw new IgniteException("Expected MIVING partition, actual state is " + state());
 
         if (store.enable()) {
             // Clear all on-heap entries before start processing updates.
@@ -827,10 +827,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (state0 != MOVING && state0 != RENTING)
             return;
-
-        // Reset the initial update counter value to prevent historical rebalancing on this partition.
-        if (grp.persistenceEnabled())
-            store.resetInitialUpdateCounter();
 
         clearAsync0(false);
     }
