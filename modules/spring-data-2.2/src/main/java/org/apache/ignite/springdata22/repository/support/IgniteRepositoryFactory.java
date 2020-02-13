@@ -77,7 +77,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
 
-        this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
+        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
     /**
@@ -93,7 +93,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
 
-        this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
+        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
     /**
@@ -109,7 +109,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
 
-        this.beanExpressionContext = new BeanExpressionContext(beanFactory,null);
+        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
     /** {@inheritDoc} */
