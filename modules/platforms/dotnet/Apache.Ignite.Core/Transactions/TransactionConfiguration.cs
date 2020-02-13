@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Transactions
 {
     using System;
     using System.ComponentModel;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Transactions configuration.
