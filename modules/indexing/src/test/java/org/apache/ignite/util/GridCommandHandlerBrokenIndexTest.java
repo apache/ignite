@@ -106,9 +106,9 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
         assertTrue(!lsnrs.isEmpty());
 
         LogListener lsnrWithError = lsnrs.stream()
-                                         .filter(LogListener::check)
-                                         .findAny()
-                                         .orElse(null);
+            .filter(LogListener::check)
+            .findAny()
+            .orElse(null);
 
         assertNotNull("\"Failed to lookup key:\" message not found in ignite log", lsnrWithError);
 
