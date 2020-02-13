@@ -357,8 +357,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
                     "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
             }
 
-            snpFut.listen(f -> ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this));
-
+            // Listener will be removed right after first execution
             ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
         }
         catch (IgniteCheckedException e) {
@@ -371,9 +370,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
         // Gather partitions metainfo for thouse which will be copied.
-        if (!state(SnapshotState.MARK))
-            return;
-
         ctx.collectPartStat(parts);
 
         ctx.finishedStateFut().listen(f -> {
@@ -397,9 +393,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointEnd(Context ctx) {
         // Under the write lock here. It's safe to add new stores.
-        if (!state(SnapshotState.START))
-            return;
-
         try {
             PartitionAllocationMap allocationMap = ctx.partitionStatMap();
 
@@ -446,6 +439,8 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
+        ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this);
+
         if (!state(SnapshotState.STARTED))
             return;
 
@@ -620,7 +615,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /**
      * Valid state transitions:
      * <p>
-     * {@code INIT -> MARK -> START -> STARTED -> STOPPED}
+     * {@code INIT -> STARTED -> STOPPED}
      * <p>
      * {@code INIT (or any other) -> STOPPING}
      * <p>
@@ -629,12 +624,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private enum SnapshotState {
         /** Requested partitoins must be registered to collect its partition counters. */
         INIT,
-
-        /** All counters must be collected under the checkpoint write lock. */
-        MARK,
-
-        /** Tasks must be scheduled to create requested snapshot. */
-        START,
 
         /** Snapshot tasks has been started. */
         STARTED,
