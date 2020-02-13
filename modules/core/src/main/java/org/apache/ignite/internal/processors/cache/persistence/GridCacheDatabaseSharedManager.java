@@ -4083,7 +4083,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
             long cpTs = updateLastCheckpointTime();
 
-            CheckpointProgressImpl curr = scheduledCp;
+            CheckpointProgressImpl curr;
+
+            synchronized (this) {
+                curr = scheduledCp;
+
+                if (curr.reason == null)
+                    curr.reason = "timeout";
+
+                // It is important that we assign a new progress object before checkpoint mark in page memory.
+                scheduledCp = new CheckpointProgressImpl(checkpointFreq);
+
+                curCpProgress = curr;
+            }
 
             CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
 
@@ -4116,7 +4128,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointLock.writeLock().lock();
 
             try {
-                updateCurrentCheckpointProgress();
+                curr.transitTo(LOCK_TAKEN);
 
                 assert curCpProgress == curr : "Concurrent checkpoint begin should not be happened";
 
@@ -4383,8 +4395,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             synchronized (this) {
                 curr = scheduledCp;
-
-                curr.transitTo(LOCK_TAKEN);
 
                 if (curr.reason == null)
                     curr.reason = "timeout";
