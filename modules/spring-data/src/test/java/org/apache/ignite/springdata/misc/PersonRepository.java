@@ -92,5 +92,29 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     @Query("SELECT count(*) FROM Person")
     public int countAllPersons();
-}
 
+    /** */
+    public int countByFirstName(String val);
+
+    /** Delete query */
+    public long deleteByFirstName(String firstName);
+
+    /** Remove Query */
+    public long removeByFirstName(String firstName);
+
+    /** Delete using @Query */
+    @Query("DELETE FROM Person WHERE secondName = ?")
+    public void deleteBySecondName(String secondName);
+
+    /** Delete using @Query but with errors on the query */
+    @Query("DELETE FROM Person WHERE firstName = ? AND ERRORS = 'ERRORS'")
+    public void deleteWrongByFirstName(String firstName);
+
+    /** Update using @Query */
+    @Query("UPDATE Person SET secondName = ? WHERE firstName = ?")
+    public int setFixedSecondName(String secondName, String firstName);
+
+    /** Update using @Query but with errors on the query */
+    @Query("UPDATE Person SET secondName = ? WHERE firstName = ? AND ERRORS = 'ERRORS'")
+    public int setWrongFixedSecondName(String secondName, String firstName);
+}

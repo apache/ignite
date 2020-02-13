@@ -20,6 +20,7 @@ package org.apache.ignite.springdata;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.TreeSet;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
@@ -225,8 +226,118 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
      *
      */
     private void fillInRepository() {
-        for (int i = 0; i < CACHE_SIZE; i++)
+        for (int i = 0; i < CACHE_SIZE - 6; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
                 "lastName" + Integer.toHexString((i + 16) % 256)));
+        }
+
+        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+    }
+
+    /**
+     * Delete existing record
+     */
+    public void testDeleteByFirstName() {
+        assertEquals(repo.countByFirstNameLike("uniquePerson"), 1);
+
+        long cnt = repo.deleteByFirstName("uniquePerson");
+
+        assertEquals(1, cnt);
+        assertEquals(repo.countByFirstNameLike("uniquePerson"), 0);
+    }
+
+    /**
+     * Delete NON existing record
+     */
+    public void testDeleteExpression() {
+        long cnt = repo.deleteByFirstName("880");
+
+        assertEquals(0, cnt);
+        assertEquals(repo.countByFirstNameLike("880"), 0);
+    }
+
+    /**
+     * Delete Multiple records due to where
+     */
+    public void testDeleteExpressionMultiple() {
+        long count = repo.countByFirstName("nonUniquePerson");
+        long cnt = repo.deleteByFirstName("nonUniquePerson");
+
+        assertEquals(cnt, count);
+        assertEquals(repo.countByFirstNameLike("nonUniquePerson"), 0);
+    }
+
+    /**
+     * Remove should do the same than Delete
+     */
+    public void testRemoveExpression() {
+        repo.removeByFirstName("person3f");
+
+        long cnt = repo.count();
+        assertEquals(CACHE_SIZE - 1, cnt);
+        assertEquals(repo.countByFirstNameLike("person3f"), 0);
+    }
+
+    /**
+     * Delete unique record
+     */
+    public void testDeleteQuery() {
+        repo.deleteBySecondName("uniqueLastName");
+
+        long cntAfter = repo.count();
+        assertEquals(CACHE_SIZE - 1, cntAfter);
+    }
+
+    /**
+     * Try to delete with a wrong @Query
+     */
+    public void testWrongDeleteQuery() {
+        long cntBefore = repo.countByFirstNameLike("person3f");
+
+        try {
+            repo.deleteWrongByFirstName("person3f");
+        }
+        catch (Exception e) {
+            //expected
+        }
+
+        long cntAfter = repo.countByFirstNameLike("person3f");
+        assertEquals(cntBefore, cntAfter);
+    }
+
+    /**
+     * Update with a @Query a record
+     */
+    public void testUpdateQuery() {
+        final String newSecondName = "updatedUniqueSecondName";
+        int cnt = repo.setFixedSecondName(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<Person> person = repo.findByFirstName("uniquePerson");
+        assertEquals(person.get(0).getSecondName(), "updatedUniqueSecondName");
+    }
+
+    /**
+     * Update with a wrong @Query
+     */
+    public void testWrongUpdateQuery() {
+        final String newSecondName = "updatedUniqueSecondName";
+        int rowsUpdated = 0;
+        try {
+            rowsUpdated = repo.setWrongFixedSecondName(newSecondName, "uniquePerson");
+        }
+        catch (Exception e) {
+            //expected
+        }
+
+        assertEquals(0, rowsUpdated);
+
+        List<Person> person = repo.findByFirstName("uniquePerson");
+        assertEquals(person.get(0).getSecondName(), "uniqueLastName");
     }
 }
