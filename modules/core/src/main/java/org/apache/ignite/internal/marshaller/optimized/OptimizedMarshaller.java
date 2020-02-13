@@ -227,7 +227,8 @@ public class OptimizedMarshaller extends AbstractNodeNameAwareMarshaller {
             return (T)objIn.readObject();
         }
         catch (ClassNotFoundException e) {
-            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
+            throw new OptimizedMarshallerInaccessibleClassException(
+                "Failed to find class with given class loader for unmarshalling " +
                 "(make sure same versions of all classes are available on all nodes or enable peer-class-loading) " +
                 "[clsLdr=" + clsLdr + ", cls=" + e.getMessage() + "]", e);
         }
