@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.internal.client.GridServerDoesNotSupportException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +47,43 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
  * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
  */
 public interface Command<T> {
+    /**
+     * Checks that all cluster nodes support specified feature.
+     *
+     * @param client Client.
+     * @param feature Feature.
+     * @param validateClientNodes Whether client nodes should be checked as well.
+     * @param failIfUnsupportedFound If {@code True}, fails when found a node unsupporting <code>feature</code>.
+     * @throws GridServerDoesNotSupportException If <code>failIfUnsupportedFound</code> is {@code True} and found a node
+     * unsupporting <code>feature</code>.
+     * @return Id of node unsupporting <code>feature</code>. {@code null} if all nodes support <code>feature</code>.
+     */
+    public static UUID checkFeatureSupportedByCluster(
+        GridClient client,
+        IgniteFeatures feature,
+        boolean validateClientNodes,
+        boolean failIfUnsupportedFound
+    ) throws GridClientException {
+        Collection<GridClientNode> nodes = validateClientNodes ?
+            client.compute().nodes() :
+            client.compute().nodes(GridClientNode::connectable);
+
+        for (GridClientNode node : nodes) {
+            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
+
+            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
+                if (failIfUnsupportedFound) {
+                    throw new GridServerDoesNotSupportException("Failed to execute command: cluster contains node that " +
+                        "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
+                }
+                else
+                    return node.nodeId();
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Method to create thin client for communication with cluster.
      *

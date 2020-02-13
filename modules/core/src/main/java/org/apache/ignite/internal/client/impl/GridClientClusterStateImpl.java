@@ -18,13 +18,20 @@
 package org.apache.ignite.internal.client.impl;
 
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
+import org.apache.ignite.internal.client.GridServerDoesNotSupportException;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
+
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.IgniteFeatures.FORCED_CHANGE_OF_CLUSTER_STATE;
+import static org.apache.ignite.internal.commandline.Command.checkFeatureSupportedByCluster;
 
 /**
  *
@@ -50,7 +57,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void active(final boolean active) throws GridClientException {
-        withReconnectHandling((conn, nodeId) -> conn.changeState(active, nodeId)).get();
+        state(active ? ACTIVE : INACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -65,7 +72,28 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws GridClientException {
-        withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
+        state(newState, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean force) throws GridClientException {
+        // Check compapability of new forced deactivation on all nodes.
+        UUID oldVerServerNode = checkFeatureSupportedByCluster(client, FORCED_CHANGE_OF_CLUSTER_STATE,
+            false, false);
+
+        if (oldVerServerNode == null)
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, force, nodeId)).get();
+        else {
+            if (force) {
+                throw new GridServerDoesNotSupportException("Unable to forcibly change state of cluster on \""
+                    + newState.name() + "\". Found a node not supporting forced version this command: "
+                    + oldVerServerNode + ". You can try without the flag 'force'.");
+            }
+            else {
+                // Send old version of the command not supporting 'force'.
+                withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
+            }
+        }
     }
 
     /** {@inheritDoc} */

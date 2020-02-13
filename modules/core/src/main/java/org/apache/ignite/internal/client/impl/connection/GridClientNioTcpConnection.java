@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthe
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateForcedRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
@@ -811,21 +812,25 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeState(
-        boolean active,
-        UUID destNodeId
-    ) throws GridClientClosedException, GridClientConnectionResetException {
-        return changeState(active ? ACTIVE : INACTIVE, destNodeId);
+    @Override public GridClientFuture<?> changeState(boolean active, boolean force, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        return changeState(active ? ACTIVE : INACTIVE, force, destNodeId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeState(
-        ClusterState state,
-        UUID destNodeId
-    ) throws GridClientClosedException, GridClientConnectionResetException {
+    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
         assert state != null;
 
         return makeRequest(GridClientClusterStateRequest.state(state), destNodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<?> changeState(ClusterState state, boolean force, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        assert state != null;
+
+        return makeRequest(GridClientClusterStateForcedRequest.state(state, force), destNodeId);
     }
 
     /** {@inheritDoc} */

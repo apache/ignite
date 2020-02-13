@@ -73,7 +73,7 @@ public class GridChangeClusterStateCommandHandler extends GridRestCommandHandler
                     U.log(log, "Received cluster state change request to " + req.state() +
                         " state from client node with ID: " + req.clientId());
 
-                    ctx.grid().cluster().state(req.state(), true);
+                    ctx.grid().cluster().state(req.state(), req.forced());
 
                     res.setResponse(req.command().key() + " done");
 

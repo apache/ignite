@@ -23,7 +23,6 @@ import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -32,8 +31,6 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
-import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 
 /**
  * Command to change cluster state.
@@ -78,18 +75,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            // Search for in-memory-only caches. Fail if data loss might appear.
-            if (state == INACTIVE && !force) {
-                Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
-                    null, clientCfg);
-
-                if (!readyToDeactivate) {
-                    throw new IllegalStateException(DATA_LOST_ON_DEACTIVATION_WARNING
-                        + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
-                }
-            }
-
-            client.state().state(state);
+            client.state().state(state, force);
 
             log.info("Cluster state changed to " + state);
 

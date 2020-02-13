@@ -29,6 +29,14 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     /** New state. */
     private ClusterState state;
 
+    /** Forced change of the state. */
+    private boolean force;
+
+    /** */
+    public void forced(boolean forced) {
+        force = forced;
+    }
+
     /** */
     public void reqCurrentMode() {
         reqCurrentMode = true;
@@ -38,6 +46,9 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     public boolean isReqCurrentMode() {
         return reqCurrentMode;
     }
+
+    /** */
+    public boolean forced(){ return force; }
 
     /** */
     public ClusterState state() {

@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
-import org.apache.ignite.internal.visor.cluster.VisorCheckDeactivationTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
-import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 
 /**
@@ -72,20 +68,7 @@ public class DeactivateCommand implements Command<Void> {
         logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            // Search for in-memory-only caches. Fails if data loss can occur.
-            if (!force) {
-                Boolean readyToDeactivate = executeTask(client, VisorCheckDeactivationTask.class,
-                    null, clientCfg);
-
-                if (!readyToDeactivate) {
-                    throw new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
-                        + " Please, add " + FORCE_COMMAND + " to deactivate cluster.");
-                }
-            }
-
-            GridClientClusterState state = client.state();
-
-            state.active(false);
+            client.state().state(ClusterState.INACTIVE, force);
 
             logger.info("Cluster deactivated");
         }

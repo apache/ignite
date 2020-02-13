@@ -309,25 +309,48 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Change grid global state.
+     * Change grid global state. Fails if the operation is not safe and <code>force<code/> is {@code False}.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param active Active.
+     * @param force If {@code True} then skips checking of operation safety.
      * @param destNodeId Destination node id.
-     * @deprecated Use {@link #changeState(ClusterState, UUID)} instead.
+     * @deprecated Use {@link #changeState(ClusterState, boolean, UUID)} instead.
      */
     @Deprecated
-    public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
+    public abstract GridClientFuture<?> changeState(boolean active, boolean force, UUID destNodeId)
             throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Changes grid global state.
+     * Changes grid global state. Fails if the operation is not safe.
+     * Uses old version of change state request that guaranties comaptibility with old-version-servers.
+     * But cannot pass the force flag like {@link #changeState(ClusterState, boolean, UUID)}.
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     * @deprecated Use {@link #changeState(ClusterState, boolean, UUID)} instead.
      */
+    @Deprecated
     public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Changes grid global state. Fails if the operation is not safe and <code>force<code/> is {@code False}.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
+     *
+     * @param state New cluster state.
+     * @param force If {@code True} then skips checking of operation safety.
+     * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeState(ClusterState state, boolean force, UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**

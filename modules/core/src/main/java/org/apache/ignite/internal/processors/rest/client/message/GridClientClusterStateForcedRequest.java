@@ -21,79 +21,56 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * @deprecated Use {@link GridClientClusterStateForcedRequest}
+ * Enchanced version of {@link GridClientClusterStateRequest}.
+ * Introduced to support forced version of the change state command and keep backward compatibility
+ * with nodes of old version that may occur in cluster.
  */
-@Deprecated
-public class GridClientClusterStateRequest extends GridClientAbstractMessage {
+public class GridClientClusterStateForcedRequest extends GridClientClusterStateRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Request current state. */
-    private boolean reqCurrentState;
-
-    /** New cluster state. */
-    private ClusterState state;
-
-    /** */
-    public boolean isReqCurrentState() {
-        return reqCurrentState;
-    }
-
-    /** */
-    public ClusterState state() {
-        return state;
-    }
-
-    /**
-     * @return Current read-only mode request.
-     */
-    public static GridClientClusterStateRequest currentState() {
-        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
-
-        msg.reqCurrentState = true;
-
-        return msg;
-    }
+    /** Forced change of cluster state. */
+    private boolean force;
 
     /**
      * @param state New cluster state.
+     * @param force Forced change of cluster state.
      * @return Cluster state change request.
      */
-    public static GridClientClusterStateRequest state(ClusterState state) {
-        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
-
-        msg.state = state;
-
-        return msg;
+    public static GridClientClusterStateForcedRequest state(ClusterState state, boolean force) {
+        return new GridClientClusterStateForcedRequest(GridClientClusterStateRequest.state(state), force);
     }
 
     /** Default constructor for the exernalization. */
-    public GridClientClusterStateRequest() {
+    public GridClientClusterStateForcedRequest() {
         // No op.
     }
 
     /** Copying constructor. */
-    protected GridClientClusterStateRequest(GridClientClusterStateRequest src) {
-        reqCurrentState = src.reqCurrentState;
-        state = src.state;
+    private GridClientClusterStateForcedRequest(GridClientClusterStateRequest clusterStateReq, boolean force) {
+        super(clusterStateReq);
+
+        this.force = force;
+    }
+
+    /** */
+    public boolean forced() {
+        return force;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeBoolean(reqCurrentState);
-        U.writeEnum(out, state);
+        out.writeBoolean(force);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        reqCurrentState = in.readBoolean();
-        state = ClusterState.fromOrdinal(in.readByte());
+        force = in.readBoolean();
     }
 }

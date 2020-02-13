@@ -83,7 +83,10 @@ public enum IgniteFeatures {
     MASTER_KEY_CHANGE(20),
 
     /** ContinuousQuery with security subject id support. */
-    CONT_QRY_SECURITY_AWARE(21);
+    CONT_QRY_SECURITY_AWARE(21),
+
+    /** Preventing data loss on deactivation. */
+    FORCED_CHANGE_OF_CLUSTER_STATE(22);
 
     /**
      * Unique feature identifier.
