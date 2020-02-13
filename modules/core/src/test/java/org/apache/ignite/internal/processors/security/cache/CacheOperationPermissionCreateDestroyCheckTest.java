@@ -183,6 +183,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
              Ignite node = startGrid(TEST_NODE, builder.appendSystemPermissions(CACHE_DESTROY).build(), isClient)) {
 
+            // Node without needed permission.
             assertThrowsWithCause(() -> forbidden.destroyCache(TEST_CACHE), SecurityException.class);
 
             node.destroyCache(TEST_CACHE);
