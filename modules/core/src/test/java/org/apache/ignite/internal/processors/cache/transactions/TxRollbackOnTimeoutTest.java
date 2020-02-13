@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -808,7 +808,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private void testEnlistMany(boolean write) throws Exception {
         final Ignite client = startClient();
 
-        Map<Integer, Integer> entries = new HashMap<>();
+        Map<Integer, Integer> entries = new TreeMap<>();
 
         for (int i = 0; i < 1000000; i++)
             entries.put(i, i);
