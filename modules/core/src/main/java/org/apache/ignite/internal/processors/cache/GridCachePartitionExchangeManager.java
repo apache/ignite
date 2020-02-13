@@ -3383,7 +3383,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                if (!forcePreload && preloader != null && preloader.required(grp))
+                                if (!forcePreload && grp.persistenceEnabled() && preloader.required(grp))
                                     fileAssignsMap.put(grp, assigns);
                                 else
                                     assignsMap.put(grp.groupId(), assigns);
@@ -3404,7 +3404,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
                         Runnable loadFilesStarter = null;
 
-                        if (preloader != null)
+                        if (!fileAssignsMap.isEmpty())
                             loadFilesStarter = preloader.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
 
                         int size = assignsMap.size();

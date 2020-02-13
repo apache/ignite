@@ -82,7 +82,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
     /** Partition File rebalancing routine. */
-    private volatile FileRebalanceRoutine fileRebalanceRoutine = new FileRebalanceRoutine();
+    private volatile FilePreloadingRoutine filePreloadingRoutine = new FilePreloadingRoutine();
 
     /**
      * @param ktx Kernal context.
@@ -105,7 +105,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
-            fileRebalanceRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
+            filePreloadingRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
         finally {
             lock.unlock();
@@ -132,13 +132,13 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
 
-        FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
+        FilePreloadingRoutine rebRoutine = filePreloadingRoutine;
 
         // Abort the current rebalancing procedure if it is still in progress
         if (!rebRoutine.isDone())
             rebRoutine.cancel();
 
-        assert fileRebalanceRoutine.isDone();
+        assert filePreloadingRoutine.isDone();
 
         boolean locJoinBaselineChange = isLocalBaselineChange(exchActions);
 
@@ -221,7 +221,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             return null;
         }
 
-        FileRebalanceRoutine rebRoutine = fileRebalanceRoutine;
+        FilePreloadingRoutine rebRoutine = filePreloadingRoutine;
 
         lock.lock();
 
@@ -230,7 +230,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 rebRoutine.cancel();
 
             // Start new rebalance session.
-            fileRebalanceRoutine = rebRoutine = new FileRebalanceRoutine(orderedAssigns, topVer, cctx,
+            filePreloadingRoutine = rebRoutine = new FilePreloadingRoutine(orderedAssigns, topVer, cctx,
                 exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
             return rebRoutine::startPartitionsPreloading;
@@ -325,7 +325,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return {@code True} If the last rebalance attempt was incomplete for specified cache group.
      */
     public boolean incompleteRebalance(CacheGroupContext grp) {
-        FileRebalanceRoutine rebalanceRoutine = fileRebalanceRoutine;
+        FilePreloadingRoutine rebalanceRoutine = filePreloadingRoutine;
 
         return rebalanceRoutine.isDone() && rebalanceRoutine.remainingGroups().contains(grp.groupId());
     }
@@ -451,7 +451,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     private class PartitionSnapshotListener implements SnapshotListener {
         /** {@inheritDoc} */
         @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
-            fileRebalanceRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
+            filePreloadingRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
         }
 
         /** {@inheritDoc} */

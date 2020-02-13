@@ -62,7 +62,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED
 /**
  * Partition File rebalancing routine.
  */
-public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
+public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
     /** Rebalance topology version. */
     private final AffinityTopologyVersion topVer;
 
@@ -107,7 +107,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
     /**
      * Dummy constructor.
      */
-    public FileRebalanceRoutine() {
+    public FilePreloadingRoutine() {
         this(null, null, null, null, 0, null);
 
         onDone(true);
@@ -121,7 +121,7 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
      * @param rebalanceId Rebalance ID
      * @param cpLsnr Checkpoint listener.
      */
-    public FileRebalanceRoutine(
+    public FilePreloadingRoutine(
         Collection<T2<UUID, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
@@ -547,6 +547,6 @@ public class FileRebalanceRoutine extends GridFutureAdapter<Boolean> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(FileRebalanceRoutine.class, this);
+        return S.toString(FilePreloadingRoutine.class, this);
     }
 }

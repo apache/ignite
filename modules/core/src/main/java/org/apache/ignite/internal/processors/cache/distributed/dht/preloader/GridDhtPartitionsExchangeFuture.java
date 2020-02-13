@@ -2353,9 +2353,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
 
-//                if (cctx.preloader() != null)
-//                    cctx.preloader().onExchangeDone(this);
-
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
                         grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
@@ -3673,14 +3670,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 boolean rebalanceRequired = grpCtx.preloader().updateRebalanceVersion(this, resTopVer);
 
-                IgnitePartitionPreloadManager preloader = cctx.preloader();
-
-                if (rebalanceRequired && preloader != null && grpCtx.persistenceEnabled()) {
+                if (rebalanceRequired && grpCtx.persistenceEnabled()) {
                     CachePartitionFullCountersMap cntrs = grpCtx.topology().fullUpdateCounters();
 
-                    Map<Integer, Long> sizes = grpCtx.topology().globalPartSizes();
+                    Map<Integer, Long> partSizes = grpCtx.topology().globalPartSizes();
 
-                    preloader.onExchangeDone(exchActions, resTopVer, grpCtx, cntrs, sizes, partHistSuppliers);
+                    cctx.preloader().onExchangeDone(exchActions, resTopVer, grpCtx, cntrs, partSizes, partHistSuppliers);
                 }
 
                 grpCtx.topology().applyUpdateCounters();
@@ -4462,17 +4457,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
-                        IgnitePartitionPreloadManager preloader = cctx.preloader();
-
                         boolean rebalanceRequired = grp.preloader().updateRebalanceVersion(this, resTopVer);
 
                         CachePartitionFullCountersMap cntrMap =
                             msg.partitionUpdateCounters(grpId, grp.topology().partitions());
 
-                        if (rebalanceRequired && preloader != null && grp.persistenceEnabled()) {
-                            Map<Integer, Long> sizes = msg.partitionSizes(cctx).get(grp.groupId());
-
-                            preloader.onExchangeDone(exchActions, resTopVer, grp, cntrMap, sizes, partHistSuppliers);
+                        if (rebalanceRequired && grp.persistenceEnabled()) {
+                            cctx.preloader().onExchangeDone(exchActions,
+                                resTopVer,
+                                grp,
+                                cntrMap,
+                                msg.partitionSizes(cctx).get(grp.groupId()),
+                                partHistSuppliers);
                         }
 
                         grp.topology().update(resTopVer,
