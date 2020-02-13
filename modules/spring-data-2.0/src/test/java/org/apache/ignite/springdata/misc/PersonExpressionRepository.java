@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.springdata.misc;
 
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfExpressionTest;
-import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
-import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
+import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 
 /**
- * Ignite Spring Data 2.2 test suite.
+ *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteSpringDataCrudSelfTest.class,
-    IgniteSpringDataQueriesSelfTest.class,
-    IgniteSpringDataCrudSelfExpressionTest.class
-})
-public class IgniteSpringData22TestSuite {
+@RepositoryConfig(cacheName = "@cacheNames.personCacheName")
+public interface PersonExpressionRepository  extends IgniteRepository<Person, Integer> {
 }
