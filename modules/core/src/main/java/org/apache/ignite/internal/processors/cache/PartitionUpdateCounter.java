@@ -103,9 +103,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public void reset();
 
     /**
-     * Reset the initial value to zero.
+     * Reset the initial counter value to zero.
      */
-    public void resetInitial();
+    public void resetInitialCounter();
 
     /**
      * @param start Counter.

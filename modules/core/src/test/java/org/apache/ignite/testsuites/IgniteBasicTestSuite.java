@@ -50,6 +50,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConne
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.DeadLockOnNodeLeftExchangeTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
@@ -203,6 +204,7 @@ import org.junit.runners.Suite;
     AttributeNodeFilterSelfTest.class,
 
     WALRecordTest.class,
+    WALRecordSerializationTest.class,
 
     GridPeerDeploymentRetryTest.class,
     GridPeerDeploymentRetryModifiedTest.class,
