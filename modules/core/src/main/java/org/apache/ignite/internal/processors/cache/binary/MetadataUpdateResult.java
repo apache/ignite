@@ -28,13 +28,18 @@ final class MetadataUpdateResult {
     /** */
     private final BinaryObjectException error;
 
+    /** */
+    private final int typeVer;
+
     /**
      * @param resType Response type.
      * @param error Error.
+     * @param typeVer Accepted version of updated type.
      */
-    private MetadataUpdateResult(ResultType resType, BinaryObjectException error) {
+    private MetadataUpdateResult(ResultType resType, BinaryObjectException error, int typeVer) {
         this.resType = resType;
         this.error = error;
+        this.typeVer = typeVer;
     }
 
     /**
@@ -51,11 +56,16 @@ final class MetadataUpdateResult {
         return error;
     }
 
+    /** */
+    int typeVersion() {
+        return typeVer;
+    }
+
     /**
-     *
+     * @param typeVer Accepted version of updated BinaryMetadata type or <code>-1</code> if not applicable.
      */
-    static MetadataUpdateResult createSuccessfulResult() {
-        return new MetadataUpdateResult(ResultType.SUCCESS, null);
+    static MetadataUpdateResult createSuccessfulResult(int typeVer) {
+        return new MetadataUpdateResult(ResultType.SUCCESS, null, typeVer);
     }
 
     /**
@@ -64,14 +74,14 @@ final class MetadataUpdateResult {
     static MetadataUpdateResult createFailureResult(BinaryObjectException err) {
         assert err != null;
 
-        return new MetadataUpdateResult(ResultType.REJECT, err);
+        return new MetadataUpdateResult(ResultType.REJECT, err, -1);
     }
 
     /**
      *
      */
     static MetadataUpdateResult createUpdateDisabledResult() {
-        return new MetadataUpdateResult(ResultType.UPDATE_DISABLED, null);
+        return new MetadataUpdateResult(ResultType.UPDATE_DISABLED, null, -1);
     }
 
     /**
