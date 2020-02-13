@@ -90,9 +90,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
     public static final int ITERATION_CNT = 100;
 
     /** */
-    private boolean client;
-
-    /** */
     private static volatile boolean fail;
 
     /** {@inheritDoc} */
@@ -100,8 +97,6 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
         storeSpi.setExpireCount(100);
@@ -117,9 +112,7 @@ public class CacheContinuousQueryOrderingEventTest extends GridCommonAbstractTes
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     /** {@inheritDoc} */

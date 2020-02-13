@@ -80,9 +80,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     private final IndexColumn[] cols;
 
     /** */
-    private final int[] columnIds;
-
-    /** */
     private final boolean mvccEnabled;
 
     /** */
@@ -152,7 +149,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param stats Statistics holder.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2Tree(
+    public H2Tree(
         GridCacheContext cctx,
         GridH2Table table,
         String name,
@@ -222,11 +219,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
         inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
         cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
-
-        columnIds = new int[cols.length];
-
-        for (int i = 0; i < cols.length; i++)
-            columnIds[i] = cols[i].column.getColumnId();
 
         setIos(H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled), H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
 
@@ -453,7 +445,9 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return 0;
 
         for (int i = 0, len = cols.length; i < len; i++) {
-            int idx = columnIds[i];
+            IndexColumn idxCol = cols[i];
+
+            int idx = idxCol.column.getColumnId();
 
             Value v1 = r1.getValue(idx);
             Value v2 = r2.getValue(idx);
@@ -466,7 +460,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             int c = compareValues(v1, v2);
 
             if (c != 0)
-                return InlineIndexHelper.fixSort(c, cols[i].sortType);
+                return InlineIndexHelper.fixSort(c, idxCol.sortType);
         }
 
         return mvccCompare(r1, r2);
@@ -675,5 +669,19 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         processFailure(FailureType.CRITICAL_ERROR, e);
 
         return e;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void temporaryReleaseLock() {
+        cctx.kernalContext().cache().context().database().checkpointReadUnlock();
+        cctx.kernalContext().cache().context().database().checkpointReadLock();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long maxLockHoldTime() {
+        long sysWorkerBlockedTimeout = cctx.kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
+
+        // Using timeout value reduced by 10 times to increase possibility of lock releasing before timeout.
+        return sysWorkerBlockedTimeout == 0 ? Long.MAX_VALUE : (sysWorkerBlockedTimeout / 10);
     }
 }

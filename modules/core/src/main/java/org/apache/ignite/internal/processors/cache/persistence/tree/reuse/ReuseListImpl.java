@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -38,7 +39,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
     private volatile Stripe[] bucket;
 
     /** Onheap pages cache. */
-    private final PagesCache bucketCache = new PagesCache();
+    private final PagesCache bucketCache;
 
     /**
      * @param cacheId   Cache ID.
@@ -57,7 +58,8 @@ public class ReuseListImpl extends PagesList implements ReuseList {
         long metaPageId,
         boolean initNew,
         PageLockListener lockLsnr,
-        GridKernalContext ctx
+        GridKernalContext ctx,
+        AtomicLong pageListCacheLimit
     ) throws IgniteCheckedException {
         super(
             cacheId,
@@ -69,6 +71,8 @@ public class ReuseListImpl extends PagesList implements ReuseList {
             lockLsnr,
             ctx
         );
+
+        bucketCache = new PagesCache(pageListCacheLimit);
 
         reuseList = this;
 

@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -44,6 +46,7 @@ import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
@@ -144,6 +147,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.InitializationProtector;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -516,8 +520,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param grp Cache group.
+     * @param destroy Group destroy flag.
      */
-    private void cleanup(CacheGroupContext grp) {
+    private void cleanup(CacheGroupContext grp, boolean destroy) {
         CacheConfiguration cfg = grp.config();
 
         for (Object obj : grp.configuredUserObjects())
@@ -533,7 +538,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        grp.metrics().remove();
+        if (destroy) {
+            grp.metrics().remove();
+
+            grp.removeIOStatistic();
+        }
 
         cachesInfo.cleanupRemovedGroup(grp.groupId());
     }
@@ -758,7 +767,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         for (CacheGroupContext grp : cacheGrps.values())
-            stopCacheGroup(grp.groupId());
+            stopCacheGroup(grp.groupId(), false);
     }
 
     /**
@@ -993,6 +1002,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
+        stopCache(cache, cancel, destroy, true);
+    }
+
+    /**
+     * @param cache Cache to stop.
+     * @param cancel Cancel flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
+     * @param clearDbObjects If {@code false} DB objects don't removed (used for cache.close() on client node).
+     */
+    @SuppressWarnings({"unchecked"})
+    private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy, boolean clearDbObjects) {
         GridCacheContext ctx = cache.context();
 
         try {
@@ -1010,9 +1030,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
+            if (destroy)
+                cache.removeMetrics();
+
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
-            ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
+            if (!clearDbObjects)
+                ctx.kernalContext().query().getIndexing().closeCacheOnClient(ctx.name());
+            else
+                ctx.kernalContext().query().onCacheStop(cacheInfo, !cache.context().group().persistenceEnabled() || destroy);
 
             if (isNearEnabled(ctx)) {
                 GridDhtCacheAdapter dht = ctx.near().dht();
@@ -1020,6 +1046,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 // Check whether dht cache has been started.
                 if (dht != null) {
                     dht.stop();
+
+                    if (destroy)
+                        dht.removeMetrics();
 
                     GridCacheContext<?, ?> dhtCtx = dht.context();
 
@@ -2020,13 +2049,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cctx Cache context.
      */
     private void stopCacheSafely(GridCacheContext<?, ?> cctx) {
+        stopCacheSafely(cctx, true);
+    }
+
+    /**
+     * Stops cache under checkpoint lock.
+     *
+     * @param cctx Cache context.
+     * @param clearDbObjects If {@code false} DB objects don't removed (used for cache.close() on client node).
+     * The parameters was added due to make differ between cache.close() on client node and distributed destroy cache
+     * (e.g. call cache.destroy()).
+     *
+     * Before add the parameter {@code clearDbObjects}:
+     * when on client node is joined we initialize H2 objects for all caches in cluster,
+     * but on client cache.close() we destroy part of created objects,
+     * making impossible running SQL queries on that cache;
+     * clientCache.close() should restore status quo of state right after client join instead).
+     */
+    private void stopCacheSafely(GridCacheContext<?, ?> cctx, boolean clearDbObjects) {
         sharedCtx.database().checkpointReadLock();
 
         try {
-            prepareCacheStop(cctx.name(), false);
+            prepareCacheStop(cctx.name(), false, clearDbObjects);
 
             if (!cctx.group().hasCaches())
-                stopCacheGroup(cctx.group().groupId());
+                stopCacheGroup(cctx.group().groupId(), false);
         }
         finally {
             sharedCtx.database().checkpointReadUnlock();
@@ -2559,6 +2606,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Stopped cache context.
      */
     public GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
+        return prepareCacheStop(cacheName, destroy, true);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param destroy Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
+     * @param clearDbObjects If {@code false} DB objects don't removed (used for cache.close() on client node).
+     * @return Stopped cache context.
+     */
+    public GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy, boolean clearDbObjects) {
         assert sharedCtx.database().checkpointLockIsHeldByThread();
 
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
@@ -2570,7 +2627,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             onKernalStop(cache, true);
 
-            stopCache(cache, true, destroy);
+            stopCache(cache, true, destroy, clearDbObjects);
 
             return ctx;
         }
@@ -2663,12 +2720,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 jCacheProxies.remove(cctx.name());
 
-                stopCacheSafely(cctx);
+                closeCacheOnNotAffinityNode(cctx);
             }
             finally {
                 sharedCtx.io().writeUnlock();
             }
         }
+    }
+
+    /**
+     * @param cctx Cache context to close.
+     */
+    private void closeCacheOnNotAffinityNode(GridCacheContext cctx) {
+        if (ctx.query().moduleEnabled())
+            stopCacheSafely(cctx, false);
+        else
+            stopCacheSafely(cctx);
     }
 
     /**
@@ -2690,15 +2757,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
 
-        List<IgniteBiTuple<CacheGroupContext, Boolean>> grpToStop = exchActions.cacheGroupsToStop().stream()
+        List<IgniteBiTuple<CacheGroupContext, Boolean>> grpsToStop = exchActions.cacheGroupsToStop().stream()
             .filter(a -> cacheGrps.containsKey(a.descriptor().groupId()))
             .map(a -> F.t(cacheGrps.get(a.descriptor().groupId()), a.destroy()))
             .collect(Collectors.toList());
 
-        grpToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
+        grpsToStop.forEach(t -> sharedCtx.evict().onCacheGroupStopped(t.get1()));
 
         if (!exchActions.cacheStopRequests().isEmpty())
-            removeOffheapListenerAfterCheckpoint(grpToStop);
+            removeOffheapListenerAfterCheckpoint(grpsToStop);
 
         Map<Integer, List<ExchangeActions.CacheActionData>> cachesToStop = exchActions.cacheStopRequests().stream()
                 .collect(Collectors.groupingBy(action -> action.descriptor().groupId()));
@@ -2715,7 +2782,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             gctx.preloader().pause();
 
                         try {
-
                             if (gctx != null) {
                                 final String msg = "Failed to wait for topology update, cache group is stopping.";
 
@@ -2763,11 +2829,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteException(msg, e);
         }
 
-        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpToStop)
-            stopCacheGroup(grp.get1().groupId());
+        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop)
+            stopCacheGroup(grp.get1().groupId(), grp.get2());
 
         if (!sharedCtx.kernalContext().clientNode())
-            sharedCtx.database().onCacheGroupsStopped(grpToStop);
+            sharedCtx.database().onCacheGroupsStopped(grpsToStop);
 
         if (exchActions.deactivate())
             sharedCtx.deactivate();
@@ -2866,23 +2932,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param grpId Group ID.
+     * @param destroy Group destroy flag.
      */
-    private void stopCacheGroup(int grpId) {
+    private void stopCacheGroup(int grpId, boolean destroy) {
         CacheGroupContext grp = cacheGrps.remove(grpId);
 
         if (grp != null)
-            stopCacheGroup(grp);
+            stopCacheGroup(grp, destroy);
     }
 
     /**
      * @param grp Cache group.
+     * @param destroy Group destroy flag.
      */
-    private void stopCacheGroup(CacheGroupContext grp) {
+    private void stopCacheGroup(CacheGroupContext grp, boolean destroy) {
         grp.stopGroup();
 
         U.stopLifecycleAware(log, grp.configuredUserObjects());
 
-        cleanup(grp);
+        cleanup(grp, destroy);
     }
 
     /**
@@ -3228,7 +3296,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             sharedCtx.affinity().stopCacheOnReconnect(cache.context());
 
             if (!grp.hasCaches()) {
-                stopCacheGroup(grp);
+                stopCacheGroup(grp, false);
 
                 sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
             }
@@ -5448,7 +5516,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void afterLogicalUpdatesApplied(
             IgniteCacheDatabaseSharedManager mgr,
-            GridCacheDatabaseSharedManager.RestoreLogicalState restoreState) throws IgniteCheckedException {
+            GridCacheDatabaseSharedManager.RestoreLogicalState restoreState
+        ) throws IgniteCheckedException {
             restorePartitionStates(cacheGroups(), restoreState.partitionRecoveryStates());
         }
 
@@ -5466,15 +5535,53 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (log.isInfoEnabled())
                 log.info("Restoring partition state for local groups.");
 
-            long totalProcessed = 0;
+            AtomicLong totalProcessed = new AtomicLong();
 
-            for (CacheGroupContext grp : forGroups)
-                totalProcessed += grp.offheap().restorePartitionStates(partitionStates);
+            AtomicReference<IgniteCheckedException> restoreStateError = new AtomicReference<>();
+
+            StripedExecutor stripedExec = ctx.getStripedExecutorService();
+
+            int roundRobin = 0;
+
+            for (CacheGroupContext grp : forGroups) {
+                stripedExec.execute(roundRobin % stripedExec.stripesCount(), () -> {
+                    try {
+                        long processed = grp.offheap().restorePartitionStates(partitionStates);
+
+                        totalProcessed.addAndGet(processed);
+                    }
+                    catch (IgniteCheckedException | RuntimeException | Error e) {
+                        U.error(log, "Failed to restore partition state for " +
+                            "groupName=" + grp.name() + " groupId=" + grp.groupId(), e);
+
+                        restoreStateError.compareAndSet(
+                            null,
+                            e instanceof IgniteCheckedException
+                                ? ((IgniteCheckedException)e)
+                                : new IgniteCheckedException(e)
+                        );
+                    }
+                });
+
+                roundRobin++;
+            }
+
+            try {
+                // Await completion restore state tasks in all stripes.
+                stripedExec.awaitComplete();
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+
+            // Checking error after all task applied.
+            if (restoreStateError.get() != null)
+                throw restoreStateError.get();
 
             if (log.isInfoEnabled())
                 log.info("Finished restoring partition state for local groups [" +
                     "groupsProcessed=" + forGroups.size() +
-                    ", partitionsProcessed=" + totalProcessed +
+                    ", partitionsProcessed=" + totalProcessed.get() +
                     ", time=" + (U.currentTimeMillis() - startRestorePart) + "ms]");
         }
     }

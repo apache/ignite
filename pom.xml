@@ -89,7 +89,6 @@
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
-        <module>modules/flink</module>
         <module>modules/kubernetes</module>
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
@@ -571,6 +570,11 @@
 
         <profile>
             <id>spark-2.4</id>
+
+            <activation>
+                <property><name>!scala-2.10</name></property>
+            </activation>
+
             <modules>
                 <module>modules/spark-2.4</module>
                 <module>modules/ml/mleap-model-parser</module>

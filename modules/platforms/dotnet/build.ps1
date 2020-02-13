@@ -90,7 +90,7 @@ param (
     [string]$platform="Any CPU",
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
-    [string]$mavenOpts="-U -P-lgpl,-scala,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
+    [string]$mavenOpts="-U -P-lgpl,-scala,-all-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
 	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
     [string]$asmDirs="",
     [string]$nugetPath="",
@@ -174,11 +174,11 @@ cd $PSScriptRoot
 $ng = if ($nugetPath) { $nugetPath } else { "nuget" }
 
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-	$ng = ".\nuget.exe"
+	$ng = If ($IsLinux) { "mono $PSScriptRoot/nuget.exe" } else { "$PSScriptRoot\nuget.exe" }    
 
 	if (-not (Test-Path $ng)) {
 		echo "Downloading NuGet..."
-		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe")    
+		(New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", "$PSScriptRoot/nuget.exe")    
 	}
 }
 
@@ -249,6 +249,7 @@ if ($asmDirs) {
         if ($projName.StartsWith("Apache.Ignite")) {
             $target = "$projName\bin\Release"
             Make-Dir($target)
+            Copy-Item -Force $_ $target
         }
     }    
 }
@@ -258,11 +259,12 @@ Make-Dir("bin")
 
 Get-ChildItem *.csproj -Recurse | where Name -NotLike "*Examples*" `
                      | where Name -NotLike "*Tests*" `
+                     | where Name -NotLike "*DotNetCore*" `
                      | where Name -NotLike "*Benchmarks*" | % {
-    $binDir = if (($platform -eq "Any CPU") -or ($_.Name -ne "Apache.Ignite.Core.csproj") -or $IsLinux) `
-                {"bin\$configuration"} else {"bin\$platform\$configuration"}
-    $dir = join-path (split-path -parent $_) $binDir
-    Copy-Item -Force $dir\*.* bin
+    $projDir = split-path -parent $_.FullName 
+    $dir = [IO.Path]::Combine($projDir, "bin", $configuration, "*")
+    echo "Copying files to bin from '$dir'"
+    Copy-Item -Force -Recurse $dir bin
 }
 
 

@@ -213,6 +213,22 @@ public interface ConnectionProperties {
     public void setSslProtocol(String sslProtocol);
 
     /**
+     * Gets cipher suites.
+     *
+     * @return SSL cipher suites.
+     */
+    public String getSslCipherSuites();
+
+    /**
+     * Override default cipher suites.
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
+     * @param sslCipherSuites SSL cipher suites.
+     */
+     public void setSslCipherSuites(String sslCipherSuites);
+
+    /**
      * Gets algorithm that will be used to create a key manager.
      *
      * @return Key manager algorithm.
@@ -407,16 +423,16 @@ public interface ConnectionProperties {
     public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled);
 
     /**
-     * @return {@code true} if jdbc thin affinity awareness is enabled for this connection,
+     * @return {@code true} if jdbc thin partition awareness is enabled for this connection,
      * {@code false} if it's disabled.
      */
-    public boolean isAffinityAwareness();
+    public boolean isPartitionAwareness();
 
     /**
-     * @param affinityAwareness {@code true} if jdbc thin affinity awareness is enabled
+     * @param partitionAwareness {@code true} if jdbc thin partition awareness is enabled
      * for this connection, if {@code false} then it's disabled.
      */
-    public void setAffinityAwareness(boolean affinityAwareness);
+    public void setPartitionAwareness(boolean partitionAwareness);
 
     /**
      * Note: Batch size of 1 prevents deadlock on update where keys sequence are different in several concurrent updates.
@@ -434,31 +450,31 @@ public interface ConnectionProperties {
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
 
     /**
-     * @return SQL cache size that is used within affinity awareness optimizations.
+     * @return SQL cache size that is used within partition awareness optimizations.
      */
-    public int getAffinityAwarenessSqlCacheSize();
+    public int getPartitionAwarenessSqlCacheSize();
 
     /**
-     * Sets SQL cache size that is used within affinity awareness optimizations.
+     * Sets SQL cache size that is used within partition awareness optimizations.
      *
-     * @param affinityAwarenessSqlCacheSize SQL cache size.
+     * @param partitionAwarenessSqlCacheSize SQL cache size.
      * @throws SQLException On error.
      */
-    public void setAffinityAwarenessSqlCacheSize(int affinityAwarenessSqlCacheSize) throws SQLException;
+    public void setPartitionAwarenessSqlCacheSize(int partitionAwarenessSqlCacheSize) throws SQLException;
 
     /**
-     * @return Partition distributions cache size that is used within affinity awareness optimizations.
+     * @return Partition distributions cache size that is used within partition awareness optimizations.
      */
-    public int getAffinityAwarenessPartitionDistributionsCacheSize();
+    public int getPartitionAwarenessPartitionDistributionsCacheSize();
 
     /**
-     * Sets partition distributions cache size that is used within affinity awareness optimizations.
+     * Sets partition distributions cache size that is used within partition awareness optimizations.
      *
-     * @param affinityAwarenessPartDistributionsCacheSize Partition distributions cache size.
+     * @param partitionAwarenessPartDistributionsCacheSize Partition distributions cache size.
      * @throws SQLException On error.
      */
-    public void setAffinityAwarenessPartitionDistributionsCacheSize(
-        int affinityAwarenessPartDistributionsCacheSize) throws SQLException;
+    public void setPartitionAwarenessPartitionDistributionsCacheSize(
+        int partitionAwarenessPartDistributionsCacheSize) throws SQLException;
 
     /**
      * Note: zero value means there is no limits.
@@ -487,4 +503,27 @@ public interface ConnectionProperties {
      * @param connTimeout Connection timeout in milliseconds.
      */
     public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
+
+    /**
+     * Gets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * This factory should return user attributes which can be used on server node.
+     *
+     * @return Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
+     */
+    public String getUserAttributesFactory();
+
+    /**
+     * Sets the class name of the custom implementation of the Factory&lt;Map&lt;String, String&gt;&gt;.
+     *
+     * This factory should return user attributes which can be used on server node.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
+     *
+     * @param sslFactory Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt;.
+     */
+    public void setUserAttributesFactory(String sslFactory);
 }

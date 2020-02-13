@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    Ignite Spring configuration file to startup Ignite cache.
+
+    This file demonstrates how to configure cache using Spring. Provided cache
+    will be created on node startup.
+
+    Use this configuration file when running Spring Data examples (see 'examples/springdata' folder).
+
+    When starting a standalone node, you need to execute the following command:
+    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/spring/example-spring-data.xml
+
+    When starting Ignite from Java IDE, pass path to this file to Ignition:
+    Ignition.start("examples/config/spring/example-spring-data.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!-- Imports default Ignite configuration -->
+    <import resource="../example-default.xml"/>
+
+    <bean parent="ignite.cfg">
+        <property name="igniteInstanceName" value="springDataNode" />
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <!--
+                        Apache Ignite uses an IgniteRepository extension which inherits from Spring Data's CrudRepository.
+                        The SQL grid is also enabled to aceess Spring Data repository. The @RepositoryConfig annotation
+                        maps the PersonRepository to an Ignite's cache named "PersonCache".
+                    -->
+                    <property name="name" value="PersonCache"/>
+                    <property name="indexedTypes">
+                        <list>
+                            <value>java.lang.Long</value>
+                            <value>org.apache.ignite.examples.model.Person</value>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+</beans>

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.cluster.GridClusterStateChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBaselineTopologyTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteBaselineAffinityTopologyActivationTest;
@@ -69,7 +70,8 @@ import org.junit.runners.Suite;
     IgniteNoParrallelClusterIsAllowedTest.class,
 
     CacheBaselineTopologyTest.class,
-    IgniteBaselineAffinityTopologyActivationTest.class
+    IgniteBaselineAffinityTopologyActivationTest.class,
+    GridClusterStateChangeSelfTest.class
 })
 public class IgniteStandByClusterSuite {
 }

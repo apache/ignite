@@ -56,9 +56,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
     /** */
     private static final String ORG_CACHE_REPLICATED = "orgRepl";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -115,8 +112,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -141,9 +136,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedTest extends GridCommonAbstr
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /** {@inheritDoc} */

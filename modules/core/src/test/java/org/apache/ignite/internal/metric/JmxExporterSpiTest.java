@@ -58,6 +58,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -70,7 +71,7 @@ import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -139,7 +140,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -503,7 +503,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
+    public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
@@ -517,7 +517,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("test", null);
+        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
 
         createTestHistogram(mreg);
 
@@ -724,8 +724,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+        try(IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")
@@ -803,8 +803,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue((boolean)mbn.getAttribute("isNodeInBaseline"));
         assertTrue((boolean)mbn.getAttribute("active"));
 
-        assertFalse((boolean)mbn.getAttribute("readOnlyMode"));
-
         assertTrue((long)mbn.getAttribute("startTimestamp") > 0);
         assertTrue((long)mbn.getAttribute("uptime") > 0);
 
@@ -817,7 +815,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(0L, mbn.getAttribute("longJVMPausesCount"));
         assertEquals(0L, mbn.getAttribute("longJVMPausesTotalDuration"));
-        assertEquals(0L, mbn.getAttribute("readOnlyModeDuration"));
+
+        long clusterStateChangeTime = (long)mbn.getAttribute("lastClusterStateChangeTime");
+
+        assertTrue(0 < clusterStateChangeTime && clusterStateChangeTime < System.currentTimeMillis());
 
         assertEquals(String.valueOf(ignite.configuration().getPublicThreadPoolSize()),
                 mbn.getAttribute("executorServiceFormatted"));
@@ -836,6 +837,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(ignite.configuration().getMBeanServer().toString(),
                 (String)mbn.getAttribute("mBeanServerFormatted"));
+
+        assertEquals(ClusterState.ACTIVE.toString(), mbn.getAttribute("clusterState"));
     }
 
     /** */
@@ -996,7 +999,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     private void createTestHistogram(MetricRegistry mreg) {
         long[] bounds = new long[] {50, 500};
 
-        HistogramMetric histogram = mreg.histogram("histogram", bounds, null);
+        HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
 
         histogram.value(10);
         histogram.value(51);
