@@ -52,6 +52,9 @@ class MapQueryResults {
     /** Query context. */
     private final QueryContext qctx;
 
+    /** Active queries. */
+    private int active;
+
     /**
      * Constructor.
      *
@@ -70,6 +73,7 @@ class MapQueryResults {
         this.lazy = lazy;
         this.qctx = qctx;
 
+        active = qrys;
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
 
@@ -108,15 +112,8 @@ class MapQueryResults {
     /**
      * @return {@code true} If all results are closed.
      */
-    boolean isAllClosed() {
-        for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
-
-            if (res == null || !res.closed())
-                return false;
-        }
-
-        return true;
+    synchronized boolean isAllClosed() {
+        return active == 0;
     }
 
     /**
@@ -152,7 +149,9 @@ class MapQueryResults {
     void closeResult(int idx) {
         MapQueryResult res = results.get(idx);
 
-        if (res != null && !res.closed()) {
+        if (res != null) {
+            boolean lastClosed = false;
+
             try {
                 // Session isn't set for lazy=false queries.
                 // Also session == null when result already closed.
@@ -160,25 +159,41 @@ class MapQueryResults {
                 res.lockTables();
 
                 synchronized (this) {
-                    res.close();
+                    if (!res.closed()) {
+                        res.close();
 
-                    // The statement of the closed result must not be canceled
-                    // because statement & connection may be reused.
-                    cancels[idx] = null;
+                        // The statement of the closed result must not be canceled
+                        // because statement & connection may be reused.
+                        cancels[idx] = null;
+
+                        active--;
+
+                        lastClosed = active == 0;
+                    }
                 }
             }
             finally {
                 res.unlock();
             }
+
+            if (lastClosed)
+                onAllClosed();
         }
     }
 
     /**
-     *
+     * Close map results.
      */
     public void close() {
         for (int i = 0; i < results.length(); i++)
             closeResult(i);
+    }
+
+    /**
+     * All max results closed callback.
+     */
+    private void onAllClosed() {
+        assert active == 0;
 
         if (lazy)
             releaseQueryContext();
