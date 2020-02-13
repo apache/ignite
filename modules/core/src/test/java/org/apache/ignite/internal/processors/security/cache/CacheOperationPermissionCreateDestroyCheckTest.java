@@ -34,61 +34,85 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(JUnit4.class)
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
-    /** Cache name. */
+    /**
+     * Cache name.
+     */
     private static final String TEST_CACHE = "TEST_CACHE";
 
-    /** Forbidden cache. */
+    /**
+     * Forbidden cache.
+     */
     private static final String FORBIDDEN_CACHE = "FORBIDDEN_CACHE";
 
-    /** Server node name. */
+    /**
+     * Server node name.
+     */
     private static final String SERVER = "server";
 
-    /** Test node name. */
+    /**
+     * Test node name.
+     */
     private static final String TEST_NODE = "test_node";
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCreateCacheWithCachePermissionsOnServerNode() throws Exception {
         createCacheWithCachePermissions(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testDestroyCacheWithCachePermissionsOnServerNode() throws Exception {
         destroyCacheWithCachePermissions(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCreateCacheWithCachePermissionsOnClientNode() throws Exception {
         createCacheWithCachePermissions(true);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testDestroyCacheWithCachePermissionsOnClientNode() throws Exception {
         destroyCacheWithCachePermissions(true);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCreateCacheWithSystemPermissionsOnServerNode() throws Exception {
         createCacheWithSystemPermissions(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCreateWithSystemPermissionsOnClientNode() throws Exception {
         createCacheWithSystemPermissions(true);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testDestroyCacheWithSystemPermissionsOnServerNode() throws Exception {
         destroyCacheWithSystemPermissions(false);
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testDestroyCacheWithSystemPermissionsOnClientNode() throws Exception {
         destroyCacheWithSystemPermissions(true);
@@ -155,32 +179,37 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
         assertTrue(grid(SERVER).cacheNames().contains(TEST_CACHE));
 
-        try (Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
-            assertThrowsWithCause(() -> node.destroyCache(TEST_CACHE), SecurityException.class);
-        }
+        try (Ignite forbidden = startGrid("forbidden_node", builder.build(), isClient);
 
-        builder.appendSystemPermissions(CACHE_DESTROY);
+             Ignite node = startGrid(TEST_NODE, builder.appendSystemPermissions(CACHE_DESTROY).build(), isClient)) {
 
-        try (Ignite node = startGrid(TEST_NODE, builder.build(), isClient)) {
+            assertThrowsWithCause(() -> forbidden.destroyCache(TEST_CACHE), SecurityException.class);
+
             node.destroyCache(TEST_CACHE);
         }
 
         assertFalse(grid(SERVER).cacheNames().contains(TEST_CACHE));
     }
 
-    /** */
+    /**
+     *
+     */
     private SecurityPermissionSetBuilder getCommonSecurityPermissionSetBuilder() {
         return SecurityPermissionSetBuilder.create()
             .defaultAllowAll(false)
             .appendSystemPermissions(JOIN_AS_SERVER);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SERVER);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void afterTest() throws Exception {
         Ignite server = grid(SERVER);
 
