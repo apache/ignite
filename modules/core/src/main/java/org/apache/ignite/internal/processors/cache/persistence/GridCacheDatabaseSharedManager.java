@@ -3563,7 +3563,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         protected Checkpointer(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log, cctx.kernalContext().workersRegistry());
 
-            scheduledCp = new CheckpointProgressImpl(checkpointFreq);
+            scheduledCp = new CheckpointProgressImpl(checkpointFreq, lsnrs);
 
             tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
 
@@ -4092,7 +4092,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     curr.reason = "timeout";
 
                 // It is important that we assign a new progress object before checkpoint mark in page memory.
-                scheduledCp = new CheckpointProgressImpl(checkpointFreq);
+                scheduledCp = new CheckpointProgressImpl(checkpointFreq, lsnrs);
 
                 curCpProgress = curr;
             }
@@ -4114,7 +4114,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             internalReadLock();
 
             try {
-                for (DbCheckpointListener lsnr : lsnrs)
+                for (DbCheckpointListener lsnr : curr.lsnrs)
                     lsnr.beforeCheckpointBegin(ctx0);
 
                 ctx0.awaitPendingTasksFinished();
@@ -4135,7 +4135,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onMarkStart();
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
-                for (DbCheckpointListener lsnr : lsnrs)
+                for (DbCheckpointListener lsnr : curr.lsnrs)
                     lsnr.onMarkCheckpointBegin(ctx0);
 
                 ctx0.awaitPendingTasksFinished();
@@ -4186,7 +4186,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.transitTo(LOCK_RELEASED);
 
-            for (DbCheckpointListener lsnr : lsnrs)
+            for (DbCheckpointListener lsnr : curr.lsnrs)
                 lsnr.onCheckpointBegin(ctx);
 
             if (snapFut != null) {
@@ -4383,28 +4383,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             lastCpTs = cpTs;
 
             return cpTs;
-        }
-
-        /**
-         * Update current checkpoint progress by scheduled.
-         *
-         * @return Current checkpoint progress.
-         */
-        @NotNull private CheckpointProgress updateCurrentCheckpointProgress() {
-            final CheckpointProgressImpl curr;
-
-            synchronized (this) {
-                curr = scheduledCp;
-
-                if (curr.reason == null)
-                    curr.reason = "timeout";
-
-                // It is important that we assign a new progress object before checkpoint mark in page memory.
-                scheduledCp = new CheckpointProgressImpl(checkpointFreq);
-
-                curCpProgress = curr;
-            }
-            return curr;
         }
 
         /** */
@@ -5060,14 +5038,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
 
+        /** Local checkpoint listeners. */
+        private final Collection<DbCheckpointListener> lsnrs;
+
         /** Wakeup reason. */
         private String reason;
 
         /**
          * @param cpFreq Timeout until next checkpoint.
          */
-        private CheckpointProgressImpl(long cpFreq) {
+        private CheckpointProgressImpl(long cpFreq, Collection<DbCheckpointListener> lsnrs) {
             this.nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
+            this.lsnrs = new ArrayList<>(lsnrs);
         }
 
         /**
