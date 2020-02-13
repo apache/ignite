@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -2935,8 +2936,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return {@code True} if partition mode was changed, otherwise partition already in the specified mode.
          */
         private boolean changeMode(boolean activeMode) {
-            assert !grp.mvccEnabled() && grp.persistenceEnabled();
-
             if (active.compareAndSet(!activeMode, activeMode)) {
                 if (log.isInfoEnabled()) {
                     log.info("Partition data store mode changed [grp=" + grp.cacheOrGroupName() +
