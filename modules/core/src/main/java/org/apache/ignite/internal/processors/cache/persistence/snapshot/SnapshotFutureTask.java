@@ -77,7 +77,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /**
  *
  */
-class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
+class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable, DbCheckpointListener {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -106,14 +106,6 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
      * processing supplier.
      */
     private final Map<GroupPartitionId, PageStoreSerialWriter> partDeltaWriters = new HashMap<>();
-
-    /** Future of result completion. */
-    @GridToStringExclude
-    private final SnapshotTaskFuture resultFut = new SnapshotTaskFuture(() -> {
-        cancelled = true;
-
-        closeAsync().get();
-    });
 
     /** Snapshot data sender. */
     @GridToStringExclude
@@ -144,7 +136,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
      * @param snpName Unique identifier of snapshot task.
      * @param ioFactory Factory to working with delta as file storage.
      */
-    public SnapshotTask(
+    public SnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         String snpName,
@@ -158,7 +150,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
         A.notNull(snpSndr.executor(), "Executor service must be not null");
 
         this.cctx = cctx;
-        this.log = cctx.logger(SnapshotTask.class);
+        this.log = cctx.logger(SnapshotFutureTask.class);
         this.snpName = snpName;
         this.srcNodeId = srcNodeId;
         this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
@@ -255,13 +247,6 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     }
 
     /**
-     * @return Future which will be completed when snapshot operation ends.
-     */
-    public IgniteInternalFuture<Boolean> snapshotFuture() {
-        return resultFut;
-    }
-
-    /**
      * @param state A new snapshot state to set.
      * @return {@code true} if given state has been set by this call.
      */
@@ -310,7 +295,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     /**
      * @param th Occurred exception during processing or {@code null} if not.
      */
-    public void close(Throwable th) {
+    public void close(@Nullable Throwable th) {
         if (state(SnapshotState.STOPPED)) {
             if (lastTh == null)
                 lastTh = th;
@@ -337,7 +322,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
             if (lastTh0 != null)
                 startedFut.onDone(lastTh0);
 
-            resultFut.onDone(true, lastTh0, cancelled);
+            onDone(true, lastTh0, cancelled);
         }
     }
 
@@ -549,7 +534,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
                 assert t == null : "Excepction must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
-                close();
+                close(null);
             });
     }
 
@@ -575,7 +560,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     public IgniteInternalFuture<Void> closeAsync() {
         GridFutureAdapter<Void> cFut = new GridFutureAdapter<>();
 
-        CompletableFuture.runAsync(this::close, snpSndr.executor())
+        CompletableFuture.runAsync(() -> close(null), snpSndr.executor())
             .whenComplete((v, t) -> {
                 if (t == null)
                     cFut.onDone();
@@ -587,8 +572,12 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        close(null);
+    @Override public boolean cancel() throws IgniteCheckedException {
+        cancelled = true;
+
+        closeAsync().get();
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -599,7 +588,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        SnapshotTask ctx = (SnapshotTask)o;
+        SnapshotFutureTask ctx = (SnapshotFutureTask)o;
 
         return snpName.equals(ctx.snpName);
     }
@@ -611,7 +600,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SnapshotTask.class, this);
+        return S.toString(SnapshotFutureTask.class, this);
     }
 
     /**
@@ -635,33 +624,6 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
 
         /** Snapshot operation has been interruped or an exception occurred. */
         STOPPED
-    }
-
-    /**
-     *
-     */
-    private static class SnapshotTaskFuture extends GridFutureAdapter<Boolean> {
-        /** Set cancelling state to snapshot. */
-        private final IgniteThrowableRunner doCancel;
-
-        /**
-         * @param doCancel Set cancelling state to snapshot.
-         */
-        public SnapshotTaskFuture(IgniteThrowableRunner doCancel) {
-            this.doCancel = doCancel;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cancel() throws IgniteCheckedException {
-            doCancel.run();
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-            return super.onDone(res, err, cancel);
-        }
     }
 
     /**

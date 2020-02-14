@@ -159,7 +159,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private static final String SNP_NAME_PARAM = "snpName";
 
     /** Map of registered cache snapshot processes and their corresponding contexts. */
-    private final ConcurrentMap<String, SnapshotTask> locSnpTasks = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, SnapshotFutureTask> locSnpTasks = new ConcurrentHashMap<>();
 
     /** Lock to protect the resources is used. */
     private final GridBusyLock busyLock = new GridBusyLock();
@@ -277,7 +277,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         GridCacheSharedContext<?, ?> cctx0 = cctx;
 
                         try {
-                            SnapshotTask task;
+                            SnapshotFutureTask task;
 
                             synchronized (rmtSnpReq) {
                                 IgniteInternalFuture<Boolean> snpResp = snapshotRemoteRequest(nodeId);
@@ -290,11 +290,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                         "[prevSnpResp=" + snpResp + ", msg0=" + reqMsg0 + ']');
                                 }
 
-                                task = putSnapshotTask(snpName,
-                                    nodeId,
-                                    reqMsg0.parts(),
-                                    remoteSnapshotSender(snpName,
-                                        nodeId));
+                                task = putSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId));
                             }
 
                             task.run();
@@ -346,7 +342,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 return;
 
             try {
-                for (SnapshotTask sctx : locSnpTasks.values()) {
+                for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                     if (sctx.sourceNodeId().equals(evt.eventNode().id())) {
                         sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
                             "creation has left the grid"));
@@ -582,7 +578,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         busyLock.block();
 
         try {
-            for (SnapshotTask sctx : locSnpTasks.values()) {
+            for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                 // Try stop all snapshot processing if not yet.
                 sctx.close(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
                     "is stopping"));
@@ -739,7 +735,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param grps List of cache groups which will be destroyed.
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
-        for (SnapshotTask sctx : locSnpTasks.values()) {
+        for (SnapshotFutureTask sctx : locSnpTasks.values()) {
             Set<Integer> snpGrps = sctx.partitions().stream()
                 .map(GroupPartitionId::getGroupId)
                 .collect(Collectors.toSet());
@@ -772,21 +768,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
         try {
-            SnapshotTask snpTask = putSnapshotTask(snpName,
-                cctx.localNodeId(),
-                parts,
-                snpSndr);
+            SnapshotFutureTask snpFutTask = putSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
 
-            snpTask.run();
+            snpFutTask.run();
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one
             // right afther current will be completed.
             dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
 
-            snpTask.awaitStarted();
+            snpFutTask.awaitStarted();
 
-            return snpTask.snapshotFuture();
+            return snpFutTask;
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -804,7 +797,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Snapshot operation task which should be registered on checkpoint to run.
      * @throws IgniteCheckedException If fails.
      */
-    SnapshotTask putSnapshotTask(
+    SnapshotFutureTask putSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
@@ -813,8 +806,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         if (locSnpTasks.containsKey(snpName))
             throw new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName);
 
-        SnapshotTask snpTask = locSnpTasks.computeIfAbsent(snpName,
-            snpName0 -> new SnapshotTask(cctx,
+        SnapshotFutureTask snpFutTask = locSnpTasks.computeIfAbsent(snpName,
+            snpName0 -> new SnapshotFutureTask(cctx,
                 srcNodeId,
                 snpName0,
                 tmpWorkDir,
@@ -822,10 +815,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 snpSndr,
                 parts));
 
-        snpTask.snapshotFuture()
-            .listen(f -> locSnpTasks.remove(snpName));
+        snpFutTask.listen(f -> locSnpTasks.remove(snpName));
 
-        return snpTask;
+        return snpFutTask;
     }
 
     /**
@@ -896,7 +888,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     IgniteInternalFuture<Boolean> snapshotRemoteRequest(UUID nodeId) {
         return locSnpTasks.values().stream()
             .filter(t -> t.type() == RemoteSnapshotFileSender.class && t.sourceNodeId().equals(nodeId))
-            .map(SnapshotTask::snapshotFuture)
             .findFirst()
             .orElse(null);
     }
@@ -1011,17 +1002,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class SingleThreadWrapper implements Executor {
-        /** */
+        /** Queue of task to execute. */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
-        /** */
+        /** Delegate executor. */
         private final Executor executor;
 
-        /** */
+        /** Currently running task. */
         private volatile Runnable active;
 
         /**
@@ -1050,9 +1039,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
         }
 
-        /**
-         *
-         */
+        /** */
         protected synchronized void scheduleNext() {
             if ((active = tasks.poll()) != null) {
                 executor.execute(active);
