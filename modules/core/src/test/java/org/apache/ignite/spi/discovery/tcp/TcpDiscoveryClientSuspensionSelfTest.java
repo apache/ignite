@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Timer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -91,9 +90,7 @@ public class TcpDiscoveryClientSuspensionSelfTest extends GridCommonAbstractTest
     private void doTestClientSuspension(int serverCnt) throws Exception {
         startGrids(serverCnt);
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         for (int i = 0; i < serverCnt; i++)
             assertEquals(1, grid(i).cluster().forClients().nodes().size());

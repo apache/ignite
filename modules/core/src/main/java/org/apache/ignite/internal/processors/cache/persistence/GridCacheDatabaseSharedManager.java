@@ -60,6 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -428,6 +429,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Page list cache limits per data region. */
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
+
+    /** Lock for releasing history for preloading. */
+    private ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
 
     /**
      * @param ctx Kernal context.
@@ -1868,18 +1872,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public void releaseHistoryForPreloading() {
-        for (Map.Entry<T2<Integer, Integer>, T2<Long, WALPointer>> e : reservedForPreloading.entrySet()) {
-            try {
-                cctx.wal().release(e.getValue().get2());
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(log, "Could not release WAL reservation", ex);
+        releaseHistForPreloadingLock.lock();
 
-                throw new IgniteException(ex);
+        try {
+            for (Map.Entry<T2<Integer, Integer>, T2<Long, WALPointer>> e : reservedForPreloading.entrySet()) {
+                try {
+                    cctx.wal().release(e.getValue().get2());
+                }
+                catch (IgniteCheckedException ex) {
+                    U.error(log, "Could not release WAL reservation", ex);
+
+                    throw new IgniteException(ex);
+                }
             }
+
+            reservedForPreloading.clear();
         }
-
-        reservedForPreloading.clear();
+        finally {
+            releaseHistForPreloadingLock.unlock();
+        }
     }
 
     /**
@@ -3956,6 +3967,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         offheap.destroyPartitionStore(grpId, partId);
 
                         req.onDone(null);
+
+                        grp.metrics().decrementInitializedLocalPartitions();
 
                         if (log.isDebugEnabled())
                             log.debug("Partition file has destroyed [grpId=" + grpId + ", partId=" + partId + "]");

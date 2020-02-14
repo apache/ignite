@@ -94,10 +94,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         ccfg.setName(CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
-
         cfg.setIndexingSpi(new TestIndexingSpi());
 
         if (nonNull(qryPoolSize))
@@ -123,7 +119,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
         startGrid("server");
 
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             // We do this in order to have 1 row in results of select - function is called once per each row of result.
@@ -154,7 +150,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     public void testScanQueryUsesDedicatedThreadPool() throws Exception {
         startGrid("server");
 
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             cache.put(0, 0);
@@ -180,7 +176,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
         startGrid("server");
 
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Byte, Byte> cache = client.cache(CACHE_NAME);
 
             for (byte b = 0; b < Byte.MAX_VALUE; ++b)
@@ -243,7 +239,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         startGrid("server");
 
-        IgniteEx clientNode = startGrid("client");
+        IgniteEx clientNode = startClientGrid("client");
 
         IgniteCache<Integer, Integer> cache = clientNode.cache(CACHE_NAME);
         cache.put(0, 0);

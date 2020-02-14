@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -265,7 +264,7 @@ public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibility
                 ignite.active(true);
 
                 ((IgniteEx)ignite).context().cache().context().database()
-                    .forceCheckpoint("force test checkpoint").futureFor(CheckpointState.FINISHED).get();
+                    .wakeupForCheckpoint("force test checkpoint").get();
 
                 ((GridCacheDatabaseSharedManager)(((IgniteEx)ignite).context().cache().context().database()))
                     .enableCheckpoints(false);

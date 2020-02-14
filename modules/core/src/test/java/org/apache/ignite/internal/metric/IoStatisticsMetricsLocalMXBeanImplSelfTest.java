@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -154,7 +155,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
         GridMetricManager mmgr = ignite.context().metric();
 
         StreamSupport.stream(mmgr.spliterator(), false)
-            .map(MetricRegistry::name)
+            .map(ReadOnlyMetricRegistry::name)
             .filter(name -> {
                 for (IoStatisticsType type : IoStatisticsType.values()) {
                     if (name.startsWith(type.metricGroupName()))

@@ -80,6 +80,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.EvictReason.CLEARING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.EvictReason.EVICTION;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
@@ -651,12 +653,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Future to signal that this node is no longer an owner or backup.
      */
     public IgniteInternalFuture<?> rent(boolean updateSeq) {
+        return rent(updateSeq, true);
+    }
+
+    /**
+     * Initiates partition eviction process.
+     *
+     * If partition has reservations, eviction will be delayed and continued after all reservations will be released.
+     *
+     * @param updateSeq If {@code true} topology update sequence will be updated after eviction is finished.
+     * @param alwaysReturnRentingFut If {@code true} renting future is returned in any way.
+     * @return Future to signal that this node is no longer an owner or backup or null if corresponding partition
+     * state is {@code RENTING} or {@code EVICTED}.
+     */
+    public IgniteInternalFuture<?> rent(boolean updateSeq, boolean alwaysReturnRentingFut) {
         long state0 = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state0);
 
         if (partState == RENTING || partState == EVICTED)
-            return rent;
+            return alwaysReturnRentingFut ? rent : null;
 
         delayedRentingTopVer = ctx.exchange().readyAffinityVersion().topologyVersion();
 
@@ -695,6 +711,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (!reinitialized)
             return;
 
+        // Reset the initial update counter value to prevent historical rebalancing on this partition.
+        if (grp.persistenceEnabled())
+            store.resetInitialUpdateCounter();
+
         // Make sure current rebalance future is finished before start clearing
         // to avoid clearing currently rebalancing partition (except "initial" dummy rebalance).
         if (clearingRequested) {
@@ -712,7 +732,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             return;
                         }
 
-                        ctx.evict().evictPartitionAsync(grp, GridDhtLocalPartition.this);
+                        ctx.evict().evictPartitionAsync(grp, this, CLEARING);
                     }
                 });
 
@@ -739,7 +759,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
 
-        ctx.evict().evictPartitionAsync(grp, this);
+        ctx.evict().evictPartitionAsync(grp, this, EVICTION);
     }
 
     /**
