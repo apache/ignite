@@ -60,6 +60,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setIndexedTypes(Integer.class, H2TextValue.class);
 
         return cfg;
     }
@@ -95,7 +96,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         // Create query.
         final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
-            H2TextValue.class.getName(), txt, limit, false);
+            H2TextValue.class.getSimpleName(), txt, limit, false);
 
         qry.enableDedup(false);
         qry.includeBackups(false);

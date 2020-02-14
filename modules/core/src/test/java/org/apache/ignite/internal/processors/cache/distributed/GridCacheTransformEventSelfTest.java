@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
@@ -221,7 +221,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
                 key++;
         }
 
-        keys = new HashSet<>();
+        keys = new TreeSet<>();
 
         keys.add(key1);
         keys.add(key2);
