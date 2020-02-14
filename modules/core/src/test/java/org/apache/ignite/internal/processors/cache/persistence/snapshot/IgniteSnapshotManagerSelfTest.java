@@ -59,6 +59,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointProgress;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,6 +87,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -200,13 +203,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                     }
                 });
         }
+        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
-        IgniteSnapshotManager mgr = ig.context()
-            .cache()
-            .context()
-            .snapshotMgr();
-
-        IgniteInternalFuture<?> snpFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
+        IgniteInternalFuture<?> snpFut = createLocalSnapshot(cctx0,
+            SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         snpFut.get();
@@ -225,12 +225,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         String nodePath = relativeNodePath(ig.context().pdsFolderResolver().resolveFolders());
 
         final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
-            Paths.get(mgr.snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
+            Paths.get(cctx0.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
         );
 
         assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
 
-        File snpWorkDir = mgr.snapshotTempDir();
+        File snpWorkDir = cctx0.snapshotMgr().snapshotTempDir();
 
         assertEquals("Snapshot working directory must be cleand after usage", 0, snpWorkDir.listFiles().length);
     }
@@ -345,10 +345,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
-        IgniteSnapshotManager mgr = ig.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
+
+        IgniteSnapshotManager mgr = cctx0.snapshotMgr();
 
         mgr.ioFactory(new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
@@ -368,7 +367,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture<?> snpFut = mgr.createLocalSnapshot(SNAPSHOT_NAME,
+        IgniteInternalFuture<?> snpFut = createLocalSnapshot(cctx0,
+            SNAPSHOT_NAME,
             Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME)));
 
         snpFut.get();
@@ -727,6 +727,46 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         return result;
+    }
+
+    /**
+     * @param snpName Unique snapshot name.
+     * @return Future which will be completed when snapshot is done.
+     */
+    private static IgniteInternalFuture<Boolean> createLocalSnapshot(
+        GridCacheSharedContext<?, ?> cctx,
+        String snpName,
+        List<Integer> grpIds
+    ) {
+        IgniteSnapshotManager mgr = cctx.snapshotMgr();
+
+        // Collection of pairs group and appropratate cache partition to be snapshotted.
+        Map<Integer, GridIntList> parts = grpIds.stream()
+            .collect(Collectors.toMap(grpId -> grpId,
+                grpId -> {
+                    GridIntList grps = new GridIntList();
+
+                    cctx.cache()
+                        .cacheGroup(grpId)
+                        .topology()
+                        .currentLocalPartitions()
+                        .forEach(p -> grps.add(p.id()));
+
+                    grps.add(INDEX_PARTITION);
+
+                    return grps;
+                }));
+
+        try {
+            return mgr.runLocalSnapshotTask(snpName,
+                cctx.localNodeId(),
+                parts,
+                mgr.snapshotExecutorService(),
+                mgr.localSnapshotSender(snpName));
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
     }
 
     /**

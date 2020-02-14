@@ -274,7 +274,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     if (msg instanceof SnapshotRequestMessage) {
                         SnapshotRequestMessage reqMsg0 = (SnapshotRequestMessage)msg;
                         String snpName = reqMsg0.snapshotName();
-                        GridCacheSharedContext cctx0 = cctx;
+                        GridCacheSharedContext<?, ?> cctx0 = cctx;
 
                         try {
                             SnapshotTask task;
@@ -641,40 +641,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         assert tmpWorkDir != null;
 
         return tmpWorkDir;
-    }
-
-    /**
-     * @param snpName Unique snapshot name.
-     * @return Future which will be completed when snapshot is done.
-     */
-    IgniteInternalFuture<Boolean> createLocalSnapshot(String snpName, List<Integer> grpIds) {
-        // Collection of pairs group and appropratate cache partition to be snapshotted.
-        Map<Integer, GridIntList> parts = grpIds.stream()
-            .collect(Collectors.toMap(grpId -> grpId,
-                grpId -> {
-                    GridIntList grps = new GridIntList();
-
-                    cctx.cache()
-                        .cacheGroup(grpId)
-                        .topology()
-                        .currentLocalPartitions()
-                        .forEach(p -> grps.add(p.id()));
-
-                    grps.add(INDEX_PARTITION);
-
-                    return grps;
-                }));
-
-        try {
-            return runLocalSnapshotTask(snpName,
-                cctx.localNodeId(),
-                parts,
-                snpRunner,
-                localSnapshotSender(snpName));
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
     }
 
     /**
