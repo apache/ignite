@@ -734,7 +734,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(rnd.nextLong(2000));
+        long timeout = rnd.nextLong(2000);
+
+        log.info(">>> Starting grid 2 (timeout=" + timeout + ")");
+
+        U.sleep(timeout);
 
         IgniteEx ignite2 = startGrid(2);
 
@@ -742,7 +746,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(rnd.nextLong(2000));
+        timeout = rnd.nextLong(2000);
+
+        log.info(">>> Starting grid 3 (timeout=" + timeout + ")");
+
+        U.sleep(timeout);
 
         IgniteEx ignite3 = startGrid(3);
 
@@ -752,7 +760,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(rnd.nextLong(2000));
+        timeout = rnd.nextLong(2000);
+
+        U.sleep(timeout);
+
+        log.info(">>> Stopping grid 3 (timeout=" + timeout + ")");
 
         stopGrid(3);
 
@@ -760,7 +772,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         ignite0.cluster().setBaselineTopology(blt);
 
-        U.sleep(rnd.nextLong(2000));
+        timeout = rnd.nextLong(2000);
+
+        U.sleep(timeout);
+
+        log.info(">>> Stopping grid 3 (timeout=" + timeout + ")");
 
         ignite3 = startGrid(3);
 

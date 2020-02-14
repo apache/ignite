@@ -82,7 +82,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
     /** Partition File rebalancing routine. */
-    private volatile FilePreloadingRoutine filePreloadingRoutine = new FilePreloadingRoutine();
+    private volatile PartitionPreloadingRoutine partPreloadingRoutine = new PartitionPreloadingRoutine();
 
     /**
      * @param ktx Kernal context.
@@ -105,7 +105,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
-            filePreloadingRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
+            partPreloadingRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
         }
         finally {
             lock.unlock();
@@ -132,13 +132,13 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
 
-        FilePreloadingRoutine rebRoutine = filePreloadingRoutine;
+        PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
 
         // Abort the current rebalancing procedure if it is still in progress
         if (!rebRoutine.isDone())
             rebRoutine.cancel();
 
-        assert filePreloadingRoutine.isDone();
+        assert partPreloadingRoutine.isDone();
 
         boolean locJoinBaselineChange = isLocalBaselineChange(exchActions);
 
@@ -188,59 +188,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         }
     }
 
-//    /**
-//     * This method initiates new file rebalance process from given {@code assignments} by creating new file
-//     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
-//     * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
-//     *
-//     * @param topVer Current topology version.
-//     * @param rebalanceId Current rebalance id.
-//     * @param exchFut Exchange future.
-//     * @param assignments A map of cache assignments grouped by grpId.
-//     * @return Runnable to execute the chain.
-//     */
-//    public void startPartitionsPreloading(
-//        AffinityTopologyVersion topVer,
-//        long rebalanceId,
-//        GridDhtPartitionsExchangeFuture exchFut,
-//        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
-//    ) {
-//        Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
-//
-//        if (orderedAssigns.isEmpty()) {
-//            if (log.isDebugEnabled())
-//                log.debug("Skipping file rebalancing due to empty assignments.");
-//
-//            return null;
-//        }
-//
-//        if (!cctx.kernalContext().grid().isRebalanceEnabled()) {
-//            if (log.isDebugEnabled())
-//                log.debug("Cancel partition file demand because rebalance disabled on current node.");
-//
-//            return null;
-//        }
-//
-//        FilePreloadingRoutine rebRoutine = filePreloadingRoutine;
-//
-//        lock.lock();
-//
-//        try {
-//            if (!rebRoutine.isDone())
-//                rebRoutine.cancel();
-//
-//            // Start new rebalance session.
-//            filePreloadingRoutine = rebRoutine = new FilePreloadingRoutine(orderedAssigns, topVer, cctx,
-//                exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
-//
-//            rebRoutine::startPartitionsPreloading;
-//        }
-//        finally {
-//            lock.unlock();
-//        }
-//    }
-
-
     /**
      * This method initiates new file rebalance process from given {@code assignments} by creating new file
      * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
@@ -274,7 +221,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             return null;
         }
 
-        FilePreloadingRoutine rebRoutine = filePreloadingRoutine;
+        PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
 
         lock.lock();
 
@@ -283,7 +230,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 rebRoutine.cancel();
 
             // Start new rebalance session.
-            filePreloadingRoutine = rebRoutine = new FilePreloadingRoutine(orderedAssigns, topVer, cctx,
+            partPreloadingRoutine = rebRoutine = new PartitionPreloadingRoutine(orderedAssigns, topVer, cctx,
                 exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
             return rebRoutine::startPartitionsPreloading;
@@ -378,7 +325,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return {@code True} If the last rebalance attempt was incomplete for specified cache group.
      */
     public boolean incompleteRebalance(CacheGroupContext grp) {
-        FilePreloadingRoutine rebalanceRoutine = filePreloadingRoutine;
+        PartitionPreloadingRoutine rebalanceRoutine = partPreloadingRoutine;
 
         return rebalanceRoutine.isDone() && rebalanceRoutine.remainingGroups().contains(grp.groupId());
     }
@@ -501,7 +448,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
     public IgniteInternalFuture<GridDhtPreloaderAssignments> preloadFuture(CacheGroupContext grp) {
         // todo
-        return filePreloadingRoutine.groupRoutine(grp);
+        return partPreloadingRoutine.groupRoutine(grp);
     }
 
     /**
@@ -510,7 +457,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     private class PartitionSnapshotListener implements SnapshotListener {
         /** {@inheritDoc} */
         @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
-            filePreloadingRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
+            partPreloadingRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
         }
 
         /** {@inheritDoc} */

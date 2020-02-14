@@ -47,12 +47,10 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -60,9 +58,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
 /**
- * Partition File rebalancing routine.
+ * Partition File preloading routine.
  */
-public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
+public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     /** Rebalance topology version. */
     private final AffinityTopologyVersion topVer;
 
@@ -110,7 +108,7 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
     /**
      * Dummy constructor.
      */
-    public FilePreloadingRoutine() {
+    public PartitionPreloadingRoutine() {
         this(null, null, null, null, 0, null);
 
         onDone(true);
@@ -124,7 +122,7 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param rebalanceId Rebalance ID
      * @param cpLsnr Checkpoint listener.
      */
-    public FilePreloadingRoutine(
+    public PartitionPreloadingRoutine(
         Collection<T2<UUID, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
@@ -565,6 +563,6 @@ public class FilePreloadingRoutine extends GridFutureAdapter<Boolean> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(FilePreloadingRoutine.class, this);
+        return S.toString(PartitionPreloadingRoutine.class, this);
     }
 }
