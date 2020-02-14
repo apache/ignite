@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.xgboost;
+package org.apache.ignite.examples.ml.inference.xgboost;
 
 import java.io.File;
 import java.io.FileNotFoundException;
