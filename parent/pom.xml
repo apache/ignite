@@ -287,9 +287,6 @@
                         <author>false</author>
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
-                        <links>
-                            <link>https://hadoop.apache.org/docs/current/api/</link>
-                        </links>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
