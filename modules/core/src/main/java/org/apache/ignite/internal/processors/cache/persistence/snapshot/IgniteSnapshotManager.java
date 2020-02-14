@@ -293,7 +293,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                 task = putSnapshotTask(snpName,
                                     nodeId,
                                     reqMsg0.parts(),
-                                    new SingleThreadWrapper(snpRunner),
                                     remoteSnapshotSender(snpName,
                                         nodeId));
                             }
@@ -776,7 +775,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             SnapshotTask snpTask = putSnapshotTask(snpName,
                 cctx.localNodeId(),
                 parts,
-                snpRunner,
                 snpSndr);
 
             snpTask.run();
@@ -810,7 +808,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
-        Executor exec,
         SnapshotFileSender snpSndr
     ) throws IgniteCheckedException {
         if (locSnpTasks.containsKey(snpName))
@@ -821,17 +818,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 srcNodeId,
                 snpName0,
                 tmpWorkDir,
-                exec,
                 ioFactory,
                 snpSndr,
                 parts));
-
-//        ForkJoinPool pool = new ForkJoinPool(10);
-//
-//        pool.submit(() -> locSnpTasks.values().parallelStream());
-//
-//        ForkJoinTask
-
 
         snpTask.snapshotFuture()
             .listen(f -> locSnpTasks.remove(snpName));
@@ -847,6 +836,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         File snpLocDir = snapshotLocalDir(snpName);
 
         return new LocalSnapshotFileSender(log,
+            snpRunner,
             () -> {
                 // Relative path to snapshot storage of local node.
                 // Example: snapshotWorkDir/db/IgniteNodeName0
@@ -871,7 +861,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Snapshot sender instance.
      */
     SnapshotFileSender remoteSnapshotSender(String snpName, UUID rmtNodeId) {
+        // Remote snapshots can be send only by single threaded executor since only one transmissionSedner created.
         return new RemoteSnapshotFileSender(log,
+            new SingleThreadWrapper(snpRunner),
             () -> relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
@@ -1095,12 +1087,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          */
         public RemoteSnapshotFileSender(
             IgniteLogger log,
+            Executor exec,
             IgniteThrowableSupplier<String> initPath,
             GridIoManager.TransmissionSender sndr,
             IgniteThrowableConsumer<String> errHnd,
             String snpName
         ) {
-            super(log);
+            super(log, exec);
 
             this.sndr = sndr;
             this.errHnd = errHnd;
@@ -1240,6 +1233,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          */
         public LocalSnapshotFileSender(
             IgniteLogger log,
+            Executor exec,
             IgniteThrowableSupplier<File> initPath,
             FileIOFactory ioFactory,
             BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory,
@@ -1247,7 +1241,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             MarshallerMappingWriter mappingWriter,
             int pageSize
         ) {
-            super(log);
+            super(log, exec);
 
             this.ioFactory = ioFactory;
             this.storeFactory = storeFactory;

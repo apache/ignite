@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -94,9 +93,6 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     /** Snapshot working directory on file system. */
     private final File tmpTaskWorkDir;
 
-    /** Service to perform partitions copy. */
-    private final Executor exec;
-
     /**
      * The length of file size per each cache partiton file.
      * Partition has value greater than zero only for partitons in OWNING state.
@@ -147,28 +143,25 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     /**
      * @param snpName Unique identifier of snapshot task.
      * @param ioFactory Factory to working with delta as file storage.
-     * @param exec Service to perform partitions processing.
      */
     public SnapshotTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         String snpName,
         File tmpWorkDir,
-        Executor exec,
         FileIOFactory ioFactory,
         SnapshotFileSender snpSndr,
         Map<Integer, GridIntList> parts
     ) {
         A.notNull(snpName, "snapshot name cannot be empty or null");
-        A.notNull(exec, "Executor service must be not null");
         A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
+        A.notNull(snpSndr.executor(), "Executor service must be not null");
 
         this.cctx = cctx;
         this.log = cctx.logger(SnapshotTask.class);
         this.snpName = snpName;
         this.srcNodeId = srcNodeId;
         this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
-        this.exec = exec;
         this.snpSndr = snpSndr;
 
         for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
@@ -466,7 +459,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
                     snpSndr.sendBinaryMeta(cctx.kernalContext()
                         .cacheObjects()
                         .metadataTypes())),
-            exec));
+            snpSndr.executor()));
 
         // Process marshaller meta.
         futs.add(CompletableFuture.runAsync(
@@ -474,7 +467,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
                     snpSndr.sendMarshallerMeta(cctx.kernalContext()
                         .marshallerContext()
                         .getCachedMappings())),
-            exec));
+            snpSndr.executor()));
 
         // Process cache group configuration files.
         parts.stream()
@@ -498,7 +491,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
                                 for (File ccfg0 : ccfgs)
                                     snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
                             }),
-                    exec)
+                    snpSndr.executor())
                 )
             );
 
@@ -531,7 +524,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
                         // Stop partition writer.
                         partDeltaWriters.get(pair).markPartitionProcessed();
                     }),
-                exec)
+                snpSndr.executor())
                 // Wait for the completion of both futures - checkpoint end, copy partition.
                 .runAfterBothAsync(cpEndFut,
                     wrapExceptionIfStarted(() -> {
@@ -544,7 +537,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
 
                             assert deleted;
                         }),
-                    exec);
+                    snpSndr.executor());
 
             futs.add(fut0);
         }
@@ -582,7 +575,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     public IgniteInternalFuture<Void> closeAsync() {
         GridFutureAdapter<Void> cFut = new GridFutureAdapter<>();
 
-        CompletableFuture.runAsync(this::close, exec)
+        CompletableFuture.runAsync(this::close, snpSndr.executor())
             .whenComplete((v, t) -> {
                 if (t == null)
                     cFut.onDone();

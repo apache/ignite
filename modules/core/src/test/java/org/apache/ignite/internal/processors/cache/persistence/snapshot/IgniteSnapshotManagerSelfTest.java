@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -275,7 +276,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+                new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -395,7 +396,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
-            new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
@@ -679,7 +680,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotFileSender(log, mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+                new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -816,8 +817,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         /**
          * @param delegate Delegate call to.
          */
-        public DeleagateSnapshotFileSender(IgniteLogger log, SnapshotFileSender delegate) {
-            super(log);
+        public DeleagateSnapshotFileSender(IgniteLogger log, Executor exec, SnapshotFileSender delegate) {
+            super(log, exec);
 
             this.delegate = delegate;
         }
