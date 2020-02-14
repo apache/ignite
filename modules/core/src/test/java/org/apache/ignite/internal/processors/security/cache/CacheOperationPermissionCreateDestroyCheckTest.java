@@ -35,6 +35,16 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(Parameterized.class)
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
+    /** Parameters. */
+    @Parameterized.Parameters(name = "clientMode={0}")
+    public static Iterable<Boolean[]> data() {
+        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
+    }
+
+    /** Client mode. */
+    @Parameterized.Parameter()
+    public boolean clientMode;
+
     /** Cache name. */
     private static final String TEST_CACHE = "TEST_CACHE";
 
@@ -53,19 +63,9 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     /** Test node. */
     private static final String TEST_NODE = "test_node";
 
-    /** Parameters. */
-    @Parameterized.Parameters(name = "clientMode={0}")
-    public static Iterable<Boolean[]> data() {
-        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
-    }
-
-    /** Client mode. */
-    @Parameterized.Parameter()
-    public boolean clientMode;
-
     /** */
     @Test
-    public void createCacheWithCachePermissions() throws Exception {
+    public void testCreateCacheWithCachePermissions() throws Exception {
         SecurityPermissionSet secPermSet = builder()
             .appendCachePermissions(TEST_CACHE, CACHE_CREATE)
             .build();
@@ -81,7 +81,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** */
     @Test
-    public void destroyCacheWithCachePermissions() throws Exception {
+    public void testDestroyCacheWithCachePermissions() throws Exception {
         SecurityPermissionSet secPermSet = builder()
             .appendCachePermissions(TEST_CACHE, CACHE_DESTROY)
             .build();
@@ -102,7 +102,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** */
     @Test
-    public void createCacheWithSystemPermissions() throws Exception {
+    public void testCreateCacheWithSystemPermissions() throws Exception {
         SecurityPermissionSetBuilder builder = builder()
             .appendSystemPermissions(CACHE_CREATE);
 
@@ -116,7 +116,7 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
 
     /** */
     @Test
-    public void destroyCacheWithSystemPermissions() throws Exception {
+    public void testDestroyCacheWithSystemPermissions() throws Exception {
         SecurityPermissionSet securityPermissionSet = builder()
         .appendSystemPermissions(CACHE_DESTROY).build();
 
