@@ -46,6 +46,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -655,22 +656,30 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                if (cctx.affinityNode() && !cctx.topology().localPartitionMap().hasMovingPartitions())
-                    return Collections.singletonList(cctx.localNode());
+                GridDhtPartitionTopology topology = cctx.topology();
 
-                Collection<ClusterNode> affNodes = nodes(cctx, null, null);
+                topology.readLock();
 
-                List<ClusterNode> nodes = new ArrayList<>(affNodes);
+                try {
+                    if (cctx.affinityNode() && !topology.localPartitionMap().hasMovingPartitions())
+                        return Collections.singletonList(cctx.localNode());
 
-                Collections.shuffle(nodes);
+                    Collection<ClusterNode> affNodes = nodes(cctx, null, null);
 
-                for (ClusterNode node : nodes) {
-                    if (!cctx.topology().partitions(node.id()).hasMovingPartitions()) {
-                        return Collections.singletonList(node);
+                    List<ClusterNode> nodes = new ArrayList<>(affNodes);
+
+                    Collections.shuffle(nodes);
+
+                    for (ClusterNode node : nodes) {
+                        if (!topology.partitions(node.id()).hasMovingPartitions()) {
+                            return Collections.singletonList(node);
+                        }
                     }
-                }
 
-                return affNodes;
+                    return affNodes;
+                } finally {
+                    topology.readUnlock();
+                }
 
             case PARTITIONED:
                 return nodes(cctx, prj, part);
