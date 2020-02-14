@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
@@ -93,6 +94,7 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexD
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -1458,16 +1460,45 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             if (op instanceof SchemaIndexCreateOperation) {
-                final SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
+                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
                 GridCacheContext cctx = cache.context();
 
-                if (cctx.group().metrics0() != null)
-                    cctx.group().metrics0().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+                GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>();
 
-                SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx, cancelTok, op0.parallel());
+                int buildIdxPoolSize = ctx.config().getBuildIndexThreadPoolSize();
+                int parallel = op0.parallel();
+
+                if (parallel > buildIdxPoolSize) {
+                    String idxName = op0.indexName();
+
+                    log.warning("Provided parallelism " + parallel + " for creation of index " + idxName +
+                        " is greater than the number of index building threads. Will use " + buildIdxPoolSize +
+                        " threads to build index. Increase by IgniteConfiguration.setBuildIndexThreadPoolSize" +
+                        " and restart the node if you want to use more threads. [tableName=" + op0.tableName() +
+                        ", indexName=" + idxName + ", requestedParallelism=" + parallel + ", buildIndexPoolSize=" +
+                        buildIdxPoolSize + "]");
+                }
+
+                SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(
+                    cctx,
+                    cancelTok,
+                    createIdxFut
+                ) {
+                    /** {@inheritDoc} */
+                    @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
+                        super.visit(clo);
+
+                        try {
+                            buildIdxFut.get();
+                        }
+                        catch (Exception e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                };
 
                 idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }
@@ -1815,6 +1846,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when rebuilding is finished.
      */
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        assert nonNull(cctx);
+
         // Indexing module is disabled, nothing to rebuild.
         if (rebuildIsMeaningless(cctx))
             return null;

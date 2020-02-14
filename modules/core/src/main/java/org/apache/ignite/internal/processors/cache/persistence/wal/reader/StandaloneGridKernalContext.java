@@ -682,4 +682,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     @Override public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService buildIndexExecutorService() {
+        return null;
+    }
 }
