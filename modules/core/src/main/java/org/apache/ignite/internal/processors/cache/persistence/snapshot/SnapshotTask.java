@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -79,15 +78,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /**
  *
  */
-class SnapshotTask implements DbCheckpointListener, Closeable {
+class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
     /** Ignite logger */
     private final IgniteLogger log;
-
-    /** Factory to working with delta as file storage. */
-    private final FileIOFactory ioFactory;
 
     /** Node id which cause snapshot operation. */
     private final UUID srcNodeId;
@@ -147,11 +143,12 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private volatile boolean cancelled;
 
     /** Phase of the current snapshot process run. */
-    private volatile SnapshotState state = SnapshotState.INIT;
+    private volatile SnapshotState state = SnapshotState.NEW;
 
     /**
-     * @param snpName Unique identifier of snapshot process.
-     * @param exec Service to perform partitions copy.
+     * @param snpName Unique identifier of snapshot task.
+     * @param ioFactory Factory to working with delta as file storage.
+     * @param exec Service to perform partitions processing.
      */
     public SnapshotTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -173,7 +170,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         this.srcNodeId = srcNodeId;
         this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
         this.exec = exec;
-        this.ioFactory = ioFactory;
         this.snpSndr = snpSndr;
 
         for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
@@ -181,6 +177,67 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
             while (iter.hasNext())
                 this.parts.add(new GroupPartitionId(e.getKey(), iter.next()));
+        }
+
+        try {
+            tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
+                relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
+                false);
+
+            this.snpSndr.init();
+
+            Map<Integer, File> dirs = new HashMap<>();
+
+            for (Integer grpId : parts.keySet()) {
+                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+
+                if (gctx == null)
+                    throw new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId);
+
+                if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
+                    throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId);
+
+                if (gctx.config().isEncryptionEnabled())
+                    throw new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId);
+
+                // Create cache snapshot directory if not.
+                File grpDir = U.resolveWorkDirectory(tmpSnpDir.getAbsolutePath(),
+                    cacheDirName(gctx.config()), false);
+
+                U.ensureDirectory(grpDir,
+                    "snapshot directory for cache group: " + gctx.groupId(),
+                    null);
+
+                dirs.put(grpId, grpDir);
+            }
+
+            CompletableFuture<Boolean> cpEndFut0 = cpEndFut;
+
+            for (GroupPartitionId pair : this.parts) {
+                PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(),
+                    pair.getPartitionId());
+
+                partDeltaWriters.put(pair,
+                    new PageStoreSerialWriter(log,
+                        store,
+                        () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
+                        () -> state == SnapshotState.STOPPED || state == SnapshotState.STOPPING,
+                        this::acceptException,
+                        getPartionDeltaFile(dirs.get(pair.getGroupId()), pair.getPartitionId()),
+                        ioFactory,
+                        cctx.kernalContext()
+                            .config()
+                            .getDataStorageConfiguration()
+                            .getPageSize()));
+            }
+
+            if (log.isInfoEnabled()) {
+                log.info("Snapshot task has been created [sctx=" + this +
+                    ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+            }
+        }
+        catch (IgniteCheckedException e) {
+            close(e);
         }
     }
 
@@ -233,7 +290,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
             if (state.ordinal() > this.state.ordinal()) {
                 this.state = state;
 
-                if (state == SnapshotState.STARTED)
+                if (state == SnapshotState.RUNNING)
                     startedFut.onDone();
 
                 return true;
@@ -302,78 +359,25 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /**
      * Initiates snapshot taks.
      */
-    public void start() {
-        try {
-            tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
-                relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
-                false);
+    @Override public void run() {
+        startedFut.listen(f ->
+            ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
+        );
 
-            snpSndr.init();
+        // Listener will be removed right after first execution
+        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
 
-            Set<Integer> grps = parts.stream()
-                .map(GroupPartitionId::getGroupId)
-                .collect(Collectors.toSet());
-
-            Map<Integer, File> dirs = new HashMap<>();
-
-            for (Integer grpId : grps) {
-                CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-                if (gctx == null)
-                    throw new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId);
-
-                if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
-                    throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId);
-
-                if (gctx.config().isEncryptionEnabled())
-                    throw new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId);
-
-                // Create cache snapshot directory if not.
-                File grpDir = U.resolveWorkDirectory(tmpSnpDir.getAbsolutePath(),
-                    cacheDirName(gctx.config()), false);
-
-                U.ensureDirectory(grpDir,
-                    "snapshot directory for cache group: " + gctx.groupId(),
-                    null);
-
-                dirs.put(grpId, grpDir);
-            }
-
-            CompletableFuture<Boolean> cpEndFut0 = cpEndFut;
-
-            for (GroupPartitionId pair : parts) {
-                PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(),
-                    pair.getPartitionId());
-
-                partDeltaWriters.put(pair,
-                    new PageStoreSerialWriter(log,
-                        store,
-                        () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                        () -> state == SnapshotState.STOPPED || state == SnapshotState.STOPPING,
-                        this::acceptException,
-                        getPartionDeltaFile(dirs.get(pair.getGroupId()), pair.getPartitionId()),
-                        ioFactory,
-                        cctx.kernalContext()
-                            .config()
-                            .getDataStorageConfiguration()
-                            .getPageSize()));
-            }
-
-            if (log.isInfoEnabled()) {
-                log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +
-                    "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
-            }
-
-            // Listener will be removed right after first execution
-            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
-        }
-        catch (IgniteCheckedException e) {
-            close(e);
+        if (log.isInfoEnabled()) {
+            log.info("Snapshot operation is scheduled on local node and will be handled by the checkpoint " +
+                "listener [sctx=" + this + ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
         }
     }
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
+        if (state != SnapshotState.NEW)
+            return;
+
         // Gather partitions metainfo for thouse which will be copied.
         ctx.collectPartStat(parts);
 
@@ -397,6 +401,9 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointEnd(Context ctx) {
+        if (state != SnapshotState.NEW)
+            return;
+
         // Under the write lock here. It's safe to add new stores.
         try {
             PartitionAllocationMap allocationMap = ctx.partitionStatMap();
@@ -444,9 +451,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this);
-
-        if (!state(SnapshotState.STARTED))
+        if (!state(SnapshotState.RUNNING))
             return;
 
         // Submit all tasks for partitions and deltas processing.
@@ -563,7 +568,7 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
             try {
-                if (state == SnapshotState.STARTED)
+                if (state == SnapshotState.RUNNING)
                     exec.run();
             }
             catch (Throwable t) {
@@ -620,18 +625,18 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     /**
      * Valid state transitions:
      * <p>
-     * {@code INIT -> STARTED -> STOPPED}
+     * {@code NEW -> RUNNING -> STOPPED}
      * <p>
-     * {@code INIT (or any other) -> STOPPING}
+     * {@code NEW (or any other) -> STOPPING}
      * <p>
      * {@code CANCELLING -> STOPPED}
      */
     private enum SnapshotState {
         /** Requested partitoins must be registered to collect its partition counters. */
-        INIT,
+        NEW,
 
         /** Snapshot tasks has been started. */
-        STARTED,
+        RUNNING,
 
         /** Indicates that snapshot operation must be cancelled and is awaiting resources to be freed. */
         STOPPING,

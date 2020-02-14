@@ -300,7 +300,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                         nodeId));
                             }
 
-                            task.start();
+                            task.run();
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to proccess request of creating a snapshot " +
@@ -815,7 +815,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 snpRunner,
                 snpSndr);
 
-            snpTask.start();
+            snpTask.run();
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one
