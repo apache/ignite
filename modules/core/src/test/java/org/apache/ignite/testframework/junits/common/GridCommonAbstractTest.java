@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -2180,7 +2181,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         int mode = putType != null && putType.length > 0 ? putType[0] : 0;
 
-        Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k));
+        Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k, (a, b) -> a, TreeMap::new));
 
         switch (mode) {
             case 0:

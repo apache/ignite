@@ -64,16 +64,11 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /** */
     private static final String AFF4_FILTER_CACHE2 = "a4c2";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setUserAttributes(Collections.singletonMap("name", igniteInstanceName));
-
-        cfg.setClientMode(client);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -156,9 +151,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             checkMessages(0, true);
         }
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         awaitPartitionMapExchange();
 

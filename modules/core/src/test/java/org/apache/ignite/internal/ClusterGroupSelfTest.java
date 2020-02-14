@@ -57,23 +57,21 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
         ids = new LinkedList<>();
 
-        try {
-            for (int i = 0; i < NODES_CNT; i++) {
-                Ignition.setClientMode(i > 1);
+        for (int i = 0; i < NODES_CNT; i++) {
+            Ignite g;
 
-                Ignite g = startGrid(i);
+            if (i > 1)
+                g = startClientGrid(i);
+            else
+                g = startGrid(i);
 
-                ids.add(g.cluster().localNode().id());
+            ids.add(g.cluster().localNode().id());
 
-                if (i == 0)
-                    ignite = g;
-            }
-
-            waitForTopology(NODES_CNT);
+            if (i == 0)
+                ignite = g;
         }
-        finally {
-            Ignition.setClientMode(false);
-        }
+
+        waitForTopology(NODES_CNT);
     }
 
     /** {@inheritDoc} */
