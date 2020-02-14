@@ -85,16 +85,17 @@ public interface GridCachePreloader {
      * @param assignments Assignments to add.
      * @param forcePreload {@code True} if preload requested by {@link ForceRebalanceExchangeTask}.
      * @param rebalanceId Rebalance id created by exchange thread.
-     * @param next Runnable responsible for cache rebalancing chain.
+     * @param next Rebalance's future follows after the current one.
      * @param forcedRebFut External future for forced rebalance.
-     * @return Rebalancing runnable.
+     * @param compatibleRebFut Future for waiting for compatible rebalances.
+     * @return Future if rebalance was planned or null.
      */
     public RebalanceFuture addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
         long rebalanceId,
         final RebalanceFuture next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,
-        GridCompoundFuture<Boolean, Boolean> compatibleWaitFut);
+        GridCompoundFuture<Boolean, Boolean> compatibleRebFut);
 
     /**
      * @return Future which will complete when preloader is safe to use.

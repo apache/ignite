@@ -155,7 +155,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         long rebalanceId,
         RebalanceFuture next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut,
-        GridCompoundFuture<Boolean, Boolean> commonRebalanceFuture) {
+        GridCompoundFuture<Boolean, Boolean> compatibleRebFut) {
         return null;
     }
 
