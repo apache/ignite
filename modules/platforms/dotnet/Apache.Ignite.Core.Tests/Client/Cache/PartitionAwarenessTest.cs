@@ -24,11 +24,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
     /// <summary>
@@ -170,10 +170,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (var ignite = Ignition.Start(cfg))
             {
-                // Wait for rebalance.
-                var events = ignite.GetEvents();
-                events.EnableLocal(EventType.CacheRebalanceStopped);
-                events.WaitForLocal(EventType.CacheRebalanceStopped);
+                var affinityChangedTop = new AffinityTopologyVersion(ignite.GetCluster().TopologyVersion, 1);
+
+                Assert.True(ignite.WaitTopology(affinityChangedTop, _cache.Name),
+                    "Failed to wait topology " + affinityChangedTop);
 
                 // Warm-up.
                 Assert.AreEqual(1, _cache.Get(1));
