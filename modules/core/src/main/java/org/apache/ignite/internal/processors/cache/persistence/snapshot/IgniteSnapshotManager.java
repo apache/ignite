@@ -293,7 +293,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                 task = putSnapshotTask(snpName,
                                     nodeId,
                                     reqMsg0.parts(),
-                                    new SerialExecutor(cctx0.kernalContext()
+                                    new SingleThreadWrapperExecutor(cctx0.kernalContext()
                                         .pools()
                                         .poolForPolicy(plc)),
                                     remoteSnapshotSender(snpName,
@@ -1017,7 +1017,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class SerialExecutor implements Executor {
+    private static class SingleThreadWrapperExecutor implements Executor {
         /** */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
@@ -1030,7 +1030,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /**
          * @param executor Executor to run tasks on.
          */
-        public SerialExecutor(Executor executor) {
+        public SingleThreadWrapperExecutor(Executor executor) {
             this.executor = executor;
         }
 
