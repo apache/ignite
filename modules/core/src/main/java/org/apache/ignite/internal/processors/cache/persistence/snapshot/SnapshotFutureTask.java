@@ -267,9 +267,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
             if (state.ordinal() > this.state.ordinal()) {
                 this.state = state;
 
-                if (state == SnapshotState.RUNNING)
-                    startedFut.onDone();
-
                 return true;
             }
             else
@@ -429,6 +426,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
         if (!state(SnapshotState.RUNNING))
+            return;
+
+        // Snapshot task is now started since checkpoint writelock released.
+        if (!startedFut.onDone())
             return;
 
         // Submit all tasks for partitions and deltas processing.
