@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -99,8 +101,8 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
                 @Override protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
                     if (msg instanceof GridIoMessage &&
                         ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                        GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message();
-
+                        GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)((GridIoMessage)msg)
+                            .message();
                         if (msg0.groupId() == CU.cacheId(DEFAULT_CACHE_NAME))
                             supplyMsg.countDown();
                     }
@@ -124,7 +126,7 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
     public void partitionsEvictionBeforeRebalanceTest() throws Exception {
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         stopGrid(1);
 
@@ -134,21 +136,28 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
 
         U.await(supplyMsg);
 
-        ig0.cluster().active(false);
+        ig0.cluster().state(ClusterState.INACTIVE);
 
         blockEviction(ig1);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        U.await(lastPart);
 
         LongMetric evictedPartitionsLeft = ig1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP))
             .findMetric("RebalancingEvictedPartitionsLeft");
 
-        U.await(lastPart);
+        try {
+            assertEquals("The number of partitions left to be evicted before rebalancing started must be equal " +
+                "to total number of partitions in affinity function.", PARTITION_COUNT, evictedPartitionsLeft.value());
+        } catch (Exception e) {
+            startEvict.countDown();
 
-        assertEquals("The number of partitions left to be evicted before rebalancing started must be equal to total " +
-            "number of partitions in affinity function.", PARTITION_COUNT, evictedPartitionsLeft.value());
+            throw e;
+        }
 
-        LogListener evictionCompleted = LogListener.matches(s -> s.contains("Starting rebalance routine [" + GROUP)).build();
+        LogListener evictionCompleted = LogListener
+            .matches(s -> s.contains("Starting rebalance routine [" + GROUP)).build();
 
         log.registerListener(evictionCompleted);
 
@@ -156,7 +165,8 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
 
         assertTrue("Rebalance routine should be started.", evictionCompleted.check(3_000));
 
-        assertEquals("After starting rebalance routine, the eviction must be finished.",0, evictedPartitionsLeft.value());
+        assertEquals("After starting rebalance routine, the eviction must be finished.",0,
+            evictedPartitionsLeft.value());
     }
 
     /**
@@ -188,7 +198,7 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
     /**
      * Queue for blocking eviction, until the last partition is added to the queue.
      */
-    class TestQueue extends PriorityBlockingQueue<PartitionsEvictManager.PartitionEvictionTask> {
+    private class TestQueue extends PriorityBlockingQueue<PartitionsEvictManager.PartitionEvictionTask> {
 
         /**
          *
@@ -229,7 +239,7 @@ public class CacheGroupsMetricsPartitionsEvictionBeforeRebalanceTest extends Gri
     /**
      * @param node Node.
      */
-    protected void blockEviction(IgniteEx node) {
+    private void blockEviction(IgniteEx node) {
         Queue[] buckets = node.context().cache().context().evict().evictionQueue.buckets;
 
         for (int i = 0; i < buckets.length; i++)
