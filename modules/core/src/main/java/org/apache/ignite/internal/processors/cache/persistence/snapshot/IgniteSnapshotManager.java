@@ -277,8 +277,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         GridCacheSharedContext<?, ?> cctx0 = cctx;
 
                         try {
-                            SnapshotFutureTask task;
-
                             synchronized (rmtSnpReq) {
                                 IgniteInternalFuture<Boolean> snpResp = snapshotRemoteRequest(nodeId);
 
@@ -290,10 +288,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                         "[prevSnpResp=" + snpResp + ", msg0=" + reqMsg0 + ']');
                                 }
 
-                                task = putSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId));
+                                runSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId));
                             }
-
-                            task.run();
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to proccess request of creating a snapshot " +
@@ -768,9 +764,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
         try {
-            SnapshotFutureTask snpFutTask = putSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
-
-            snpFutTask.run();
+            SnapshotFutureTask snpFutTask = runSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one
@@ -797,7 +791,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Snapshot operation task which should be registered on checkpoint to run.
      * @throws IgniteCheckedException If fails.
      */
-    SnapshotFutureTask putSnapshotTask(
+    SnapshotFutureTask runSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
@@ -816,6 +810,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 parts));
 
         snpFutTask.listen(f -> locSnpTasks.remove(snpName));
+        snpFutTask.run();
 
         return snpFutTask;
     }
