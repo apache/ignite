@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -38,7 +39,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -558,25 +558,20 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
     /**
      * @return Future which will be completed when operations truhly stopped.
      */
-    public IgniteInternalFuture<Void> closeAsync() {
-        GridFutureAdapter<Void> cFut = new GridFutureAdapter<>();
-
-        CompletableFuture.runAsync(() -> close(null), snpSndr.executor())
-            .whenComplete((v, t) -> {
-                if (t == null)
-                    cFut.onDone();
-                else
-                    cFut.onDone(t);
-            });
-
-        return cFut;
+    public CompletableFuture<Void> closeAsync() {
+        return CompletableFuture.runAsync(() -> close(null), snpSndr.executor());
     }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
         cancelled = true;
 
-        closeAsync().get();
+        try {
+            closeAsync().get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new IgniteCheckedException(e);
+        }
 
         return true;
     }
