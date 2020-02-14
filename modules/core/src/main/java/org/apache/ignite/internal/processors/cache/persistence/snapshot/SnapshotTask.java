@@ -293,9 +293,16 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
     }
 
     /**
-     * @return Future which will be completed on snapshot start.
+     * @throws IgniteCheckedException If fails.
      */
-    public IgniteInternalFuture<Void> submit() {
+    public void awaitStarted() throws IgniteCheckedException {
+        startedFut.get();
+    }
+
+    /**
+     * Initiates snapshot taks.
+     */
+    public void start() {
         try {
             tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
                 relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
@@ -363,8 +370,6 @@ class SnapshotTask implements DbCheckpointListener, Closeable {
         catch (IgniteCheckedException e) {
             close(e);
         }
-
-        return startedFut;
     }
 
     /** {@inheritDoc} */
