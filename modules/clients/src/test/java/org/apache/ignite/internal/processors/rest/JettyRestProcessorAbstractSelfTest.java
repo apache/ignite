@@ -270,6 +270,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     protected JsonNode validateJsonResponse(String content, boolean errorExpected) throws IOException {
         assertNotNull(content);
+
         assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);

@@ -27,7 +27,7 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /** Request current state. */
     private boolean reqCurrentState;
 
-    /** Forced chage of cluster state. */
+    /** Forced chage state. */
     private boolean force;
 
     /**

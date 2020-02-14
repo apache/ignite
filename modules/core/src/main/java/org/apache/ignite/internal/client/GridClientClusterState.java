@@ -58,7 +58,7 @@ public interface GridClientClusterState {
     public void state(ClusterState newState) throws GridClientException;
 
     /**
-     * Changes cluster state to {@code newState}. Fails if the operation is not safe and <code>force</code>
+     * Changes cluster state to {@code newState}. Fails if the operation is not safe and {@code force}
      * is {@code False}.
      * <p>
      * <b>NOTE:</b>

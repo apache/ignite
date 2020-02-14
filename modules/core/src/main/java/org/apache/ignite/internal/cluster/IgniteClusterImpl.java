@@ -76,6 +76,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
 
@@ -310,7 +311,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        state(active ? ClusterState.ACTIVE : INACTIVE, true);
+        state(active ? ClusterState.ACTIVE : INACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -327,7 +328,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
-        state(newState, true);
+        state(newState, false);
     }
 
     /** {@inheritDoc} */
@@ -335,7 +336,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
+            if (state() != INACTIVE && newState == INACTIVE && !force && !ctx.state().isDeactivationSafe()) {
+                throw new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
+                    + " To change cluster state on '" + newState.name() + "' pass the force flag.");
+            }
+
+            ctx.state().changeGlobalState(newState, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
