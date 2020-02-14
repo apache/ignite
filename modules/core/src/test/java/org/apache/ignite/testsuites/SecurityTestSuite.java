@@ -86,8 +86,8 @@ import org.junit.runners.Suite;
     IgniteOperationsInsideSandboxTest.class,
     SecuritySubjectPermissionsTest.class,
     AccessToClassesInsideInternalPackageTest.class,
-    IgniteSecurityProcessorTest.class
-    GridCommandHandlerSslWithSecurityTest.class,
+    IgniteSecurityProcessorTest.class,
+    GridCommandHandlerSslWithSecurityTest.class
 })
 public class SecurityTestSuite {
 }
