@@ -30,6 +30,8 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+
 /**
  * Tests check:
  * <p/>
@@ -169,7 +171,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(INACTIVE, true);
 
         assertTrue(cancelLatch.await(10, TimeUnit.SECONDS));
 

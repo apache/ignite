@@ -48,11 +48,11 @@ public abstract class ClusterStateClientAbstractTest extends ClusterStateAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void changeState(ClusterState state) {
+    @Override protected void changeState(ClusterState state, boolean force) {
         IgniteEx cl = grid(GRID_CNT);
 
         assertTrue(cl.configuration().isClientMode());
 
-        cl.cluster().state(state);
+        cl.cluster().state(state, force);
     }
 }

@@ -397,7 +397,9 @@ public interface IgniteMXBean {
      *
      * @param active Activate/DeActivate flag.
      * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
+     * @deprecated Use {@link #clusterState(String, boolean)} instead.
      */
+    @Deprecated
     @MXBeanDescription(
         "Execute activate or deactivate process."
     )
@@ -711,7 +713,9 @@ public interface IgniteMXBean {
      * @param state String representation of new cluster state.
      * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * See {@link ClusterState}
+     * @deprecated Use {@link #clusterState(String, boolean)} instead
      */
+    @Deprecated
     @MXBeanDescription("Changes current cluster state.")
     @MXBeanParametersNames("state")
     @MXBeanParametersDescriptions("New cluster state.")

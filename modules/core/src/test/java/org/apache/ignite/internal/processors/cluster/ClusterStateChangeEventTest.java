@@ -128,7 +128,7 @@ public class ClusterStateChangeEventTest extends GridCommonAbstractTest {
             evtFuts.put(node, waitForLocalEvent(node.events(), e -> e.localOrder() > event.localOrder(), EVT_CLUSTER_STATE_CHANGED));
         }
 
-        crd.cluster().state(state);
+        crd.cluster().state(state, true);
 
         for (Ignite node : evtFuts.keySet()) {
             assertEquals(node.name(), state, node.cluster().state());

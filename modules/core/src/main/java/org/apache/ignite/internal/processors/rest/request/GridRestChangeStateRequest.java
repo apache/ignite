@@ -27,6 +27,9 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /** Request current state. */
     private boolean reqCurrentState;
 
+    /** Forced chage state. */
+    private boolean force;
+
     /**
      *
      */
@@ -54,4 +57,10 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     public void reqCurrentState() {
         reqCurrentState = true;
     }
+
+    /** */
+    public void force(boolean force){ this.force = force; }
+
+    /** */
+    public boolean force() { return force; }
 }

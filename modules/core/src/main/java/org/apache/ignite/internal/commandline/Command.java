@@ -53,10 +53,10 @@ public interface Command<T> {
      * @param client Client.
      * @param feature Feature.
      * @param validateClientNodes Whether client nodes should be checked as well.
-     * @param failIfUnsupportedFound If {@code True}, fails when found a node unsupporting <code>feature</code>.
-     * @throws GridServerDoesNotSupportException If <code>failIfUnsupportedFound</code> is {@code True} and found a node
-     * unsupporting <code>feature</code>.
-     * @return Id of node unsupporting <code>feature</code>. {@code null} if all nodes support <code>feature</code>.
+     * @param failIfUnsupportedFound If {@code True}, fails when found a node unsupporting {@code feature}.
+     * @throws GridServerDoesNotSupportException If {@code failIfUnsupportedFound} is {@code True} and found a node
+     * unsupporting {@code feature}.
+     * @return Id of node unsupporting {@code feature}. {@code null} if all nodes support {@code feature} .
      */
     public static UUID checkFeatureSupportedByCluster(
         GridClient client,

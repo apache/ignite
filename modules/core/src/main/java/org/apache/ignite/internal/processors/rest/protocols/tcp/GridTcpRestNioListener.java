@@ -400,7 +400,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restChangeReq.state(req.state());
                 restChangeReq.command(CLUSTER_SET_STATE);
 
-                if(forced)
+                if (forced)
                     restChangeReq.forced(((GridClientClusterStateForcedRequest)msg).forced());
             }
 

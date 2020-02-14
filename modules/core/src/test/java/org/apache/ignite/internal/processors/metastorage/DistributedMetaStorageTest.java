@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with disabled persistence.
@@ -309,7 +310,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         metastorage(0).write("key2", "value2");
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(INACTIVE, true);
 
         startGrid(1);
 

@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_CURRENT_STATE;
@@ -73,7 +75,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
                 case CLUSTER_INACTIVE:
                     log.warning(req.command().key() + " is deprecated. Use newer commands.");
                 default:
-                    ctx.grid().cluster().active(req.active());
+                    ctx.grid().cluster().state(req.active() ? ACTIVE : INACTIVE, req.force());
 
                     res.setResponse(req.command().key() + " started");
                     break;

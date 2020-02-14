@@ -213,6 +213,28 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /**
+     * Retrieves boolean value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @param dfltVal Default value.
+     * @return Boolean value from parameters map or {@code dfltVal} if null or not exists.
+     * @throws IgniteCheckedException If parsing failed.
+     */
+    private static boolean boolValue(String key, Map<String, Object> params, boolean dfltVal) throws IgniteCheckedException {
+        assert key != null;
+
+        String val = (String)params.get(key);
+
+        try {
+            return val == null ? dfltVal : Boolean.parseBoolean(val);
+        }
+        catch (NumberFormatException ignore) {
+            throw new IgniteCheckedException(format(FAILED_TO_PARSE_FORMAT, "Boolean", key, val));
+        }
+    }
+
+    /**
      * Retrieves int value from parameters map.
      *
      * @param key Key.
@@ -790,6 +812,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 else
                     restReq0.active(false);
 
+                restReq0.force(boolValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+
                 restReq = restReq0;
 
                 break;
@@ -805,6 +829,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                     ClusterState newState = enumValue("state", params, ClusterState.class);
 
                     restReq0.state(newState);
+
+                    restReq0.forced(boolValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
                 }
 
                 restReq = restReq0;

@@ -23,6 +23,9 @@ import org.apache.ignite.cluster.ClusterState;
  *
  */
 public class GridRestClusterStateRequest extends GridRestRequest {
+    /** Name of the request param 'force'. */
+    public static final String ARG_FORCE = "force";
+
     /** Request current state. */
     private boolean reqCurrentMode;
 

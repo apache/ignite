@@ -139,8 +139,8 @@ public abstract class ClusterStateServerAbstractTest extends ClusterStateAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected void changeState(ClusterState state) {
-        grid(0).cluster().state(state);
+    @Override protected void changeState(ClusterState state, boolean force) {
+        grid(0).cluster().state(state, force);
     }
 
     /** */
@@ -198,7 +198,7 @@ public abstract class ClusterStateServerAbstractTest extends ClusterStateAbstrac
      */
     Callable<Object> changeStateClo(ClusterState state) {
         return () -> {
-            grid(0).cluster().state(state);
+            grid(0).cluster().state(state, true);
 
             return null;
         };

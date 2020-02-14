@@ -309,7 +309,7 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Change grid global state. Fails if the operation is not safe and <code>force<code/> is {@code False}.
+     * Change grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
      * <p>
      * <b>NOTE:</b>
      * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
@@ -339,7 +339,7 @@ public abstract class GridClientConnection {
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Changes grid global state. Fails if the operation is not safe and <code>force<code/> is {@code False}.
+     * Changes grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
      * <p>
      * <b>NOTE:</b>
      * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.

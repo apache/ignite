@@ -487,7 +487,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes current cluster state to given {@code newState} cluster state.
-     * Fails if the operation is not safe and <code>force</code> is not set.
+     * Fails if the operation is not safe and {@code force} is not set.
      * <p>
      * <b>NOTE:</b>
      * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.

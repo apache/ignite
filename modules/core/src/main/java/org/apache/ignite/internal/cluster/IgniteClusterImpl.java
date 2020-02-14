@@ -333,15 +333,14 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState, boolean force) throws IgniteException {
-        if (!force && newState == INACTIVE && !ctx.state().isDeactivationSafe()) {
-            throw new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
-                + " To change cluster state on \"" + newState + "\" pass the force flag: " +
-                "IgniteCluster#state(INACTIVE, true)");
-        }
-
         guard();
 
         try {
+            if (state() != INACTIVE && newState == INACTIVE && !force && !ctx.state().isDeactivationSafe()) {
+                throw new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
+                    + " To change cluster state on '" + newState.name() + "' pass the force flag.");
+            }
+
             ctx.state().changeGlobalState(newState, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
