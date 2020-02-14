@@ -185,6 +185,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
     }};
 
+    /** Default thread pool size to be used in tests. */
+    private static final int DFLT_THREAD_POOL_SIZE = 5;
+
+    /** Default striped pool size to be used in tests. */
+    private static final int DFLT_STRIPED_POOL_SIZE = 8;
+
     /** Shared static IP finder which is used in configuration at nodes startup <b>for all test methods in class</b>. */
     protected static TcpDiscoveryIpFinder sharedStaticIpFinder;
 
@@ -1823,6 +1829,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
         cfg.setClientMode(IgnitionEx.isClientMode());
+
+        cfg.setPublicThreadPoolSize(DFLT_THREAD_POOL_SIZE);
+        cfg.setSystemThreadPoolSize(DFLT_THREAD_POOL_SIZE);
+        cfg.setManagementThreadPoolSize(DFLT_THREAD_POOL_SIZE);
+        cfg.setQueryThreadPoolSize(DFLT_THREAD_POOL_SIZE);
+        cfg.setServiceThreadPoolSize(DFLT_THREAD_POOL_SIZE);
+        cfg.setDataStreamerThreadPoolSize(DFLT_THREAD_POOL_SIZE);
+        cfg.setStripedPoolSize(DFLT_STRIPED_POOL_SIZE);
 
         cfg.setConnectorConfiguration(null);
 
