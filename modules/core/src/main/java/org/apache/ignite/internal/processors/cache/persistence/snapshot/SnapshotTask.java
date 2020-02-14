@@ -113,7 +113,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
 
     /** Future of result completion. */
     @GridToStringExclude
-    private final SnapshotTaskFuture snpFut = new SnapshotTaskFuture(() -> {
+    private final SnapshotTaskFuture resultFut = new SnapshotTaskFuture(() -> {
         cancelled = true;
 
         closeAsync().get();
@@ -133,7 +133,6 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
     private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
 
     /** Absolute snapshot storage path. */
-    // todo rewise configuration
     private File tmpSnpDir;
 
     /** An exception which has been ocurred during snapshot processing. */
@@ -266,7 +265,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
      * @return Future which will be completed when snapshot operation ends.
      */
     public IgniteInternalFuture<Boolean> snapshotFuture() {
-        return snpFut;
+        return resultFut;
     }
 
     /**
@@ -345,7 +344,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
             if (lastTh0 != null)
                 startedFut.onDone(lastTh0);
 
-            snpFut.onDone(true, lastTh0, cancelled);
+            resultFut.onDone(true, lastTh0, cancelled);
         }
     }
 
@@ -629,7 +628,7 @@ class SnapshotTask implements DbCheckpointListener, Runnable, Closeable {
      * <p>
      * {@code NEW (or any other) -> STOPPING}
      * <p>
-     * {@code CANCELLING -> STOPPED}
+     * {@code STOPPING -> STOPPED}
      */
     private enum SnapshotState {
         /** Requested partitoins must be registered to collect its partition counters. */
