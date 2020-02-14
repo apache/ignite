@@ -158,4 +158,11 @@ public class Pipeline<K, V, C extends Serializable, L> implements Serializable {
             .withPreprocessor(finalPreprocessor)
             .withInternalMdl(internalMdl);
     }
+
+    /**
+     * Returns the final preprocessor for evaluation needs.
+     */
+    public Preprocessor<K, V> getFinalPreprocessor() {
+        return finalPreprocessor;
+    }
 }

@@ -104,7 +104,6 @@ public class Step_8_CV_with_Param_Grid_and_pipeline {
                     .withPipeline(pipeline)
                     .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
-                    .withPreprocessor(vectorizer)
                     .withAmountOfFolds(3)
                     .withParamGrid(paramGrid);
 
