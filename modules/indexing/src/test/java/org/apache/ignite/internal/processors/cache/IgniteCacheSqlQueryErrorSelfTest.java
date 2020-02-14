@@ -166,6 +166,9 @@ public class IgniteCacheSqlQueryErrorSelfTest  extends GridCacheAbstractSelfTest
 
         checkSqlErrorMessage("create table test(\"id\" integer primary key, \"age\" integer, \"age\" integer)",
             "Duplicate column name: age");
+
+        checkSqlErrorMessage("create table test(id integer primary key, age integer, age varchar)",
+            "Duplicate column name: AGE");
     }
 
     /**

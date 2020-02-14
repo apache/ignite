@@ -1182,10 +1182,8 @@ public class GridSqlQueryParser {
         LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
 
         for (Column col : data.columns) {
-            if (cols.containsKey(col.getName()))
-                throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
-
-            cols.put(col.getName(), parseColumn(col));
+            if (cols.put(col.getName(), parseColumn(col)) != null)
+                throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.TABLE_CREATE_FAILED);
         }
 
         if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
