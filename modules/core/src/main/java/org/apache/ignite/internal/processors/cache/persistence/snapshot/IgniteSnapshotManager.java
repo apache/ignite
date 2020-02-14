@@ -293,9 +293,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                 task = putSnapshotTask(snpName,
                                     nodeId,
                                     reqMsg0.parts(),
-                                    new SingleThreadWrapperExecutor(cctx0.kernalContext()
-                                        .pools()
-                                        .poolForPolicy(plc)),
+                                    new SingleThreadWrapper(snpRunner),
                                     remoteSnapshotSender(snpName,
                                         nodeId));
                             }
@@ -828,6 +826,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 snpSndr,
                 parts));
 
+//        ForkJoinPool pool = new ForkJoinPool(10);
+//
+//        pool.submit(() -> locSnpTasks.values().parallelStream());
+//
+//        ForkJoinTask
+
+
         snpTask.snapshotFuture()
             .listen(f -> locSnpTasks.remove(snpName));
 
@@ -1017,7 +1022,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /**
      *
      */
-    private static class SingleThreadWrapperExecutor implements Executor {
+    private static class SingleThreadWrapper implements Executor {
         /** */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
@@ -1030,7 +1035,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /**
          * @param executor Executor to run tasks on.
          */
-        public SingleThreadWrapperExecutor(Executor executor) {
+        public SingleThreadWrapper(Executor executor) {
             this.executor = executor;
         }
 
