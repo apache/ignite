@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -208,6 +208,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (!ctx.clientNode())
                 metadataFileStore = (BinaryMetadataFileStore)binaryWriter(ctx.config().getWorkDirectory());
 
+            metadataFileStore.start();
+
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
             BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
@@ -309,7 +311,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
 
             if (!ctx.clientNode())
-                metadataFileStore.restoreMetadata(metadataLocCache::put);
+                metadataFileStore.restoreMetadata();
         }
     }
 
@@ -325,6 +327,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public void stop(boolean cancel) {
         if (transport != null)
             transport.stop();
+
+        if (metadataFileStore != null)
+            metadataFileStore.stop();
     }
 
     /** {@inheritDoc} */
@@ -533,7 +538,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public BinaryTypeWriter binaryWriter(String igniteWorkDir) {
-        return new BinaryMetadataFileStore(ctx, log, igniteWorkDir, binaryMetadataFileStoreDir);
+        return new BinaryMetadataFileStore(metadataLocCache, ctx, log, igniteWorkDir, binaryMetadataFileStoreDir);
     }
 
     /** {@inheritDoc} */
@@ -581,6 +586,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             if (res.rejected())
                 throw res.error();
+            else if (!ctx.clientNode())
+                metadataFileStore.waitForWriteCompletion(typeId, res.typeVersion());
         }
         catch (IgniteCheckedException e) {
             IgniteCheckedException ex = e;
@@ -636,7 +643,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
             if (!ctx.clientNode())
-                metadataFileStore.writeMeta(typeId, mergedMeta.wrap(binaryCtx));
+                metadataFileStore.mergeAndWriteMetadata(mergedMeta);
 
             metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
         }
@@ -652,6 +659,30 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         BinaryMetadata meta = metadata0(typeId);
 
         return meta != null ? meta.wrap(binaryCtx) : null;
+    }
+
+    /**
+     * Forces caller thread to wait for binary metadata write operation for given type ID.
+     *
+     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
+     *
+     * @param typeId ID of binary type to wait for metadata write operation.
+     */
+    public void waitMetadataWriteIfNeeded(final int typeId) {
+        if (metadataFileStore == null)
+            return;
+
+        BinaryMetadataHolder hldr = metadataLocCache.get(typeId);
+
+        if (hldr != null) {
+            try {
+                metadataFileStore.waitForWriteCompletion(typeId, hldr.pendingVersion());
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
+                    ", typeVer=" + hldr.acceptedVersion() + ']', e);
+            }
+        }
     }
 
     /**
@@ -695,6 +726,17 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.
+                }
+            }
+            else if (metadataFileStore != null) {
+                try {
+                    metadataFileStore.waitForWriteCompletion(typeId, holder.pendingVersion());
+                }
+                catch (IgniteCheckedException e) {
+                    log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
+                        ", typeVer=" + holder.acceptedVersion() + ']', e);
+
+                    return null;
                 }
             }
 
@@ -811,17 +853,35 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         }
 
+        if (holder != null && metadataFileStore != null) {
+            try {
+                metadataFileStore.waitForWriteCompletion(typeId, holder.pendingVersion());
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
+                    ", typeVer=" + holder.acceptedVersion() + ']', e);
+
+                return null;
+            }
+        }
+
         return holder != null ? holder.metadata().wrap(binaryCtx) : null;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Integer, BinaryType> metadataTypes() {
-        Map<Integer, BinaryType> res = U.newHashMap(metadataLocCache.size());
+    @Override public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds)
+        throws BinaryObjectException {
+        try {
+            Map<Integer, BinaryType> res = U.newHashMap(metadataLocCache.size());
 
-        for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
-            res.put(e.getKey(), e.getValue().metadata().wrap(binaryCtx));
+            for (Map.Entry<Integer, BinaryMetadataHolder> e : metadataLocCache.entrySet())
+                res.put(e.getKey(), e.getValue().metadata().wrap(binaryCtx));
 
-        return res;
+            return res;
+        }
+        catch (CacheException e) {
+            throw new BinaryObjectException(e);
+        }
     }
 
     /** {@inheritDoc} */

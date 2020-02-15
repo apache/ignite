@@ -24,12 +24,18 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.ClassSet;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -218,6 +224,68 @@ public class MarshallerUtils {
         catch (IOException e) {
             throw new IgniteCheckedException("Exception occurred while reading and creating list of classes " +
                 "[path=" + fileName + ']', e);
+        }
+    }
+
+    /**
+     * Find all system class names (for JDK or Ignite classes) and process them with a given consumer.
+     *
+     * @param ldr Class loader.
+     * @param plugins Plugins.
+     * @param proc Class processor (class name consumer).
+     */
+    public static void processSystemClasses(ClassLoader ldr, @Nullable Collection<PluginProvider> plugins,
+        Consumer<String> proc) throws IOException {
+        Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
+
+        boolean foundClsNames = false;
+
+        while (urls.hasMoreElements()) {
+            processResource(urls.nextElement(), proc);
+
+            foundClsNames = true;
+        }
+
+        if (!foundClsNames)
+            throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
+                "[file=" + CLS_NAMES_FILE + ", ldr=" + ldr + ']');
+
+        URL jdkClsNames = ldr.getResource(JDK_CLS_NAMES_FILE);
+
+        if (jdkClsNames == null)
+            throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
+                "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ldr + ']');
+
+        processResource(jdkClsNames, proc);
+
+        if (plugins != null && !plugins.isEmpty()) {
+            for (PluginProvider plugin : plugins) {
+                Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
+                    + ".classnames.properties");
+
+                while (pluginUrls.hasMoreElements())
+                    processResource(pluginUrls.nextElement(), proc);
+            }
+        }
+    }
+
+    /**
+     * Process resource containing class names.
+     *
+     * @param url Resource URL.
+     * @param proc Class processor (class name consumer).
+     * @throws IOException In case of error.
+     */
+    private static void processResource(URL url, Consumer<String> proc) throws IOException {
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
+            String line;
+
+            while ((line = rdr.readLine()) != null) {
+                if (line.isEmpty() || line.startsWith("#"))
+                    continue;
+
+                proc.accept(line.trim());
+            }
         }
     }
 }

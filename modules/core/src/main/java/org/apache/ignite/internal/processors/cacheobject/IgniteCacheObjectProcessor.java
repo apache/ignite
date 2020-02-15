@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
+
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -293,10 +294,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
 
     /**
+     * @param typeIds Type ID.
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    public Map<Integer, BinaryType> metadataTypes();
+    public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;
 
     /**
      * @return Metadata for all types.

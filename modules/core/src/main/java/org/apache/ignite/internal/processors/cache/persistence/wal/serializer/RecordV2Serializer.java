@@ -141,7 +141,7 @@ public class RecordV2Serializer implements RecordSerializer {
                 else
                     buf.clear();
 
-                buf.put((byte)(recType.ordinal() + 1));
+                buf.put((byte)(recType.index() + 1));
 
                 buf.putLong(ptr.index());
                 buf.putInt(ptr.fileOffset());
