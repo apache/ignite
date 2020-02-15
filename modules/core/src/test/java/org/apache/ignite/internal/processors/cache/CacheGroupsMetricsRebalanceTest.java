@@ -38,14 +38,19 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -61,6 +66,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -101,6 +109,16 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
     /** */
     private static final int KEYS_COUNT = 10_000;
+
+    /** Test log. */
+    private ListeningTestLogger log;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -149,11 +167,18 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         CacheConfiguration cfg5 = new CacheConfiguration(cfg4)
             .setName(CACHE5);
 
-        cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4, cfg5);
+        cfg.setCacheConfiguration(cfg1, cfg2, cfg3, cfg4, cfg5)
+            .setIncludeEventTypes(EventType.EVTS_ALL)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        if (log != null)
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setWalMode(WALMode.LOG_ONLY)
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                ))
+                .setGridLogger(log);
 
         return cfg;
     }
@@ -425,6 +450,67 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             assertEquals("The number of keys for cache group must be known before rebalancing starts.",
                 KEYS_COUNT * cacheGroups.get(groupName).size(), expectedKeys.value());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheGroupMetricsAfterChangeGridState() throws Exception {
+        LogListener startingRebalance = LogListener
+            .matches(s -> s.contains("Starting rebalance routine [" + DEFAULT_CACHE_NAME)).build();
+
+        log = new ListeningTestLogger(false, GridAbstractTest.log);
+        log.registerListener(startingRebalance);
+
+        IgniteEx ig0 = startGrids(2);
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        stopGrid(1);
+
+        ig0.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction())
+        ).putAll(new Random().ints(1_000).distinct()
+            .boxed().collect(Collectors.toMap(i -> i, i -> (long)i)));
+
+        GridTestUtils.runAsync(() -> startGrid(1));
+
+        assertTrue(GridTestUtils.waitForCondition(startingRebalance::check, 20_000));
+
+        startingRebalance.reset();
+
+        IgniteEx ig1 = grid(1);
+
+        GridDhtPartitionDemander.RebalanceFuture future1 = (GridDhtPartitionDemander.RebalanceFuture)ig1.context()
+            .cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)).preloader().rebalanceFuture();
+
+        long rebalancingStartTimeFromFuture1 = U.<Long>field(future1, "startTime");
+
+        LongMetric startTime = ig1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, DEFAULT_CACHE_NAME))
+            .findMetric("RebalancingStartTime");
+
+        assertEquals(rebalancingStartTimeFromFuture1, startTime.value());
+
+        ig0.cluster().state(ClusterState.INACTIVE);
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        assertTrue(GridTestUtils.waitForCondition(startingRebalance::check, 5_000));
+
+        startTime = ig1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, DEFAULT_CACHE_NAME))
+            .findMetric("RebalancingStartTime");
+
+        GridDhtPartitionDemander.RebalanceFuture future2 = (GridDhtPartitionDemander.RebalanceFuture)ig1.context()
+            .cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME)).preloader().rebalanceFuture();
+
+        long rebalancingStartTimeFromFuture2 = U.<Long>field(future2, "startTime");
+
+        assertNotSame(rebalancingStartTimeFromFuture1, rebalancingStartTimeFromFuture2);
+
+        assertEquals(rebalancingStartTimeFromFuture2, startTime.value());
     }
 
     /**
