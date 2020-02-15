@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
@@ -65,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -123,14 +123,32 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
     /** Absolute snapshot storage path. */
     private File tmpSnpDir;
 
-    /** An exception which has been ocurred during snapshot processing. */
-    private volatile Throwable lastTh;
-
     /** {@code true} if operation has been cancelled. */
     private volatile boolean cancelled;
 
-    /** Phase of the current snapshot process run. */
-    private volatile SnapshotState state = SnapshotState.NEW;
+    /** An exception which has been ocurred during snapshot processing. */
+    private final AtomicReference<Throwable> err = new AtomicReference<>();
+
+    /** Flag indicates the task must be interrupted. */
+    private final BooleanSupplier stopping = () -> cancelled || err.get() != null;
+
+    /**
+     * @param e Finished snapshot tosk future with particular exception.
+     */
+    public SnapshotFutureTask(IgniteCheckedException e) {
+        A.notNull(e, "Exception for a finished snapshot task must be not null");
+
+        cctx = null;
+        log = null;
+        snpName = null;
+        srcNodeId = null;
+        tmpTaskWorkDir = null;
+        snpSndr = null;
+
+        err.set(e);
+        startedFut.onDone(e);
+        onDone(e);
+    }
 
     /**
      * @param snpName Unique identifier of snapshot task.
@@ -145,7 +163,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
         SnapshotFileSender snpSndr,
         Map<Integer, GridIntList> parts
     ) {
-        A.notNull(snpName, "snapshot name cannot be empty or null");
+        A.notNull(snpName, "Snapshot name cannot be empty or null");
         A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
         A.notNull(snpSndr.executor(), "Executor service must be not null");
 
@@ -205,7 +223,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
                     new PageStoreSerialWriter(log,
                         store,
                         () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
-                        () -> state == SnapshotState.STOPPED || state == SnapshotState.STOPPING,
+                        stopping,
                         this::acceptException,
                         getPartionDeltaFile(dirs.get(pair.getGroupId()), pair.getPartitionId()),
                         ioFactory,
@@ -221,7 +239,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
             }
         }
         catch (IgniteCheckedException e) {
-            close(e);
+            acceptException(e);
         }
     }
 
@@ -247,79 +265,49 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
     }
 
     /**
-     * @param state A new snapshot state to set.
-     * @return {@code true} if given state has been set by this call.
-     */
-    public boolean state(SnapshotState state) {
-        if (this.state == state)
-            return false;
-
-        synchronized (this) {
-            if (this.state == state)
-                return false;
-
-            if (state == SnapshotState.STOPPING) {
-                this.state = SnapshotState.STOPPING;
-
-                return true;
-            }
-
-            if (state.ordinal() > this.state.ordinal()) {
-                this.state = state;
-
-                return true;
-            }
-            else
-                return false;
-        }
-    }
-
-    /**
      * @param th An exception which occurred during snapshot processing.
      */
     public void acceptException(Throwable th) {
-        assert th != null;
+        if (th == null)
+            return;
 
-        if (state(SnapshotState.STOPPING)) {
-            lastTh = th;
+        if (err.compareAndSet(null, th))
+            closeAsync();
 
-            startedFut.onDone(th);
-        }
+        startedFut.onDone(th);
 
         log.error("Exception occurred during snapshot operation", th);
     }
 
     /**
-     * @param th Occurred exception during processing or {@code null} if not.
+     * Close snapshot operation and release resources being used.
      */
-    public void close(@Nullable Throwable th) {
-        if (state(SnapshotState.STOPPED)) {
-            if (lastTh == null)
-                lastTh = th;
+    private void close() {
+        if (isDone())
+            return;
 
-            Throwable lastTh0 = lastTh;
+        Throwable err0 = err.get();
 
+        if (onDone(true, err0, cancelled)) {
             for (PageStoreSerialWriter writer : partDeltaWriters.values())
                 U.closeQuiet(writer);
 
-            snpSndr.close(lastTh0);
+            snpSndr.close(err0);
 
             if (tmpSnpDir != null)
                 U.delete(tmpSnpDir);
 
             // Delete snapshot directory if no other files exists.
             try {
-                if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || lastTh0 != null)
+                if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || err0 != null)
                     U.delete(tmpTaskWorkDir.toPath());
             }
             catch (IOException e) {
                 log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
             }
 
-            if (lastTh0 != null)
-                startedFut.onDone(lastTh0);
-
-            onDone(true, lastTh0, cancelled);
+            if (err0 != null)
+                startedFut.onDone(err0);
         }
     }
 
@@ -334,6 +322,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
      * Initiates snapshot taks.
      */
     @Override public void run() {
+        if (stopping.getAsBoolean())
+            return;
+
         startedFut.listen(f ->
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
         );
@@ -349,7 +340,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
-        if (state != SnapshotState.NEW)
+        if (stopping.getAsBoolean())
             return;
 
         // Gather partitions metainfo for thouse which will be copied.
@@ -360,10 +351,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
                 cpEndFut.complete(true);
             else
                 cpEndFut.completeExceptionally(f.error());
-
-            // Close snapshot operation if an error with operation occurred on checkpoint begin phase
-            if (state == SnapshotState.STOPPING)
-                closeAsync();
         });
     }
 
@@ -375,7 +362,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointEnd(Context ctx) {
-        if (state != SnapshotState.NEW)
+        if (stopping.getAsBoolean())
             return;
 
         // Under the write lock here. It's safe to add new stores.
@@ -425,7 +412,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        if (!state(SnapshotState.RUNNING))
+        if (stopping.getAsBoolean())
             return;
 
         // Snapshot task is now started since checkpoint writelock released.
@@ -531,11 +518,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
         int futsSize = futs.size();
 
         CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
-            .whenCompleteAsync((res, t) -> {
+            .whenComplete((res, t) -> {
                 assert t == null : "Excepction must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
-                close(null);
+                close();
             });
     }
 
@@ -545,9 +532,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
      */
     private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
+            if (stopping.getAsBoolean())
+                return;
+
             try {
-                if (state == SnapshotState.RUNNING)
-                    exec.run();
+                exec.run();
             }
             catch (Throwable t) {
                 acceptException(t);
@@ -559,18 +548,20 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
      * @return Future which will be completed when operations truhly stopped.
      */
     public CompletableFuture<Void> closeAsync() {
-        return CompletableFuture.runAsync(() -> close(null), snpSndr.executor());
+        return CompletableFuture.runAsync(this::close, snpSndr.executor());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws IgniteCheckedException {
+    @Override public boolean cancel() {
         cancelled = true;
 
         try {
             closeAsync().get();
         }
         catch (InterruptedException | ExecutionException e) {
-            throw new IgniteCheckedException(e);
+            U.error(log, "SnapshotFutureTask cancellation failed", e);
+
+            return false;
         }
 
         return true;
@@ -597,29 +588,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotFutureTask.class, this);
-    }
-
-    /**
-     * Valid state transitions:
-     * <p>
-     * {@code NEW -> RUNNING -> STOPPED}
-     * <p>
-     * {@code NEW (or any other) -> STOPPING}
-     * <p>
-     * {@code STOPPING -> STOPPED}
-     */
-    private enum SnapshotState {
-        /** Requested partitoins must be registered to collect its partition counters. */
-        NEW,
-
-        /** Snapshot tasks has been started. */
-        RUNNING,
-
-        /** Indicates that snapshot operation must be cancelled and is awaiting resources to be freed. */
-        STOPPING,
-
-        /** Snapshot operation has been interruped or an exception occurred. */
-        STOPPED
     }
 
     /**

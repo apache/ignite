@@ -559,7 +559,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                     .cache()
                     .context()
                     .snapshotMgr()
-                    .snapshotRemoteRequest(ig0.localNode().id());
+                    .lastScheduledRemoteSnapshotTask(ig0.localNode().id());
 
                 if (snpFut == null)
                     return false;

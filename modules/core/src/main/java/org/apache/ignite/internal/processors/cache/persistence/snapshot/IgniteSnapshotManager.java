@@ -67,7 +67,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -274,38 +273,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     if (msg instanceof SnapshotRequestMessage) {
                         SnapshotRequestMessage reqMsg0 = (SnapshotRequestMessage)msg;
                         String snpName = reqMsg0.snapshotName();
-                        GridCacheSharedContext<?, ?> cctx0 = cctx;
 
-                        try {
-                            synchronized (rmtSnpReq) {
-                                IgniteInternalFuture<Boolean> snpResp = snapshotRemoteRequest(nodeId);
+                        synchronized (rmtSnpReq) {
+                            SnapshotFutureTask task = lastScheduledRemoteSnapshotTask(nodeId);
 
-                                if (snpResp != null) {
-                                    // Task should also be removed from local map.
-                                    snpResp.cancel();
+                            if (task != null) {
+                                // Task should also be removed from local map.
+                                task.cancel();
 
-                                    log.info("Snapshot request has been cancelled due to another request recevied " +
-                                        "[prevSnpResp=" + snpResp + ", msg0=" + reqMsg0 + ']');
+                                log.info("Snapshot request has been cancelled due to another request recevied " +
+                                    "[prevSnpResp=" + task + ", msg0=" + reqMsg0 + ']');
+                            }
+                        }
+
+                        runSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId))
+                            .listen(f -> {
+                                if (f.error() == null)
+                                    return;
+
+                                U.error(log, "Failed to proccess request of creating a snapshot " +
+                                    "[from=" + nodeId + ", msg=" + reqMsg0 + ']', f.error());
+
+                                try {
+                                    cctx.gridIO().sendToCustomTopic(nodeId,
+                                        DFLT_INITIAL_SNAPSHOT_TOPIC,
+                                        new SnapshotResponseMessage(reqMsg0.snapshotName(), f.error().getMessage()),
+                                        SYSTEM_POOL);
                                 }
-
-                                runSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId));
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to proccess request of creating a snapshot " +
-                                "[from=" + nodeId + ", msg=" + reqMsg0 + ']', e);
-
-                            try {
-                                cctx.gridIO().sendToCustomTopic(nodeId,
-                                    DFLT_INITIAL_SNAPSHOT_TOPIC,
-                                    new SnapshotResponseMessage(reqMsg0.snapshotName(), e.getMessage()),
-                                    SYSTEM_POOL);
-                            }
-                            catch (IgniteCheckedException ex0) {
-                                U.error(log, "Fail to send the response message with processing snapshot request " +
-                                    "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
-                            }
-                        }
+                                catch (IgniteCheckedException ex0) {
+                                    U.error(log, "Fail to send the response message with processing snapshot request " +
+                                        "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
+                                }
+                            });
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
@@ -342,8 +341,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     if (sctx.sourceNodeId().equals(evt.eventNode().id())) {
                         sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
                             "creation has left the grid"));
-
-                        sctx.closeAsync();
                     }
                 }
 
@@ -576,7 +573,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         try {
             for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                 // Try stop all snapshot processing if not yet.
-                sctx.close(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
+                sctx.acceptException(new NodeStoppingException("Snapshot has been cancelled due to the local node " +
                     "is stopping"));
             }
 
@@ -587,6 +584,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             if (snpTrFut != null)
                 snpTrFut.cancel();
 
+            // Do not shutdown immediately since all task must be closed correctly.
             snpRunner.shutdown();
 
             cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
@@ -750,7 +748,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
-     * @param snpSndr Factory which produces snapshot receiver instance.
+     * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
     IgniteInternalFuture<Boolean> runLocalSnapshotTask(
@@ -789,27 +787,32 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
-     * @throws IgniteCheckedException If fails.
      */
     SnapshotFutureTask runSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
         SnapshotFileSender snpSndr
-    ) throws IgniteCheckedException {
+    ) {
         if (locSnpTasks.containsKey(snpName))
-            throw new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName);
+            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-        SnapshotFutureTask snpFutTask = locSnpTasks.computeIfAbsent(snpName,
-            snpName0 -> new SnapshotFutureTask(cctx,
+        SnapshotFutureTask snpFutTask;
+
+        SnapshotFutureTask prev = locSnpTasks.putIfAbsent(snpName,
+            snpFutTask = new SnapshotFutureTask(cctx,
                 srcNodeId,
-                snpName0,
+                snpName,
                 tmpWorkDir,
                 ioFactory,
                 snpSndr,
                 parts));
 
+        if (prev != null)
+            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
+
         snpFutTask.listen(f -> locSnpTasks.remove(snpName));
+
         snpFutTask.run();
 
         return snpFutTask;
@@ -850,7 +853,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     SnapshotFileSender remoteSnapshotSender(String snpName, UUID rmtNodeId) {
         // Remote snapshots can be send only by single threaded executor since only one transmissionSedner created.
         return new RemoteSnapshotFileSender(log,
-            new SingleThreadWrapper(snpRunner),
+            new SingleThreadExecutor(snpRunner),
             () -> relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
@@ -880,7 +883,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param nodeId Remote node id on which requests has been registered.
      * @return Snapshot future related to given node id.
      */
-    IgniteInternalFuture<Boolean> snapshotRemoteRequest(UUID nodeId) {
+    SnapshotFutureTask lastScheduledRemoteSnapshotTask(UUID nodeId) {
         return locSnpTasks.values().stream()
             .filter(t -> t.type() == RemoteSnapshotFileSender.class && t.sourceNodeId().equals(nodeId))
             .findFirst()
@@ -998,7 +1001,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /** */
-    private static class SingleThreadWrapper implements Executor {
+    private static class SingleThreadExecutor implements Executor {
         /** Queue of task to execute. */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
@@ -1011,7 +1014,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /**
          * @param executor Executor to run tasks on.
          */
-        public SingleThreadWrapper(Executor executor) {
+        public SingleThreadExecutor(Executor executor) {
             this.executor = executor;
         }
 
