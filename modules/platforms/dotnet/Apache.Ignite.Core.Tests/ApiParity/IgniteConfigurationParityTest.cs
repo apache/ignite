@@ -86,7 +86,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "IncludeProperties",
             "isAutoActivationEnabled",  // IGNITE-7301
             "failureHandler",            // IGNITE-8070
-            "NetworkCompressionLevel"
+            "NetworkCompressionLevel",
+            "BuildIndexThreadPoolSize"
         };
 
         /// <summary>

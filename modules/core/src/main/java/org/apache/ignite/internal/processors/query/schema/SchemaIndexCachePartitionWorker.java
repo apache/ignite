@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -117,7 +118,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             processPartition();
         }
         catch (Throwable e) {
-            err = e;
+            err = new IgniteException(e);
 
             U.error(log, "Error during create/rebuild index for partition: " + locPart.id(), e);
 
