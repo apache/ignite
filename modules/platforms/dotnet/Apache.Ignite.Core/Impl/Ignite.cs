@@ -639,6 +639,11 @@ namespace Apache.Ignite.Core.Impl
             return _prj.ForServers().GetServices();
         }
 
+        public void EnableStatistics(IEnumerable<string> cacheNames, bool enabled)
+        {
+            _prj.EnableStatistics(cacheNames, enabled);
+        }
+
         /** <inheritdoc /> */
         public IAtomicLong GetAtomicLong(string name, long initialValue, bool create)
         {

@@ -945,6 +945,7 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Sets statistics (metrics) enabled flag cluster wide for this cache.
         /// </summary>
+        /// <param name="enabled">Enabled flag</param>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
             Justification = "Expensive operation.")]
         void EnableStatistics(bool enabled);
