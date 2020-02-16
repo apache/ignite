@@ -160,8 +160,17 @@ public class ClusterProperties {
     /** Ignite Yarn default Queue */
     public static final String DEFAULT_IGNITE_YARN_QUEUE = "default";
 
-    /** Path to users libs. */
+    /** Yarn queue name. */
     private String yarnQueue = DEFAULT_IGNITE_YARN_QUEUE;
+
+    /** Ignite Application Name */
+    public static final String IGNITE_APPLICATION_NAME = "IGNITE_APPLICATION_NAME";
+
+    /** Ignite default Application Name */
+    public static final String DEFAULT_IGNITE_APPLICATION_NAME = "ignition";
+
+    /** Application name. */
+    private String appName = DEFAULT_IGNITE_APPLICATION_NAME;
 
     /** */
     public ClusterProperties() {
@@ -261,6 +270,15 @@ public class ClusterProperties {
     }
 
     /**
+     * Sets Yarn Application Name
+     *
+     * @param name Application name.
+     */
+    public void appName(String name) {
+        this.appName = name;
+    }
+
+    /**
      * @return Ignite version.
      */
     public String igniteUrl() {
@@ -336,6 +354,11 @@ public class ClusterProperties {
     public String yarnQueue() { return yarnQueue; }
 
     /**
+     * @return Yarn Application name
+     */
+    public String appName() { return appName; }
+
+    /**
      * Instantiate a ClusterProperties from a set of properties.
      *
      * @param props If {@code null} will be used system properties.
@@ -364,6 +387,7 @@ public class ClusterProperties {
         prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
         prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
         prop.yarnQueue = getStringProperty(IGNITE_YARN_QUEUE, props, DEFAULT_IGNITE_YARN_QUEUE);
+        prop.appName = getStringProperty(IGNITE_APPLICATION_NAME, props, DEFAULT_IGNITE_APPLICATION_NAME);
 
         String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
 
@@ -432,6 +456,7 @@ public class ClusterProperties {
         envs.put(IGNITE_CONFIG_XML, toEnvVal(igniteCfg));
         envs.put(IGNITE_USERS_LIBS, toEnvVal(userLibs));
         envs.put(IGNITE_YARN_QUEUE, toEnvVal(yarnQueue));
+        envs.put(IGNITE_APPLICATION_NAME, toEnvVal(appName));
 
         if (hostnameConstraint != null)
             envs.put(IGNITE_HOSTNAME_CONSTRAINT, toEnvVal(hostnameConstraint.pattern()));

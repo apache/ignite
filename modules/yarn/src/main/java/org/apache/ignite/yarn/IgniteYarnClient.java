@@ -138,7 +138,7 @@ public class IgniteYarnClient {
 
         // Finally, set-up ApplicationSubmissionContext for the application
         ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
-        appContext.setApplicationName("ignition"); // application name
+        appContext.setApplicationName(props.appName()); // application name
         appContext.setAMContainerSpec(amContainer);
         appContext.setResource(capability);
         appContext.setQueue(props.yarnQueue()); // queue
