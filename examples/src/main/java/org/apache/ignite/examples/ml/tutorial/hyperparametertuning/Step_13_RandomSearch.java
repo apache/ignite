@@ -73,6 +73,9 @@ public class Step_13_RandomSearch {
      * Run example.
      */
     public static void main(String[] args) {
+        System.out.println();
+        System.out.println(">>> Tutorial step 13 (Random Search) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
                 IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
@@ -182,7 +185,7 @@ public class Step_13_RandomSearch {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+                System.out.println(">>> Tutorial step 13 (Random Search) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
