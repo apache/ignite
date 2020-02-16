@@ -25,7 +25,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Calculates {@code J = |A \cap B| / |A \cup B| } (Jaccard index) distance between two points.
  */
 public class JaccardIndex implements DistanceMeasure {
-
     @Override
     public double compute(Vector a, Vector b) throws CardinalityException {
         Set<Double> aSet = new HashSet<>();

@@ -24,7 +24,6 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * Calculates the {@code max(x_i - y_i)} (Chebyshev) distance between two points.
  */
 public class ChebyshevDistance implements DistanceMeasure {
-
     /** {@inheritDoc} */
     @Override public double compute(Vector a, Vector b) throws CardinalityException {
         return MatrixUtil.localCopyOf(a).minus(b).foldMap(Math::max, Math::abs, 0d);
