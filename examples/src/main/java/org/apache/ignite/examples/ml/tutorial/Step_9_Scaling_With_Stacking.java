@@ -138,7 +138,7 @@ public class Step_9_Scaling_With_Stacking {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 5 (scaling) example completed.");
+                System.out.println(">>> Tutorial step 9 (scaling with stacking) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
