@@ -49,6 +49,11 @@ import static org.apache.ignite.internal.processors.database.DataRegionMetricsSe
  */
 public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected PageMemory createPageMemory() throws Exception {
         long[] sizes = new long[CPUS + 1];
 
