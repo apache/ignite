@@ -306,7 +306,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var key = 1;
 
             enableStatistics(cache, true);
-
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
             cache.Put(key, 1);
             cache.Get(key);
             Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
