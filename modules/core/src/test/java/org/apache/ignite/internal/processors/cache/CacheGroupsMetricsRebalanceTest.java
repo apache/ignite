@@ -111,7 +111,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     private static final int KEYS_COUNT = 10_000;
 
     /** Test log. */
-    private ListeningTestLogger log;
+    private ListeningTestLogger testLogger;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -171,14 +171,14 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .setIncludeEventTypes(EventType.EVTS_ALL)
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        if (log != null)
+        if (testLogger != null)
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
                 ))
-                .setGridLogger(log);
+                .setGridLogger(testLogger);
 
         return cfg;
     }
@@ -460,8 +460,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         LogListener startingRebalance = LogListener
             .matches(s -> s.contains("Starting rebalance routine [" + DEFAULT_CACHE_NAME)).build();
 
-        log = new ListeningTestLogger(false, GridAbstractTest.log);
-        log.registerListener(startingRebalance);
+        testLogger = new ListeningTestLogger(false, GridAbstractTest.log);
+        testLogger.registerListener(startingRebalance);
 
         IgniteEx ig0 = startGrids(2);
 
