@@ -29,7 +29,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Contains tests for IgniteStandardMXBean methods.
+ * Contains tests for {@link IgniteStandardMXBean} methods.
  */
 public class IgniteStandardMXBeanTest {
     /** */
@@ -114,22 +114,24 @@ public class IgniteStandardMXBeanTest {
     private static final int FIRST_INDEX = 1;
 
     /**
-     * Instance of IgniteStandardMXBean.
+     * Instance of {@link IgniteStandardMXBean}.
      */
     private final IgniteStandardMXBean igniteStandardMXBean;
 
     /**
-     * Instance of MBeanParameterInfo.
+     * Instance of {@link MBeanParameterInfo}.
      */
-    private final MBeanParameterInfo parameterInfo;
+    private final MBeanParameterInfo paramInfo;
 
     /**
      * Public constructor that initializes instances of IgniteStandardMXBean and MBeanParameterInfo classes.
      */
     public IgniteStandardMXBeanTest() throws NotCompliantMBeanException {
-        TestInterfaceImpl testInterfaceImpl = new TestInterfaceImpl();
-        igniteStandardMXBean = new IgniteStandardMXBean(testInterfaceImpl, TestInterface.class);
-        parameterInfo = new MBeanParameterInfo(NAME, TYPE, PARAMETER_INFO_DESCRIPTION);
+        TestInterfaceImpl testItfImpl = new TestInterfaceImpl();
+
+        igniteStandardMXBean = new IgniteStandardMXBean(testItfImpl, TestInterface.class);
+
+        paramInfo = new MBeanParameterInfo(NAME, TYPE, PARAMETER_INFO_DESCRIPTION);
     }
 
     /**
@@ -140,9 +142,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getDescription_OldAnnotation() throws NoSuchMethodException {
-        String actualResult = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_1, FIRST_INDEX);
+        String actualRes = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_1, FIRST_INDEX);
 
-        assertEquals(SECOND_DESCRIPTION_METHOD_ANNOTATION, actualResult);
+        assertEquals(SECOND_DESCRIPTION_METHOD_ANNOTATION, actualRes);
     }
 
     /**
@@ -209,9 +211,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getDescription_NewAnnotation() throws NoSuchMethodException {
-        String actualResult = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_6, FIRST_INDEX);
+        String actualRes = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_6, FIRST_INDEX);
 
-        assertEquals(SECOND_DESCRIPTION_PARAM_ANNOTATION, actualResult);
+        assertEquals(SECOND_DESCRIPTION_PARAM_ANNOTATION, actualRes);
     }
 
     /**
@@ -255,9 +257,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getDescription_BothOldAndNewAnnotations() throws NoSuchMethodException {
-        String actualResult = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_9, FIRST_INDEX);
+        String actualRes = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_9, FIRST_INDEX);
 
-        assertEquals(SECOND_DESCRIPTION_METHOD_ANNOTATION, actualResult);
+        assertEquals(SECOND_DESCRIPTION_METHOD_ANNOTATION, actualRes);
     }
 
     /**
@@ -267,9 +269,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getDescription_NoAnnotations() throws NoSuchMethodException {
-        String actualResult = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_10, FIRST_INDEX);
+        String actualRes = getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_10, FIRST_INDEX);
 
-        assertEquals(PARAMETER_INFO_DESCRIPTION, actualResult);
+        assertEquals(PARAMETER_INFO_DESCRIPTION, actualRes);
     }
 
     /**
@@ -280,9 +282,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getParameterName_OldAnnotation() throws NoSuchMethodException {
-        String actualResult = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_1, FIRST_INDEX);
+        String actualRes = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_1, FIRST_INDEX);
 
-        assertEquals(SECOND_NAME_METHOD_ANNOTATION, actualResult);
+        assertEquals(SECOND_NAME_METHOD_ANNOTATION, actualRes);
     }
 
     /**
@@ -327,9 +329,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getParameterName_NewAnnotation() throws NoSuchMethodException {
-        String actualResult = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_6, FIRST_INDEX);
+        String actualRes = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_6, FIRST_INDEX);
 
-        assertEquals(SECOND_NAME_PARAM_ANNOTATION, actualResult);
+        assertEquals(SECOND_NAME_PARAM_ANNOTATION, actualRes);
     }
 
     /**
@@ -351,9 +353,9 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getParameterName_BothOldAndNewAnnotations() throws NoSuchMethodException {
-        String actualResult = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_9, FIRST_INDEX);
+        String actualRes = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_9, FIRST_INDEX);
 
-        assertEquals(SECOND_NAME_METHOD_ANNOTATION, actualResult);
+        assertEquals(SECOND_NAME_METHOD_ANNOTATION, actualRes);
     }
 
     /**
@@ -363,50 +365,50 @@ public class IgniteStandardMXBeanTest {
      */
     @Test
     public void getParameterName_NoAnnotations() throws NoSuchMethodException {
-        String actualResult = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_10, FIRST_INDEX);
+        String actualRes = getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_10, FIRST_INDEX);
 
-        assertEquals(NAME, actualResult);
+        assertEquals(NAME, actualRes);
     }
 
     /**
      * Utility method that returns the description for method argument by method name and parameter index.
      *
-     * @param methodName method name from interface TestInterface.
-     * @param paramIndex the sequence number of the argument considered.
+     * @param mName method name from interface TestInterface.
+     * @param paramIdx the sequence number of the argument considered.
      * @return the description for method argument.
      * @throws NoSuchMethodException if a matching method is not found.
      */
-    private String getDescriptionWithMethodNameAndParamIndex(String methodName, int paramIndex)
+    private String getDescriptionWithMethodNameAndParamIndex(String mName, int paramIdx)
         throws NoSuchMethodException {
-        MBeanOperationInfo operationInfo = getMBeanOperationInfoWithMehtodName(methodName);
-        return igniteStandardMXBean.getDescription(operationInfo, parameterInfo, paramIndex);
+        MBeanOperationInfo operationInfo = getMBeanOperationInfoWithMehtodName(mName);
+        return igniteStandardMXBean.getDescription(operationInfo, paramInfo, paramIdx);
     }
 
     /**
      * Utility method that returns the name for method argument by method name and parameter index.
      *
-     * @param methodName method name from interface TestInterface.
-     * @param paramIndex the sequence number of the argument considered.
+     * @param mName method name from interface TestInterface.
+     * @param paramIdx the sequence number of the argument considered.
      * @return the name for method argument.
      * @throws NoSuchMethodException if a matching method is not found.
      */
-    private String getParameterNameWithMethodNameAndParamIndex(String methodName, int paramIndex)
+    private String getParameterNameWithMethodNameAndParamIndex(String mName, int paramIdx)
         throws NoSuchMethodException {
-        MBeanOperationInfo operationInfo = getMBeanOperationInfoWithMehtodName(methodName);
-        return igniteStandardMXBean.getParameterName(operationInfo, parameterInfo, paramIndex);
+        MBeanOperationInfo operationInfo = getMBeanOperationInfoWithMehtodName(mName);
+        return igniteStandardMXBean.getParameterName(operationInfo, paramInfo, paramIdx);
     }
 
     /**
      * Utility method for getting instance of MBeanOperationInfo constructed with default description from TestInterface
      * by its method name.
      *
-     * @param methodName method name from interface TestInterface.
+     * @param mName method name from interface TestInterface.
      * @return MBeanOperationInfo.
      * @throws NoSuchMethodException if a matching method is not found.
      */
-    private MBeanOperationInfo getMBeanOperationInfoWithMehtodName(String methodName) throws NoSuchMethodException {
-        Method method = TestInterfaceImpl.class.getDeclaredMethod(methodName, String.class, String.class);
-        return new MBeanOperationInfo(OPERATION_INFO_DESCRIPTION, method);
+    private MBeanOperationInfo getMBeanOperationInfoWithMehtodName(String mName) throws NoSuchMethodException {
+        Method m = TestInterfaceImpl.class.getDeclaredMethod(mName, String.class, String.class);
+        return new MBeanOperationInfo(OPERATION_INFO_DESCRIPTION, m);
     }
 
     /**

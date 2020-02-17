@@ -243,14 +243,12 @@ public class IgniteStandardMXBean extends StandardMBean {
     }
 
     /**
-     * Gets MXBeanArgumentInfo annotation instance from
-     * method if possible, otherwise returns null.
+     * Gets {@link MXBeanParameter} annotation instance from method if possible, otherwise returns {@code null}.
      *
      * @param m   Method instance.
-     * @param seq The sequence number of the argument considered
-     *            ("0" for the first parameter, "1" for the second parameter,
-     *            etc...)
-     * @return MXBeanArgumentInfo annotation instance.
+     * @param seq The sequence number of the argument considered ("0" for the first parameter, "1" for the second
+     *            parameter, etc...)
+     * @return {@link MXBeanParameter} annotation instance.
      */
     private MXBeanParameter getMXBeanArgumentAnnotation(Method m, int seq) {
         Annotation[][] annotations = m.getParameterAnnotations();
