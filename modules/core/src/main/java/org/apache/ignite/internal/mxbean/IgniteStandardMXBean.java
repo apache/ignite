@@ -100,9 +100,7 @@ public class IgniteStandardMXBean extends StandardMBean {
                     assert !str.trim().isEmpty() : "Method description cannot be empty: " + mtd;
 
                     // Enforce proper English.
-                    assert Character.isUpperCase(str.charAt(0)) :
-                        "Description must start with upper case: " + str;
-
+                    assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
                     assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
                 }
             }
@@ -128,8 +126,8 @@ public class IgniteStandardMXBean extends StandardMBean {
             assert !str.trim().isEmpty();
 
             // Enforce proper English.
-            assert Character.isUpperCase(str.charAt(0)) : str;
-            assert str.charAt(str.length() - 1) == '.' : str;
+            assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
+            assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
         }
 
         return str;
@@ -151,8 +149,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert !str.trim().isEmpty();
 
                 // Enforce proper English.
-                assert Character.isUpperCase(str.charAt(0)) : str;
-                assert str.charAt(str.length() - 1) == '.' : str;
+                assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
+                assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
             }
         }
         catch (SecurityException | ClassNotFoundException ignored) {
@@ -181,8 +179,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert !str.trim().isEmpty();
 
                 // Enforce proper English.
-                assert Character.isUpperCase(str.charAt(0)) : str;
-                assert str.charAt(str.length() - 1) == '.' : str;
+                assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
+                assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
             }
             else {
                 MXBeanParameter argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
@@ -194,8 +192,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                     assert !str.trim().isEmpty();
 
                     // Enforce proper English.
-                    assert Character.isUpperCase(str.charAt(0)) : str;
-                    assert str.charAt(str.length() - 1) == '.' : str;
+                    assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
+                    assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
                 }
             }
         }
