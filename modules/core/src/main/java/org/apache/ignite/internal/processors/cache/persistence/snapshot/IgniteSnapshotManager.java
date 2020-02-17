@@ -637,7 +637,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             }
         }
 
-        String snpName = "snapshot_" + UUID.randomUUID().getMostSignificantBits();
+        String snpName = "snapshot_" + UUID.randomUUID().toString();
 
         RemoteSnapshotFuture snpTransFut = new RemoteSnapshotFuture(rmtNodeId, snpName,
             parts.values().stream().mapToInt(Set::size).sum(), partConsumer);
