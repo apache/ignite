@@ -1003,7 +1003,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Such an executor can executes task not in a single thread, but can be executed
+     * Such an executor can executes tasks not in a single thread, but executes them
      * on different threads sequentially. It's important for some {@link SnapshotFileSender}'s
      * to process sub-task sequentially due to all these sub-tasks may share a signle socket
      * channel to send data to.
