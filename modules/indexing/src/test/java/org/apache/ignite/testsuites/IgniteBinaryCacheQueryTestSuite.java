@@ -209,6 +209,8 @@ import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySel
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
+import org.apache.ignite.internal.processors.query.SqlMergeOnClientNodeTest;
+import org.apache.ignite.internal.processors.query.SqlMergeTest;
 import org.apache.ignite.internal.processors.query.SqlNestedQuerySelfTest;
 import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlQueryHistoryFromClientSelfTest;
@@ -585,7 +587,12 @@ import org.junit.runners.Suite;
     RowCountTableStatisticsSurvivesNodeRestartTest.class,
 
     SqlViewExporterSpiTest.class,
-    SystemViewSelfTest.class
+    SystemViewSelfTest.class,
+
+    IgniteCacheMergeSqlQuerySelfTest.class,
+    SqlMergeTest.class,
+    SqlMergeOnClientNodeTest.class
+
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
