@@ -99,7 +99,7 @@ public class ExecutionContext implements DataContext {
      * @return Keep binary flag.
      */
     public boolean keepBinary() {
-        return false; // TODO
+        return true; // TODO
     }
 
     /**
@@ -114,6 +114,13 @@ public class ExecutionContext implements DataContext {
      */
     public boolean cancelled() {
         return cancelled;
+    }
+
+    /**
+     * @return Originating node ID.
+     */
+    public UUID originatingNodeId() {
+        return parent().originatingNodeId();
     }
 
     /** {@inheritDoc} */

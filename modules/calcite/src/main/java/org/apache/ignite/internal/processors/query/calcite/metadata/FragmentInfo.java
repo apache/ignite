@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RelSource;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.splitter.RelSource;
 
 /**
  * Collects meta information about a query fragment, mainly it is data

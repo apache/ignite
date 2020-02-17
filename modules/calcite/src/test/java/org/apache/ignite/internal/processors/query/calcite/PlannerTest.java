@@ -60,10 +60,13 @@ import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessag
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlanImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -72,9 +75,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.SortedTable;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.splitter.QueryPlan;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -480,7 +480,7 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
@@ -571,13 +571,15 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             RelNode rel = relRoot.rel;
 
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
             // Transformation chain
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
@@ -687,18 +689,18 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = planner.convert(sqlNode);
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(rel);
 
-            QueryPlan plan = new Splitter().go((IgniteRel) rel);
+            MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) rel));
 
             assertNotNull(plan);
 
@@ -832,21 +834,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -963,17 +965,17 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster()
                 .traitSetOf(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single());
 
-            RelNode phys = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             assertNotNull(phys);
 
-            QueryPlan plan = new Splitter().go((IgniteRel) phys);
+            MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) phys));
 
             assertNotNull(plan);
 
@@ -1198,21 +1200,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1320,21 +1322,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1441,21 +1443,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1562,21 +1564,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1680,21 +1682,21 @@ public class PlannerTest extends GridCommonAbstractTest {
             RelNode rel = relRoot.rel;
 
             // Transformation chain
-            rel = planner.transform(PlannerType.HEP, PlannerPhase.SUBQUERY_REWRITE, rel, rel.getTraitSet());
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 
             RelTraitSet desired = rel.getCluster().traitSet()
                 .replace(IgniteConvention.INSTANCE)
                 .replace(IgniteDistributions.single())
                 .simplify();
 
-            rel = planner.transform(PlannerType.VOLCANO, PlannerPhase.OPTIMIZATION, rel, desired);
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
 
             relRoot = relRoot.withRel(rel).withKind(sqlNode.getKind());
         }
 
         assertNotNull(relRoot);
 
-        QueryPlan plan = new Splitter().go((IgniteRel) relRoot.rel);
+        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1785,13 +1787,13 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean prepareMarshal(Message msg) {
-            return true;
+        @Override protected void prepareMarshal(Message msg) {
+            // No-op;
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean prepareUnmarshal(Message msg) {
-            return true;
+        @Override protected void prepareUnmarshal(Message msg) {
+            // No-op;
         }
     }
 

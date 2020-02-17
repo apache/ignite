@@ -229,6 +229,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             " Zero means there is no limits.",
         0, false, 0, Integer.MAX_VALUE);
 
+    /** Whether an experimental SQL engine enabled for a connection. */
+    private BooleanProperty useExperimentalQueryEngine = new BooleanProperty("useExperimentalQueryEngine",
+        "Enables experimental query engine.", false, false);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -244,7 +248,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             partitionAwarenessSQLCacheSize,
             partitionAwarenessPartDistributionsCacheSize,
         qryTimeout,
-        connTimeout
+        connTimeout,
+        useExperimentalQueryEngine
     };
 
     /** {@inheritDoc} */
@@ -621,6 +626,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setConnectionTimeout(@Nullable Integer timeout) throws SQLException {
         connTimeout.setValue(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isUseExperimentalQueryEngine() {
+        return useExperimentalQueryEngine.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUseExperimentalQueryEngine(boolean useExperimentalQueryEngine) {
+        this.useExperimentalQueryEngine.setValue(useExperimentalQueryEngine);
     }
 
     /**

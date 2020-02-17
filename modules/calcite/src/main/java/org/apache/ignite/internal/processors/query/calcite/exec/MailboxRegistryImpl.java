@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -80,7 +81,10 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     }
 
     /** {@inheritDoc} */
-    @Override public List<Inbox<?>> inboxes(UUID queryId) {
+    @Override public Collection<Inbox<?>> inboxes(@Nullable UUID queryId) {
+        if (queryId == null)
+            return remotes.values();
+
         return remotes.entrySet().stream()
             .filter(e -> e.getKey().queryId.equals(queryId))
             .map(Map.Entry::getValue)
@@ -88,11 +92,15 @@ public class MailboxRegistryImpl extends AbstractService implements MailboxRegis
     }
 
     /** {@inheritDoc} */
-    @Override public List<Outbox<?>> outboxes(UUID queryId) {
+    @Override public Collection<Outbox<?>> outboxes(@Nullable UUID queryId) {
+        if (queryId == null)
+            return locals.values();
+
         return locals.entrySet().stream()
             .filter(e -> e.getKey().queryId.equals(queryId))
             .map(Map.Entry::getValue)
-            .collect(Collectors.toList());    }
+            .collect(Collectors.toList());
+    }
 
     /** */
     private static class MailboxKey {

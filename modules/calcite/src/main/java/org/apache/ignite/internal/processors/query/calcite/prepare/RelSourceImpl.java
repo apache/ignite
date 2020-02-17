@@ -15,52 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.rel.RelNode;
+import java.io.Serializable;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 
 /**
- * Describes RelNode tree edge.
+ *
  */
-public class Edge {
+public class RelSourceImpl implements RelSource, Serializable {
     /** */
-    private final RelNode parent;
-
-    /** */
-    private final RelNode child;
+    private final long fragmentId;
 
     /** */
-    private final int childIdx;
+    private final NodesMapping mapping;
 
     /**
-     * @param parent Parent node.
-     * @param child Child node.
-     * @param childIdx Child node index in parent.
+     * @param fragmentId Fragment ID.
+     * @param mapping Source mapping.
      */
-    public Edge(RelNode parent, RelNode child, int childIdx) {
-        this.parent = parent;
-        this.child = child;
-        this.childIdx = childIdx;
+    public RelSourceImpl(long fragmentId, NodesMapping mapping) {
+        this.fragmentId = fragmentId;
+        this.mapping = mapping;
     }
 
-    /**
-     * @return Parent node.
-     */
-    public RelNode parent() {
-        return parent;
+    /** {@inheritDoc} */
+    @Override public long fragmentId() {
+        return fragmentId;
     }
 
-    /**
-     * @return Child node.
-     */
-    public RelNode child() {
-        return child;
-    }
-
-    /**
-     * @return Child node index in parent.
-     */
-    public int childIndex() {
-        return childIdx;
+    /** {@inheritDoc} */
+    @Override public NodesMapping mapping() {
+        return mapping;
     }
 }

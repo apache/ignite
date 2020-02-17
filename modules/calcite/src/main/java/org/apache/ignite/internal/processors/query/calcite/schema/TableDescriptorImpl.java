@@ -18,14 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -47,6 +49,9 @@ public class TableDescriptorImpl implements TableDescriptor {
     private final Object affinityIdentity;
 
     /** */
+    private final ColumnDescriptor[] descriptors;
+
+    /** */
     private final int affinityFieldIdx;
 
     /** */
@@ -55,7 +60,31 @@ public class TableDescriptorImpl implements TableDescriptor {
         this.typeDesc = typeDesc;
         this.affinityIdentity = affinityIdentity;
 
-        affinityFieldIdx = lookupAffinityIndex(typeDesc);
+        String affinityField = typeDesc.affinityKey(); int affinityFieldIdx = 0;
+
+        List<ColumnDescriptor> descriptors = new ArrayList<>();
+
+        descriptors.add(new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, true));
+        descriptors.add(new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.keyClass(), true, false));
+
+        for (String field : this.typeDesc.fields().keySet()) {
+            if (Objects.equals(affinityField, field)) {
+                assert affinityFieldIdx == 0;
+
+                affinityFieldIdx = descriptors.size();
+            }
+
+            if (Objects.equals(field, typeDesc.keyFieldAlias()))
+                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), false, true));
+            else if (Objects.equals(field, typeDesc.valueFieldAlias()))
+                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, false));
+            else
+                descriptors.add(new FieldDescriptor(typeDesc.property(field)));
+        }
+
+        this.descriptors = descriptors.toArray(new ColumnDescriptor[0]);
+
+        this.affinityFieldIdx = affinityFieldIdx;
     }
 
     /** {@inheritDoc} */
@@ -64,11 +93,8 @@ public class TableDescriptorImpl implements TableDescriptor {
 
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(f);
 
-        b.add(QueryUtils.KEY_FIELD_NAME, f.createSystemType(typeDesc.keyClass()));
-        b.add(QueryUtils.VAL_FIELD_NAME, f.createSystemType(typeDesc.valueClass()));
-
-        for (Map.Entry<String, Class<?>> field : typeDesc.fields().entrySet())
-            b.add(field.getKey(), f.createJavaType(field.getValue()));
+        for (ColumnDescriptor desc : descriptors)
+            b.add(desc.name(), desc.type(f));
 
         return b.build();
     }
@@ -98,34 +124,87 @@ public class TableDescriptorImpl implements TableDescriptor {
 
     /** {@inheritDoc} */
     @Override public <T> T toRow(ExecutionContext ectx, CacheDataRow row) throws IgniteCheckedException {
-        Object[] res = new Object[typeDesc.fields().size() + 2];
+        Object[] res = new Object[descriptors.length];
 
-        int i = 0;
-
-        res[i++] = cctx.unwrapBinaryIfNeeded(row.key(), ectx.keepBinary());
-        res[i++] = cctx.unwrapBinaryIfNeeded(row.value(), ectx.keepBinary());
-
-        for (String field : typeDesc.fields().keySet())
-            res[i++] = cctx.unwrapBinaryIfNeeded(typeDesc.value(field, row.key(), row.value()), ectx.keepBinary());
+        for (int i = 0; i < descriptors.length; i++)
+            res[i] = descriptors[i].value(ectx, cctx, row);
 
         return (T) res;
     }
 
     /** */
-    private static int lookupAffinityIndex(GridQueryTypeDescriptor queryTypeDesc) {
-        if (queryTypeDesc.affinityKey() != null) {
-            int idx = 2;
+    private interface ColumnDescriptor {
+        /** */
+        String name();
 
-            String affField = queryTypeDesc.affinityKey();
+        /** */
+        RelDataType type(IgniteTypeFactory f);
 
-            for (String s : queryTypeDesc.fields().keySet()) {
-                if (affField.equals(s))
-                    return idx;
+        /** */
+        Object value(ExecutionContext ectx, GridCacheContext<?,?> cctx, CacheDataRow src) throws IgniteCheckedException;
+    }
 
-                idx++;
-            }
+    /** */
+    private static class KeyValDescriptor implements ColumnDescriptor {
+        /** */
+        private final String name;
+
+        /** */
+        private final Class<?> type;
+
+        /** */
+        private final boolean isSystem;
+
+        /** */
+        private final boolean isKey;
+
+        /** */
+        private KeyValDescriptor(String name, Class<?> type, boolean isSystem, boolean isKey) {
+            this.name = name;
+            this.type = type;
+            this.isSystem = isSystem;
+            this.isKey = isKey;
         }
 
-        return 0;
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType type(IgniteTypeFactory f) {
+            return isSystem ? f.createSystemType(type) : f.createJavaType(type);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(ExecutionContext ectx, GridCacheContext<?,?> cctx, CacheDataRow src) throws IgniteCheckedException {
+            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary());
+        }
+    }
+
+    /** */
+    private static class FieldDescriptor implements ColumnDescriptor {
+        /** */
+        private final GridQueryProperty desc;
+
+        /** */
+        private FieldDescriptor(GridQueryProperty desc) {
+            this.desc = desc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return desc.name();
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType type(IgniteTypeFactory f) {
+            return f.createJavaType(desc.type());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(ExecutionContext ectx, GridCacheContext<?,?> cctx, CacheDataRow src) throws IgniteCheckedException {
+            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary());
+        }
     }
 }

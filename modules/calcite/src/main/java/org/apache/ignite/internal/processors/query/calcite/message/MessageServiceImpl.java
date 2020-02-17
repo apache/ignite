@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,7 +26,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -189,32 +187,16 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** {@inheritDoc} */
-    @Override public void send(Collection<UUID> nodeIds, CalciteMessage msg) {
-        for (UUID nodeId : nodeIds)
-            send(nodeId, msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void send(UUID nodeId, CalciteMessage msg) {
+    @Override public void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException {
         if (localNodeId().equals(nodeId))
             onMessage(nodeId, msg, true);
         else {
             byte plc = msg instanceof ExecutionContextAware ?
                 ((ExecutionContextAware) msg).ioPolicy() : GridIoPolicy.QUERY_POOL;
 
-            if (!prepareMarshal(msg))
-                return;
+            prepareMarshal(msg);
 
-            try {
-                ioManager().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, plc);
-            }
-            catch (ClusterTopologyCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send message, node failed: " + nodeId);
-            }
-            catch (IgniteCheckedException e) {
-                failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-            }
+            ioManager().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, plc);
         }
     }
 
@@ -226,6 +208,32 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         MessageListener old = lsnrs.put(type, lsnr);
 
         assert old == null : old;
+    }
+
+    /** */
+    protected void prepareMarshal(Message msg) throws IgniteCheckedException {
+        try {
+            if (msg instanceof MarshalableMessage)
+                ((MarshalableMessage) msg).prepareMarshal(marshaller());
+        }
+        catch (IgniteCheckedException e) {
+            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
+        }
+    }
+
+    /** */
+    protected void prepareUnmarshal(Message msg) throws IgniteCheckedException {
+        try {
+            if (msg instanceof MarshalableMessage)
+                ((MarshalableMessage) msg).prepareUnmarshal(marshaller(), classLoader());
+        }
+        catch (IgniteCheckedException e) {
+            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
+        }
     }
 
     /** */
@@ -241,36 +249,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     }
 
     /** */
-    protected boolean prepareMarshal(Message msg) {
-        try {
-            if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage) msg).prepareMarshal(marshaller());
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-        }
-
-        return false;
-    }
-
-    /** */
-    protected boolean prepareUnmarshal(Message msg) {
-        try {
-            if (msg instanceof MarshalableMessage)
-                ((MarshalableMessage) msg).prepareUnmarshal(marshaller(), classLoader());
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            failureProcessor().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-        }
-
-        return false;
-    }
-
-    /** */
     private void onMessage(UUID nodeId, Object msg, byte plc) {
         if (msg instanceof CalciteMessage)
             onMessage(nodeId, (CalciteMessage) msg, false);
@@ -278,10 +256,14 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private void onMessageInternal(UUID nodeId, CalciteMessage msg) {
-        if (!prepareUnmarshal(msg))
-            return;
+        try {
+            prepareUnmarshal(msg);
 
-        MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.type()));
-        lsnr.onMessage(nodeId, msg);
+            MessageListener lsnr = Objects.requireNonNull(lsnrs.get(msg.type()));
+            lsnr.onMessage(nodeId, msg);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }

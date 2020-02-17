@@ -129,19 +129,19 @@ public class OutboxTest extends GridCommonAbstractTest {
         private List<?> lastBatch;
 
         /** {@inheritDoc} */
-        @Override public void sendBatch(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
+        @Override public void sendBatch(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) {
             ids.add(batchId);
 
             lastBatch = rows;
         }
 
         /** {@inheritDoc} */
-        @Override public void acknowledge(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+        @Override public void acknowledge(Inbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(Object caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
+        @Override public void cancel(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) {
             throw new AssertionError();
         }
     }

@@ -503,4 +503,16 @@ public interface ConnectionProperties {
      * @param connTimeout Connection timeout in milliseconds.
      */
     public void setConnectionTimeout(@Nullable Integer connTimeout) throws SQLException;
+
+    /**
+     * @return {@code True} if experimental query engine is enabled for a connection.
+     */
+    public boolean isUseExperimentalQueryEngine();
+
+    /**
+     * Sets use experimental query engine flag.
+     *
+     * @param useExperimentalQueryEngine {@code True} if experimental query engine is enabled for a connection.
+     */
+    public void setUseExperimentalQueryEngine(boolean useExperimentalQueryEngine);
 }

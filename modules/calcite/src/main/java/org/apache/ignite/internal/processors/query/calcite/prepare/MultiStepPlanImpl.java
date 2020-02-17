@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.splitter;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,31 +34,41 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Distributed query plan.
  */
-public class QueryPlan {
+public class MultiStepPlanImpl implements MultiStepPlan {
     /** */
     private final List<Fragment> fragments;
+
+    /** */
+    private final List<GridQueryFieldMetadata> fieldsMeta;
 
     /**
      * @param fragments Query fragments.
      */
-    public QueryPlan(List<Fragment> fragments) {
+    public MultiStepPlanImpl(List<Fragment> fragments) {
+        this(fragments, ImmutableList.of());
+    }
+
+    /**
+     * @param fragments Query fragments.
+     * @param fieldsMeta Fields metadata.
+     */
+    public MultiStepPlanImpl(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
+        this.fieldsMeta = fieldsMeta;
         this.fragments = fragments;
     }
 
-    /**
-     * @return Query fragments.
-     */
-    public List<Fragment> fragments() {
+    /** {@inheritDoc} */
+    @Override public List<Fragment> fragments() {
         return fragments;
     }
 
-    /**
-     * Inits query fragments.
-     *
-     * @param mappingService Mapping service.
-     * @param ctx Planner context.
-     */
-    public void init(MappingService mappingService, PlanningContext ctx) {
+    /** {@inheritDoc} */
+    @Override public List<GridQueryFieldMetadata> fieldsMetadata() {
+        return fieldsMeta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void init(MappingService mappingService, PlanningContext ctx) {
         int i = 0;
 
         RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
@@ -103,10 +114,8 @@ public class QueryPlan {
         }
     }
 
-    /**
-     * Clones this plan with a new cluster.
-     */
-    public QueryPlan clone(RelOptCluster cluster) {
+    /** {@inheritDoc} */
+    @Override public MultiStepPlan clone(RelOptCluster cluster) {
         return new Cloner(cluster).go(this);
     }
 }

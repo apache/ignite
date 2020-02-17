@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -66,6 +66,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower
                 // case when they are read, and whether identifiers are matched case-sensitively.
                 .setLex(Lex.ORACLE)
+//                .setParserFactory(SqlDdlParserImpl.FACTORY) // Enables DDL support
                 .build())
             // Dialects support.
             .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
@@ -75,7 +76,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             // Context provides a way to store data within the planner session that can be accessed in planner rules.
             .context(Contexts.empty())
             // Custom cost factory to use during optimization
-            .costFactory(null)
+            .costFactory(RelOptCostImpl.FACTORY)
             .typeSystem(IgniteTypeSystem.INSTANCE)
             .build();
 
@@ -251,8 +252,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext qryCtx, @Nullable String schemaName,
         String query, Object... params) throws IgniteSQLException {
         
-        // TODO multiline query.
-        return Collections.singletonList(executionService.executeQuery(qryCtx, schemaName, query, params));
+        return executionService.executeQuery(qryCtx, schemaName, query, params);
     }
 
     /** */

@@ -168,6 +168,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                         @Override public List<GridQueryFieldMetadata> fieldsMeta() {
                             return null;
                         }
+
+                        @Override public boolean isQuery() {
+                            return false;
+                        }
                     }, initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE);
             }
             catch (Exception e) {

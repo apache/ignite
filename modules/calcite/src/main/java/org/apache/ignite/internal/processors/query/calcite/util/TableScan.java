@@ -182,7 +182,7 @@ public class TableScan implements Iterable<Object[]> {
                 return this;
             }
             catch (Exception e) {
-                Commons.close(this, e);
+                Commons.closeQuiet(this, e);
 
                 throw e;
             }

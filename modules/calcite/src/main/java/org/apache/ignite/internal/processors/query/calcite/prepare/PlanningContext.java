@@ -31,6 +31,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.calcite.exec.QueryCancelGroup;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
@@ -59,6 +60,9 @@ public final class PlanningContext implements Context {
     private final AffinityTopologyVersion topologyVersion;
 
     /** */
+    private final QueryCancelGroup cancelGroup;
+
+    /** */
     private final IgniteLogger logger;
 
     /** */
@@ -74,10 +78,11 @@ public final class PlanningContext implements Context {
      * Private constructor, used by a builder.
      */
     private PlanningContext(FrameworkConfig config, Context parentContext, UUID localNodeId, UUID originatingNodeId,
-        String query, Object[] parameters, AffinityTopologyVersion topologyVersion, IgniteLogger logger) {
+        String query, Object[] parameters, AffinityTopologyVersion topologyVersion, QueryCancelGroup cancelGroup, IgniteLogger logger) {
         this.parentContext = parentContext;
         this.localNodeId = localNodeId;
         this.parameters = parameters;
+        this.cancelGroup = cancelGroup;
         this.originatingNodeId = originatingNodeId == null ? localNodeId : originatingNodeId;
         this.query = query;
         this.topologyVersion = topologyVersion;
@@ -133,6 +138,13 @@ public final class PlanningContext implements Context {
     }
 
     /**
+     * @return Query cancel group.
+     */
+    public QueryCancelGroup cancelGroup() {
+        return cancelGroup;
+    }
+
+    /**
      * @return Logger.
      */
     public IgniteLogger logger() {
@@ -149,6 +161,13 @@ public final class PlanningContext implements Context {
             planner = new IgnitePlanner(this);
 
         return planner;
+    }
+
+    /**
+     * @return Schema name.
+     */
+    public String schemaName() {
+        return schema().getName();
     }
 
     /**
@@ -215,21 +234,6 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Context builder.
-     */
-    public static Builder builder(PlanningContext template) {
-        return new Builder()
-            .logger(template.logger)
-            .topologyVersion(template.topologyVersion)
-            .query(template.query)
-            .parameters(template.parameters)
-            .parentContext(template.parentContext)
-            .frameworkConfig(template.frameworkConfig)
-            .originatingNodeId(template.originatingNodeId)
-            .localNodeId(template.localNodeId);
-    }
-
-    /**
      * Planner context builder.
      */
     public static class Builder {
@@ -253,6 +257,9 @@ public final class PlanningContext implements Context {
 
         /** */
         private AffinityTopologyVersion topologyVersion;
+
+        /** */
+        private QueryCancelGroup cancelGroup;
 
         /** */
         private IgniteLogger logger;
@@ -321,6 +328,15 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param cancelGroup Query cancel group.
+         * @return Builder for chaining.
+         */
+        public Builder cancelGroup(QueryCancelGroup cancelGroup) {
+            this.cancelGroup = cancelGroup;
+            return this;
+        }
+
+        /**
          * @param logger Logger.
          * @return Builder for chaining.
          */
@@ -336,7 +352,7 @@ public final class PlanningContext implements Context {
          */
         public PlanningContext build() {
             return new PlanningContext(frameworkConfig, parentContext, localNodeId, originatingNodeId, query,
-                parameters, topologyVersion, logger);
+                parameters, topologyVersion, cancelGroup, logger);
         }
     }
 }

@@ -49,7 +49,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
             requestInternal();
         }
         catch (Exception e) {
-            Commons.close(it, e);
+            Commons.closeQuiet(it, e);
 
             throw e;
         }
@@ -98,7 +98,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Commons.close(it);
+        Commons.closeQuiet(it);
 
         it = null;
 

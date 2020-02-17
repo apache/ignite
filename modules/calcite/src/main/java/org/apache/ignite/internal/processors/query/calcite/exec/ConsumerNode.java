@@ -134,8 +134,6 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        context().setCancelled();
-
         if (state != State.RUNNING)
             return;
 
@@ -144,6 +142,7 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
             if (state != State.RUNNING)
                 return;
 
+            context().setCancelled();
             state = State.CANCELLED;
             buff.clear();
             cond.signalAll();
@@ -155,8 +154,11 @@ public class ConsumerNode extends AbstractNode<Object[]> implements SingleNode<O
         context().execute(input()::cancel);
         onClose.accept(this);
     }
-    
-    public boolean canceled() {
+
+    /**
+     * @return Cancelled flag.
+     */
+    boolean canceled() {
         return state == State.CANCELLED;
     }
 

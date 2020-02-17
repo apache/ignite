@@ -17,10 +17,50 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import org.apache.calcite.rel.RelNode;
+
 /**
- *
+ * Describes RelNode tree edge.
  */
-public enum PlannerType {
-    HEP,
-    VOLCANO;
+public class Edge {
+    /** */
+    private final RelNode parent;
+
+    /** */
+    private final RelNode child;
+
+    /** */
+    private final int childIdx;
+
+    /**
+     * @param parent Parent node.
+     * @param child Child node.
+     * @param childIdx Child node index in parent.
+     */
+    public Edge(RelNode parent, RelNode child, int childIdx) {
+        this.parent = parent;
+        this.child = child;
+        this.childIdx = childIdx;
+    }
+
+    /**
+     * @return Parent node.
+     */
+    public RelNode parent() {
+        return parent;
+    }
+
+    /**
+     * @return Child node.
+     */
+    public RelNode child() {
+        return child;
+    }
+
+    /**
+     * @return Child node index in parent.
+     */
+    public int childIndex() {
+        return childIdx;
+    }
 }

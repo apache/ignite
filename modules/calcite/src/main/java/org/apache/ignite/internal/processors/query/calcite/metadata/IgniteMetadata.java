@@ -47,11 +47,11 @@ public class IgniteMetadata {
             FragmentMetadata.Handler.class, IgniteMethod.FRAGMENT_INFO.method());
 
         /** Determines how the rows are distributed. */
-        FragmentInfo getFragmentInfo();
+        FragmentInfo fragmentInfo();
 
         /** Handler API. */
         interface Handler extends MetadataHandler<FragmentMetadata> {
-            FragmentInfo getFragmentInfo(RelNode r, RelMetadataQuery mq);
+            FragmentInfo fragmentInfo(RelNode r, RelMetadataQuery mq);
         }
     }
 

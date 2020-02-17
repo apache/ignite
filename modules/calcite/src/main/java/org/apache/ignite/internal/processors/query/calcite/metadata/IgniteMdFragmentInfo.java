@@ -31,11 +31,11 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Edge;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
-import org.apache.ignite.internal.processors.query.calcite.splitter.Edge;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
@@ -63,35 +63,35 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * @param mq Metadata query instance. Used to request appropriate metadata from node children.
      * @return Fragment meta information.
      */
-    public FragmentInfo getFragmentInfo(RelNode rel, RelMetadataQuery mq) {
+    public FragmentInfo fragmentInfo(RelNode rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo getFragmentInfo(RelSubset rel, RelMetadataQuery mq) {
+    public FragmentInfo fragmentInfo(RelSubset rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      *
      * Prunes involved partitions (hence nodes, involved in query execution) if possible.
      */
-    public FragmentInfo getFragmentInfo(IgniteFilter rel, RelMetadataQuery mq) {
-        return fragmentInfo(rel.getInput(), mq).prune(rel);
+    public FragmentInfo fragmentInfo(IgniteFilter rel, RelMetadataQuery mq) {
+        return _fragmentInfo(rel.getInput(), mq).prune(rel);
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo getFragmentInfo(SingleRel rel, RelMetadataQuery mq) {
-        return fragmentInfo(rel.getInput(), mq);
+    public FragmentInfo fragmentInfo(SingleRel rel, RelMetadataQuery mq) {
+        return _fragmentInfo(rel.getInput(), mq);
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      *
      * {@link LocationMappingException} may be thrown on two children nodes locations merge. This means
      * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
@@ -99,11 +99,11 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
      * information will be recalculated for all fragments.
      */
-    public FragmentInfo getFragmentInfo(Join rel, RelMetadataQuery mq) {
+    public FragmentInfo fragmentInfo(Join rel, RelMetadataQuery mq) {
         mq = RelMetadataQueryEx.wrap(mq);
 
-        FragmentInfo left = fragmentInfo(rel.getLeft(), mq);
-        FragmentInfo right = fragmentInfo(rel.getRight(), mq);
+        FragmentInfo left = _fragmentInfo(rel.getLeft(), mq);
+        FragmentInfo right = _fragmentInfo(rel.getRight(), mq);
 
         try {
             return left.merge(right);
@@ -126,16 +126,16 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo getFragmentInfo(IgniteReceiver rel, RelMetadataQuery mq) {
+    public FragmentInfo fragmentInfo(IgniteReceiver rel, RelMetadataQuery mq) {
         return new FragmentInfo(Pair.of(rel, rel.source()));
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#getFragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo getFragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
+    public FragmentInfo fragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
         return new FragmentInfo(rel.getTable().unwrap(DistributedTable.class).mapping(Commons.context(rel)));
     }
 
@@ -145,7 +145,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * @param mq Metadata query instance.
      * @return Fragment meta information.
      */
-    public static FragmentInfo fragmentInfo(RelNode rel, RelMetadataQuery mq) {
+    public static FragmentInfo _fragmentInfo(RelNode rel, RelMetadataQuery mq) {
         return RelMetadataQueryEx.wrap(mq).getFragmentInfo(rel);
     }
 
