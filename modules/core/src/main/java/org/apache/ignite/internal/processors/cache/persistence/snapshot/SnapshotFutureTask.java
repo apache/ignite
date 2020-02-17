@@ -320,7 +320,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     }
 
     /**
-     * Initiates snapshot taks.
+     * Initiates snapshot task.
      */
     public void start() {
         if (stopping.getAsBoolean())

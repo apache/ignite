@@ -280,7 +280,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             SnapshotFutureTask task = lastScheduledRemoteSnapshotTask(nodeId);
 
                             if (task != null) {
-                                // todo Task should also be removed from local map.
+                                // Task will also be removed from local map due to the listener on future done.
                                 task.cancel();
 
                                 log.info("Snapshot request has been cancelled due to another request recevied " +
@@ -853,9 +853,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Snapshot sender instance.
      */
     SnapshotFileSender remoteSnapshotSender(String snpName, UUID rmtNodeId) {
-        // Remote snapshots can be send only by single threaded executor since only one transmissionSedner created.
+        // Remote snapshots can be send only by single threaded executor since only one transmissionSender created.
         return new RemoteSnapshotFileSender(log,
-            new SingleThreadExecutor(snpRunner),
+            new SequentialExecutorWrapper(snpRunner),
             () -> relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
@@ -1002,8 +1002,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    /** */
-    private static class SingleThreadExecutor implements Executor {
+    /**
+     * Such an executor can executes task not in a single thread, but can be executed
+     * on different threads sequentially. It's important for some {@link SnapshotFileSender}'s
+     * to process sub-task sequentially due to all these sub-tasks may share a signle socket
+     * channel to send data to.
+     */
+    private static class SequentialExecutorWrapper implements Executor {
         /** Queue of task to execute. */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
@@ -1016,7 +1021,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /**
          * @param executor Executor to run tasks on.
          */
-        public SingleThreadExecutor(Executor executor) {
+        public SequentialExecutorWrapper(Executor executor) {
             this.executor = executor;
         }
 
@@ -1034,16 +1039,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 }
             });
 
-            if (active == null) {
+            if (active == null)
                 scheduleNext();
-            }
         }
 
         /** */
         protected synchronized void scheduleNext() {
-            if ((active = tasks.poll()) != null) {
+            if ((active = tasks.poll()) != null)
                 executor.execute(active);
-            }
         }
     }
 
