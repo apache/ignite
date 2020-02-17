@@ -407,7 +407,7 @@ public class IgniteStandardMXBeanTest {
      * @throws NoSuchMethodException if a matching method is not found.
      */
     private MBeanOperationInfo getMBeanOperationInfoWithMehtodName(String mName) throws NoSuchMethodException {
-        Method m = TestInterfaceImpl.class.getDeclaredMethod(mName, String.class, String.class);
+        Method m = TestInterface.class.getDeclaredMethod(mName, String.class, String.class);
         return new MBeanOperationInfo(OPERATION_INFO_DESCRIPTION, m);
     }
 

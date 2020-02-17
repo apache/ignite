@@ -38,6 +38,24 @@ import org.apache.ignite.mxbean.MXBeanParametersNames;
  * annotation based descriptions.
  */
 public class IgniteStandardMXBean extends StandardMBean {
+    /** */
+    private static final String DESC_MUST_START_WITH_UPP_CASE = "Description must start with upper case: ";
+
+    /** */
+    private static final String DESC_MUST_END_WITH_PERIOD = "Description must end with period: ";
+
+    /** */
+    private static final String DESC_MUST_BE_NOT_NULL = "Description must be not null: ";
+
+    /** */
+    private static final String DESC_MUST_BE_NOT_EMPTY = "Description must be not empty: ";
+
+    /** */
+    private static final String NAME_MUST_BE_NOT_NULL = "Parameter name must be not null: ";
+
+    /** */
+    private static final String NAME_MUST_BE_NOT_EMPTY = "Parameter name must be not empty: ";
+
     /**
      * Objects maps from primitive classes to primitive object classes.
      */
@@ -100,8 +118,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                     assert !str.trim().isEmpty() : "Method description cannot be empty: " + mtd;
 
                     // Enforce proper English.
-                    assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
-                    assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
+                    assert Character.isUpperCase(str.charAt(0)) : DESC_MUST_START_WITH_UPP_CASE + str;
+                    assert str.charAt(str.length() - 1) == '.' : DESC_MUST_END_WITH_PERIOD + str;
                 }
             }
         }
@@ -126,8 +144,8 @@ public class IgniteStandardMXBean extends StandardMBean {
             assert !str.trim().isEmpty();
 
             // Enforce proper English.
-            assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
-            assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
+            assert Character.isUpperCase(str.charAt(0)) : DESC_MUST_START_WITH_UPP_CASE + str;
+            assert str.charAt(str.length() - 1) == '.' : DESC_MUST_END_WITH_PERIOD + str;
         }
 
         return str;
@@ -149,8 +167,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                 assert !str.trim().isEmpty();
 
                 // Enforce proper English.
-                assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
-                assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
+                assert Character.isUpperCase(str.charAt(0)) : DESC_MUST_START_WITH_UPP_CASE + str;
+                assert str.charAt(str.length() - 1) == '.' : DESC_MUST_END_WITH_PERIOD + str;
             }
         }
         catch (SecurityException | ClassNotFoundException ignored) {
@@ -175,25 +193,25 @@ public class IgniteStandardMXBean extends StandardMBean {
 
                 str = decsAnn.value()[seq];
 
-                assert str != null;
-                assert !str.trim().isEmpty();
+                assert str != null : DESC_MUST_BE_NOT_NULL + str;
+                assert !str.trim().isEmpty() : DESC_MUST_BE_NOT_EMPTY + str;
 
                 // Enforce proper English.
-                assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
-                assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
+                assert Character.isUpperCase(str.charAt(0)) : DESC_MUST_START_WITH_UPP_CASE + str;
+                assert str.charAt(str.length() - 1) == '.' : DESC_MUST_END_WITH_PERIOD + str;
             }
             else {
-                MXBeanParameter argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
+                MXBeanParameter argInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
 
-                if (argumentInfoAnnotation != null) {
-                    str = argumentInfoAnnotation.description();
+                if (argInfoAnnotation != null) {
+                    str = argInfoAnnotation.description();
 
-                    assert str != null;
-                    assert !str.trim().isEmpty();
+                    assert str != null : DESC_MUST_BE_NOT_NULL + str;
+                    assert !str.trim().isEmpty() : DESC_MUST_BE_NOT_EMPTY + str;
 
                     // Enforce proper English.
-                    assert Character.isUpperCase(str.charAt(0)) : "Description must start with upper case: " + str;
-                    assert str.charAt(str.length() - 1) == '.' : "Description must end with period: " + str;
+                    assert Character.isUpperCase(str.charAt(0)) : DESC_MUST_START_WITH_UPP_CASE + str;
+                    assert str.charAt(str.length() - 1) == '.' : DESC_MUST_END_WITH_PERIOD + str;
                 }
             }
         }
@@ -219,17 +237,17 @@ public class IgniteStandardMXBean extends StandardMBean {
 
                 str = namesAnn.value()[seq];
 
-                assert str != null;
-                assert !str.trim().isEmpty();
+                assert str != null : NAME_MUST_BE_NOT_NULL + str;
+                assert !str.trim().isEmpty() : NAME_MUST_BE_NOT_EMPTY + str;
             }
             else {
-                MXBeanParameter argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
+                MXBeanParameter argInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
 
-                if (argumentInfoAnnotation != null) {
-                    str = argumentInfoAnnotation.name();
+                if (argInfoAnnotation != null) {
+                    str = argInfoAnnotation.name();
 
-                    assert str != null;
-                    assert !str.trim().isEmpty();
+                    assert str != null : NAME_MUST_BE_NOT_NULL + str;
+                    assert !str.trim().isEmpty() : NAME_MUST_BE_NOT_EMPTY + str;
                 }
             }
         }
@@ -295,7 +313,7 @@ public class IgniteStandardMXBean extends StandardMBean {
      */
     @SuppressWarnings("unchecked")
     private Method findMethod(Class itf, String methodName, Class[] params) {
-        assert itf.isInterface();
+        assert itf.isInterface() : itf + " must represent the interface";
 
         Method res = null;
 
