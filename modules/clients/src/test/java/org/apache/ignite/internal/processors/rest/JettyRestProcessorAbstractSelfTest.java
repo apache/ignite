@@ -159,7 +159,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** Test cache name. */
-    protected final String TEST_CACHE_ACCESS = "test_typed_access";
+    private final String TEST_CACHE_ACCESS = "test_typed_access";
 
     /** */
     private static boolean memoryMetricsEnabled;
