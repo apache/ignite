@@ -1180,7 +1180,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_ENABLE_STATISTICS:
-                cache.enableStatistics(val == FALSE ? false : true);
+                cache.enableStatistics(val == TRUE);
 
                 return TRUE;
         }
