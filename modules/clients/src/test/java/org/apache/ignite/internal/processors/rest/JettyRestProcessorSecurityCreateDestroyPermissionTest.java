@@ -56,14 +56,12 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     private static final String CACHE_NAME = "TEST_CACHE";
 
     /** Create cache name. */
-    private static final String CREATE_CACHE_NAME = "CREATE_TEST_CACHE";
+    private static final String NOT_DELETE_CACHE_NAME = "NOT_DELETE_CACHE_NAME";
 
     /** Forbidden cache. */
-    private static final String FORBIDDEN_CACHE_NAME = "FORBIDDEN_TEST_CACHE";
+    private static final String NOT_CREATE_CACHE_NAME = "NOT_CREATE_CACHE_NAME";
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -71,8 +69,8 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
             SecurityPermissionSetBuilder.create()
                 .defaultAllowAll(false)
                 .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_DESTROY)
-                .appendCachePermissions(CREATE_CACHE_NAME, CACHE_CREATE)
-                .appendCachePermissions(FORBIDDEN_CACHE_NAME, EMPTY_PERM)
+                .appendCachePermissions(NOT_DELETE_CACHE_NAME, CACHE_CREATE)
+                .appendCachePermissions(NOT_CREATE_CACHE_NAME, EMPTY_PERM)
                 .appendSystemPermissions(JOIN_AS_SERVER, ADMIN_CACHE, ADMIN_OPS)
                 .build(), true);
 
@@ -89,21 +87,19 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     public void testGetOrCreate() throws Exception {
         getOrCreateCaches();
 
-        assertTrue(grid(0).cacheNames().containsAll(
-            Arrays.asList(CACHE_NAME, CREATE_CACHE_NAME)));
+        assertTrue(Arrays.asList(CACHE_NAME, NOT_DELETE_CACHE_NAME).containsAll(grid(0).cacheNames()));
 
-        assertFalse(grid(0).cacheNames().contains(FORBIDDEN_CACHE_NAME));
+        assertFalse(grid(0).cacheNames().contains(NOT_CREATE_CACHE_NAME));
     }
 
     /** */
     private void getOrCreateCaches() throws Exception {
-        assertEquals(SUCCESS_STATUS,
-            (jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS, jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS));
 
         assertEquals(SUCCESS_STATUS,
-            (jsonField(content(CREATE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS)));
+            jsonField(content(NOT_DELETE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS));
 
-        checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), CACHE_CREATE);
+        checkFailWithError(content(NOT_CREATE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), CACHE_CREATE);
     }
 
     /**
@@ -113,22 +109,18 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     public void testDestroyCache() throws Exception {
         getOrCreateCaches();
 
-        assertTrue(grid(0).cacheNames().containsAll(Arrays.asList(CREATE_CACHE_NAME, CACHE_NAME)));
+        assertTrue(Arrays.asList(CACHE_NAME, NOT_DELETE_CACHE_NAME).containsAll(grid(0).cacheNames()));
 
-        assertEquals(SUCCESS_STATUS,
-            (jsonField(content(CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS)));
+        assertEquals(SUCCESS_STATUS, jsonField(content(CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS));
 
-        checkFailWithError(content(CREATE_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
-        checkFailWithError(content(FORBIDDEN_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
+        checkFailWithError(content(NOT_DELETE_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
 
         assertFalse(grid(0).cacheNames().contains(CACHE_NAME));
 
-        assertTrue(grid(0).cacheNames().contains(CREATE_CACHE_NAME));
+        assertTrue(grid(0).cacheNames().contains(NOT_DELETE_CACHE_NAME));
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected String restUrl() {
         String url = super.restUrl();
 
@@ -137,9 +129,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         return url;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected String signature() throws Exception {
         return null;
     }
