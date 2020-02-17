@@ -599,7 +599,6 @@ public class GridDhtPartitionDemander {
                     if (!fut.isDone()) {
                         // Cancel rebalance if partition clearing was failed.
                         if (f.error() != null) {
-
                             for (GridCacheContext cctx : grp.caches()) {
                                 if (cctx.statisticsEnabled()) {
                                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
