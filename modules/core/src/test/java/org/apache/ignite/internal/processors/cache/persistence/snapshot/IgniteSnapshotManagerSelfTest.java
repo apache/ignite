@@ -37,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
@@ -435,35 +436,27 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch cancelLatch = new CountDownLatch(1);
 
-        mgr0.addSnapshotListener(new SnapshotListener() {
-            @Override public void onPartition(UUID rmtNodeId, File part, int grpId, int partId) {
-                log.info("Snapshot partition received successfully [rmtNodeId=" + rmtNodeId +
-                    ", part=" + part.getAbsolutePath() + ", grpId=" + grpId + ", partId=" + partId + ']');
-
-                cancelLatch.countDown();
-            }
-
-            @Override public void onEnd(UUID rmtNodeId) {
-                log.info("Snapshot created successfully [rmtNodeId=" + rmtNodeId + ']');
-            }
-
-            @Override public void onException(UUID rmtNodeId, Throwable t) {
-                fail("Exception must not be thrown [rmtNodeId=" + rmtNodeId + ", t=" + t);
-            }
-        });
-
         UUID rmtNodeId = grid(1).localNode().id();
 
         // Snapshot must be taken on node1 and transmitted to node0.
         IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
+            new BiConsumer<File, GroupPartitionId>() {
+                @Override public void accept(File file, GroupPartitionId gprPartId) {
+                    log.info("Snapshot partition received successfully [rmtNodeId=" + rmtNodeId +
+                        ", part=" + file.getAbsolutePath() + ", gprPartId=" + gprPartId + ']');
+
+                    cancelLatch.countDown();
+                }
+            });
 
         cancelLatch.await();
 
         fut.cancel();
 
         IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
+            (part, grp) -> {});
 
         fut2.get();
     }
@@ -503,10 +496,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         // Snapshot must be taken on node1 and transmitted to node0.
         IgniteInternalFuture<?> futFrom1To0 = mgr0.createRemoteSnapshot(node1,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node1));
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node1),
+            (part, grp) -> {});
 
         IgniteInternalFuture<?> futFrom0To1 = mgr1.createRemoteSnapshot(node0,
-            owningParts(grid(1), new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node0));
+            owningParts(grid(1), new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node0),
+            (part, grp) -> {});
 
         futFrom0To1.get();
         futFrom1To0.get();
@@ -549,9 +544,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .createRemoteSnapshot(rmtNodeId,
             owningParts(ig0,
                 new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-                rmtNodeId));
+                rmtNodeId),
+                (part, grp) -> {});
 
-        IgniteInternalFuture[] futs = new IgniteInternalFuture[1];
+        IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -625,7 +621,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         // Snapshot must be taken on node1 and transmitted to node0.
         IgniteInternalFuture<?> snpFut = mgr0.createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId));
+            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
+            (part, grp) -> {});
 
         TestRecordingCommunicationSpi.spi(ig0)
             .waitForBlocked();

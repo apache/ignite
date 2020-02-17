@@ -549,7 +549,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      * @return Future which will be completed when operations truhly stopped.
      */
     public CompletableFuture<Void> closeAsync() {
-        return CompletableFuture.runAsync(this::close, snpSndr.executor());
+        // Execute on SYSTEM_POOL
+        return CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
     }
 
     /** {@inheritDoc} */
