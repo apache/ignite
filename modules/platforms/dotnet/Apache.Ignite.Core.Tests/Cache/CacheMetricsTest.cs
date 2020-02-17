@@ -108,7 +108,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestEnableStatistics("cacheEnableStatistics", (cache, b) => cache.EnableStatistics(b));
         }
 
-        
         /// <summary>
         /// Tests the cache metrics enable/disable 
         /// </summary>

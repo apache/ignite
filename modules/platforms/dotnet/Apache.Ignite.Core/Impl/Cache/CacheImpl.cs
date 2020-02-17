@@ -1176,7 +1176,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public void EnableStatistics(bool enabled)
         {
-            DoOutInOp((int) CacheOp.EnableStatistics, enabled ? 1 : 0);
+            DoOutInOp((int) CacheOp.EnableStatistics, enabled ? True : False);
         }
 
         /** <inheritDoc /> */
