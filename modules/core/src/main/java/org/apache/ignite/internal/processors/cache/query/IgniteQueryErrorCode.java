@@ -83,9 +83,6 @@ public final class IgniteQueryErrorCode {
     /** Query canceled. */
     public static final int QUERY_CANCELED = 3014;
 
-    /** CREATE TABLE failed. */
-    public static final int TABLE_CREATE_FAILED = 3015;
-
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */

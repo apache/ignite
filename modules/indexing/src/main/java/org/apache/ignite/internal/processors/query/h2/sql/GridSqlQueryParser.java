@@ -1183,7 +1183,7 @@ public class GridSqlQueryParser {
 
         for (Column col : data.columns) {
             if (cols.put(col.getName(), parseColumn(col)) != null)
-                throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.TABLE_CREATE_FAILED);
+                throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
         }
 
         if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
