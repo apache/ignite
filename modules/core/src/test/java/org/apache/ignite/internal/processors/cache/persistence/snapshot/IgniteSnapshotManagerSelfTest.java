@@ -273,7 +273,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
 
         IgniteInternalFuture<?> snpFut = mgr
-            .runLocalSnapshotTask(SNAPSHOT_NAME,
+            .startLocalSnapshotTask(SNAPSHOT_NAME,
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
@@ -393,7 +393,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .snapshotMgr();
 
-        IgniteInternalFuture<?> fut = mgr.runLocalSnapshotTask(SNAPSHOT_NAME,
+        IgniteInternalFuture<?> fut = mgr.startLocalSnapshotTask(SNAPSHOT_NAME,
             ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
@@ -673,7 +673,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         CountDownLatch cpLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> snpFut = mgr
-            .runLocalSnapshotTask(SNAPSHOT_NAME,
+            .startLocalSnapshotTask(SNAPSHOT_NAME,
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
@@ -756,7 +756,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 }));
 
         try {
-            return mgr.runLocalSnapshotTask(snpName,
+            return mgr.startLocalSnapshotTask(snpName,
                 cctx.localNodeId(),
                 parts,
                 mgr.snapshotExecutorService(),

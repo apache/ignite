@@ -717,7 +717,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
-    IgniteInternalFuture<Boolean> runLocalSnapshotTask(
+    IgniteInternalFuture<Boolean> startLocalSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
