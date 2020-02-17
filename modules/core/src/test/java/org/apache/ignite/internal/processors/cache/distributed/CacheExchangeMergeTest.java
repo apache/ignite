@@ -1270,9 +1270,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
-    private void checkAffinity() throws Exception {
+    private void checkAffinity() {
         List<Ignite> nodes = G.allGrids();
 
         ClusterNode crdNode = null;
@@ -1284,7 +1283,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 crdNode = locNode;
         }
 
-        AffinityTopologyVersion topVer = ((IgniteKernal)grid(crdNode)).
+        AffinityTopologyVersion topVer = ((IgniteEx)grid(crdNode)).
             context().cache().context().exchange().readyAffinityVersion();
 
         Map<String, List<List<ClusterNode>>> affMap = new HashMap<>();
@@ -1292,7 +1291,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         for (Ignite node : nodes) {
             IgniteKernal node0 = (IgniteKernal)node;
 
-            for (IgniteInternalCache cache : node0.context().cache().caches()) {
+            for (IgniteInternalCache<?, ?> cache : node0.context().cache().caches()) {
                 List<List<ClusterNode>> aff = affMap.get(cache.name());
                 List<List<ClusterNode>> aff0 = cache.context().affinity().assignments(topVer);
 

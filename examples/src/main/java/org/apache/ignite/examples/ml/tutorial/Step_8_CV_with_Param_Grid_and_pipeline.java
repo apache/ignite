@@ -15,33 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.tutorial.hyperparametertuning;
+package org.apache.ignite.examples.ml.tutorial;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.environment.logging.ConsoleLogger;
-import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.preprocessing.Preprocessor;
-import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
-import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
+import org.apache.ignite.ml.pipeline.Pipeline;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.cv.CrossValidationResult;
-import org.apache.ignite.ml.selection.paramgrid.EvolutionOptimizationStrategy;
 import org.apache.ignite.ml.selection.paramgrid.ParamGrid;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
-import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
@@ -71,81 +62,48 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
-public class Step_17_Parallel_Genetic_Programming_Search {
+public class Step_8_CV_with_Param_Grid_and_pipeline {
     /**
      * Run example.
      */
     public static void main(String[] args) {
         System.out.println();
-        System.out.println(">>> Tutorial step 17 (Parallel Genetic Programming) example started.");
+        System.out.println(">>> Tutorial step 8 (cross-validation with param grid and pipeline) example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
                 IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
+                // Extracts "pclass", "sibsp", "parch", "age", "fare".
                 final Vectorizer<Integer, Vector, Integer, Double> vectorizer
-                    = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
+                    = new DummyVectorizer<Integer>(0, 4, 5, 6, 8).labeled(1);
 
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
-                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
-                    .withEncoderType(EncoderType.STRING_ENCODER)
-                    .withEncodedFeature(1)
-                    .withEncodedFeature(6)
-                    .fit(ignite,
-                        dataCache,
-                        vectorizer
-                    );
+                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
-                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
-                    .fit(ignite,
-                        dataCache,
-                        strEncoderPreprocessor
-                    );
-
-                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
-                    .fit(
-                        ignite,
-                        dataCache,
-                        imputingPreprocessor
-                    );
-
-                NormalizationTrainer<Integer, Vector> normalizationTrainer = new NormalizationTrainer<Integer, Vector>()
-                    .withP(1);
-
-                Preprocessor<Integer, Vector> normalizationPreprocessor = normalizationTrainer
-                    .fit(
-                        ignite,
-                        dataCache,
-                        minMaxScalerPreprocessor
-                    );
+                Pipeline<Integer, Vector, Integer, Double> pipeline = new Pipeline<Integer, Vector, Integer, Double>()
+                    .addVectorizer(vectorizer)
+                    .addPreprocessingTrainer(new ImputerTrainer<Integer, Vector>())
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
+                    .addTrainer(trainer);
 
                 // Tune hyper-parameters with K-fold Cross-Validation on the split training set.
-
-                DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
                 CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
-                    .withParameterSearchStrategy(new EvolutionOptimizationStrategy())
-                    .addHyperParam("p", normalizationTrainer::withP, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
-                    .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0});
+                    .addHyperParam("maxDeep", trainer::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+                    .addHyperParam("minImpurityDecrease", trainer::withMinImpurityDecrease, new Double[] {0.0, 0.25, 0.5});
 
                 scoreCalculator
                     .withIgnite(ignite)
                     .withUpstreamCache(dataCache)
-                    .withEnvironmentBuilder(LearningEnvironmentBuilder.defaultBuilder()
-                        .withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
-                        .withLoggingFactoryDependency(ConsoleLogger.Factory.LOW))
-                    .withTrainer(trainerCV)
+                    .withPipeline(pipeline)
                     .withMetric(MetricName.ACCURACY)
                     .withFilter(split.getTrainFilter())
-                    .isRunningOnPipeline(false)
-                    .withPreprocessor(normalizationPreprocessor)
                     .withAmountOfFolds(3)
                     .withParamGrid(paramGrid);
 
@@ -153,10 +111,6 @@ public class Step_17_Parallel_Genetic_Programming_Search {
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
-
-                DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer()
-                    .withMaxDeep(crossValidationRes.getBest("maxDeep"))
-                    .withMinImpurityDecrease(crossValidationRes.getBest("minImpurityDecrease"));
 
                 System.out.println(crossValidationRes);
 
@@ -167,27 +121,7 @@ public class Step_17_Parallel_Genetic_Programming_Search {
                 crossValidationRes.getScoringBoard().forEach((hyperParams, score)
                     -> System.out.println("Score " + Arrays.toString(score) + " for hyper params " + hyperParams));
 
-                // Train decision tree model.
-                DecisionTreeNode bestMdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    split.getTrainFilter(),
-                    normalizationPreprocessor
-                );
-
-                System.out.println("\n>>> Trained model: " + bestMdl);
-
-                double accuracy = Evaluator.evaluate(
-                    dataCache, split.getTestFilter(),
-                    bestMdl,
-                    normalizationPreprocessor,
-                    new Accuracy<>()
-                );
-
-                System.out.println("\n>>> Accuracy " + accuracy);
-                System.out.println("\n>>> Test Error " + (1 - accuracy));
-
-                System.out.println(">>> Tutorial step 17 (Parallel Genetic Programming) example completed.");
+                System.out.println(">>> Tutorial step 8 (cross-validation with param grid and pipeline) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();
