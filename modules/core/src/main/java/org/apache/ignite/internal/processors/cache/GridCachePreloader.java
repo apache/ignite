@@ -92,7 +92,7 @@ public interface GridCachePreloader {
      * @param forcedRebFut External future for forced rebalance.
      * @return Rebalancing runnable.
      */
-    public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+    public Runnable addAssignments(IgniteInternalFuture<GridDhtPreloaderAssignments> assignments,
         boolean forcePreload,
         long rebalanceId,
         Runnable next,

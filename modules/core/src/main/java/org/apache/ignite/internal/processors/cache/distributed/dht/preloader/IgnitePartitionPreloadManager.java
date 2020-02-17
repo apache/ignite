@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,18 +190,16 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * This method initiates new file rebalance process from given {@code assignments} by creating new file
-     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event.
-     * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
+     * This method initiates new partition preload process from given {@code assignments} by creating new partition file
+     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event. In case
+     * of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
      *
-     * @param topVer Current topology version.
      * @param rebalanceId Current rebalance id.
      * @param exchFut Exchange future.
      * @param assignments A map of cache assignments grouped by grpId.
      * @return Runnable to execute the chain.
      */
-    public Runnable addNodeAssignments(
-        AffinityTopologyVersion topVer,
+    public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut,
         Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
@@ -211,14 +210,14 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             if (log.isDebugEnabled())
                 log.debug("Skipping file rebalancing due to empty assignments.");
 
-            return null;
+            return Collections.emptyMap();
         }
 
         if (!cctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
                 log.debug("Cancel partition file demand because rebalance disabled on current node.");
 
-            return null;
+            return Collections.emptyMap();
         }
 
         PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
@@ -230,10 +229,10 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 rebRoutine.cancel();
 
             // Start new rebalance session.
-            partPreloadingRoutine = rebRoutine = new PartitionPreloadingRoutine(orderedAssigns, topVer, cctx,
-                exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
+            partPreloadingRoutine = rebRoutine = new PartitionPreloadingRoutine(orderedAssigns,
+                exchFut.topologyVersion(), cctx, exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
-            return rebRoutine::startPartitionsPreloading;
+            return rebRoutine.startPartitionsPreloading();
         }
         finally {
             lock.unlock();
@@ -301,7 +300,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param grp Cache group.
-     * @return {@code True} if file rebalancing required for the specified group.
+     * @return {@code True} if file partition preloading required for the specified group.
      */
     public boolean required(CacheGroupContext grp) {
         if (!supports(grp))
@@ -422,7 +421,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             CacheGroupContext grp = e.getKey();
             GridDhtPreloaderAssignments assigns = e.getValue();
 
-            if (!required(grp))
+            if (!required(grp) || assigns.isEmpty())
                 continue;
 
             int order = grp.config().getRebalanceOrder();
@@ -446,10 +445,10 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         return ordered;
     }
 
-    public IgniteInternalFuture<GridDhtPreloaderAssignments> preloadFuture(CacheGroupContext grp) {
-        // todo
-        return partPreloadingRoutine.groupRoutine(grp);
-    }
+//    public IgniteInternalFuture<GridDhtPreloaderAssignments> preloadFuture(CacheGroupContext grp) {
+//        // todo
+//        return partPreloadingRoutine.groupRoutine(grp);
+//    }
 
     /**
      * Partition snapshot listener.

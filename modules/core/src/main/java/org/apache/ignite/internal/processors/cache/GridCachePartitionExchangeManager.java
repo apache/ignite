@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,7 +45,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
@@ -3190,8 +3188,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap = null;
 
-                    Map<CacheGroupContext, GridDhtPreloaderAssignments> fileAssignsMap = null;
-
                     IgnitePartitionPreloadManager partPreloadMgr = cctx.preloader();
 
                     boolean forcePreload = false;
@@ -3368,7 +3364,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 U.sleep(rebalanceDelay);
 
                             assignsMap = new HashMap<>();
-                            fileAssignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
 
@@ -3382,9 +3377,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
                                 if ((delay == 0 || forcePreload) && !disableRebalance) {
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
-
-                                    if (!forcePreload && grp.persistenceEnabled() && cctx.preloader().required(grp))
-                                        fileAssignsMap.put(grp, assigns);
 
                                     assignsMap.put(grp, assigns);
                                 }
@@ -3403,16 +3395,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
-                        Runnable loadFilesStarter = null;
+                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> fileGrps;
 
-                        if (partPreloadMgr != null) {
-                            //partPreloadMgr.addNodeAssignments(resVer, cnt, exchFut, fileAssignsMap);
-
-                            loadFilesStarter = partPreloadMgr.addNodeAssignments(resVer, cnt, exchFut, assignsMap);
-
-                            if (loadFilesStarter != null)
-                                loadFilesStarter.run();
-                        }
+                        if (partPreloadMgr != null)
+                            fileGrps = partPreloadMgr.preloadAsync(cnt, exchFut, assignsMap);
+                        else
+                            fileGrps = Collections.emptyMap();
 
                         int size = assignsMap.size();
 
@@ -3434,9 +3422,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         Runnable r = null;
 
                         List<String> rebList = new ArrayList<>();
-//                        fileAssignsMap.keySet().stream().sorted(
-//                            Comparator.comparingInt((CacheGroupContext g) -> g.config().getRebalanceOrder()).reversed()
-//                        ).map(CacheGroupContext::cacheOrGroupName).collect(Collectors.toList());
 
                         boolean assignsCancelled = false;
 
@@ -3454,36 +3439,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                boolean forcePreload0 = forcePreload;
-                                long cnt0 = cnt;
-                                Runnable r0 = r;
-                                GridCompoundFuture<Boolean, Boolean> forcedRebFut0 = forcedRebFut;
+                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = fileGrps.get(grp.groupId());
 
-                                Runnable cur = fileAssignsMap.containsKey(grp) ? () -> {
-                                    cctx.preloader().preloadFuture(grp).listen(
-                                        f -> {
-                                            try {
-                                                GridDhtPreloaderAssignments assigns0 = f.get();
+                                if (fut == null)
+                                    fut = new GridFinishedFuture<>(assigns);
 
-                                                if (assigns0 != null) {
-                                                    grp.preloader().addAssignments(assigns0,
-                                                        forcePreload0,
-                                                        cnt0,
-                                                        r0,
-                                                        forcedRebFut0).run();
-                                                }
-                                                else
-                                                    r0.run();
-//                                                    System.out.println("no hist rebalancing required");
-                                            }
-                                            catch (IgniteCheckedException e) {
-                                                e.printStackTrace();
-                                            }
-                                        }
-                                    );
-                                } :
-
-                                grp.preloader().addAssignments(assigns,
+                                Runnable cur = grp.preloader().addAssignments(fut,
                                     forcePreload,
                                     cnt,
                                     r,

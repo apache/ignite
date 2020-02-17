@@ -152,7 +152,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
+    @Override public Runnable addAssignments(IgniteInternalFuture<GridDhtPreloaderAssignments> assignments,
         boolean forcePreload,
         long rebalanceId,
         Runnable next,

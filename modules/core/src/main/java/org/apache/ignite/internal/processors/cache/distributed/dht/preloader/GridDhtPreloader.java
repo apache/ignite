@@ -436,13 +436,30 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public Runnable addAssignments(
-        GridDhtPreloaderAssignments assignments,
+        IgniteInternalFuture<GridDhtPreloaderAssignments> assignsFut,
         boolean forceRebalance,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+        if (assignsFut.isDone())
+            return demander.addAssignments(assignsFut.result(), forceRebalance, rebalanceId, next, forcedRebFut);
+
+        return () -> {
+            assignsFut.listen(f -> {
+                GridDhtPreloaderAssignments assigns = f.result();
+
+                Runnable rebRunner = demander.addAssignments(assigns, forceRebalance, rebalanceId, next, forcedRebFut);
+
+                if (rebRunner == null) {
+                    next.run();
+
+                    return;
+                }
+
+                rebRunner.run();
+            });
+        };
     }
 
     /**
