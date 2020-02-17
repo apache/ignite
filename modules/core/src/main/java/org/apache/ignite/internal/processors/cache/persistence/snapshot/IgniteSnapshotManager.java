@@ -52,6 +52,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -228,7 +229,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         GridKernalContext kctx = cctx.kernalContext();
 
-        if (kctx.clientNode())
+        if (kctx.clientNode() || kctx.isDaemon())
             return;
 
         if (!CU.isPersistenceEnabled(cctx.kernalContext().config()))
@@ -245,7 +246,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             cctx.igniteInstanceName(),
             SNAPSHOT_THREAD_POOL_SIZE,
             SNAPSHOT_THREAD_POOL_SIZE,
-            30_000,
+            IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
             new LinkedBlockingQueue<>(),
             SYSTEM_POOL,
             (t, e) -> kctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));

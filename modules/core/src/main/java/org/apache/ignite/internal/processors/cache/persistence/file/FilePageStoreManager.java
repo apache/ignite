@@ -717,8 +717,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-            FileVersionCheckingFactory pageStoreFactory = (FileVersionCheckingFactory)getPageStoreFactory(grpId,
-                encrypted);
+            FilePageStoreFactory pageStoreFactory = getPageStoreFactory(grpId, encrypted);
 
             PageStore idxStore =
                 pageStoreFactory.createPageStore(
