@@ -975,7 +975,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * to process sub-task sequentially due to all these sub-tasks may share a signle socket
      * channel to send data to.
      */
-    private class SequentialExecutorWrapper implements Executor {
+    private static class SequentialExecutorWrapper implements Executor {
         /** Ignite logger. */
         private final IgniteLogger log;
 
