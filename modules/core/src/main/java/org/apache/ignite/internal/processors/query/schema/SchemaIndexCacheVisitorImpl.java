@@ -95,6 +95,8 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
 
+        beforeExecute();
+
         AtomicInteger partsCnt = new AtomicInteger(locParts.size());
 
         AtomicBoolean stop = new AtomicBoolean();
@@ -124,6 +126,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         buildIdxCompoundFut.listen(fut -> buildIdxFut.onDone(fut.error()));
 
         buildIdxCompoundFut.markInitialized();
+    }
+
+    /**
+     * This method is called before creating or rebuilding indexes.
+     * Used only for test.
+     */
+    protected void beforeExecute(){
+        //no-op
     }
 
     /** {@inheritDoc} */
