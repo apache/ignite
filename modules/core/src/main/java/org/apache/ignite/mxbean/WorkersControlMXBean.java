@@ -40,7 +40,7 @@ public interface WorkersControlMXBean {
      */
     @MXBeanDescription("Terminates worker.")
     public boolean terminateWorker(
-        @MXBeanParameterInfo(name = "name", description = "Name of worker to terminate.") String name
+        @MXBeanParameter(name = "name", description = "Name of worker to terminate.") String name
     );
 
     /**
@@ -51,7 +51,7 @@ public interface WorkersControlMXBean {
      */
     @MXBeanDescription("Stops thread by unique name.")
     public boolean stopThreadByUniqueName(
-        @MXBeanParameterInfo(name = "name", description = "Name of thread to stop.") String name
+        @MXBeanParameter(name = "name", description = "Name of thread to stop.") String name
     );
 
     /**
@@ -62,6 +62,6 @@ public interface WorkersControlMXBean {
      */
     @MXBeanDescription("Stops thread by id.")
     public boolean stopThreadById(
-        @MXBeanParameterInfo(name = "id", description = "Id of thread to stop.") long id
+        @MXBeanParameter(name = "id", description = "Id of thread to stop.") long id
     );
 }

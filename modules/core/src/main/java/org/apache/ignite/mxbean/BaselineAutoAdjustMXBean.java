@@ -42,12 +42,12 @@ public interface BaselineAutoAdjustMXBean {
     /** */
     @MXBeanDescription("Enable/disable baseline autoadjustment feature.")
     public void setAutoAdjustmentEnabled(
-        @MXBeanParameterInfo(name = "enabled", description = "Enable/disable flag.") boolean enabled
+        @MXBeanParameter(name = "enabled", description = "Enable/disable flag.") boolean enabled
     );
 
     /** */
     @MXBeanDescription("Set baseline autoadjustment timeout value.")
     public void setAutoAdjustmentTimeout(
-        @MXBeanParameterInfo(name = "timeout", description = "Timeout value.") long timeout
+        @MXBeanParameter(name = "timeout", description = "Timeout value.") long timeout
     );
 }

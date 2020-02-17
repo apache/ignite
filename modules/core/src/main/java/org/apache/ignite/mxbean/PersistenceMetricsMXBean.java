@@ -96,7 +96,7 @@ public interface PersistenceMetricsMXBean extends PersistenceMetrics {
         "Sets time interval for pages allocation and eviction monitoring purposes."
     )
     public void rateTimeInterval(
-        @MXBeanParameterInfo(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
+        @MXBeanParameter(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
             long rateTimeInterval
     );
 
@@ -111,6 +111,6 @@ public interface PersistenceMetricsMXBean extends PersistenceMetrics {
         "Sets a number of sub-intervals to calculate allocation and eviction rates metrics."
     )
     public void subIntervals(
-        @MXBeanParameterInfo(name = "subInts", description = "Number of subintervals to set.") int subInts
+        @MXBeanParameter(name = "subInts", description = "Number of subintervals to set.") int subInts
     );
 }

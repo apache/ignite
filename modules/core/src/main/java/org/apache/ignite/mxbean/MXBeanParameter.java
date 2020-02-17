@@ -24,20 +24,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Provides name and description for MBean method argument.
+ * Provides name and description for MBean method parameter.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER})
-public @interface MXBeanParameterInfo {
-
+public @interface MXBeanParameter {
     /**
-     * Argument name.
+     * Parameter name.
      */
     String name();
 
     /**
-     * Argument description.
+     * Parameter description.
      */
     String description();
 }

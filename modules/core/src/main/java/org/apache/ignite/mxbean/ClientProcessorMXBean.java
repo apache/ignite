@@ -46,6 +46,6 @@ public interface ClientProcessorMXBean {
      */
     @MXBeanDescription("Drop client connection by ID.")
     public boolean dropConnection(
-        @MXBeanParameterInfo(name = "id", description = "Client connection ID.") long id
+        @MXBeanParameter(name = "id", description = "Client connection ID.") long id
     );
 }

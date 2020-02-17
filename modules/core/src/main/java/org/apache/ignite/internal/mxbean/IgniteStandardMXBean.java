@@ -28,7 +28,7 @@ import javax.management.MBeanParameterInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.StandardMBean;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.MXBeanParameterInfo;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
@@ -183,8 +183,9 @@ public class IgniteStandardMXBean extends StandardMBean {
                 // Enforce proper English.
                 assert Character.isUpperCase(str.charAt(0)) : str;
                 assert str.charAt(str.length() - 1) == '.' : str;
-            } else {
-                MXBeanParameterInfo argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
+            }
+            else {
+                MXBeanParameter argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
 
                 if (argumentInfoAnnotation != null) {
                     str = argumentInfoAnnotation.description();
@@ -197,7 +198,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                     assert str.charAt(str.length() - 1) == '.' : str;
                 }
             }
-        } catch (SecurityException | ClassNotFoundException ignored) {
+        }
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -221,8 +223,9 @@ public class IgniteStandardMXBean extends StandardMBean {
 
                 assert str != null;
                 assert !str.trim().isEmpty();
-            } else {
-                MXBeanParameterInfo argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
+            }
+            else {
+                MXBeanParameter argumentInfoAnnotation = getMXBeanArgumentAnnotation(m, seq);
 
                 if (argumentInfoAnnotation != null) {
                     str = argumentInfoAnnotation.name();
@@ -231,7 +234,8 @@ public class IgniteStandardMXBean extends StandardMBean {
                     assert !str.trim().isEmpty();
                 }
             }
-        } catch (SecurityException | ClassNotFoundException ignored) {
+        }
+        catch (SecurityException | ClassNotFoundException ignored) {
             // No-op. Default value will be returned.
         }
 
@@ -248,14 +252,14 @@ public class IgniteStandardMXBean extends StandardMBean {
      *            etc...)
      * @return MXBeanArgumentInfo annotation instance.
      */
-    private MXBeanParameterInfo getMXBeanArgumentAnnotation(Method m, int seq) {
+    private MXBeanParameter getMXBeanArgumentAnnotation(Method m, int seq) {
         Annotation[][] annotations = m.getParameterAnnotations();
 
         assert seq < annotations.length;
 
         for (Annotation annotation : annotations[seq]) {
-            if (annotation instanceof MXBeanParameterInfo) {
-                return (MXBeanParameterInfo) annotation;
+            if (annotation instanceof MXBeanParameter) {
+                return (MXBeanParameter) annotation;
             }
         }
 

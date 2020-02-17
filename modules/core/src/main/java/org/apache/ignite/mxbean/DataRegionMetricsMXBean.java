@@ -143,7 +143,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     )
     @Deprecated
     public void rateTimeInterval(
-        @MXBeanParameterInfo(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
+        @MXBeanParameter(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
             long rateTimeInterval
     );
 
@@ -163,6 +163,6 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     )
     @Deprecated
     public void subIntervals(
-        @MXBeanParameterInfo(name = "subInts", description = "Number of subintervals to set.") int subInts
+        @MXBeanParameter(name = "subInts", description = "Number of subintervals to set.") int subInts
     );
 }

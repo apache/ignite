@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.mxbean.MXBeanParameterInfo;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 import org.jetbrains.annotations.Nullable;
@@ -278,7 +278,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
      */
     @MXBeanDescription("Check ring latency.")
     public void checkRingLatency(
-        @MXBeanParameterInfo(name = "maxHops",
+        @MXBeanParameter(name = "maxHops",
             description = "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).") int maxHops
     );
 

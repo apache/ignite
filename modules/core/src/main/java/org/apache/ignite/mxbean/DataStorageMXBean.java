@@ -34,6 +34,6 @@ public interface DataStorageMXBean {
      */
     @MXBeanDescription("Sets ZIP compression level to WAL compaction.")
     void setWalCompactionLevel(
-        @MXBeanParameterInfo(name = "walCompactionLevel", description = "ZIP compression level.") int walCompactionLevel
+        @MXBeanParameter(name = "walCompactionLevel", description = "ZIP compression level.") int walCompactionLevel
     );
 }

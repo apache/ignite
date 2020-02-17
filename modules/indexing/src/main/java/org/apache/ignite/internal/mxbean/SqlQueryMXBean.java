@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.mxbean;
 
 import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.mxbean.MXBeanParameterInfo;
+import org.apache.ignite.mxbean.MXBeanParameter;
 
 /**
  * An MX bean allowing to monitor and tune SQL queries.
@@ -40,7 +40,7 @@ public interface SqlQueryMXBean {
      */
     @MXBeanDescription("Sets timeout in milliseconds after which long query warning will be printed.")
     void setLongQueryWarningTimeout(
-        @MXBeanParameterInfo(name = "longQueryWarningTimeout",
+        @MXBeanParameter(name = "longQueryWarningTimeout",
             description = "Timeout in milliseconds after which long query warning will be printed.")
             long longQueryWarningTimeout
     );
@@ -67,7 +67,7 @@ public interface SqlQueryMXBean {
         "timeout * multiplier, timeout * multiplier * multiplier, etc. " +
         "If the multiplier <= 1, the warning message is printed once.")
     void setLongQueryTimeoutMultiplier(
-        @MXBeanParameterInfo(name = "longQueryTimeoutMultiplier", description = "Long query timeout multiplier.")
+        @MXBeanParameter(name = "longQueryTimeoutMultiplier", description = "Long query timeout multiplier.")
             int longQueryTimeoutMultiplier
     );
 }

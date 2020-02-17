@@ -40,7 +40,7 @@ public interface IgnitionMXBean {
      */
     @MXBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
     public String getState(
-        @MXBeanParameterInfo(name = "name", description = "Name of grid instance.") String name
+        @MXBeanParameter(name = "name", description = "Name of grid instance.") String name
     );
 
     /**
@@ -57,7 +57,7 @@ public interface IgnitionMXBean {
     @MXBeanDescription("Stops default grid instance. Return true if default grid instance was " +
         "indeed stopped, false otherwise (if it was not started).")
     public boolean stop(
-        @MXBeanParameterInfo(name = "cancel",
+        @MXBeanParameter(name = "cancel",
             description = "If true then all jobs currently executing on default grid will be cancelled.") boolean cancel
     );
 
@@ -83,9 +83,9 @@ public interface IgnitionMXBean {
     @MXBeanDescription("Stops Ignite instance by name. Cancels running jobs if cancel is true. Returns true if named " +
         "Ignite instance was indeed found and stopped, false otherwise.")
     public boolean stop(
-        @MXBeanParameterInfo(name = "name", description = "Grid instance name to stop.")
+        @MXBeanParameter(name = "name", description = "Grid instance name to stop.")
             String name,
-        @MXBeanParameterInfo(name = "cancel", description = "Whether or not running jobs should be cancelled.")
+        @MXBeanParameter(name = "cancel", description = "Whether or not running jobs should be cancelled.")
             boolean cancel
     );
 
@@ -106,7 +106,7 @@ public interface IgnitionMXBean {
      */
     @MXBeanDescription("Stops all started grids.")
     public void stopAll(
-        @MXBeanParameterInfo(name = "cancel",
+        @MXBeanParameter(name = "cancel",
             description = "If true then all jobs currently executing on all grids will be cancelled.") boolean cancel
     );
 

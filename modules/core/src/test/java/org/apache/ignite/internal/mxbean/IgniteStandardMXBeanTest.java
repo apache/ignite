@@ -21,7 +21,7 @@ import java.lang.reflect.Method;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.NotCompliantMBeanException;
-import org.apache.ignite.mxbean.MXBeanParameterInfo;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.junit.Test;
@@ -32,7 +32,6 @@ import static org.junit.Assert.assertEquals;
  * Contains tests for IgniteStandardMXBean methods.
  */
 public class IgniteStandardMXBeanTest {
-
     /** */
     private static final String NAME = "Name";
 
@@ -414,7 +413,6 @@ public class IgniteStandardMXBeanTest {
      * Interface used for testing.
      */
     public static interface TestInterface {
-
         /**
          * Method used for testing.
          *
@@ -472,9 +470,9 @@ public class IgniteStandardMXBeanTest {
          * @param secondParam second string method parameter.
          */
         void testMethod6(
-            @MXBeanParameterInfo(name = FIRST_NAME_PARAM_ANNOTATION, description = FIRST_DESCRIPTION_PARAM_ANNOTATION)
+            @MXBeanParameter(name = FIRST_NAME_PARAM_ANNOTATION, description = FIRST_DESCRIPTION_PARAM_ANNOTATION)
                 String firstParam,
-            @MXBeanParameterInfo(name = SECOND_NAME_PARAM_ANNOTATION, description = SECOND_DESCRIPTION_PARAM_ANNOTATION)
+            @MXBeanParameter(name = SECOND_NAME_PARAM_ANNOTATION, description = SECOND_DESCRIPTION_PARAM_ANNOTATION)
                 String secondParam
         );
 
@@ -485,9 +483,9 @@ public class IgniteStandardMXBeanTest {
          * @param secondParam second string method parameter.
          */
         void testMethod7(
-            @MXBeanParameterInfo(name = EMPTY_STRING, description = EMPTY_STRING)
+            @MXBeanParameter(name = EMPTY_STRING, description = EMPTY_STRING)
                 String firstParam,
-            @MXBeanParameterInfo(name = SECOND_NAME_PARAM_ANNOTATION, description = SECOND_DESCRIPTION_PARAM_ANNOTATION)
+            @MXBeanParameter(name = SECOND_NAME_PARAM_ANNOTATION, description = SECOND_DESCRIPTION_PARAM_ANNOTATION)
                 String secondParam
         );
 
@@ -498,9 +496,9 @@ public class IgniteStandardMXBeanTest {
          * @param secondParam second string method parameter.
          */
         void testMethod8(
-            @MXBeanParameterInfo(name = FIRST_NAME_PARAM_ANNOTATION, description = NO_DOT_AT_THE_END_OF_THE_STRING)
+            @MXBeanParameter(name = FIRST_NAME_PARAM_ANNOTATION, description = NO_DOT_AT_THE_END_OF_THE_STRING)
                 String firstParam,
-            @MXBeanParameterInfo(name = SECOND_NAME_PARAM_ANNOTATION, description = FIRST_LOWERCASE_LETTER)
+            @MXBeanParameter(name = SECOND_NAME_PARAM_ANNOTATION, description = FIRST_LOWERCASE_LETTER)
                 String secondParam
         );
 
@@ -513,9 +511,9 @@ public class IgniteStandardMXBeanTest {
         @MXBeanParametersNames({FIRST_NAME_METHOD_ANNOTATION, SECOND_NAME_METHOD_ANNOTATION})
         @MXBeanParametersDescriptions({FIRST_DESCRIPTION_METHOD_ANNOTATION, SECOND_DESCRIPTION_METHOD_ANNOTATION})
         void testMethod9(
-            @MXBeanParameterInfo(name = FIRST_NAME_PARAM_ANNOTATION, description = NO_DOT_AT_THE_END_OF_THE_STRING)
+            @MXBeanParameter(name = FIRST_NAME_PARAM_ANNOTATION, description = NO_DOT_AT_THE_END_OF_THE_STRING)
                 String firstParam,
-            @MXBeanParameterInfo(name = SECOND_NAME_PARAM_ANNOTATION, description = FIRST_LOWERCASE_LETTER)
+            @MXBeanParameter(name = SECOND_NAME_PARAM_ANNOTATION, description = FIRST_LOWERCASE_LETTER)
                 String secondParam
         );
 
@@ -532,45 +530,54 @@ public class IgniteStandardMXBeanTest {
      * Test interface implementation.
      */
     private static class TestInterfaceImpl implements TestInterface {
-
         /** {@inheritDoc} */
         @Override public void testMethod1(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod2(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod3(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod4(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod5(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod6(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod7(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod8(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod9(String firstParam, String secondParam) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void testMethod10(String firstParam, String secondParam) {
+            // No-op.
         }
     }
 }

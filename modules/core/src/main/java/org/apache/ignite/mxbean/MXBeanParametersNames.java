@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
 
 /**
  * Provides MBean method parameters names.
+ *
+ * @deprecated Use {@link MXBeanParameter} instead.
  */
 @Deprecated
 @Documented

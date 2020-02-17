@@ -44,7 +44,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      */
     @MXBeanDescription("Long running near transactions.")
     @Override public Map<String, String> getLongRunningOwnerTransactions(
-        @MXBeanParameterInfo(name = "duration", description = "Duration, at least (ms).") int duration
+        @MXBeanParameter(name = "duration", description = "Duration, at least (ms).") int duration
     );
 
     /**

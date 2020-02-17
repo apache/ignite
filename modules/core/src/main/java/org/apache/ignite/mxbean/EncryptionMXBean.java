@@ -41,6 +41,6 @@ public interface EncryptionMXBean {
      */
     @MXBeanDescription("Change master key name.")
     public void changeMasterKey(
-        @MXBeanParameterInfo(name = "masterKeyName", description = "Master key name.") String masterKeyName
+        @MXBeanParameter(name = "masterKeyName", description = "Master key name.") String masterKeyName
     );
 }

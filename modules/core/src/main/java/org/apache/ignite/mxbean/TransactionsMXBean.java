@@ -38,25 +38,25 @@ public interface TransactionsMXBean {
      */
     @MXBeanDescription("Returns or kills transactions matching the filter conditions.")
     public String getActiveTransactions(
-        @MXBeanParameterInfo(name = "minDuration", description = "Minimum duration (seconds).")
+        @MXBeanParameter(name = "minDuration", description = "Minimum duration (seconds).")
             Long minDuration,
-        @MXBeanParameterInfo(name = "minSize", description = "Minimum size.")
+        @MXBeanParameter(name = "minSize", description = "Minimum size.")
             Integer minSize,
-        @MXBeanParameterInfo(name = "prj", description = "Projection (servers|clients).")
+        @MXBeanParameter(name = "prj", description = "Projection (servers|clients).")
             String prj,
-        @MXBeanParameterInfo(name = "consistentIds", description = "Consistent ids (separated by comma).")
+        @MXBeanParameter(name = "consistentIds", description = "Consistent ids (separated by comma).")
             String consistentIds,
-        @MXBeanParameterInfo(name = "xid", description = "Transaction XID.")
+        @MXBeanParameter(name = "xid", description = "Transaction XID.")
             String xid,
-        @MXBeanParameterInfo(name = "lbRegex", description = "Label regexp.")
+        @MXBeanParameter(name = "lbRegex", description = "Label regexp.")
             String lbRegex,
-        @MXBeanParameterInfo(name = "limit", description = "Limit a number of transactions collected on each node.")
+        @MXBeanParameter(name = "limit", description = "Limit a number of transactions collected on each node.")
             Integer limit,
-        @MXBeanParameterInfo(name = "order", description = "Order by DURATION|SIZE.")
+        @MXBeanParameter(name = "order", description = "Order by DURATION|SIZE.")
             String order,
-        @MXBeanParameterInfo(name = "detailed", description = "Show detailed description, otherwise only count.")
+        @MXBeanParameter(name = "detailed", description = "Show detailed description, otherwise only count.")
             boolean detailed,
-        @MXBeanParameterInfo(name = "kill", description = "Kill matching transactions (be careful).")
+        @MXBeanParameter(name = "kill", description = "Kill matching transactions (be careful).")
             boolean kill
     );
 
@@ -82,7 +82,7 @@ public interface TransactionsMXBean {
      */
     @MXBeanDescription("Sets transaction timeout on partition map exchange in milliseconds.")
     public void setTxTimeoutOnPartitionMapExchange(
-        @MXBeanParameterInfo(name = "timeout",
+        @MXBeanParameter(name = "timeout",
             description = "Transaction timeout on partition map exchange in milliseconds.") long timeout
     );
 
@@ -113,7 +113,7 @@ public interface TransactionsMXBean {
         "node will be made to get thread dump of transaction owner thread."
     )
     public void setTxOwnerDumpRequestsAllowed(
-        @MXBeanParameterInfo(name = "allowed", description = "Whether to allow.") boolean allowed
+        @MXBeanParameter(name = "allowed", description = "Whether to allow.") boolean allowed
     );
 
     /**
@@ -151,7 +151,7 @@ public interface TransactionsMXBean {
         "Can be set to 0 - no transactions will be dumped in log in this case."
     )
     public void setLongTransactionTimeDumpThreshold(
-        @MXBeanParameterInfo(name = "threshold", description = "Threshold timeout.") long threshold
+        @MXBeanParameter(name = "threshold", description = "Threshold timeout.") long threshold
     );
 
     /**
@@ -173,7 +173,7 @@ public interface TransactionsMXBean {
         "Sets the coefficient for samples of completed transactions that will be dumped in log."
     )
     public void setTransactionTimeDumpSamplesCoefficient(
-        @MXBeanParameterInfo(name = "coefficient", description = "Samples coefficient.") double coefficient
+        @MXBeanParameter(name = "coefficient", description = "Samples coefficient.") double coefficient
     );
 
     /**
@@ -203,7 +203,7 @@ public interface TransactionsMXBean {
         "Must be integer value greater than <code>0</code>."
     )
     public void setTransactionTimeDumpSamplesPerSecondLimit(
-        @MXBeanParameterInfo(name = "limit", description = "Samples per second limit.") int limit
+        @MXBeanParameter(name = "limit", description = "Samples per second limit.") int limit
     );
 
     /**
@@ -218,7 +218,7 @@ public interface TransactionsMXBean {
             "receive locks for all their keys for a long time. Set less than or equal {@code 0} to disable."
     )
     void setLongOperationsDumpTimeout(
-        @MXBeanParameterInfo(name = "timeout", description = "Long operations dump timeout.") long timeout
+        @MXBeanParameter(name = "timeout", description = "Long operations dump timeout.") long timeout
     );
 
     /**
