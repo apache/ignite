@@ -206,7 +206,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (!ctx.clientNode())
-                metadataFileStore = (BinaryMetadataFileStore)binaryWriter(ctx.config().getWorkDirectory());
+                metadataFileStore = (BinaryMetadataFileStore)createBinaryWriter(ctx.config().getWorkDirectory());
 
             metadataFileStore.start();
 
@@ -537,7 +537,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryTypeWriter binaryWriter(String igniteWorkDir) {
+    @Override public BinaryTypeWriter createBinaryWriter(String igniteWorkDir) {
         return new BinaryMetadataFileStore(metadataLocCache, ctx, log, igniteWorkDir, binaryMetadataFileStoreDir);
     }
 

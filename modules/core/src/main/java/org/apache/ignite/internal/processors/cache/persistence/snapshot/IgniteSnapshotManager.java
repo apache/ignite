@@ -804,7 +804,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             storeFactory,
             cctx.kernalContext()
                 .cacheObjects()
-                .binaryWriter(snpLocDir.getAbsolutePath()),
+                .createBinaryWriter(snpLocDir.getAbsolutePath()),
             cctx.kernalContext()
                 .marshallerContext()
                 .marshallerMappingWriter(cctx.kernalContext(), snpLocDir.getAbsolutePath()),

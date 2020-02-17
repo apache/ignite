@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -239,10 +238,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public BinaryObjectBuilder builder(BinaryObject binaryObj);
 
     /**
+     * Creates an instance of {@link BinaryTypeWriter} to store locally metadata for binary types.
+     *
      * @param igniteWorkDir Absolute working directory to write meta to.
      * @return Binary writer instance.
      */
-    public BinaryTypeWriter binaryWriter(String igniteWorkDir);
+    public BinaryTypeWriter createBinaryWriter(String igniteWorkDir);
 
     /**
      * @param typeId Type ID.
