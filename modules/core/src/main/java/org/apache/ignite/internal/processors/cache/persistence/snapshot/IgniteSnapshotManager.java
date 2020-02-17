@@ -249,6 +249,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME,
             new LinkedBlockingQueue<>(),
             SYSTEM_POOL,
+            // todo do we need critical handler for any unhandled errors?
             (t, e) -> kctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
 
         assert cctx.pageStore() instanceof FilePageStoreManager;
@@ -275,11 +276,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                         SnapshotRequestMessage reqMsg0 = (SnapshotRequestMessage)msg;
                         String snpName = reqMsg0.snapshotName();
 
-                        synchronized (rmtSnpReq) {
+                        synchronized (this) {
                             SnapshotFutureTask task = lastScheduledRemoteSnapshotTask(nodeId);
 
                             if (task != null) {
-                                // Task should also be removed from local map.
+                                // todo Task should also be removed from local map.
                                 task.cancel();
 
                                 log.info("Snapshot request has been cancelled due to another request recevied " +
@@ -287,7 +288,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             }
                         }
 
-                        runSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId))
+                        startSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId))
                             .listen(f -> {
                                 if (f.error() == null)
                                     return;
@@ -763,7 +764,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
         try {
-            SnapshotFutureTask snpFutTask = runSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
+            SnapshotFutureTask snpFutTask = startSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint aready running and we need to schedule the next one
@@ -789,7 +790,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
-    SnapshotFutureTask runSnapshotTask(
+    private SnapshotFutureTask startSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, GridIntList> parts,
@@ -814,7 +815,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         snpFutTask.listen(f -> locSnpTasks.remove(snpName));
 
-        snpFutTask.run();
+        snpFutTask.start();
 
         return snpFutTask;
     }

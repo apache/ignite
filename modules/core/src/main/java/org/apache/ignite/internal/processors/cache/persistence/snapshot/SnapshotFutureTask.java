@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 /**
  *
  */
-class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable, DbCheckpointListener {
+class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpointListener {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -322,7 +322,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements Runnable,
     /**
      * Initiates snapshot taks.
      */
-    @Override public void run() {
+    public void start() {
         if (stopping.getAsBoolean())
             return;
 
