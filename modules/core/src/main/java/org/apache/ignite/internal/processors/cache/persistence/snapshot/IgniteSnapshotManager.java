@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -818,7 +819,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     SnapshotFileSender remoteSnapshotSender(String snpName, UUID rmtNodeId) {
         // Remote snapshots can be send only by single threaded executor since only one transmissionSender created.
         return new RemoteSnapshotFileSender(log,
-            new SequentialExecutorWrapper(snpRunner),
+            new SequentialExecutorWrapper(log, snpRunner),
             () -> relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
@@ -974,7 +975,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * to process sub-task sequentially due to all these sub-tasks may share a signle socket
      * channel to send data to.
      */
-    private static class SequentialExecutorWrapper implements Executor {
+    private class SequentialExecutorWrapper implements Executor {
+        /** Ignite logger. */
+        private final IgniteLogger log;
+
         /** Queue of task to execute. */
         private final Queue<Runnable> tasks = new ArrayDeque<>();
 
@@ -984,24 +988,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** Currently running task. */
         private volatile Runnable active;
 
+        /** If wrapped executor is shutting down. */
+        private volatile boolean stopping;
+
         /**
          * @param executor Executor to run tasks on.
          */
-        public SequentialExecutorWrapper(Executor executor) {
+        public SequentialExecutorWrapper(IgniteLogger log, Executor executor) {
+            this.log = log.getLogger(SequentialExecutorWrapper.class);
             this.executor = executor;
         }
 
         /** {@inheritDoc} */
         @Override public synchronized void execute(final Runnable r) {
-            tasks.offer(new Runnable() {
-                /** {@inheritDoc} */
-                @Override public void run() {
-                    try {
-                        r.run();
-                    }
-                    finally {
-                        scheduleNext();
-                    }
+            assert !stopping : "Task must be cancelled prior to the wrapped executor is shutting down.";
+
+            tasks.offer(() -> {
+                try {
+                    r.run();
+                }
+                finally {
+                    scheduleNext();
                 }
             });
 
@@ -1011,9 +1018,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** */
         protected synchronized void scheduleNext() {
-            //todo can be rejected due to thread poll is shutting down
-            if ((active = tasks.poll()) != null)
-                executor.execute(active);
+            if ((active = tasks.poll()) != null) {
+                try {
+                    executor.execute(active);
+                }
+                catch (RejectedExecutionException e) {
+                    tasks.clear();
+
+                    stopping = true;
+
+                    log.warning("Task is outdated. Wrapped executor is shutting down.", e);
+                }
+            }
         }
     }
 
