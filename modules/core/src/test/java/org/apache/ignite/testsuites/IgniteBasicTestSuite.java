@@ -111,6 +111,7 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
+import org.apache.ignite.plugin.PluginConfigurationTest;
 import org.apache.ignite.plugin.PluginNodeValidationTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
@@ -256,6 +257,7 @@ import org.junit.runners.Suite;
     CacheLocalGetSerializationTest.class,
 
     PluginNodeValidationTest.class,
+    PluginConfigurationTest.class,
 
     // In-memory Distributed MetaStorage.
     DistributedMetaStorageTest.class,

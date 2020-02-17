@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager.ScanQueryIterator;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * {@link SystemView} implementation providing data about cache queries.
  *
  * @see GridCacheQueryManager#queryIterators()
- * @see GridCacheQueryManager.ScanQueryIterator
+ * @see ScanQueryIterator
  * @see ScanQueryView
  */
 public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView> {

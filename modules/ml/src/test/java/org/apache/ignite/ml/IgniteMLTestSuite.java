@@ -22,7 +22,6 @@ import org.apache.ignite.ml.common.CommonTestSuite;
 import org.apache.ignite.ml.composition.CompositionTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.environment.EnvironmentTestSuite;
-import org.apache.ignite.ml.genetic.GAGridTestSuite;
 import org.apache.ignite.ml.inference.InferenceTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
@@ -55,7 +54,6 @@ import org.junit.runners.Suite;
     KNNTestSuite.class,
     PipelineTestSuite.class,
     PreprocessingTestSuite.class,
-    GAGridTestSuite.class,
     CompositionTestSuite.class,
     EnvironmentTestSuite.class,
     StructuresTestSuite.class,
