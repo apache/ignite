@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictPartitionInLogTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
@@ -281,7 +282,9 @@ import org.junit.runners.Suite;
 
     IncompleteDeserializationExceptionTest.class,
 
-    GridIoManagerFileTransmissionSelfTest.class
+    GridIoManagerFileTransmissionSelfTest.class,
+
+    IgniteStandardMXBeanTest.class
 })
 public class IgniteBasicTestSuite {
 }
