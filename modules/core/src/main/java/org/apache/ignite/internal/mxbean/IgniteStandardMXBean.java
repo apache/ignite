@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.mxbean;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Map;
 import javax.management.MBeanAttributeInfo;
@@ -28,8 +28,8 @@ import javax.management.MBeanParameterInfo;
 import javax.management.NotCompliantMBeanException;
 import javax.management.StandardMBean;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 
@@ -251,15 +251,10 @@ public class IgniteStandardMXBean extends StandardMBean {
      * @return {@link MXBeanParameter} annotation instance.
      */
     private MXBeanParameter getMXBeanArgumentAnnotation(Method m, int seq) {
-        Annotation[][] annotations = m.getParameterAnnotations();
+        Parameter[] params = m.getParameters();
 
-        assert seq < annotations.length;
-
-        for (Annotation annotation : annotations[seq]) {
-            if (annotation instanceof MXBeanParameter) {
-                return (MXBeanParameter) annotation;
-            }
-        }
+        if (seq < params.length)
+            return params[seq].getAnnotation(MXBeanParameter.class);
 
         return null;
     }
