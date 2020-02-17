@@ -370,7 +370,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                     cacheNames.add(reader.readString());
                 }
 
-                platformCtx.kernalContext().cache().enableStatistics(cacheNames, enabled);
+                platformCtx.kernalContext().grid().cluster().enableStatistics(cacheNames, enabled);
 
                 return TRUE;
             }
