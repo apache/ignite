@@ -1744,10 +1744,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Releases the checkpoint read lock.
      */
     @Override public void checkpointReadUnlock() {
-        if (checkpointLock.writeLock().isHeldByCurrentThread())
-            return;
-
         checkpointLock.readLock().unlock();
+
+        if (checkpointLock.writeLock().isHeldByCurrentThread()) { // This method does not otherwise impose any synchronization or volatile field accesses
+            log.warning("Checkpoint in write lock");
+            return;
+        }
 
         if (ASSERTION_ENABLED)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() - 1);
