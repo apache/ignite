@@ -122,7 +122,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SVCS_VIEW_DESC = "Services";
 
     /** */
-    public static final String SERVICE_METRICS_INVOCATIONS = metricName("services", "metrics", "invocations");
+    public static final String SERVICE_METRICS_INVOCATIONS = metricName("services", "invocations");
 
     /** */
     private static final String HIST_INVOCATION_DESCR = "Duration of method durations in milliseconds.";
@@ -204,6 +204,80 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** Disconnected flag. */
     private volatile boolean disconnected;
+
+    /**
+     * Creates proper registry name for service metrics.
+     *
+     * @param srvcName Name of the service.
+     * @return Metric registry name for the service.
+     */
+    static String serviceMetricsName(String srvcName) {
+        return metricName(SERVICE_METRICS_INVOCATIONS, srvcName);
+    }
+
+    /**
+     * @param method Method for the invocation timings.
+     * @param pkgNameDepth Level of package name abbreviation. @see #abbreviatePgkName(Class, int).
+     * @return Metric name for {@code method}. Doesn't guaratie same name with same {@code pkgNameDepth} is used in real
+     * metric registry.
+     */
+    static String methodMetricName(Method method, int pkgNameDepth) {
+        StringBuilder sb = new StringBuilder();
+
+        // Lets add name of return type. It is not a signature. Would be better for human readability.
+        sb.append(method.getReturnType() == null ? Void.class.getSimpleName() :
+            abbreviatePgkName(method.getReturnType(), pkgNameDepth));
+        sb.append(" ");
+        sb.append(method.getName());
+        sb.append("(");
+        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviatePgkName(t, pkgNameDepth))
+            .collect(Collectors.joining(", ")));
+        sb.append(")");
+
+        return sb.toString();
+    }
+
+    /**
+     * @param pkgNameDepth Level of types package name exhibition of the parameters and return type:
+     *                         <pre>
+     *                             0 - wont add parameter names;
+     *                             1 - add only first char of each name in the package;
+     *                             2 - add first and last char of each name in the package;
+     *                             Any other - add full package name.
+     *                         </pre>
+     * @return A fine name of the type.
+     */
+    private static String abbreviatePgkName(Class<?> cl, int pkgNameDepth) {
+        if (pkgNameDepth == 0)
+            return cl.getSimpleName();
+
+        if (pkgNameDepth > 2)
+            return cl.getName();
+
+        String[] pkgNameParts = cl.getName().split("\\.");
+
+        // No package like void or int.
+        if(pkgNameParts.length==1)
+            return pkgNameParts[0];
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < pkgNameParts.length - 1; ++i) {
+            // For {@code packageNameDepth} == 1 add the first char.
+            sb.append(pkgNameParts[i].charAt(0));
+
+            // For {@code packageNameDepth} == 2 add the last char.
+            if (pkgNameDepth > 1 && pkgNameParts[i].length() > 1)
+                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+
+            sb.append(".");
+        }
+
+        // Add name to the class.
+        sb.append(pkgNameParts[pkgNameParts.length - 1]);
+
+        return sb.toString();
+    }
 
     /**
      * @param ctx Kernal context.
@@ -902,11 +976,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 for (ServiceContextImpl ctx : ctxs) {
                     Service srvc = ctx.service();
 
-                    if (srvc != null) {
-                        return (T)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
-                            Stream.of(srvc.getClass().getInterfaces()).filter(Service.class::isAssignableFrom)
-                                .toArray(Class[]::new), new LocalInvocationHandler(ctx, this.ctx.service()));
-                    }
+                    if (srvc != null)
+                        return (T)localServiceProxy(ctx);
                 }
 
                 return null;
@@ -915,6 +986,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @return Local service proxy allowing timing of service method invocations.
+     */
+    private Object localServiceProxy(ServiceContextImpl srvcCtx) {
+        return Proxy.newProxyInstance(srvcCtx.service().getClass().getClassLoader(),
+            Stream.of(srvcCtx.service().getClass().getInterfaces()).filter(Service.class::isAssignableFrom)
+                .toArray(Class[]::new), new LocalInvocationHandler(srvcCtx, ctx.service()));
     }
 
     /** {@inheritDoc} */
@@ -975,7 +1055,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         throw new IgniteException("Service does not implement specified interface [srvcCls=" +
                             srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
 
-                    return (T)srvc;
+                    return (T)localServiceProxy(ctx);
                 }
             }
         }
@@ -997,36 +1077,36 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Finds and/or creates a histogramm to register method durations.
+     * Creates metric for the method. If one exists, considers one or several argument types has same name but
+     * different packages. Then skips existing metric and tries to extend metric name with abbreviation of
+     * parameters packages.
      *
      * @param srvcName Name of the service.
      * @param method Method to measure.
      * @return The histogramm for service method timings.
      */
     HistogramMetricImpl invocationsMetric(String srvcName, Method method) {
-        MetricRegistry metricRegistry = ctx.metric().registry(metricName(SERVICE_METRICS_INVOCATIONS, srvcName));
+        MetricRegistry metricRegistry = null;
 
-        if (metricRegistry == null)
-            return null;
+        metricRegistry = ctx.metric().registry(serviceMetricsName(srvcName));
 
-        HistogramMetricImpl histogramMetric = null;
+        HistogramMetricImpl histogram = null;
 
-        // Add unique metric name. For the counter @see #methodMetricName(Method, int).
-        for (int i = 1; i < 4; ++i) {
+        // Find/create unique histogramm for the method. For the counter @see #methodMetricName(Method, int).
+        for (int i = 0; i < 4; ++i) {
             String methodMetricName = methodMetricName(method, i);
 
             synchronized (metricRegistry) {
+                // If the metric exists, skip and try to extend the metric name in the next cycle.
                 if (metricRegistry.findMetric(methodMetricName) == null) {
-                    histogramMetric = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
+                    histogram = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
                         HIST_INVOCATION_DESCR);
                     break;
                 }
             }
         }
 
-        assert histogramMetric != null;
-
-        return histogramMetric;
+        return histogram;
     }
 
     /** {@inheritDoc} */
@@ -1815,73 +1895,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * @param method Method for the invocation timings.
-     * @param packageNameDepth Level of package name abbreviation. @see #packageAbbreviatedName(Class, int).
-     * @return Matric name for {@code method}
-     */
-    private String methodMetricName(Method method, int packageNameDepth) {
-        StringBuilder sb = new StringBuilder();
-
-        // Lets add name of return type. It is not a signature. Would be better for human readability.
-        sb.append(method.getReturnType() == null ? Void.class.getSimpleName() :
-            packageAbbreviatedName(method.getReturnType(), packageNameDepth));
-        sb.append(" ");
-        sb.append(method.getName());
-        sb.append("(");
-        sb.append(Stream.of(method.getParameterTypes()).map(t->packageAbbreviatedName(t.getClass(), packageNameDepth))
-            .collect(Collectors.joining(", ")));
-        sb.append(")");
-
-        return sb.toString();
-    }
-
-    /**
-     * @param packageNameDepth Level of types package name exhibition of the parameters and return type:
-     *                         <pre>
-     *                             0 - wont add parameter names;
-     *                             1 - add only first char of each name in the package;
-     *                             2 - add first and last char of each name in the package;
-     *                             Any other - add full package name.
-     *                         </pre>
-     * @return A fine name of the type.
-     */
-    private static String packageAbbreviatedName(Class<?> cl, int packageNameDepth){
-        if(packageNameDepth==0)
-            return cl.getSimpleName();
-
-        if(packageNameDepth>2)
-            return cl.getName();
-
-        String[] pkgNameParts = cl.getName().split("\\.");
-
-        StringBuilder sb = new StringBuilder();
-
-        for(int i=0; i<pkgNameParts.length-1; ++i){
-            // For {@code packageNameDepth} == 1, add first char.
-           sb.append(pkgNameParts[i].charAt(0));
-
-            // For {@code packageNameDepth} == 2, add last char.
-            if (packageNameDepth > 1 && pkgNameParts[i].length() > 1)
-                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length()-1));
-
-            sb.append(".");
-        }
-
-        // Add name ot the class.
-        sb.append(pkgNameParts.length == 0 ? cl.getName() : pkgNameParts[pkgNameParts.length - 1]);
-
-        return sb.toString();
-    }
-
-    /**
      * Registers metrics for timings of method invocations. Traverces all methods of service-related interfaces.
      *
      * @param srvc Service for ivocations measurement.
      * @param srvcCtx Context of {@code srvc}.
      */
-    private void registerMetrics(Service srvc, ServiceContext srvcCtx) {
-        MetricRegistry metricRegistry = ctx.metric().registry(metricName(SERVICE_METRICS_INVOCATIONS, srvcCtx.name()));
-
+    private void registerMetrics(Service srvc, ServiceContextImpl srvcCtx) {
         for (Class<?> iface : srvc.getClass().getInterfaces()) {
             if (!Service.class.isAssignableFrom(iface))
                 continue;
@@ -1890,13 +1909,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 if (m.getDeclaringClass().equals(Service.class))
                     continue;
 
-                invocationsMetric(srvcCtx.name(), m);
+                // Pre-cache metric for the method.
+                srvcCtx.invokeHistogramm(new GridServiceMethodReflectKey(m.getName(), m.getParameterTypes()),
+                    () -> invocationsMetric(srvcCtx.name(), m));
             }
         }
     }
 
-    /** TODO : implment */
-    void unregisterMetrics(ServiceContext srvcCtx) {
+    /**
+     * Removes metrics for service {@code srvcCtx}
+     *
+     * @param srvcCtx Service context.
+     */
+    private void unregisterMetrics(ServiceContext srvcCtx) {
         ctx.metric().remove(metricName(SERVICE_METRICS_INVOCATIONS, srvcCtx.name()));
     }
 
@@ -1949,7 +1974,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Invocation proxy handler for a service to measure durations of its methods.
      * Reuses {@link GridServiceProxy#callAndMeasureServiceMethod(ServiceProcessorAdapter, ServiceContextImpl,
-     * GridServiceMethodReflectKey, Method, Object)}
+     * GridServiceMethodReflectKey, Method, Object[])}
      */
     private static class LocalInvocationHandler implements InvocationHandler {
         /** */

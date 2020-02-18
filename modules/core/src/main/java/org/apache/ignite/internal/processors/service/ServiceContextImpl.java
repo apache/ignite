@@ -168,7 +168,7 @@ public class ServiceContextImpl implements ServiceContext {
 
     /**
      * @param key Method key.
-     * @param histogrammInitiator The initiator if the histogramm is not initialized yet.
+     * @param histogrammInitiator Histogramm supplier if not initialized yet.
      * @return Invocation histogramm.
      */
     @Nullable HistogramMetricImpl invokeHistogramm(GridServiceMethodReflectKey key,
@@ -181,8 +181,13 @@ public class ServiceContextImpl implements ServiceContext {
             synchronized (mtdRecord) {
                 histogramm = mtdRecord.get2();
 
-                if (histogramm == null)
-                    mtdRecord.set2(histogramm = histogrammInitiator.get());
+                if (histogramm == null) {
+                    histogramm = histogrammInitiator.get();
+
+                    assert histogramm != null;
+
+                    mtdRecord.set2(histogramm);
+                }
             }
         }
 

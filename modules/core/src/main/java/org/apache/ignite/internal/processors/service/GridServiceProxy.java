@@ -102,10 +102,10 @@ public class GridServiceProxy<T> implements Serializable {
      * @param svcCtx - Context of the service being invoked.
      * @param key - The method key. If {@code Null}, will be caclulated.
      * @param mtd - The method to invoke.
-     * @param mtd - Arguments for {@code mtd}.
+     * @param args - Arguments for {@code mtd}.
      */
     static Object callAndMeasureServiceMethod(ServiceProcessorAdapter srvcProc, ServiceContextImpl svcCtx,
-        @Nullable GridServiceMethodReflectKey key, Method mtd, @Nullable Object args) throws Exception {
+        @Nullable GridServiceMethodReflectKey key, Method mtd, @Nullable Object[] args) throws Exception {
 
         HistogramMetricImpl invokeMetric = null;
 
@@ -116,8 +116,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (key == null)
                 key = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
 
-            invokeMetric = advancedSvcProc == null ? null
-                : svcCtx.invokeHistogramm(key, () -> advancedSvcProc.invocationsMetric(svcCtx.name(), mtd));
+            invokeMetric = svcCtx.invokeHistogramm(key, () -> advancedSvcProc.invocationsMetric(svcCtx.name(), mtd));
         }
 
         long time = System.nanoTime();
@@ -125,7 +124,7 @@ public class GridServiceProxy<T> implements Serializable {
         Object callResult;
 
         try {
-            callResult = args == null ? mtd.invoke(svcCtx.service()) : mtd.invoke(svcCtx.service(), args);
+            callResult = mtd.invoke(svcCtx.service(), args);
         }
         catch (InvocationTargetException e) {
             throw new ServiceProxyException(e.getCause());
