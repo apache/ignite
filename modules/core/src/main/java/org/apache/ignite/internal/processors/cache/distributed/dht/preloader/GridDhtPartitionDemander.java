@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.LongSupplier;
+import java.util.function.LongUnaryOperator;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -354,8 +355,11 @@ public class GridDhtPartitionDemander {
             rebalanceFut = fut;
 
             for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-                for (Integer partId : msg.partitions().fullSet())
-                    rebalanceFut.expectedKeys.addAndGet(grp.topology().globalPartSizes().get(partId));
+                for (Integer partId : msg.partitions().fullSet()) {
+                    Long partSize = grp.topology().globalPartSizes().get(partId);
+
+                    rebalanceFut.expectedKeys.addAndGet(partSize == null ? 0 : partSize);
+                }
 
                 CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
 
