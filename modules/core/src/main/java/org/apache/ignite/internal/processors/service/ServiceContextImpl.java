@@ -59,7 +59,7 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private final ExecutorService exe;
 
-    /** Method-bound utility cache. */
+    /** Keeps cached data bound to service method. */
     private final ConcurrentMap<GridServiceMethodReflectKey, IgniteBiTuple<Method, HistogramMetricImpl>> mtds =
         new ConcurrentHashMap<>();
 
@@ -168,8 +168,8 @@ public class ServiceContextImpl implements ServiceContext {
 
     /**
      * @param key Method key.
-     * @param histogrammInitiator Histogramm supplier if not initialized yet.
-     * @return Invocation histogramm.
+     * @param histogrammInitiator Histogramm supplier if the histogramm isn't initialized yet.
+     * @return Service method performance histogramm.
      */
     @Nullable HistogramMetricImpl invokeHistogramm(GridServiceMethodReflectKey key,
         Supplier<HistogramMetricImpl> histogrammInitiator) {
@@ -194,7 +194,7 @@ public class ServiceContextImpl implements ServiceContext {
         return histogramm;
     }
 
-    /** TODO : comment. */
+    /** Creates utility recod by method key {@code key}. Thread-safe.  */
     private IgniteBiTuple<Method, HistogramMetricImpl> methodRecord(GridServiceMethodReflectKey key) {
         IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = mtds.get(key);
 

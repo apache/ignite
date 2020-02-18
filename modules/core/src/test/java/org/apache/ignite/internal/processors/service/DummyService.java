@@ -21,8 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 
@@ -47,13 +45,6 @@ public class DummyService implements Service {
 
     /** Cancelled flags per service. */
     private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap<>();
-
-    @IgniteInstanceResource
-    private Ignite ignite;
-
-    public void testCall(){
-        System.out.println("Launched on node " + ignite.cluster().localNode().id());
-    }
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {

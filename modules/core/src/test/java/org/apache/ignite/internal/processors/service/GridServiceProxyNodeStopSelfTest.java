@@ -50,8 +50,6 @@ public class GridServiceProxyNodeStopSelfTest extends GridCommonAbstractTest {
 
         final MyService proxy = client.services().serviceProxy("my-service", MyService.class, false);
 
-        int res = proxy.hello();
-
         assertEquals("GridServiceProxy [name=my-service, sticky=false]", proxy.toString());
 
         assertEquals(42, proxy.hello());

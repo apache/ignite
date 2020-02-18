@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteFuture;
@@ -31,8 +27,6 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 
 /**
  * Single node services test.
@@ -266,8 +260,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
      */
     @Test
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
-        System.setProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, "false");
-
         // Prestart client node.
         Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
 
@@ -296,18 +288,6 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             info("Deployed service: " + name);
 
             fut.get();
-
-            ClusterNode n = g.cluster().nodes().stream().collect(Collectors.toList()).get(0);
-
-            g.cluster().stopNodes(Collections.singleton(n.id()));
-            g.cluster().restartNodes(Collections.singleton(n.id()));
-
-            g.cluster().restartNodes();
-
-            g.cluster().restartNodes();
-
-            g.cluster().state(ClusterState.INACTIVE);
-            g.cluster().state(ClusterState.ACTIVE);
 
             info("Finished waiting for service future: " + name);
 

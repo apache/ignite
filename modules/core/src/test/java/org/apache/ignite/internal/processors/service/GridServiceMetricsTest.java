@@ -60,7 +60,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             assertEquals(metricsCnt(ignite, srvcMetricRegName), 0);
     }
 
-    /** Checks two different histograms created for same short names of methods. */
+    /** Checks two different histograms are created for the same short names of service methods. */
     @Test
     public void testMetricNaming() throws Exception {
         IgniteEx ignite = startGrid(1);
@@ -98,12 +98,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         // We did only 2 service calls.
         assertEquals(invokes, 2);
 
+        // Ensure metrics number matches method number of the service API.
         assertEquals(metricsCnt, NamingService.class.getDeclaredMethods().length);
     }
 
-    /**
-     * @throws Exception In case of an error.
-     */
+    /** Tests local services. */
     @Test
     public void testServiceInvocationMetricsOnLocals() throws Exception {
         List<IgniteEx> grids = startGrids(3, false);
@@ -182,11 +181,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         serviceInvocationMetricsProxied(5, 2, 2, 2);
     }
 
-    /**
-     * Call test service in various ways.
-     *
-     * @throws Exception In case of an error.
-     */
+    /** Invoke service in various ways. */
     private void serviceInvocationMetricsProxied(int serverCnt, int clientCnt, int perClusterCnt, int perNodeCnt)
         throws Exception {
 
@@ -206,7 +201,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        // Call service through the server proxies, non-sticky.
+        // Call service through the server proxies, not-sticky.
         for (int s = 0; s < INVOKE_CNT; ++s)
             servers.get(s % servers.size()).services().serviceProxy(srvcName, MyService.class, false).hello();
 
@@ -218,7 +213,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         for (int ss = 0; ss < INVOKE_CNT; ++ss)
             stickies.get(ss % stickies.size()).hello();
 
-        // Call service through the remote client proxies, non-sticky.
+        // Call service through the remote client proxies, not-sticky.
         for (int c = 0; c < INVOKE_CNT; ++c)
             clients.get(c % clients.size()).services().serviceProxy(srvcName, MyService.class, false).hello();
 
@@ -245,7 +240,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
                 }
             }
 
-            // May not be deployed on this server node.
+            // Metrics may not be deployed on this server node.
             if (metrics == null)
                 continue;
 
@@ -263,8 +258,8 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             invokeCollector += LongStream.of(invokeHistogramm.value()).reduce(Long::sum).getAsLong();
         }
 
-        // Compare all 4 call approachs.
-        assertEquals("Wrong invocations calculated.", INVOKE_CNT * 4, invokeCollector);
+        // Compare all 4 call approaches.
+        assertEquals("Calculated wrong service invocation number.", INVOKE_CNT * 4, invokeCollector);
     }
 
     /** */
@@ -295,7 +290,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Number of metrics registered in registry {@code metricRegistryName}.
+     * @return Number of metrics contained in metric registry {@code metricRegistryName}.
      */
     private static int metricsCnt(IgniteEx ignite, String metricRegistryName) {
         MetricRegistry registry = ignite.context().metric().registry(metricRegistryName);

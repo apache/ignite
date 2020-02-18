@@ -36,7 +36,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
@@ -59,7 +58,6 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -88,7 +86,6 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
@@ -152,9 +149,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 
-        System.setProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, "false");
-
-        ignite = startGrids(3);
+        ignite = startGrid(0);
 
         ignite.cluster().active(true);
     }
@@ -302,8 +297,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testServices() throws Exception {
-        System.setProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, "false");
-
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
 
         srvcCfg.setName("service");
@@ -312,25 +305,15 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         ignite.services().deploy(srvcCfg);
 
-//        TabularDataSupport srvs = systemView(SVCS_VIEW);
-//
-//        assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
-//
-//        CompositeData sysView = srvs.get(new Object[] {0});
-//
-//        assertEquals(srvcCfg.getName(), sysView.get("name"));
-//        assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get("maxPerNodeCount"));
-//        assertEquals(DummyService.class.getName(), sysView.get("serviceClass"));
+        TabularDataSupport srvs = systemView(SVCS_VIEW);
 
-        ClusterNode n = ignite.cluster().nodes().stream().collect(Collectors.toList()).get(0);
+        assertEquals(ignite.context().service().serviceDescriptors().size(), srvs.size());
 
-        ignite.active(false);
-        ignite.active(true);
+        CompositeData sysView = srvs.get(new Object[] {0});
 
-        DummyService src = ignite.services().serviceProxy("service", DummyService.class, false);
-
-        for(int i=0; i<100; ++i)
-            src.testCall();
+        assertEquals(srvcCfg.getName(), sysView.get("name"));
+        assertEquals(srvcCfg.getMaxPerNodeCount(), sysView.get("maxPerNodeCount"));
+        assertEquals(DummyService.class.getName(), sysView.get("serviceClass"));
     }
 
     /** */

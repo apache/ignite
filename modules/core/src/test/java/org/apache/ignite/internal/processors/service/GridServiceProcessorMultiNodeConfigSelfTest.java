@@ -29,8 +29,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
-
 /**
  * Single node services test.
  */
@@ -282,8 +280,6 @@ public class GridServiceProcessorMultiNodeConfigSelfTest extends GridServiceProc
      * @throws Exception If failed.
      */
     private void checkDeployOnEachNodeUpdateTopology(String name) throws Exception {
-        System.setProperty(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, "false");
-
         IgniteEx g = randomGrid();
 
         int newNodes = 4;

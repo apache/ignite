@@ -95,14 +95,14 @@ public class GridServiceProxy<T> implements Serializable {
     private final long waitTimeout;
 
     /**
-     * Calls method of service and allows timing of the method duration. To measure the duration pass
+     * Calls method of service and allows timing of its duration. To measure the method performance pass
      * {@link IgniteServiceProcessor} as {@code srvcProc}.
      *
      * @param srvcProc - Current implementation of service processor.
      * @param svcCtx - Context of the service being invoked.
-     * @param key - The method key. If {@code Null}, will be caclulated.
-     * @param mtd - The method to invoke.
-     * @param args - Arguments for {@code mtd}.
+     * @param key - Reflection key of service method. If {@code Null} will be caclulated.
+     * @param mtd - Service method to invoke.
+     * @param args - Arguments for method {@code mtd}.
      */
     static Object callAndMeasureServiceMethod(ServiceProcessorAdapter srvcProc, ServiceContextImpl svcCtx,
         @Nullable GridServiceMethodReflectKey key, Method mtd, @Nullable Object[] args) throws Exception {
@@ -130,6 +130,7 @@ public class GridServiceProxy<T> implements Serializable {
             throw new ServiceProxyException(e.getCause());
         }
 
+        // The metric may be not activated.
         if (invokeMetric != null)
             invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
 
