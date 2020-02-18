@@ -118,7 +118,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             processPartition();
         }
         catch (Throwable e) {
-            err = new IgniteException(e);
+            err = Error.class.isInstance(e) ? new IgniteException(e) : e;
 
             U.error(log, "Error during create/rebuild index for partition: " + locPart.id(), e);
 
