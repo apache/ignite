@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.logger.NullLogger;
@@ -54,12 +55,23 @@ class ClientBinaryMarshaller {
     }
 
     /**
-     * Deserializes Ignite binary object from input stream.
+     * Unmarshals Ignite binary object from input stream.
      *
+     * @param in Input stream.
      * @return Binary object.
      */
     public <T> T unmarshal(BinaryInputStream in) {
         return impl.unmarshal(in);
+    }
+
+    /**
+     * Deserializes object from input stream.
+     *
+     * @param in Input stream.
+     * @param hnds Object handles.
+     */
+    public <T> T deserialize(BinaryInputStream in, BinaryReaderHandles hnds) {
+        return impl.deserialize(in, null, hnds);
     }
 
     /**

@@ -64,7 +64,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  *
  */
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
-
     /** Cache key for test put and invoke operation after reconnect */
     private static final int CACHE_PUT_INVOKE_KEY = 10010;
 
@@ -104,9 +103,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
      */
     @SuppressWarnings("unchecked")
     private void dataStructureOperationsTest() throws Exception {
-        clientMode = true;
-
-        final Ignite client = startGrid(serverCount());
+        final Ignite client = startClientGrid(serverCount());
 
         doTestIgniteOperationOnDisconnect(client, Arrays.asList(
             // Check atomic long.
@@ -215,17 +212,13 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                 }
             )
         ));
-
-        clientMode = false;
     }
 
     /**
      * @throws Exception If failed.
      */
     private void cacheOperationsTest() throws Exception {
-        clientMode = true;
-
-        final Ignite client = startGrid(serverCount());
+        final Ignite client = startClientGrid(serverCount());
 
         final IgniteCache<Object, Object> dfltCache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -532,17 +525,13 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
             )
 
         ));
-
-        clientMode = false;
     }
 
     /**
      * @throws Exception If failed.
      */
     private void igniteOperationsTest() throws Exception {
-        clientMode = true;
-
-        final Ignite client = startGrid(serverCount());
+        final Ignite client = startClientGrid(serverCount());
 
         final IgniteCache<Object, Object> dfltCache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -763,8 +752,6 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                 }
             )
         ));
-
-        clientMode = false;
     }
 
     /**

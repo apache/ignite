@@ -38,6 +38,7 @@ import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -52,11 +53,14 @@ public class SecurityUtils {
         "is not equal to remote node's grid security processor class " +
         "[locNodeId=%s, rmtNodeId=%s, locCls=%s, rmtCls=%s]";
 
+    /** Ignite internal package. */
+    public static final String IGNITE_INTERNAL_PACKAGE = "org.apache.ignite.internal";
+
     /** Default serialization version. */
     private static final int DFLT_SERIALIZE_VERSION = isSecurityCompatibilityMode() ? 1 : 2;
 
     /** Current serialization version. */
-    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>(){
+    private static final ThreadLocal<Integer> SERIALIZE_VERSION = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
             return DFLT_SERIALIZE_VERSION;
         }
@@ -129,6 +133,8 @@ public class SecurityUtils {
      * @return Node's security context.
      */
     public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+        A.notNull(node, "Cluster node");
+
         byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
 
         if (subjBytes == null)
@@ -170,7 +176,7 @@ public class SecurityUtils {
     /**
      * @return True if class of {@code target} is a system type.
      */
-    private static boolean isSystemType(GridKernalContext ctx, Object target) {
+    public static boolean isSystemType(GridKernalContext ctx, Object target) {
         Class cls = target instanceof GridInternalWrapper
             ? ((GridInternalWrapper)target).userObject().getClass()
             : target.getClass();

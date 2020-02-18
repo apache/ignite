@@ -28,52 +28,58 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 
-/** */
+/**
+ * Implementation of contract for managing transactional and concurrent access to cached naturalId data.
+ */
 public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess implements NaturalIdDataAccess {
-    /** */
+    /** Strategy access type. */
     private final AccessType accessType;
 
     /** */
-    public IgniteNaturalIdDataAccess(HibernateAccessStrategyAdapter stgy, AccessType accessType,
+    public IgniteNaturalIdDataAccess(
+        HibernateAccessStrategyAdapter stgy,
+        AccessType accessType,
         RegionFactory regionFactory,
-        DomainDataRegion domainDataRegion, Ignite ignite,
-        HibernateCacheProxy cache) {
+        DomainDataRegion domainDataRegion,
+        Ignite ignite,
+        HibernateCacheProxy cache
+    ) {
         super(stgy, regionFactory, domainDataRegion, ignite, cache);
 
         this.accessType = accessType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public AccessType getAccessType() {
         return accessType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Object generateCacheKey(Object[] naturalIdValues, EntityPersister persister, SharedSessionContractImplementor ses) {
         return DefaultCacheKeysFactory.staticCreateNaturalIdKey(naturalIdValues, persister, ses);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Object[] getNaturalIdValues(Object cacheKey) {
         return DefaultCacheKeysFactory.staticGetNaturalIdValues(cacheKey);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean insert(SharedSessionContractImplementor ses, Object key, Object val) throws CacheException {
         return stgy.insert(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean afterInsert(SharedSessionContractImplementor ses, Object key, Object val) throws CacheException {
         return stgy.afterInsert(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean update(SharedSessionContractImplementor ses, Object key, Object val) throws CacheException {
         return stgy.update(key, val);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, SoftLock lock) throws CacheException {
         return stgy.afterUpdate(key, val);
     }

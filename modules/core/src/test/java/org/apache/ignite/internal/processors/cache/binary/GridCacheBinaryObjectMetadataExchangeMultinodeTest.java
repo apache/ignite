@@ -58,9 +58,6 @@ import org.junit.Test;
  */
 public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridCommonAbstractTest {
     /** */
-    private boolean clientMode;
-
-    /** */
     private boolean applyDiscoveryHook;
 
     /** */
@@ -95,8 +92,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
-
-        cfg.setClientMode(clientMode);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -326,7 +321,6 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
      * @param clientName name of client node.
      */
     private Ignite startDeafClient(String clientName) throws Exception {
-        clientMode = true;
         applyDiscoveryHook = true;
         discoveryHook = new DiscoveryHook() {
             @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
@@ -344,9 +338,8 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         };
 
-        Ignite client = startGrid(clientName);
+        Ignite client = startClientGrid(clientName);
 
-        clientMode = false;
         applyDiscoveryHook = false;
 
         return client;

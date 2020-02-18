@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -368,7 +367,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
-        Set<Integer> keys = new HashSet<>(4, 1);
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
         keys.add(3);
@@ -1377,7 +1376,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAllMultipleKeysAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Set<Integer> keys = new HashSet<>();
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
 
@@ -1397,7 +1396,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAllAsyncMultipleKeysAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Set<Integer> keys = new HashSet<>();
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
 
@@ -1415,7 +1414,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testGetTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("GetTime");
+        HistogramMetricImpl m = metric("GetTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
@@ -1433,7 +1432,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testPutTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("PutTime");
+        HistogramMetricImpl m = metric("PutTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 
@@ -1447,7 +1446,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testRemoveTime() {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        HistogramMetric m = metric("RemoveTime");
+        HistogramMetricImpl m = metric("RemoveTime");
 
         assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
 

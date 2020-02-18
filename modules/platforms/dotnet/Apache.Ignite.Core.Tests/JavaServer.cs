@@ -37,6 +37,9 @@ namespace Apache.Ignite.Core.Tests
     {
         /** Client port. */
         public const int ClientPort = 10890;
+
+        /** Apache Ignite artifact group ID. */
+        public const string GroupIdIgnite = "org.apache.ignite";
         
         /** Maven command to execute the main class. */
         private const string MavenCommandExec = "compile exec:java -D\"exec.mainClass\"=\"Runner\"";
@@ -53,20 +56,22 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Starts a server node with a given version.
         /// </summary>
+        /// <param name="groupId">Maven artifact group id.</param>
         /// <param name="version">Product version.</param>
         /// <returns>Disposable object to stop the server.</returns>
-        public static IDisposable Start(string version)
+        public static IDisposable Start(string groupId, string version)
         {
             IgniteArgumentCheck.NotNullOrEmpty(version, "version");
 
-            ReplaceIgniteVersionInPomFile(version, Path.Combine(JavaServerSourcePath, "pom.xml"));
+            var pomWrapper =
+                ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));
             
             var process = new System.Diagnostics.Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = Os.IsWindows ? "cmd.exe" : "/bin/bash",
-                    Arguments = Os.IsWindows 
+                    Arguments = Os.IsWindows
                         ? string.Format("/c \"{0} {1}\"", MavenPath, MavenCommandExec)
                         : string.Format("-c \"{0} {1}\"", MavenPath, MavenCommandExec.Replace("\"", "\\\"")),
                     UseShellExecute = false,
@@ -79,35 +84,51 @@ namespace Apache.Ignite.Core.Tests
 
             process.Start();
             
-            var listDataReader = new ListDataReader();
-            process.AttachProcessConsoleReader(listDataReader, new IgniteProcessConsoleOutputReader());
-            
-            var processWrapper = new DisposeAction(() => process.KillProcessTree());
-
-            // Wait for node to come up with a thin client connection.
-            if (WaitForStart())
+            var processWrapper = new DisposeAction(() =>
             {
-                return processWrapper;
-            }
+                process.KillProcessTree();
+                pomWrapper.Dispose();
+            });
 
-            if (!process.HasExited)
+            try
+            {
+                var listDataReader = new ListDataReader();
+                process.AttachProcessConsoleReader(listDataReader, new IgniteProcessConsoleOutputReader());
+
+                // Wait for node to come up with a thin client connection.
+                if (WaitForStart())
+                {
+                    return processWrapper;
+                }
+
+                throw new Exception("Failed to start Java node: " + string.Join(",", listDataReader.GetOutput()));
+            }
+            catch (Exception)
             {
                 processWrapper.Dispose();
+                throw;
             }
-            
-            throw new Exception("Failed to start Java node: " + string.Join(",", listDataReader.GetOutput()));
         }
 
         /// <summary>
         /// Updates pom.xml with given Ignite version.
         /// </summary>
-        private static void ReplaceIgniteVersionInPomFile(string version, string pomFile)
+        private static IDisposable ReplaceIgniteVersionInPomFile(string groupId, string version, string pomFile)
         {
             var pomContent = File.ReadAllText(pomFile);
+            var originalPomContent = pomContent;
+            
             pomContent = Regex.Replace(pomContent,
                 @"<version>\d+\.\d+\.\d+</version>",
                 string.Format("<version>{0}</version>", version));
+            
+            pomContent = Regex.Replace(pomContent,
+                @"<groupId>org.*?</groupId>",
+                string.Format("<groupId>{0}</groupId>", groupId));
+            
             File.WriteAllText(pomFile, pomContent);
+            
+            return new DisposeAction(() => File.WriteAllText(pomFile, originalPomContent));
         }
 
         /// <summary>
@@ -139,7 +160,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     return false;
                 }
-            }, 60000);
+            }, 180000);
         }
 
         /// <summary>

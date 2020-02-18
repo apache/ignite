@@ -58,6 +58,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         public static _AppDomain GetDefaultAppDomain()
         {
+            if (Os.IsMono)
+            {
+                var prop = typeof(AppDomain).GetProperty(
+                    "DefaultDomain", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                
+                Debug.Assert(prop != null);
+                
+                return (_AppDomain) prop.GetValue(null, null);
+            }
+
             object objHost;
             int hr = NativeMethods.CLRCreateInstance(ref CLSID_CLRMetaHost, ref IID_CLRMetaHost, out objHost);
 

@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -52,13 +53,19 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -71,6 +78,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
@@ -89,8 +97,10 @@ import static org.apache.ignite.internal.managers.systemview.GridSystemViewManag
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
@@ -113,15 +123,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     public static final String TEST_TRANSFORMER = "TestTransformer";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
-        return cfg;
-    }
 
     /** Tests work of {@link SystemView} for caches. */
     @Test
@@ -783,8 +784,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     public void testScanQuery() throws Exception {
         try(IgniteEx g0 = startGrid(0);
             IgniteEx g1 = startGrid(1);
-            IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+            IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")
@@ -980,6 +981,95 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return TEST_TRANSFORMER;
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration()
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDataRegionConfigurations(
+                    new DataRegionConfiguration().setName("dr0").setMaxSize(100L * 1024 * 1024),
+                    new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
+                        .setPersistenceEnabled(true)
+                )))) {
+            ignite.cluster().active(true);
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
+                .database();
+
+            int pageSize = dbMgr.pageSize();
+
+            dbMgr.enableCheckpoints(false).get();
+
+            for (int i = 0; i < 2; i++) {
+                IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("cache" + i)
+                    .setDataRegionName("dr" + i).setAffinity(new RendezvousAffinityFunction().setPartitions(2)));
+
+                int key = 0;
+
+                // Fill up different free-list buckets.
+                for (int j = 0; j < pageSize / 2; j++)
+                    cache.put(key++, new byte[j + 1]);
+
+                // Put some pages to one bucket to overflow pages cache.
+                for (int j = 0; j < 1000; j++)
+                    cache.put(key++, new byte[pageSize / 2]);
+            }
+
+            long dr0flPages = 0;
+            int dr0flStripes = 0;
+
+            SystemView<PagesListView> dataRegionPageLists = ignite.context().systemView().view(DATA_REGION_PAGE_LIST_VIEW);
+
+            for (PagesListView pagesListView : dataRegionPageLists) {
+                if (pagesListView.name().startsWith("dr0")) {
+                    dr0flPages += pagesListView.bucketSize();
+                    dr0flStripes += pagesListView.stripesCount();
+                }
+            }
+
+            assertTrue(dr0flPages > 0);
+            assertTrue(dr0flStripes > 0);
+
+            SystemView<CachePagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
+
+            long dr1flPages = 0;
+            int dr1flStripes = 0;
+            int dr1flCached = 0;
+
+            for (CachePagesListView pagesListView : cacheGrpPageLists) {
+                if (pagesListView.cacheGroupId() == cacheId("cache1")) {
+                    dr1flPages += pagesListView.bucketSize();
+                    dr1flStripes += pagesListView.stripesCount();
+                    dr1flCached += pagesListView.cachedPagesCount();
+                }
+            }
+
+            assertTrue(dr1flPages > 0);
+            assertTrue(dr1flStripes > 0);
+            assertTrue(dr1flCached > 0);
+
+            // Test filtering.
+            assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
+
+            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+                CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
+                CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            ));
+
+            assertEquals(1, F.size(iter));
+
+            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+                CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            ));
+
+            assertEquals(2, F.size(iter));
         }
     }
 

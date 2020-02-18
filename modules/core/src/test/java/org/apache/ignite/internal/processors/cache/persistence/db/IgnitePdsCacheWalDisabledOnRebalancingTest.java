@@ -54,8 +54,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
-
 /**
  * Test scenarios with rebalancing, IGNITE_DISABLE_WAL_DURING_REBALANCING optimization and topology changes
  * such as client nodes join/leave, server nodes from BLT leave/join, server nodes out of BLT join/leave.
@@ -90,20 +88,6 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
     /** */
     private boolean useBlockingFileIO;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -149,9 +133,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-        else {
+        if (!"client".equals(igniteInstanceName)) {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
                 .setWalMode(WALMode.LOG_ONLY)
@@ -204,7 +186,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         IgniteEx ig1 = startGrid(1);
 
-        startGrid("client");
+        startClientGrid("client");
 
         stopGrid("client");
 
@@ -291,6 +273,8 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     @Test
     public void testRebalancedPartitionsOwningWithConcurrentAffinityChange() throws Exception {
         Ignite ig0 = startGridsMultiThreaded(4);
+
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         fillCache(ig0.dataStreamer(CACHE3_NAME), CACHE_SIZE, GENERATING_FUNC);
 
         // Stop idx=2 to prepare for baseline topology change later.
@@ -383,7 +367,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
         startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
 
-        startGrid("client");
+        startClientGrid("client");
 
         fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
 

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -46,10 +47,10 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -69,17 +70,11 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
 
-    /** */
-    private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
-
-        if (igniteInstanceName.equals(NO_CACHE_IGNITE_INSTANCE_NAME))
-            cfg.setClientMode(true);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -378,14 +373,14 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     public void testRestartQuery() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
 
-        final int keyCnt = 300;
+        final int keyCnt = SF.applyLB(300, 50);
 
         final int updateKey = 1;
 
         for (int i = 0; i < keyCnt; i++)
             cache.put(updateKey, i);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < SF.applyLB(10, 4); i++) {
             if (i % 2 == 0) {
                 final AtomicInteger cntr = new AtomicInteger(0);
 

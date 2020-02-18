@@ -34,6 +34,9 @@ import org.jetbrains.annotations.Nullable;
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateMetric extends AbstractMetric implements LongMetric {
+    /** Default counters array size. */
+    public static final int DFLT_SIZE = 10;
+
     /** Metric instance. */
     private volatile HitRateMetricImpl cntr;
 
@@ -51,11 +54,22 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        cntr = new HitRateMetricImpl(cntr.rateTimeInterval, cntr.size);
+        HitRateMetricImpl cntr0 = cntr;
+
+        cntr = new HitRateMetricImpl(cntr0.rateTimeInterval, cntr0.size);
     }
 
     /**
-     * Resets metric with the new paramters.
+     * Resets metric with the new parametes.
+     *
+     * @param rateTimeInterval New rate time interval.
+     */
+    public void reset(long rateTimeInterval) {
+        reset(rateTimeInterval, DFLT_SIZE);
+    }
+
+    /**
+     * Resets metric with the new parameters.
      *
      * @param rateTimeInterval New rate time interval.
      * @param size New counters array size.

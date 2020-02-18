@@ -35,19 +35,19 @@ public enum IoStatisticsType {
     SQL("io.statistics.sql");
 
     /** Metric group. */
-    private String metricGroupName;
+    private String metricGrpName;
 
     /**
-     * @param monitoringGroup Monitoring group.
+     * @param metricGrpName Metric group name.
      */
-    IoStatisticsType(String metricGroupName) {
-        this.metricGroupName = metricGroupName;
+    IoStatisticsType(String metricGrpName) {
+        this.metricGrpName = metricGrpName;
     }
 
     /**
      * @return Metric group name.
      */
     public String metricGroupName() {
-        return metricGroupName;
+        return metricGrpName;
     }
 }

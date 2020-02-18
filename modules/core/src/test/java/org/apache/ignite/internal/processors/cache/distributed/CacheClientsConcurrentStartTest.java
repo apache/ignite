@@ -94,9 +94,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        if (getTestIgniteInstanceIndex(gridName) >= SRV_CNT)
-            cfg.setClientMode(true);
-        else {
+        if (getTestIgniteInstanceIndex(gridName) < SRV_CNT) {
             CacheConfiguration ccfgs[] = new CacheConfiguration[CACHES / 2];
 
             for (int i = 0; i < ccfgs.length; i++)
@@ -165,7 +163,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
                     Random rnd = new Random();
 
                     try {
-                        Ignite ignite = startGrid(SRV_CNT + idx);
+                        Ignite ignite = startClientGrid(SRV_CNT + idx);
 
                         assertTrue(ignite.configuration().isClientMode());
 
