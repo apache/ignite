@@ -20,6 +20,19 @@ Arguments: --cache help --yes
     Parameters:
       --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
 
+  --cache partition-reconciliation [--repair] [--parallelism] [--batch-size] [--recheck-attempts] [--include-sensitive] [cacheName1,...,cacheNameN]
+    Verify whether there are inconsistent entries for the specified caches and print out the differences if any. Fix inconsistency if --repairargument is presented. When no parameters are specified, all user caches are verified. Cache filtering options configure the set of caches that will be processed by partition-reconciliation command. If cache names are specified, in form of regular expressions, only matching caches will be verified.
+
+    Parameters:
+      --parallelism        - Maximum number of threads that can be involved in partition reconciliation activities on one node. Default value is 0, which means the value will be initialzed with Runtime.getRuntime().availableProcessors() of a server node.
+      --include-sensitive  - Print data to result with sensitive information: keys and values. Default value is false.
+      --repair             - If present, fix all inconsistent data. Specifies which repair algorithm to use for doubtful keys. The following values can be used: [LATEST, PRIMARY, MAJORITY, REMOVE, PRINT_ONLY] Default value is PRINT_ONLY.
+      --batch-size         - Amount of keys to retrieve within one job. Default value is 1000.
+      --recheck-attempts   - Amount of potentially inconsistent keys recheck attempts. Value between 1 and 5 should be used. Default value is 2.
+
+  --cache partition-reconciliation-cancel
+    Does cancel of partition reconciliation command.
+
   --cache list regexPattern [--groups|--seq] [nodeId] [--config] [--output-format multi-line]
     Show information about caches, groups or sequences that match a regular expression. When executed without parameters, this subcommand prints the list of caches.
 

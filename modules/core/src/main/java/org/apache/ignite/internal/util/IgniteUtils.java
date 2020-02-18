@@ -8125,6 +8125,40 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Compares two byte arrays by bytes.
+     * @param bytes1 Bytes 1.
+     * @param bytes2 Bytes 2.
+     */
+    public static int compareByteArrays(byte[] bytes1, byte[] bytes2) {
+        final int len = bytes1.length;
+        int lenCmp = Integer.compare(len, bytes2.length);
+
+        if (lenCmp != 0)
+            return lenCmp;
+
+        final int words = len / 8;
+        int cmp;
+
+        for (int i = 0; i < words; i++) {
+            int off = i * 8;
+            long b1 = GridUnsafe.getLong(bytes1, GridUnsafe.BYTE_ARR_OFF + off);
+            long b2 = GridUnsafe.getLong(bytes2, GridUnsafe.BYTE_ARR_OFF + off);
+            cmp = Long.compare(b1, b2);
+            if (cmp != 0)
+                return cmp;
+        }
+
+        for (int i = words * 8; i < len; i++) {
+            byte b1 = bytes1[i];
+            byte b2 = bytes2[i];
+            if (b1 != b2)
+                return b1 > b2 ? 1 : -1;
+        }
+
+        return 0;
+    }
+
+    /**
      * Gets field value.
      *
      * @param obj Object.
