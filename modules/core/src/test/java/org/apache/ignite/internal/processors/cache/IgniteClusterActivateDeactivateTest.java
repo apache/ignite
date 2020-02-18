@@ -1704,7 +1704,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
     }
 
-
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {
         for (int i = 0; i < nodesCnt; i++)
