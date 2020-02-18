@@ -52,5 +52,9 @@
             <property name="allowMultipleEmptyLines" value="false" />
             <property name="allowMultipleEmptyLinesInsideClassMembers" value="false" />
         </module>
+
+        <module name="EnumValueNameCheck">
+            <property name="format" value="^[A-Z][A-Z0-9]*v?([A-Z0-9_]+)*$" />
+        </module>
     </module>
 </module>

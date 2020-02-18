@@ -36,7 +36,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      */
     @Test
     public void testRecoveryAfterAnError0_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Runtime);
+        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.RUNTIME);
     }
 
     /**
@@ -46,7 +46,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      */
     @Test
     public void testRecoveryAfterAnError0_IOException() throws Exception {
-        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.IOException);
+        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.IO_EXCEPTION);
     }
 
     /**
@@ -56,7 +56,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      */
     @Test
     public void testRecoveryAfterAnError0_Error() throws Exception {
-        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Error);
+        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.ERROR);
     }
 
     /**
@@ -66,7 +66,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      */
     @Test
     public void testRecoveryAfterAnError7_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Runtime);
+        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.RUNTIME);
     }
 
     /**
@@ -76,7 +76,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      */
     @Test
     public void testRecoveryAfterAnError7_IOException() throws Exception {
-        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.IOException);
+        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.IO_EXCEPTION);
     }
 
     /**
@@ -86,7 +86,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      */
     @Test
     public void testRecoveryAfterAnError7_Error() throws Exception {
-        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Error);
+        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.ERROR);
     }
 
     /** {@inheritDoc} */

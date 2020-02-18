@@ -50,12 +50,12 @@ public class OptimizedMarshallerEnumSelfTest {
 
         marsh.setContext(context);
 
-        byte[] bytes = marsh.marshal(TestEnum.Bond);
+        byte[] bytes = marsh.marshal(TestEnum.BOND);
 
         TestEnum unmarshalled = marsh.unmarshal(bytes, Thread.currentThread().getContextClassLoader());
 
-        assertEquals(TestEnum.Bond, unmarshalled);
-        assertEquals(TestEnum.Bond.desc, unmarshalled.desc);
+        assertEquals(TestEnum.BOND, unmarshalled);
+        assertEquals(TestEnum.BOND.desc, unmarshalled.desc);
     }
 
     private GridKernalContext newContext() throws IgniteCheckedException {
@@ -68,13 +68,13 @@ public class OptimizedMarshallerEnumSelfTest {
     }
 
     private enum TestEnum {
-        Equity("Equity") {
+        EQUITY("EQUITY") {
             @Override public String getTestString() {
                 return "eee";
             }
         },
 
-        Bond("Bond") {
+        BOND("BOND") {
             @Override public String getTestString() {
                 return "qqq";
             }
