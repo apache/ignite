@@ -123,12 +123,27 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
                 new SchemaIndexCacheVisitorImpl(cctx, null, null, rebuildIdxFut) {
                     /** {@inheritDoc} */
                     @Override protected void beforeExecute() {
-                        awaitQuiet(latches.computeIfAbsent(cctx.name(), l -> new CountDownLatch(1)));
+                        String cacheName = cctx.name();
+
+                        if (log.isInfoEnabled())
+                            log.info("Before execute build idx for cache=" + cacheName);
+
+                        awaitQuiet(latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1)));
                     }
                 }.visit(clo);
             }).start();
 
             awaitQuiet(startThread);
+        }
+
+        /**
+         * Returns whether creating/rebuilding an index for cache is blocked.
+         *
+         * @return {@code True} if creating/rebuilding an index for cache is
+         *      blocked.
+         */
+        public boolean isBlock(String cacheName) {
+            return latches.containsKey(cacheName) && latches.get(cacheName).getCount() != 0;
         }
 
         /**
