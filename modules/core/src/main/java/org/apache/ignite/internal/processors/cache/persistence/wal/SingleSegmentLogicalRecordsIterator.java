@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -136,12 +134,10 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** Records type to skip. */
-        private final Set<WALRecord.RecordType> skip = RecordTypes.DELTA_TYPE_SET;
 
         /** {@inheritDoc} */
         @Override public boolean apply(WALRecord.RecordType type, WALPointer ptr) {
-            return !skip.contains(type);
+            return type.purpose() == WALRecord.RecordPurpose.LOGICAL || type == WALRecord.RecordType.CHECKPOINT_RECORD;
         }
     }
 }

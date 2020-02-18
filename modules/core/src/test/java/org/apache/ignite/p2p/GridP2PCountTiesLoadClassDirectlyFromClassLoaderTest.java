@@ -19,7 +19,11 @@ package org.apache.ignite.p2p;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDeploymentException;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,6 +43,9 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
 
     /** Compute task name. */
     private static String COMPUTE_TASK_NAME = "org.apache.ignite.tests.p2p.compute.ExternalCallable";
+
+    /** Compute task name. */
+    private static String COMPUTE_STEALING_TASK_NAME = "org.apache.ignite.tests.p2p.JobStealingTask";
 
     /** Deployment mode. */
     private DeploymentMode depMode;
@@ -85,6 +92,83 @@ public class GridP2PCountTiesLoadClassDirectlyFromClassLoaderTest extends GridCo
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception if error occurs.
+     */
+    public void executeP2PTaskWithRestartMaster(DeploymentMode depMode) throws Exception {
+        try {
+            CountTriesClassLoader testCntLdr = new CountTriesClassLoader(Thread.currentThread()
+                .getContextClassLoader());
+
+            this.depMode = depMode;
+
+            Thread.currentThread().setContextClassLoader(testCntLdr);
+
+            String path = GridTestProperties.getProperty(CLS_PATH_PROPERTY);
+
+            ClassLoader urlClsLdr = new URLClassLoader(new URL[] {new URL(path)}, testCntLdr);
+
+            Ignite ignite = startGrids(2);
+
+            Map<UUID, Integer> res = (Map<UUID, Integer>)ignite.compute(ignite.cluster().forRemotes()).execute(
+                (ComputeTask<Integer, Object>)urlClsLdr.loadClass(COMPUTE_STEALING_TASK_NAME).newInstance(), 1);
+
+            info("Result: " + res);
+
+            int cnt = testCntLdr.count;
+
+            ignite.compute(ignite.cluster().forRemotes()).execute(COMPUTE_STEALING_TASK_NAME, 2);
+            ignite.compute(ignite.cluster().forRemotes()).execute(COMPUTE_STEALING_TASK_NAME, 3);
+            ignite.compute(ignite.cluster().forRemotes()).execute(COMPUTE_STEALING_TASK_NAME, 4);
+
+            assertEquals(cnt, testCntLdr.count);
+
+            ignite.close();
+
+            ignite = startGrid(0);
+
+            try {
+                ignite.compute().execute(COMPUTE_STEALING_TASK_NAME, 5);
+
+                if (depMode != DeploymentMode.CONTINUOUS)
+                    fail("Task should be undeployed.");
+            }
+            catch (IgniteDeploymentException e) {
+                if (depMode != DeploymentMode.CONTINUOUS)
+                    assertTrue(e.getMessage(), e.getMessage().contains("Unknown task name or failed to auto-deploy task"));
+                else
+                    fail(e.getMessage());
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception if error occur.
+     */
+    @Test
+    public void testRestartPrivateMode() throws Exception {
+        executeP2PTaskWithRestartMaster(DeploymentMode.PRIVATE);
+    }
+
+    /**
+     * @throws Exception if error occur.
+     */
+    @Test
+    public void testRestartIsolatedMode() throws Exception {
+        executeP2PTaskWithRestartMaster(DeploymentMode.ISOLATED);
+    }
+
+    /**
+     * @throws Exception if error occur.
+     */
+    @Test
+    public void testRestartSharedMode() throws Exception {
+        executeP2PTaskWithRestartMaster(DeploymentMode.SHARED);
     }
 
     /**

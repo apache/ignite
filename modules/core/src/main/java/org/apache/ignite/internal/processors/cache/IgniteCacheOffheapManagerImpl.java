@@ -3043,6 +3043,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            pCntr.resetInitialCounter();
+        }
+
+        /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
         }
