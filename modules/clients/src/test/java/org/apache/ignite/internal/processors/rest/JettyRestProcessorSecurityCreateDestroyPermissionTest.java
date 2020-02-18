@@ -94,9 +94,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         return cfg;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testGetOrCreate() throws Exception {
         checkFailWithError(restGetOrCreate(UNALLOWED_CLNT, CACHE_NAME), ADMIN_CACHE);
@@ -115,9 +113,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         return content(login, cacheName, GridRestCommand.GET_OR_CREATE_CACHE);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testDestroyCache() throws Exception {
         restGetOrCreate(ADMIN, CACHE_NAME);
@@ -178,11 +174,6 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         URL url = new URL(sb.toString());
 
         URLConnection conn = url.openConnection();
-
-        String signature = signature();
-
-        if (signature != null)
-            conn.setRequestProperty("X-Signature", signature);
 
         InputStream in = conn.getInputStream();
 
