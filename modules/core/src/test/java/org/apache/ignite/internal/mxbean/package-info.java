@@ -15,27 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
- * Provides MBean method parameters names.
- *
- * @deprecated Use {@link MXBeanParameter} instead.
+ * <!-- Package description. -->
+ * Contains internal tests for mxbeans stuff.
  */
-@Deprecated
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface MXBeanParametersNames {
-    /**
-     *
-     * Array of parameter names in MBean.
-     */
-    public String[] value();
-}
+
+package org.apache.ignite.internal.mxbean;
