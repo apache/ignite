@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -80,7 +81,6 @@ import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedEx
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -220,18 +220,15 @@ public class GridReduceQueryExecutor {
         if (r != null) {
             CacheException e;
 
-            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR) {
-                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
-                    ", errMsg=" + msg + ']', new QueryCancelledException());
-            }
-            else if (failCode == GridQueryFailResponse.RETRY_QUERY) {
-                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
-                    ", errMsg=" + msg + ']', new QueryRetryException(msg));
-            }
-            else {
-                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
-                    ", errMsg=" + msg + ']');
-            }
+            String mapperFailedMsg = "Failed to execute map query on remote node [nodeId=" + nodeId +
+                ", errMsg=" + msg + ']';
+
+            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
+                e = new CacheException(mapperFailedMsg, new QueryCancelledException());
+            else if (failCode == GridQueryFailResponse.RETRY_QUERY)
+                e = new CacheException(mapperFailedMsg, new QueryRetryException(msg));
+            else
+                e = new CacheException(mapperFailedMsg);
 
             r.setStateOnException(nodeId, e);
         }
@@ -455,7 +452,7 @@ public class GridReduceQueryExecutor {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
-                            if (wasCancelled(err))
+                            if (QueryUtils.wasCancelled(err))
                                 throw new QueryCancelledException(); // Throw correct exception.
 
                             throw err;
@@ -551,7 +548,7 @@ public class GridReduceQueryExecutor {
                 U.closeQuiet(r.connection());
 
                 if (e instanceof CacheException) {
-                    if (wasCancelled((CacheException)e))
+                    if (QueryUtils.wasCancelled(e))
                         throw new CacheException("Failed to run reduce query locally.",
                             new QueryCancelledException());
 
@@ -955,16 +952,6 @@ public class GridReduceQueryExecutor {
             U.error(log, "Error in dml response processing. [localNodeId=" + ctx.localNodeId() + ", nodeId=" +
                 node.id() + ", msg=" + msg.toString() + ']', e);
         }
-    }
-
-    /**
-     * Returns true if the exception is triggered by query cancel.
-     *
-     * @param e Exception.
-     * @return {@code true} if exception is caused by cancel.
-     */
-    private boolean wasCancelled(CacheException e) {
-        return X.cause(e, QueryCancelledException.class) != null;
     }
 
     /**

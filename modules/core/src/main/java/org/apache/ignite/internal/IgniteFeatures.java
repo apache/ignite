@@ -87,11 +87,11 @@ public enum IgniteFeatures {
     /** ContinuousQuery with security subject id support. */
     CONT_QRY_SECURITY_AWARE(21),
 
-    /** Long operations dump timeout. */
-    LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
     /** Persistence caches can be snapshotted.  */
     PERSISTENCE_CACHE_SNAPSHOT(22),
+
+    /** Long operations dump timeout. */
+    LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
     /** */
     CACHE_PARTITION_FILE_REBALANCE(23);

@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -35,6 +37,9 @@ abstract class SnapshotFileSender {
     /** Busy processing lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+    /** Executor to run operation at. */
+    private final Executor exec;
+
     /** {@code true} if sender is currently working */
     private volatile boolean closed;
 
@@ -44,8 +49,16 @@ abstract class SnapshotFileSender {
     /**
      * @param log Ignite logger to use.
      */
-    protected SnapshotFileSender(IgniteLogger log) {
+    protected SnapshotFileSender(IgniteLogger log, Executor exec) {
+        this.exec = exec;
         this.log = log.getLogger(SnapshotFileSender.class);
+    }
+
+    /**
+     * @return Executor to run internal operations on.
+     */
+    public Executor executor() {
+        return exec;
     }
 
     /**
@@ -167,6 +180,13 @@ abstract class SnapshotFileSender {
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If initialization fails.
+     */
+    protected void init() throws IgniteCheckedException {
+        // No-op by default.
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListener;
 import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -95,8 +93,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
-
-        cctx.snapshotMgr().addSnapshotListener(new PartitionSnapshotListener());
     }
 
     /** {@inheritDoc} */
@@ -449,26 +445,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 //        // todo
 //        return partPreloadingRoutine.groupRoutine(grp);
 //    }
-
-    /**
-     * Partition snapshot listener.
-     */
-    private class PartitionSnapshotListener implements SnapshotListener {
-        /** {@inheritDoc} */
-        @Override public void onPartition(UUID nodeId, File file, int grpId, int partId) {
-            partPreloadingRoutine.onPartitionSnapshotReceived(nodeId, file, grpId, partId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onEnd(UUID rmtNodeId) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onException(UUID rmtNodeId, Throwable t) {
-            log.error("Unable to receive partitions [rmtNode=" + rmtNodeId + ", msg=" + t.getMessage() + "]", t);
-        }
-    }
 
     /** */
     private static class CheckpointListener implements DbCheckpointListener {

@@ -667,7 +667,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
             ).getAll();
 
             return null;
-        }, IgniteException.class, "The query was cancelled while executing.");
+        }, CacheException.class, "The query was cancelled while executing.");
 
         // Ensures that there were no exceptions within async cancellation process.
         cancelRes.get(CHECK_RESULT_TIMEOUT);

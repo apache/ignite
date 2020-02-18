@@ -81,7 +81,7 @@ public class DataStorageConfiguration implements Serializable {
         (long)(DFLT_DATA_REGION_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_DATA_REGION_INITIAL_SIZE);
 
-    /** Default working directory for snapshot temporary files. */
+    /** Default working directory for a snapshot final result. */
     public static final String DFLT_LOCAL_SNAPSHOT_DIRECTORY = "snapshots";
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */

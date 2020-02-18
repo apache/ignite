@@ -238,10 +238,12 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public BinaryObjectBuilder builder(BinaryObject binaryObj);
 
     /**
+     * Creates an instance of {@link BinaryTypeWriter} to store locally metadata for binary types.
+     *
      * @param igniteWorkDir Absolute working directory to write meta to.
      * @return Binary writer instance.
      */
-    public BinaryTypeWriter binaryWriter(String igniteWorkDir);
+    public BinaryTypeWriter createBinaryWriter(String igniteWorkDir);
 
     /**
      * @param typeId Type ID.
@@ -293,10 +295,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     @Nullable public BinaryType metadata(int typeId, int schemaId) throws IgniteException;
 
     /**
+     * @param typeIds Type ID.
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    public Map<Integer, BinaryType> metadataTypes();
+    public Map<Integer, BinaryType> metadata(Collection<Integer> typeIds) throws IgniteException;
 
     /**
      * @return Metadata for all types.

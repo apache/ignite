@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cacheobject;
 import org.apache.ignite.binary.BinaryType;
 
 /**
- *
+ * Class represents an API to write metadata for binary types to storage.
+ * Default implementation assumes that all binary metadata will be written to local file system.
  */
 public interface BinaryTypeWriter {
     /**
      * @param typeId Meta type id.
-     * @param type Binary meta type to write.
+     * @param type Binary metadata type to write.
      */
     public void writeMeta(int typeId, final BinaryType type);
 }

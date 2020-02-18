@@ -108,7 +108,8 @@ public class GmmClusterizationExample {
                 System.out.println(">>>");
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

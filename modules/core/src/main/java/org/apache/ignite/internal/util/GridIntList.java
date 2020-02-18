@@ -139,7 +139,7 @@ public class GridIntList implements Message, Externalizable {
     }
 
     /**
-     * @param ints The set of partitions.
+     * @param ints A set of integer values.
      * @return Representation as primitive list.
      */
     public static GridIntList valueOf(Set<Integer> ints) {

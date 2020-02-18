@@ -17,7 +17,13 @@
 
 package org.apache.ignite.util;
 
+import java.nio.ByteBuffer;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.GridLongList.asList;
@@ -30,6 +36,9 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class GridLongListSelfTest {
+    /** Size of the header when list is written with message writer. */
+    private static final int HEADER_SIZE = 2;
+
     /**
      * @throws Exception If failed.
      */
@@ -181,5 +190,307 @@ public class GridLongListSelfTest {
         assertEquals(1, array.length);
 
         assertEquals(1L, array[0]);
+    }
+
+    /** */
+    @Test
+    public void testSerializationDefaultConstructor() {
+        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+
+        GridLongList ll = new GridLongList();
+
+        {
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.add(2L);
+            ll.add(4L);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 17 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 9 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            for (int i = 0; i < 300; i++)
+                ll.add(i);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(300, ll.size());
+
+            Assert.assertEquals(HEADER_SIZE + 2402 /* array */ + 2 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.clear();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSerializationConstructorWithSize() {
+        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+
+        GridLongList ll = new GridLongList(5);
+
+        {
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.add(2L);
+            ll.add(4L);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 17 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 9 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            for (int i = 0; i < 300; i++)
+                ll.add(i);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(300, ll.size());
+
+            Assert.assertEquals(HEADER_SIZE + 2402 /* array */ + 2 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.clear();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+    }
+
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12678")
+    @Test
+    public void testSerializationConstructorWithZeroSize() {
+        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+
+        GridLongList ll = new GridLongList(0);
+
+        {
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.add(2L);
+            ll.add(4L);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 17 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 9 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            for (int i = 0; i < 300; i++)
+                ll.add(i);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(300, ll.size());
+
+            Assert.assertEquals(HEADER_SIZE + 2402 /* array */ + 2 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.clear();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSerializationCopyConstructor() {
+        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+
+        GridLongList ll = new GridLongList(new long[]{1L, 2L, 3L});
+
+        {
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 25 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.add(2L);
+            ll.add(4L);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 41 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.remove();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 33 /* array */ + 1 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            for (int i = 0; i < 300; i++)
+                ll.add(i);
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 2434 /* array */ + 2 /* index */, buf.position());
+        }
+
+        {
+            writer.reset();
+            buf.clear();
+
+            ll.clear();
+
+            Assert.assertTrue(ll.writeTo(buf, writer));
+
+            Assert.assertEquals(HEADER_SIZE + 1 /* array */ + 1 /* index */, buf.position());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSerializationInsufficientBuffer() {
+        MessageWriter writer = new DirectMessageWriter(GridIoManager.DIRECT_PROTO_VER);
+
+        ByteBuffer buf = ByteBuffer.allocate(10);
+
+        GridLongList ll = new GridLongList(new long[]{1L, 2L, 3L});
+
+        Assert.assertFalse(ll.writeTo(buf, writer));
+
+        Assert.assertEquals(10, buf.position());
     }
 }

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reducer for remote index lookup results.
  */
-interface Reducer {
+public interface Reducer {
     /**
      * Check if node with given nodeId is data source node for the index.
      *
