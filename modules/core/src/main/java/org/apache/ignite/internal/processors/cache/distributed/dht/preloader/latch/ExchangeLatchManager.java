@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -373,12 +372,21 @@ public class ExchangeLatchManager {
         lock.lock();
 
         try {
+            CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
+
+            if(discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
+                // It means that this node doesn't receive changed topology version message yet
+                // but received ack message from client latch.
+                // It can happen when we don't have guarantees of received message order for example in ZookeeperSpi.
+                pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
+
+                return;
+            }
+
             ClusterNode coordinator = getLatchCoordinator(message.topVer());
 
             if (coordinator == null)
                 return;
-
-            CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
 
             if (message.isFinal()) {
                 if (log.isDebugEnabled())

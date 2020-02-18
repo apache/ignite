@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -90,7 +90,7 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
             }
         });
 
-        startFut.get(1, TimeUnit.SECONDS);
+        startFut.get(5, TimeUnit.SECONDS);
 
         assertNull("Error occurred when starting a node: " + err.get(), err.get());
     }
