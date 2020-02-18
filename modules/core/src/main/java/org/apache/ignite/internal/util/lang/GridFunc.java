@@ -364,6 +364,9 @@ public class GridFunc {
 
         int n = ThreadLocalRandom.current().nextInt(c.size());
 
+        if (c instanceof List)
+            return ((List<? extends T>)c).get(n);
+
         int i = 0;
 
         for (T t : c) {

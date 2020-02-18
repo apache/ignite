@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Map;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.SslMode;
@@ -88,6 +89,9 @@ public final class ClientConfiguration implements Serializable {
 
     /** @serial User password. */
     private String userPwd;
+
+    /** User attributes. */
+    private Map<String, String> userAttrs;
 
     /** Tx config. */
     private ClientTransactionConfiguration txCfg = new ClientTransactionConfiguration();
@@ -492,5 +496,31 @@ public final class ClientConfiguration implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClientConfiguration.class, this);
+    }
+
+    /**
+     * Returns user attributes which can be used on server node.
+     *
+     * @return User attributes.
+     */
+    public Map<String, String> getUserAttributes() {
+        return userAttrs;
+    }
+
+    /**
+     * Sets user attributes which can be used to send additional info to the server nodes.
+     *
+     * Sent attributes can be accessed on server nodes from
+     * {@link org.apache.ignite.internal.processors.rest.request.GridRestRequest GridRestRequest} or
+     * {@link org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext
+     * ClientListenerAbstractConnectionContext} (depends on client type).
+     *
+     * @param userAttrs User attributes.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
+        this.userAttrs = userAttrs;
+
+        return this;
     }
 }

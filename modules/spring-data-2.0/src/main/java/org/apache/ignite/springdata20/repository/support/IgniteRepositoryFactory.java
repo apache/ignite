@@ -28,6 +28,11 @@ import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata20.repository.query.IgniteQuery;
 import org.apache.ignite.springdata20.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata20.repository.query.IgniteRepositoryQuery;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -45,6 +50,18 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite instance */
     private Ignite ignite;
 
+    /** Spring application context */
+    private ApplicationContext ctx;
+
+    /** Spring application bean factory */
+    private DefaultListableBeanFactory beanFactory;
+
+    /** Spring application expression resolver */
+    private StandardBeanExpressionResolver resolver = new StandardBeanExpressionResolver();
+
+    /** Spring application bean expression context */
+    private BeanExpressionContext beanExpressionContext;
+
     /** Mapping of a repository to a cache. */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
 
@@ -53,8 +70,14 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param ignite
      */
-    public IgniteRepositoryFactory(Ignite ignite) {
+    public IgniteRepositoryFactory(Ignite ignite, ApplicationContext ctx) {
         this.ignite = ignite;
+
+        this.ctx = ctx;
+
+        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
+        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
     /**
@@ -63,8 +86,14 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param cfg Ignite configuration.
      */
-    public IgniteRepositoryFactory(IgniteConfiguration cfg) {
+    public IgniteRepositoryFactory(IgniteConfiguration cfg, ApplicationContext ctx) {
         this.ignite = Ignition.start(cfg);
+
+        this.ctx = ctx;
+
+        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
+        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
     /**
@@ -73,8 +102,14 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param springCfgPath A path to Ignite configuration.
      */
-    public IgniteRepositoryFactory(String springCfgPath) {
+    public IgniteRepositoryFactory(String springCfgPath, ApplicationContext ctx) {
         this.ignite = Ignition.start(springCfgPath);
+
+        this.ctx = ctx;
+
+        this.beanFactory = new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory());
+
+        this.beanExpressionContext = new BeanExpressionContext(beanFactory, null);
     }
 
     /** {@inheritDoc} */
@@ -108,9 +143,21 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         Assert.hasText(annotation.cacheName(), "Set a name of an Apache Ignite cache using @RepositoryConfig " +
             "annotation to map this repository to the underlying cache.");
 
-        repoToCache.put(repoItf, annotation.cacheName());
+        String cacheName = evaluateExpression(annotation.cacheName());
+
+        repoToCache.put(repoItf, cacheName);
 
         return super.getRepositoryMetadata(repoItf);
+    }
+
+    /**
+     *  evaluate the SpEL expression
+     *
+     * @param spelExpression SpEL expression
+     * @return the result of execution of the SpEL expression
+     */
+    @NotNull private String evaluateExpression(String spelExpression) {
+        return (String)resolver.evaluate(spelExpression, beanExpressionContext);
     }
 
     /** {@inheritDoc} */
@@ -151,18 +198,20 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @return {@code true} if query is SqlFieldsQuery.
      */
     private boolean isFieldQuery(String qry) {
-        return isStatement(qry) && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+        String qryUpperCase = qry.toUpperCase();
+
+        return isStatement(qryUpperCase) && !qryUpperCase.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
     }
 
     /**
      * Evaluates if the query starts with a clause.<br>
      * <code>SELECT, INSERT, UPDATE, MERGE, DELETE</code>
      *
-     * @param qry Query string.
+     * @param qryUpperCase  Query string in upper case.
      * @return {@code true} if query is full SQL statement.
      */
-    private boolean isStatement(String qry) {
-        return qry.matches("^SELECT.*") || qry.matches("^UPDATE.*") || qry.matches("^DELETE.*") ||
-            qry.matches("^MERGE.*") || qry.matches("^INSERT.*");
+    private boolean isStatement(String qryUpperCase ) {
+        return qryUpperCase.matches("^\\s*SELECT\\b.*") || qryUpperCase.matches("^\\s*UPDATE\\b.*") || qryUpperCase.matches("^\\s*DELETE\\b.*") ||
+            qryUpperCase.matches("^\\s*MERGE\\b.*") || qryUpperCase.matches("^\\s*INSERT\\b.*");
     }
 }

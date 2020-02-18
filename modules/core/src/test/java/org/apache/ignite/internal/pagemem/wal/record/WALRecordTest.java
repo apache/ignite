@@ -19,14 +19,15 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
+import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /** */
 public class WALRecordTest {
-
     /** */
     @Test
     public void testRecordTypeIndex() {
@@ -42,5 +43,18 @@ public class WALRecordTest {
         int maxIdx = Arrays.stream(recordTypes).mapToInt(RecordType::index).max().orElse(Integer.MAX_VALUE);
 
         assertTrue(maxIdx < 256);
+    }
+
+    /** */
+    @Test
+    public void testAllTestWalRecordBuilderConfigured() {
+        RecordType[] recordTypes = RecordType.values();
+
+        for (RecordType recordType : recordTypes)
+            assertNotNull(
+                "Test's builder of WAL record with type '" + recordType + "' not found. " +
+                    "Please, add such builder to RecordUtils for test purposes.",
+                RecordUtils.buildWalRecord(recordType)
+            );
     }
 }
