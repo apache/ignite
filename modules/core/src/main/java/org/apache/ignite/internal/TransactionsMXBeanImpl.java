@@ -51,7 +51,19 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public String getActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
+    @Override public String listActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
+        String xid, String lbRegex, Integer limit, String order, boolean detailed) {
+        return listOrKillActiveTransactions(minDuration, minSize, prj, consistentIds, xid, lbRegex, limit, order, detailed, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String killActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
+        String xid, String lbRegex, Integer limit, String order, boolean detailed) {
+        return listOrKillActiveTransactions(minDuration, minSize, prj, consistentIds, xid, lbRegex, limit, order, detailed, true);
+    }
+
+    /** {@inheritDoc} */
+    private String listOrKillActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
         String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill) {
         try {
             IgniteCompute compute = ctx.cluster().get().compute();

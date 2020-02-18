@@ -34,9 +34,8 @@ public interface TransactionsMXBean {
      * @param limit Limit.
      * @param order Order.
      * @param detailed Detailed.
-     * @param kill Kill.
      */
-    @MXBeanDescription("Returns or kills transactions matching the filter conditions.")
+    @MXBeanDescription("Lists transactions matching the filter conditions.")
     @MXBeanParametersNames(
         {
             "minDuration",
@@ -48,7 +47,6 @@ public interface TransactionsMXBean {
             "limit",
             "order",
             "detailed",
-            "kill"
         }
     )
     @MXBeanParametersDescriptions(
@@ -61,12 +59,52 @@ public interface TransactionsMXBean {
             "Label regexp.",
             "Limit a number of transactions collected on each node.",
             "Order by DURATION|SIZE.",
-            "Show detailed description, otherwise only count.",
-            "Kill matching transactions (be careful)."
+            "Show detailed description, otherwise only count."
         }
     )
-    public String getActiveTransactions(Long minDuration, Integer minSize, String prj,
-        String consistentIds, String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill);
+    public String listActiveTransactions(Long minDuration, Integer minSize, String prj,
+        String consistentIds, String xid, String lbRegex, Integer limit, String order, boolean detailed);
+
+    /**
+     * @param minDuration Minimum duration.
+     * @param minSize Minimum size.
+     * @param prj Projection.
+     * @param consistentIds Consistent ids.
+     * @param xid Xid.
+     * @param lbRegex Label regex.
+     * @param limit Limit.
+     * @param order Order.
+     * @param detailed Detailed.
+     */
+    @MXBeanDescription("Kills transactions matching the filter conditions.")
+    @MXBeanParametersNames(
+        {
+            "minDuration",
+            "minSize",
+            "prj",
+            "consistentIds",
+            "xid",
+            "lbRegex",
+            "limit",
+            "order",
+            "detailed",
+        }
+    )
+    @MXBeanParametersDescriptions(
+        {
+            "Minimum duration (seconds).",
+            "Minimum size.",
+            "Projection (servers|clients).",
+            "Consistent ids (separated by comma).",
+            "Transaction XID.",
+            "Label regexp.",
+            "Limit a number of transactions collected on each node.",
+            "Order by DURATION|SIZE.",
+            "Show detailed description of killed transactions, otherwise only count."
+        }
+    )
+    public String killActiveTransactions(Long minDuration, Integer minSize, String prj,
+        String consistentIds, String xid, String lbRegex, Integer limit, String order, boolean detailed);
 
     /**
      * Gets transaction timeout on partition map exchange.

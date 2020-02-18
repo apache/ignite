@@ -101,21 +101,21 @@ public class TransactionsMXBeanImplTest extends GridCommonAbstractTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
-        String res = bean.getActiveTransactions(null, null, null, null, null, null, null, null, false, false);
+        String res = bean.listActiveTransactions(null, null, null, null, null, null, null, null, false);
 
         assertEquals("1", res);
 
-        res = bean.getActiveTransactions(null, null, null, null, null, null, null, null, true, false);
+        res = bean.listActiveTransactions(null, null, null, null, null, null, null, null, true);
 
         assertTrue(res.indexOf("Tx:") > 0);
 
-        res = bean.getActiveTransactions(null, null, null, null, null, null, null, null, false, true);
+        res = bean.killActiveTransactions(null, null, null, null, null, null, null, null, false);
 
         assertEquals("1", res);
 
         doSleep(500);
 
-        res = bean.getActiveTransactions(null, null, null, null, null, null, null, null, false, false);
+        res = bean.listActiveTransactions(null, null, null, null, null, null, null, null, false);
 
         assertEquals("0", res);
     }
