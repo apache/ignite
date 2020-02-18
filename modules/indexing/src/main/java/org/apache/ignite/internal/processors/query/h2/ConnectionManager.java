@@ -64,17 +64,6 @@ public class ConnectionManager {
     /** The timeout to remove entry from the statement cache if the thread doesn't perform any queries. */
     private final Long stmtTimeout = Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
 
-    /*
-     * Initialize system properties for H2.
-     */
-    static {
-        System.setProperty("h2.objectCache", "false");
-        System.setProperty("h2.serializeJavaObject", "false");
-        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
-        System.setProperty("h2.optimizeTwoEquals", "false"); // Makes splitter fail on subqueries in WHERE.
-        System.setProperty("h2.dropRestrict", "false"); // Drop schema with cascade semantics.
-    }
-
     /** Shared connection pool. */
     private final ThreadLocalObjectPool<H2ConnectionWrapper> connPool =
         new ThreadLocalObjectPool<>(

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.engine.SysProperties;
 import org.junit.Test;
@@ -26,22 +25,30 @@ import org.junit.Before;
 /**
  * Test that the valuse of SysProperties variable OBJECT_CACHE is disable
  */
-public class IgniteH2ValueOfObjectCacheTest extends GridCommonAbstractTest {
-
-    /** IgniteH2Indexing loading */
-    private IgniteH2Indexing igniteH2Indexing;
+public class IgniteH2PropertiesTest extends GridCommonAbstractTest {
+    /** Instance name. */
+    private static final String INSTANCE_NAME = "test_node";
 
     /** */
     @Before
-    public void setUp() {
-        igniteH2Indexing = new IgniteH2Indexing();
+    public void setUp() throws Exception {
+        try {
+            startGrid(INSTANCE_NAME, "examples/config/example-ignite.xml");
+        } finally {
+            stopAllGrids();
+        }
     }
 
     /**
-     * @throws Exception If H2 object cache is enable
+     * @throws Exception If failed.
      */
     @Test
-    public void testH2ObjectCacheIsDisable() {
+    public void testIgniteH2Properties() {
         assertFalse(SysProperties.OBJECT_CACHE);
+        assertFalse(SysProperties.serializeJavaObject);
+
+        assertTrue(SysProperties.OBJECT_CACHE_MAX_PER_ELEMENT_SIZE == 0);
+        assertTrue("false".equals(System.getProperty("h2.optimizeTwoEquals")));
+        assertTrue("false".equals(System.getProperty("h2.dropRestrict")));
     }
 }
