@@ -264,7 +264,6 @@ public class GeneticAlgorithm {
         return newPopulation;
     }
 
-
     /**
      * Applies mutation operator to each chromosome in population with mutation probability.
      *
