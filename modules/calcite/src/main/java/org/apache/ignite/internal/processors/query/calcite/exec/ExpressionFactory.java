@@ -148,7 +148,6 @@ public class ExpressionFactory {
             Object[] values = new Object[nodes.size()];
             scalar.execute(ctx, values);
 
-
             return () -> new ValuesIterator<>(values, rowLen);
         }
         catch (Throwable e) {

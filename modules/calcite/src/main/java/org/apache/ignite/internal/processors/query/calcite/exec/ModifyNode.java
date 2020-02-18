@@ -75,6 +75,7 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
 
         link();
     }
+
     /** {@inheritDoc} */
     @Override public Sink<Object[]> sink(int idx) {
         if (idx != 0)
