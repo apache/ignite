@@ -117,9 +117,8 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @return {@code True} if partition store exists.
-     * @throws IgniteCheckedException If failed.
      */
-    public boolean exists(int grpId, int partId) throws IgniteCheckedException;
+    public boolean exists(int grpId, int partId);
 
     /**
      * Reads a header of a page store.

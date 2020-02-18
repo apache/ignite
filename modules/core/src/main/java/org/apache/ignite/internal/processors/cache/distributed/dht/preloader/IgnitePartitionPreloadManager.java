@@ -157,16 +157,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         boolean disable = !hasIdleParttition && filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (disable) {
-                // todo only for debugging - should be removed
-                try {
-                    assert !cctx.pageStore().exists(grp.groupId(), part.id());
-                } catch (IgniteCheckedException ignore) {
-                    assert false : "grp=" + grp.groupId() + " p=" + part.id();
-                }
-
+            if (disable)
                 part.disable();
-            }
             else
                 part.enable();
         }
@@ -186,19 +178,17 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * This method initiates new partition preload process from given {@code assignments} by creating new partition file
-     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event. In case
-     * of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
+     * This method initiates new partitions preload process from given {@code assignments}.
      *
      * @param rebalanceId Current rebalance id.
      * @param exchFut Exchange future.
      * @param assignments A map of cache assignments grouped by grpId.
-     * @return Runnable to execute the chain.
+     * @return Group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut,
-        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
+        Map<Integer, GridDhtPreloaderAssignments> assignments
     ) {
         Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
 
@@ -273,7 +263,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if file rebalancing is applicable for specified cache group.
      */
     public boolean supports(CacheGroupContext grp) {
-        if (!fileRebalanceEnabled || !grp.persistenceEnabled() || grp.isLocal())
+        if (grp == null || !fileRebalanceEnabled || !grp.persistenceEnabled() || grp.isLocal())
             return false;
 
         if (!IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
@@ -409,12 +399,12 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
     private List<T2<UUID, Map<Integer, Set<Integer>>>> reorderAssignments(
-        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap
+        Map<Integer, GridDhtPreloaderAssignments> assignsMap
     ) {
         Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sorted = new TreeMap<>();
 
-        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-            CacheGroupContext grp = e.getKey();
+        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
             GridDhtPreloaderAssignments assigns = e.getValue();
 
             if (!required(grp) || assigns.isEmpty())
@@ -440,11 +430,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         return ordered;
     }
-
-//    public IgniteInternalFuture<GridDhtPreloaderAssignments> preloadFuture(CacheGroupContext grp) {
-//        // todo
-//        return partPreloadingRoutine.groupRoutine(grp);
-//    }
 
     /** */
     private static class CheckpointListener implements DbCheckpointListener {

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -3165,7 +3166,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     busy = true;
 
-                    Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap = null;
+                    Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
 
                     IgnitePartitionPreloadManager partPreloadMgr = cctx.preloader();
 
@@ -3354,11 +3355,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance) {
+                                if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                    assignsMap.put(grp, assigns);
-                                }
+                                assignsMap.put(grp.groupId(), assigns);
 
                                 if (resVer == null && !grp.isLocal())
                                     resVer = grp.topology().readyTopologyVersion();
@@ -3385,8 +3385,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
 
-                        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-                            int grpId = e.getKey().groupId();
+                        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
+                            int grpId = e.getKey();
 
                             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -3400,7 +3400,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         Runnable r = null;
 
-                        List<String> rebList = new ArrayList<>();
+                        List<String> rebList = new LinkedList<>();
 
                         boolean assignsCancelled = false;
 
@@ -3413,12 +3413,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                                GridDhtPreloaderAssignments assigns = assignsMap.get(grp);
+                                GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = fileGrps.get(grp.groupId());
+                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = fileGrps.get(grpId);
 
                                 if (fut == null)
                                     fut = new GridFinishedFuture<>(assigns);
