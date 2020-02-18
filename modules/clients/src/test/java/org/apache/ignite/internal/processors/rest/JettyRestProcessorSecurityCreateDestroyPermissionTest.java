@@ -18,24 +18,37 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
-import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /** */
 public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends JettyRestProcessorCommonSelfTest {
-    /** Default user. */
-    private static final String DFLT_USER = "ignite";
+    /** Admin client. */
+    private static final String ADMIN = "admin";
+
+    /** Allowed client. */
+    private static final String ALLOWED_CLNT = "allowed_clnt";
+
+    /** Unallowed client. */
+    private static final String UNALLOWED_CLNT = "unallowed_clnt";
 
     /** Default password. */
     private static final String DFLT_PWD = "ignite";
@@ -44,38 +57,39 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     private static final String STATUS = "successStatus";
 
     /** Success status. */
-    private static final String SUCCESS_STATUS = "0";
+    private static final String SUCCESS_STATUS = String.valueOf(STATUS_SUCCESS);
 
     /** Error status. */
-    private static final String ERROR_STATUS = "1";
-
-    /** Empty permission. */
-    private static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+    private static final String ERROR_STATUS = String.valueOf(STATUS_SECURITY_CHECK_FAILED);
 
     /** Cache name for tests. */
     private static final String CACHE_NAME = "TEST_CACHE";
 
-    /** Create cache name. */
-    private static final String NOT_DELETE_CACHE_NAME = "NOT_DELETE_CACHE_NAME";
-
-    /** Forbidden cache. */
-    private static final String NOT_CREATE_CACHE_NAME = "NOT_CREATE_CACHE_NAME";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        TestSecurityData[] clientData = new TestSecurityData[] {
+            new TestSecurityData(ADMIN,
+                SecurityPermissionSetBuilder.create()
+                    .build()
+            ),
+            new TestSecurityData(ALLOWED_CLNT,
+                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                    .appendSystemPermissions(ADMIN_CACHE)
+                    .build()
+            ),
+            new TestSecurityData(UNALLOWED_CLNT,
+                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                    .build()
+            )
+        };
 
-        PluginProvider pluginProvider = new TestSecurityPluginProvider(DFLT_USER, DFLT_PWD,
-            SecurityPermissionSetBuilder.create()
-                .defaultAllowAll(false)
-                .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_DESTROY)
-                .appendCachePermissions(NOT_DELETE_CACHE_NAME, CACHE_CREATE)
-                .appendCachePermissions(NOT_CREATE_CACHE_NAME, EMPTY_PERM)
-                .appendSystemPermissions(JOIN_AS_SERVER, ADMIN_CACHE, ADMIN_OPS)
-                .build(), true);
+        PluginProvider pluginProvider = new TestSecurityPluginProvider(igniteInstanceName, DFLT_PWD,
+            ALLOW_ALL, false, clientData);
 
         cfg.setPluginProviders(pluginProvider);
         cfg.setCacheConfiguration(null);
+
 
         return cfg;
     }
@@ -85,21 +99,20 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
      */
     @Test
     public void testGetOrCreate() throws Exception {
-        getOrCreateCaches();
+        checkFailWithError(restGetOrCreate(UNALLOWED_CLNT, CACHE_NAME), ADMIN_CACHE);
 
-        assertTrue(Arrays.asList(CACHE_NAME, NOT_DELETE_CACHE_NAME).containsAll(grid(0).cacheNames()));
+        assertNull(grid(0).cache(CACHE_NAME));
 
-        assertFalse(grid(0).cacheNames().contains(NOT_CREATE_CACHE_NAME));
+        checkSucces(restGetOrCreate(ALLOWED_CLNT, CACHE_NAME));
+
+        assertNotNull(grid(0).cache(CACHE_NAME));
     }
 
-    /** */
-    private void getOrCreateCaches() throws Exception {
-        assertEquals(SUCCESS_STATUS, jsonField(content(CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS));
-
-        assertEquals(SUCCESS_STATUS,
-            jsonField(content(NOT_DELETE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS));
-
-        checkFailWithError(content(NOT_CREATE_CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), CACHE_CREATE);
+    /**
+     * @param cacheName Cache name.
+     */
+    private String restGetOrCreate(String login, String cacheName) throws Exception {
+        return content(login, cacheName, GridRestCommand.GET_OR_CREATE_CACHE);
     }
 
     /**
@@ -107,31 +120,80 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
      */
     @Test
     public void testDestroyCache() throws Exception {
-        getOrCreateCaches();
+        restGetOrCreate(ADMIN, CACHE_NAME);
 
-        assertTrue(Arrays.asList(CACHE_NAME, NOT_DELETE_CACHE_NAME).containsAll(grid(0).cacheNames()));
+        checkFailWithError(restDestroy(UNALLOWED_CLNT, CACHE_NAME), ADMIN_CACHE);
 
-        assertEquals(SUCCESS_STATUS, jsonField(content(CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS));
+        assertNotNull(grid(0).cache(CACHE_NAME));
 
-        checkFailWithError(content(NOT_DELETE_CACHE_NAME, GridRestCommand.DESTROY_CACHE), CACHE_DESTROY);
+        checkSucces(restDestroy(ALLOWED_CLNT, CACHE_NAME));
 
-        assertFalse(grid(0).cacheNames().contains(CACHE_NAME));
-
-        assertTrue(grid(0).cacheNames().contains(NOT_DELETE_CACHE_NAME));
+        assertNull(grid(0).cache(CACHE_NAME));
     }
 
-    /** {@inheritDoc} */
-    @Override protected String restUrl() {
-        String url = super.restUrl();
-
-        url += "ignite.login=" + DFLT_USER + "&ignite.password=" + DFLT_PWD + "&";
-
-        return url;
+    /**
+     * @param cacheName Cache name.
+     */
+    private String restDestroy(String login, String cacheName) throws Exception {
+        return content(login, cacheName, GridRestCommand.DESTROY_CACHE);
     }
 
     /** {@inheritDoc} */
     @Override protected String signature() throws Exception {
         return null;
+    }
+
+    protected String content(String login, String cacheName, GridRestCommand cmd, String... params) throws Exception {
+        Map<String, String> paramsMap = new LinkedHashMap<>();
+
+        if (cacheName != null)
+            paramsMap.put("cacheName", cacheName);
+
+        paramsMap.put("cmd", cmd.key());
+
+        if (params != null) {
+            assertEquals(0, params.length % 2);
+
+            for (int i = 0; i < params.length; i += 2)
+                paramsMap.put(params[i], params[i + 1]);
+        }
+
+        return content(paramsMap,login);
+    }
+
+
+    /**
+     * Execute REST command and return result.
+     *
+     * @param params Params.
+     * @param login Login.
+     */
+    protected String content(Map<String, String> params, String login) throws Exception {
+        SB sb = new SB(restUrl());
+        sb.a("ignite.login=").a(login).a("&ignite.password=&");
+
+        for (Map.Entry<String, String> e : params.entrySet())
+            sb.a(e.getKey()).a('=').a(e.getValue()).a('&');
+
+        URL url = new URL(sb.toString());
+
+        URLConnection conn = url.openConnection();
+
+        String signature = signature();
+
+        if (signature != null)
+            conn.setRequestProperty("X-Signature", signature);
+
+        InputStream in = conn.getInputStream();
+
+        StringBuilder buf = new StringBuilder(256);
+
+        try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, "UTF-8"))) {
+            for (String line = rdr.readLine(); line != null; line = rdr.readLine())
+                buf.append(line);
+        }
+
+        return buf.toString();
     }
 
     /**
@@ -142,6 +204,14 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     private void checkFailWithError(String json, SecurityPermission perm) throws IOException {
         assertEquals(ERROR_STATUS, jsonField(json, STATUS));
 
-        assertTrue(jsonField(json, "error").contains("err=Authorization failed [perm=" + perm));
+        assertTrue(jsonField(json, "error").contains("Authorization failed [perm=" + perm));
+    }
+
+    /**
+     * @param json JSON content.
+     * @throws IOException If failed.
+     */
+    private void checkSucces(String json) throws IOException {
+        assertEquals(SUCCESS_STATUS, jsonField(json, STATUS));
     }
 }

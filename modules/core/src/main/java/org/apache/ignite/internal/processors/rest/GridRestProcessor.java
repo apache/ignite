@@ -901,8 +901,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
-            case DESTROY_CACHE:
             case GET_OR_CREATE_CACHE:
+            case DESTROY_CACHE:
                 perm = SecurityPermission.ADMIN_CACHE;
                 name = ((GridRestCacheRequest)req).cacheName();
 
