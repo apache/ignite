@@ -25,4 +25,9 @@ public class TxRollbackAsyncNearCacheTest extends TxRollbackAsyncTest {
     @Override protected boolean nearCacheEnabled() {
         return true;
     }
+
+    /** */
+    @Override public void testMixedAsyncRollbackTypes() {
+        fail("https://ggsystems.atlassian.net/browse/GG-27570");
+    }
 }
