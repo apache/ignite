@@ -39,13 +39,13 @@ public class HadoopErrorSimulator {
      */
     public static HadoopErrorSimulator create(Kind kind, int bits) {
         switch (kind) {
-            case Noop:
+            case NOOP:
                 return noopInstance;
-            case Runtime:
+            case RUNTIME:
                 return new RuntimeExceptionBitHadoopErrorSimulator(bits);
-            case IOException:
+            case IO_EXCEPTION:
                 return new IOExceptionBitHadoopErrorSimulator(bits);
-            case Error:
+            case ERROR:
                 return new ErrorBitHadoopErrorSimulator(bits);
             default:
                 throw new IllegalStateException("Unknown kind: " + kind);
@@ -169,16 +169,16 @@ public class HadoopErrorSimulator {
      */
     public enum Kind {
         /** No error. */
-        Noop,
+        NOOP,
 
         /** Runtime. */
-        Runtime,
+        RUNTIME,
 
         /** IOException. */
-        IOException,
+        IO_EXCEPTION,
 
         /** java.lang.Error. */
-        Error
+        ERROR
     }
 
     /**

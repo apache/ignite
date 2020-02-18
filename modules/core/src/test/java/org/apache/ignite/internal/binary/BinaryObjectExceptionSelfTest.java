@@ -188,13 +188,13 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private enum EnumValues {
         /** */
-        val1,
+        VAL_1,
 
         /** */
-        val2,
+        VAL_2,
 
         /** */
-        val3;
+        VAL_3;
     }
 
     /** */
@@ -240,6 +240,6 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         public Timestamp timestamp = new Timestamp(date.getTime() + 1000L);
 
         /** */
-        public EnumValues enumVal = EnumValues.val2;
+        public EnumValues enumVal = EnumValues.VAL_2;
     }
 }
