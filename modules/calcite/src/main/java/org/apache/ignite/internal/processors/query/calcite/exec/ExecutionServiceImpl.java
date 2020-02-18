@@ -30,15 +30,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -76,8 +75,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CalciteQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlanImpl;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.relation.Re
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.SenderNode;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
@@ -451,7 +452,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         return PlanningContext.builder()
             .localNodeId(localNodeId())
             .originatingNodeId(originatingNodeId)
-            .parentContext(Contexts.empty())
             .frameworkConfig(Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
                 .defaultSchema(schemaName != null
                     ? schemaHolder().schema().getSubSchema(schemaName)
@@ -509,10 +509,20 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         ctx.planner().reset();
 
-        if (SqlKind.QUERY.contains(sqlNode.getKind()))
-            return prepareQuery(sqlNode, ctx);
+        switch (sqlNode.getKind()) {
+            case SELECT:
+                return prepareQuery(sqlNode, ctx);
 
-        throw new IgniteSQLException("Unsupported operation [querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            case INSERT:
+            case DELETE:
+            case UPDATE:
+                return prepareDml(sqlNode, ctx);
+
+            default:
+                throw new IgniteSQLException("Unsupported operation [" +
+                    "sqlNodeKind=" + sqlNode.getKind() + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
     }
 
     /** */
@@ -540,15 +550,46 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
-        return new MultiStepPlanImpl(fragments, fieldsMetadata(validated, ctx));
+        return new MultiStepQueryPlan(fragments, fieldsMetadata(ctx, validated.dataType(), validated.origins()));
+    }
+
+    /** */
+    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
+        IgnitePlanner planner = ctx.planner();
+
+        // Validate
+        sqlNode = planner.validate(sqlNode);
+
+        // Convert to Relational operators graph
+        RelNode rel = planner.convert(sqlNode);
+
+        // Transformation chain
+        rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+        RelTraitSet desired = rel.getCluster().traitSet()
+            .replace(IgniteConvention.INSTANCE)
+            .replace(IgniteDistributions.single())
+            .simplify();
+
+        IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+        // Split query plan to query fragments.
+        List<Fragment> fragments = new Splitter().go(igniteRel);
+
+        return new MultiStepDmlPlan(fragments, fieldsMetadata(ctx, igniteRel.getRowType(), null));
     }
 
     /** */
     private FieldsQueryCursor<List<?>> executeSingle(UUID queryId, PlanningContext pctx, QueryPlan plan) {
-        if (plan.type() == QueryPlan.Type.QUERY)
-            return executeQuery(queryId, (MultiStepPlan) plan, pctx);
+        switch (plan.type()) {
+            case DML:
+                // TODO a barrier between previous operation and this one
+            case QUERY:
+                return executeQuery(queryId, (MultiStepPlan) plan, pctx);
 
-        throw new AssertionError("Unexpected plan type: " + plan);
+            default:
+                throw new AssertionError("Unexpected plan type: " + plan);
+        }
     }
 
     /** */
@@ -627,7 +668,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             }
         }
 
-        return new ListFieldsQueryCursor<>(info.iterator(), Arrays::asList, plan.fieldsMetadata());
+        return new ListFieldsQueryCursor<>(plan, info.iterator(), Arrays::asList);
     }
 
     /** */
@@ -656,23 +697,24 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private List<GridQueryFieldMetadata> fieldsMetadata(ValidationResult validationResult, PlanningContext ctx) {
-        List<RelDataTypeField> fields = validationResult.dataType().getFieldList();
-        List<List<String>> origins = validationResult.origins();
+    private List<GridQueryFieldMetadata> fieldsMetadata(PlanningContext ctx, RelDataType type, @Nullable List<List<String>> origins) {
+        List<RelDataTypeField> fields = type.getFieldList();
 
-        assert fields.size() == origins.size();
+        assert origins == null || fields.size() == origins.size();
 
         ImmutableList.Builder<GridQueryFieldMetadata> b = ImmutableList.builder();
 
+        IgniteTypeFactory typeFactory = ctx.typeFactory();
+
         for (int i = 0; i < fields.size(); i++) {
             RelDataTypeField field = fields.get(i);
-            List<String> origin = origins.get(i);
+            List<String> origin = origins != null ? origins.get(i) : null;
 
             b.add(new CalciteQueryFieldMetadata(
                 F.isEmpty(origin) ? null : origin.get(0),
                 F.isEmpty(origin) ? null : origin.get(1),
                 field.getName(),
-                String.valueOf(ctx.typeFactory().getJavaClass(field.getType())),
+                String.valueOf(typeFactory.getJavaClass(field.getType())),
                 field.getType().getPrecision(),
                 field.getType().getScale()
             ));

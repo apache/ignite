@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Ignite Filter converter.
@@ -45,7 +46,7 @@ public class FilterConverter extends IgniteConverter {
     }
 
     /** {@inheritDoc} */
-    @Override protected List<RelNode> convert0(RelNode rel) {
+    @Override protected List<RelNode> convert0(@NotNull RelNode rel) {
         LogicalFilter filter = (LogicalFilter) rel;
 
         RelNode input = convert(filter.getInput(), IgniteConvention.INSTANCE);

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.type;
 
 import java.io.Serializable;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  * Serializable RelDataType representation.
@@ -31,5 +31,5 @@ public interface DataType extends Serializable {
      * @param factory Type factory.
      * @return RelDataType.
      */
-    RelDataType toRelDataType(RelDataTypeFactory factory);
+    RelDataType toRelDataType(IgniteTypeFactory factory);
 }

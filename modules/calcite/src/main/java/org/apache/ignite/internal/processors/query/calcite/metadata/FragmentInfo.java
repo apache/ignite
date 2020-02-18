@@ -22,6 +22,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.prepare.RelSource;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Collects meta information about a query fragment, mainly it is data
@@ -33,6 +34,13 @@ public class FragmentInfo {
 
     /** */
     private final ImmutableList<Pair<IgniteReceiver, RelSource>> sources;
+
+    /**
+     * Constructs Values leaf fragment info.
+     */
+    public FragmentInfo() {
+        this(ImmutableList.of(), null);
+    }
 
     /**
      * Constructs Receiver leaf fragment info.
@@ -125,9 +133,9 @@ public class FragmentInfo {
 
     /** */
     private static <T> ImmutableList<T> merge(ImmutableList<T> left, ImmutableList<T> right) {
-        if (left == null)
+        if (F.isEmpty(left))
             return right;
-        if (right == null)
+        if (F.isEmpty(right))
             return left;
 
         return ImmutableList.<T>builder().addAll(left).addAll(right).build();

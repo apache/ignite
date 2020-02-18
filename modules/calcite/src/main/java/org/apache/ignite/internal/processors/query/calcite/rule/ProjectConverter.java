@@ -30,11 +30,13 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Ignite Project converter.
  */
 public class ProjectConverter extends IgniteConverter {
+    /** */
     public static final ConverterRule INSTANCE = new ProjectConverter();
 
     /**
@@ -45,7 +47,7 @@ public class ProjectConverter extends IgniteConverter {
     }
 
     /** {@inheritDoc} */
-    @Override protected List<RelNode> convert0(RelNode rel) {
+    @Override protected List<RelNode> convert0(@NotNull RelNode rel) {
         LogicalProject project = (LogicalProject) rel;
 
         RelNode input = convert(project.getInput(), IgniteConvention.INSTANCE);

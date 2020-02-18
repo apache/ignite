@@ -25,12 +25,12 @@ import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.ExpToRexTranslator;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -60,8 +60,8 @@ public class GraphToRelConverter implements ConversionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataTypeFactory getTypeFactory() {
-        return getCluster().getTypeFactory();
+    @Override public IgniteTypeFactory getTypeFactory() {
+        return (IgniteTypeFactory) getCluster().getTypeFactory();
     }
 
     /** {@inheritDoc} */

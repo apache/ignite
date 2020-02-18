@@ -62,9 +62,7 @@ public class ReceiverNode extends RelGraphNode {
 
     /** {@inheritDoc} */
     @Override public IgniteRel toRel(ConversionContext ctx, List<IgniteRel> children) {
-        return new IgniteReceiver(ctx.getCluster(),
-            traitSet(ctx.getCluster()),
-            dataType.toRelDataType(ctx.getTypeFactory()),
-            source);
+        return new IgniteReceiver(ctx.getCluster(), traitSet(ctx.getCluster()),
+            dataType.toRelDataType(ctx.getTypeFactory()), source);
     }
 }

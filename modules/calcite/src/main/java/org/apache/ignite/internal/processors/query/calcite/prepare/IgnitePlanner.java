@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import java.util.List;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
@@ -43,7 +40,6 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -67,6 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
 import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  * Query planer.
@@ -85,9 +82,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final PlanningContext ctx;
 
     /** */
-    private final CalciteConnectionConfig connectionConfig;
-
-    /** */
     @SuppressWarnings("rawtypes")
     private final ImmutableList<RelTraitDef> traitDefs;
 
@@ -101,13 +95,19 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final SqlRexConvertletTable convertletTable;
 
     /** */
+    private final RexBuilder rexBuilder;
+
+    /** */
     private final RexExecutor rexExecutor;
 
     /** */
-    private final SchemaPlus defaultSchema;
+    private final IgniteTypeFactory typeFactory;
 
     /** */
-    private final JavaTypeFactory typeFactory;
+    private final SqlConformance conformance;
+
+    /** */
+    private final CalciteCatalogReader catalogReader;
 
     /** */
     private RelOptPlanner planner;
@@ -121,11 +121,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     IgnitePlanner(PlanningContext ctx) {
         this.ctx = ctx;
 
-        frameworkConfig = ctx.frameworkConfig();
-        connectionConfig = ctx.connectionConfig();
         typeFactory = ctx.typeFactory();
+        catalogReader = ctx.catalogReader();
+        frameworkConfig = ctx.config();
 
-        defaultSchema = frameworkConfig.getDefaultSchema();
         operatorTable = frameworkConfig.getOperatorTable();
         programs = frameworkConfig.getPrograms();
         parserConfig = frameworkConfig.getParserConfig();
@@ -133,6 +132,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         convertletTable = frameworkConfig.getConvertletTable();
         rexExecutor = frameworkConfig.getExecutor();
         traitDefs = frameworkConfig.getTraitDefs();
+
+        rexBuilder = new RexBuilder(typeFactory);
+        conformance = ctx.connectionConfig().conformance();
     }
 
     /** {@inheritDoc} */
@@ -210,16 +212,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      */
     public IgniteRel convert(RelGraph graph) {
         RelOptCluster cluster = createCluster();
-        RelBuilder relBuilder = createRelBuilder(cluster, createCatalogReader());
+        RelBuilder relBuilder = createRelBuilder(cluster, catalogReader);
 
         return new GraphToRelConverter(this, relBuilder, operatorTable).convert(graph);
-    }
-
-    /** Creates a cluster. */
-    RelOptCluster createCluster() {
-        RelOptCluster cluster = RelOptCluster.create(planner(), createRexBuilder());
-        cluster.setMetadataProvider(IgniteMetadata.METADATA_PROVIDER);
-        return cluster;
     }
 
     /** {@inheritDoc} */
@@ -231,7 +226,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             .withConvertTableAccess(false)
             .build();
         SqlToRelConverter sqlToRelConverter =
-            new SqlToRelConverter(this, validator, createCatalogReader(), cluster, convertletTable, config);
+            new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
 
         return sqlToRelConverter.convertQuery(sql, false, true);
     }
@@ -260,10 +255,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             throw new IgniteSQLException("parse failed", IgniteQueryErrorCode.PARSING, e);
         }
 
-        SqlConformance conformance = conformance();
-        CalciteCatalogReader catalogReader =
-            createCatalogReader().withSchemaPath(schemaPath);
-        SqlValidator validator = new IgniteSqlValidator(operatorTable(), catalogReader, typeFactory, conformance);
+        SqlConformance conformance = this.conformance;
+        CalciteCatalogReader catalogReader = this.catalogReader.withSchemaPath(schemaPath);
+        SqlValidator validator = new IgniteSqlValidator(operatorTable, catalogReader, typeFactory, conformance);
         validator.setIdentifierExpansion(true);
 
         RelOptCluster cluster = createCluster();
@@ -319,7 +313,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** {@inheritDoc} */
-    @Override public JavaTypeFactory getTypeFactory() {
+    @Override public IgniteTypeFactory getTypeFactory() {
         return typeFactory;
     }
 
@@ -339,47 +333,21 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private SqlValidator validator() {
         if (validator == null)
-            validator = new IgniteSqlValidator(operatorTable(), createCatalogReader(), typeFactory, conformance());
+            validator = new IgniteSqlValidator(operatorTable, catalogReader, typeFactory, conformance);
 
         return validator;
     }
 
-    /** */
-    private SqlConformance conformance() {
-        return connectionConfig.conformance();
-    }
-
-    /** */
-    private SqlOperatorTable operatorTable() {
-        return operatorTable;
-    }
-
-    /** */
-    private RexBuilder createRexBuilder() {
-        return new RexBuilder(typeFactory);
+    /** Creates a cluster. */
+    RelOptCluster createCluster() {
+        RelOptCluster cluster = RelOptCluster.create(planner(), rexBuilder);
+        cluster.setMetadataProvider(IgniteMetadata.METADATA_PROVIDER);
+        return cluster;
     }
 
     /** */
     private RelBuilder createRelBuilder(RelOptCluster cluster, RelOptSchema schema) {
         return sqlToRelConverterConfig.getRelBuilderFactory().create(cluster, schema);
-    }
-
-    /** */
-    private CalciteCatalogReader createCatalogReader() {
-        return new CalciteCatalogReader(
-            CalciteSchema.from(rootSchema(defaultSchema)),
-            CalciteSchema.from(defaultSchema).path(null),
-            typeFactory, connectionConfig);
-    }
-
-    /** */
-    private static SchemaPlus rootSchema(SchemaPlus schema) {
-        for (; ; ) {
-            if (schema.getParentSchema() == null) {
-                return schema;
-            }
-            schema = schema.getParentSchema();
-        }
     }
 
     /** */

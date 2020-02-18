@@ -142,6 +142,14 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return Linq4j.asEnumerable(new TableScan((ExecutionContext) root, desc));
     }
 
+    /** {@inheritDoc} */
+    @Override public <C> C unwrap(Class<C> aClass) {
+        if (aClass.isInstance(desc))
+            return aClass.cast(desc);
+
+        return super.unwrap(aClass);
+    }
+
     /** */
     private NodesMapping partitionedMapping(@NotNull GridCacheContext<?,?> cctx, @NotNull AffinityTopologyVersion topVer) {
         byte flags = NodesMapping.HAS_PARTITIONED_CACHES;

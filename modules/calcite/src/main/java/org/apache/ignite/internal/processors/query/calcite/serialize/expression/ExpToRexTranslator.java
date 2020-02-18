@@ -27,6 +27,7 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -81,27 +82,27 @@ public class ExpToRexTranslator implements ExpImplementor<RexNode> {
 
     /** {@inheritDoc} */
     @Override public RexNode implement(CallExpression exp) {
-        return builder.makeCall(exp.dataType().toRelDataType(builder.getTypeFactory()), op(exp.name(), exp.syntax()), translate(exp.operands()));
+        return builder.makeCall(exp.dataType().toRelDataType((IgniteTypeFactory) builder.getTypeFactory()), op(exp.name(), exp.syntax()), translate(exp.operands()));
     }
 
     /** {@inheritDoc} */
     @Override public RexNode implement(InputRefExpression exp) {
-        return builder.makeInputRef(exp.dataType().toRelDataType(builder.getTypeFactory()), exp.index());
+        return builder.makeInputRef(exp.dataType().toRelDataType((IgniteTypeFactory) builder.getTypeFactory()), exp.index());
     }
 
     /** {@inheritDoc} */
     @Override public RexNode implement(LiteralExpression exp) {
-        return builder.makeLiteral(exp.value(), exp.dataType().toRelDataType(builder.getTypeFactory()), false);
+        return builder.makeLiteral(exp.value(), exp.dataType().toRelDataType((IgniteTypeFactory) builder.getTypeFactory()), false);
     }
 
     /** {@inheritDoc} */
     @Override public RexNode implement(LocalRefExpression exp) {
-        return new RexLocalRef(exp.index(), exp.dataType().toRelDataType(builder.getTypeFactory()));
+        return new RexLocalRef(exp.index(), exp.dataType().toRelDataType((IgniteTypeFactory) builder.getTypeFactory()));
     }
 
     /** {@inheritDoc} */
     @Override public RexNode implement(DynamicParamExpression exp) {
-        return builder.makeDynamicParam(exp.dataType().toRelDataType(builder.getTypeFactory()), exp.index());
+        return builder.makeDynamicParam(exp.dataType().toRelDataType((IgniteTypeFactory) builder.getTypeFactory()), exp.index());
     }
 
     /** {@inheritDoc} */

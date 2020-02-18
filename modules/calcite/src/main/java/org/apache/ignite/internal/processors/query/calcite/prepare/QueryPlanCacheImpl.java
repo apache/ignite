@@ -70,20 +70,19 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         // No-op.
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
         Map<CacheKey, List<QueryPlan>> cache = this.cache;
 
         List<QueryPlan> template = cache.get(key);
 
         if (template != null)
-            return Commons.transform(template, t-> t.clone(ctx.createCluster()));
+            return Commons.transform(template, t-> t.clone(ctx));
         else {
             List<QueryPlan> prepared = factory.create(ctx);
 
             if (prepared.size() == 1) // do not cache multiline queries.
-                cache.putIfAbsent(key, Commons.transform(prepared, p -> p.clone(Commons.EMPTY_CLUSTER)));
+                cache.putIfAbsent(key, Commons.transform(prepared, p -> p.clone(PlanningContext.empty())));
 
             return prepared;
         }

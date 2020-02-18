@@ -63,7 +63,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlanImpl;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
@@ -700,7 +700,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(rel);
 
-            MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) rel));
+            MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) rel));
 
             assertNotNull(plan);
 
@@ -848,7 +848,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -975,7 +975,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             assertNotNull(phys);
 
-            MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) phys));
+            MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) phys));
 
             assertNotNull(plan);
 
@@ -1214,7 +1214,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1336,7 +1336,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1457,7 +1457,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1578,7 +1578,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 
@@ -1696,7 +1696,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepPlanImpl(new Splitter().go((IgniteRel) relRoot.rel));
+        MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) relRoot.rel));
 
         assertNotNull(plan);
 

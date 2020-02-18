@@ -117,7 +117,7 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             Outbox<Object[]> outbox = new Outbox<>(
                 exchangeService(localNodeId),
                 registry,
-                ectx,1,0, filter, new AllNodes(nodes.subList(0, 1)));
+                ectx, 1,0, filter, new AllNodes(nodes.subList(0, 1)));
 
             registry.register(outbox);
 

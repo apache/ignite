@@ -16,7 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.plan.RelOptCluster;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -31,7 +31,8 @@ public interface QueryPlan {
     Type type();
 
     /**
-     * Clones this plan with a new cluster.
+     * Clones this plan.
+     * @param ctx Planner context.
      */
-    QueryPlan clone(RelOptCluster cluster);
+    QueryPlan clone(@Nullable PlanningContext ctx);
 }

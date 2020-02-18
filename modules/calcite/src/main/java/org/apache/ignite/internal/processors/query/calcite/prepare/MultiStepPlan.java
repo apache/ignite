@@ -41,9 +41,4 @@ public interface MultiStepPlan extends QueryPlan {
      * @param ctx Planner context.
      */
     void init(MappingService mappingService, PlanningContext ctx);
-
-    /** {@inheritDoc} */
-    @Override default Type type() {
-        return Type.QUERY;
-    }
 }

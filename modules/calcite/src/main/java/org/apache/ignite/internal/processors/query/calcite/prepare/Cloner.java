@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -30,7 +31,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -39,37 +42,39 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     private final RelOptCluster cluster;
 
     /** */
+    private final Prepare.CatalogReader catalogReader;
+
+    /** */
     private List<Fragment> fragments;
 
     /**
-     * @param cluster New cluster.
+     * @param ctx Planner context.
      */
-    Cloner(RelOptCluster cluster) {
-        this.cluster = cluster;
+    Cloner(PlanningContext ctx) {
+        cluster = ctx.createCluster();
+        catalogReader = ctx.catalogReader();
     }
 
     /**
      * Clones and associates a plan with a new cluster.
      *
-     * @param plan Plan to clone.
+     * @param src Plan to clone.
      * @return New plan.
      */
-    MultiStepPlan go(MultiStepPlan plan) {
-        List<Fragment> planFragments = plan.fragments();
+    List<Fragment> go(List<Fragment> src) {
+        assert !F.isEmpty(src);
 
-        assert !F.isEmpty(planFragments);
+        fragments = new ArrayList<>(src.size());
 
-        fragments = new ArrayList<>(planFragments.size());
-
-        Fragment first = F.first(planFragments);
+        Fragment first = F.first(src);
 
         fragments.add(new Fragment(first.fragmentId(), visit(first.root())));
 
-        assert fragments.size() == planFragments.size();
+        assert fragments.size() == src.size();
 
         Collections.reverse(fragments);
 
-        return new MultiStepPlanImpl(fragments, plan.fieldsMetadata());
+        return fragments;
     }
 
     /** {@inheritDoc} */
@@ -94,6 +99,14 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTableModify rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteTableModify(cluster, rel.getTraitSet(), rel.getTable(), catalogReader, input,
+            rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened());
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteJoin rel) {
         RelNode left = visit((IgniteRel) rel.getLeft());
         RelNode right = visit((IgniteRel) rel.getRight());
@@ -104,6 +117,11 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
         return new IgniteTableScan(cluster, rel.getTraitSet(), rel.getTable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteValues rel) {
+        return new IgniteValues(cluster, rel.getRowType(), rel.getTuples(), rel.getTraitSet());
     }
 
     /** {@inheritDoc} */

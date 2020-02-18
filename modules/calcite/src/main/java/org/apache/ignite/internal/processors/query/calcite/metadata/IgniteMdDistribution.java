@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -24,12 +25,13 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.logical.LogicalExchange;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
@@ -37,6 +39,7 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -77,6 +80,13 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     /**
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
+    public IgniteDistribution distribution(LogicalTableModify rel, RelMetadataQuery mq) {
+        return IgniteDistributions.single(); // TODO skip reducer
+    }
+
+    /**
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     */
     public IgniteDistribution distribution(LogicalFilter rel, RelMetadataQuery mq) {
         return filter(mq, rel.getInput(), rel.getCondition());
     }
@@ -112,8 +122,8 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     /**
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
-    public IgniteDistribution distribution(Values rel, RelMetadataQuery mq) {
-        return IgniteDistributions.broadcast();
+    public IgniteDistribution distribution(LogicalValues rel, RelMetadataQuery mq) {
+        return values(rel.getRowType(), rel.getTuples());
     }
 
     /**
@@ -135,6 +145,13 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      */
     public IgniteDistribution distribution(IgniteRel rel, RelMetadataQuery mq) {
         throw new AssertionError("Unexpected node: " + rel);
+    }
+
+    /**
+     * @return Values relational node distribution.
+     */
+    public static IgniteDistribution values(RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples) {
+        return IgniteDistributions.broadcast();
     }
 
     /**

@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.InterpreterUtils;
 import org.apache.calcite.interpreter.JaninoRexCompiler;
@@ -41,6 +42,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
  * Each expression compiles into a class and a wrapper over it is returned.
  */
-public class ScalarFactory {
+public class ExpressionFactory {
     /** */
     private static final int CACHE_SIZE = 1024;
 
@@ -58,7 +60,7 @@ public class ScalarFactory {
     private static final Map<String, Scalar> CACHE = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
 
     /** */
-    private final JavaTypeFactory typeFactory;
+    private final IgniteTypeFactory typeFactory;
 
     /** */
     private final JaninoRexCompiler rexCompiler;
@@ -71,11 +73,11 @@ public class ScalarFactory {
      * @param failure Failure processor.
      * @param log Logger.
      */
-    public ScalarFactory(JavaTypeFactory typeFactory, FailureProcessor failure, IgniteLogger log) {
+    public ExpressionFactory(IgniteTypeFactory typeFactory, FailureProcessor failure, IgniteLogger log) {
         this.typeFactory = typeFactory;
 
         rexCompiler = new JaninoRexCompiler(new RexBuilder(typeFactory));
-        handler = new ExceptionHandler(failure, log.getLogger(ScalarFactory.class));
+        handler = new ExceptionHandler(failure, log.getLogger(ExpressionFactory.class));
     }
 
     /**
@@ -87,7 +89,7 @@ public class ScalarFactory {
      * @param rowType Input row type.
      * @return Row comparator.
      */
-    public <T> Comparator<T> comparator(DataContext root, List<RelCollation> collations, RelDataType rowType) {
+    public <T> Comparator<T> comparator(ExecutionContext root, List<RelCollation> collations, RelDataType rowType) {
         return null; // TODO
     }
 
@@ -99,7 +101,7 @@ public class ScalarFactory {
      * @param rowType Input row type.
      * @return Filter predicate.
      */
-    public <T> Predicate<T> filterPredicate(DataContext root, RexNode filter, RelDataType rowType) {
+    public <T> Predicate<T> filterPredicate(ExecutionContext root, RexNode filter, RelDataType rowType) {
         Scalar scalar = scalar(ImmutableList.of(filter), rowType);
         Context ctx = InterpreterUtils.createContext(root);
 
@@ -115,7 +117,7 @@ public class ScalarFactory {
      * @param rowType Input row type.
      * @return Project function.
      */
-    public <T> Function<T, T> projectExpression(DataContext root, List<RexNode> projects, RelDataType rowType) {
+    public <T> Function<T, T> projectExpression(ExecutionContext root, List<RexNode> projects, RelDataType rowType) {
         Scalar scalar = scalar(projects, rowType);
         Context ctx = InterpreterUtils.createContext(root);
         int count = projects.size();
@@ -124,48 +126,88 @@ public class ScalarFactory {
     }
 
     /**
+     * Creates a Values relational node rows source.
+     *
+     * @param root Execution context, holds a planner context, query and its parameters,
+     *             execution specific variables (like queryId, current user, session, etc).
+     * @param tuples Values tuples.
+     * @param rowType Output row type.
+     * @return Values relational node rows source.
+     */
+    public <T> Iterable<T> values(ExecutionContext root, List<List<RexNode>> tuples, RelDataType rowType) {
+        try {
+            List<RexNode> nodes = new ArrayList<>();
+
+            for (List<RexNode> tuple : tuples)
+                nodes.addAll(tuple);
+
+            Scalar scalar = scalar(nodes, null);
+            Context ctx = InterpreterUtils.createContext(root);
+
+            int rowLen = rowType.getFieldCount();
+            Object[] values = new Object[nodes.size()];
+            scalar.execute(ctx, values);
+
+
+            return () -> new ValuesIterator<>(values, rowLen);
+        }
+        catch (Throwable e) {
+            handler.onException(e);
+
+            throw e;
+        }
+    }
+
+    /**
      * Creates a Join expression. Function consumes two rows and returns non null value in case the rows satisfy join condition.
      * @param root Execution context, holds a planner context, query and its parameters,
      *             execution specific variables (like queryId, current user, session, etc).
      * @param expression Join expression (condition).
-     * @param leftType Left input row type.
-     * @param rightType Right input row type.
+     * @param joinType Output row type.
      * @return Join function.
      */
-    public <T> BiFunction<T, T, T> joinExpression(DataContext root, RexNode expression, RelDataType leftType, RelDataType rightType) {
-        RelDataType rowType = combinedType(leftType, rightType);
-        Scalar scalar = scalar(ImmutableList.of(expression), rowType);
+    public <T> BiFunction<T, T, T> joinExpression(ExecutionContext root, RexNode expression, RelDataType joinType) {
+        Scalar scalar = scalar(ImmutableList.of(expression), joinType);
         Context ctx = InterpreterUtils.createContext(root);
-        ctx.values = new Object[rowType.getFieldCount()];
+        ctx.values = new Object[joinType.getFieldCount()];
 
         return new JoinExpression<>(ctx, scalar, handler);
-    }
-
-    /** */
-    private RelDataType combinedType(RelDataType... types) {
-        RelDataTypeFactory.Builder typeBuilder = new RelDataTypeFactory.Builder(typeFactory);
-
-        for (RelDataType type : types)
-            typeBuilder.addAll(type.getFieldList());
-
-        return typeBuilder.build();
     }
 
     /** */
     private Scalar scalar(List<RexNode> nodes, RelDataType type) {
         assert !F.isEmpty(nodes);
 
-        return CACHE.computeIfAbsent(cacheKey(nodes, type), k -> rexCompiler.compile(nodes, type));
+        return CACHE.computeIfAbsent(cacheKey(nodes, type), k -> compile(nodes, type));
     }
 
     /** */
     private String cacheKey(List<RexNode> nodes, RelDataType type) {
-        StrBuilder b = new StrBuilder("[").append(F.first(nodes));
-        for (int i = 1; i < nodes.size(); i++)
-            b.append(";").append(nodes.get(i));
-        b.append("]:").append(type.getFullTypeString());
+        StrBuilder b = new StrBuilder();
+
+        b.append('[');
+
+        for (int i = 0; i < nodes.size(); i++) {
+            if (i > 0)
+                b.append(';');
+
+            b.append(nodes.get(i));
+        }
+
+        b.append(']');
+
+        if (type != null)
+            b.append(':').append(type.getFullTypeString());
 
         return b.toString();
+    }
+
+    /** */
+    private Scalar compile(List<RexNode> nodes, RelDataType type) {
+        if (type == null)
+            type = new RelDataTypeFactory.Builder(typeFactory).build();
+
+        return rexCompiler.compile(nodes, type);
     }
 
     /** */
@@ -201,7 +243,7 @@ public class ScalarFactory {
                 scalar.execute(ctx, vals);
                 return (Boolean) vals[0];
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 handler.onException(e);
 
                 throw e;
@@ -256,7 +298,7 @@ public class ScalarFactory {
 
                 return null;
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 handler.onException(e);
 
                 throw e;
@@ -299,11 +341,46 @@ public class ScalarFactory {
 
                 return (T) res;
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 handler.onException(e);
 
                 throw e;
             }
+        }
+    }
+
+    /** */
+    private static class ValuesIterator<T> implements Iterator<T> {
+        /** */
+        private final Object[] values;
+
+        /** */
+        private final int rowLen;
+
+        /** */
+        private int idx;
+
+        /** */
+        private ValuesIterator(Object[] values, int rowLen) {
+            this.values = values;
+            this.rowLen = rowLen;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return idx < values.length;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            Object[] res = new Object[rowLen];
+            System.arraycopy(values, idx, res, 0, rowLen);
+            idx += rowLen;
+
+            return (T) res;
         }
     }
 

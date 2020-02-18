@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -32,29 +30,17 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Distributed query plan.
+ *
  */
-public class MultiStepPlanImpl implements MultiStepPlan {
+public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** */
-    private final List<Fragment> fragments;
-
+    protected final List<Fragment> fragments;
     /** */
-    private final List<GridQueryFieldMetadata> fieldsMeta;
+    protected final List<GridQueryFieldMetadata> fieldsMeta;
 
-    /**
-     * @param fragments Query fragments.
-     */
-    public MultiStepPlanImpl(List<Fragment> fragments) {
-        this(fragments, ImmutableList.of());
-    }
-
-    /**
-     * @param fragments Query fragments.
-     * @param fieldsMeta Fields metadata.
-     */
-    public MultiStepPlanImpl(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
+    protected AbstractMultiStepPlan(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
         this.fragments = fragments;
+        this.fieldsMeta = fieldsMeta;
     }
 
     /** {@inheritDoc} */
@@ -112,10 +98,5 @@ public class MultiStepPlanImpl implements MultiStepPlan {
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public MultiStepPlan clone(RelOptCluster cluster) {
-        return new Cloner(cluster).go(this);
     }
 }

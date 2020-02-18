@@ -96,7 +96,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
         /** {@inheritDoc} */
         @Override protected void generateTypeString(StringBuilder sb, boolean withDetail) {
-            sb.append("SystemJavaType(") .append(getJavaClass()) .append(")");
+            sb.append("SystemJavaType(").append(getJavaClass()).append(")");
         }
 
         /** */
