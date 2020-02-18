@@ -2341,7 +2341,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Returns future that assigned to last performing {@link GridDistributedCacheAdapter.GlobalRemoveAllJob}
+     * Returns future that assigned to last performing {@code GlobalRemoveAllJob}.
+     *
+     * @return Future that assigned to last performing {@code GlobalRemoveAllJob}.
      */
     public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
         return lastRmvAllJobFut;
