@@ -91,9 +91,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     }
 
     /** */
-    private static boolean client;
-
-    /** */
     private static PartitionLossPolicy partLossPlc;
 
     /** */
@@ -126,12 +123,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
         });
 
-        cfg.setClientMode(client);
-
         cfg.setCacheConfiguration(cacheConfiguration());
-
         cfg.setConsistentId(gridName);
-
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
@@ -639,10 +632,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         boolean canWrite,
         boolean safe
     ) throws Exception {
-        this.client = client;
-
         try {
-            IgniteEx cl = (IgniteEx)startGrid("newNode");
+            IgniteEx cl = client ? startClientGrid("newNode") : startGrid("newNode");
 
             CacheGroupContext grpCtx = cl.context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
@@ -654,8 +645,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         }
         finally {
             stopGrid("newNode", false);
-
-            this.client = false;
         }
     }
 
@@ -933,11 +922,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             for (int i = 0; i < aff.partitions(); i++)
                 ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            client = true;
-
-            startGrid(4);
-
-            client = false;
+            startClientGrid(4);
 
             for (int i = 0; i < 5; i++)
                 info(">>> Node [idx=" + i + ", nodeId=" + ignite(i).cluster().localNode().id() + ']');

@@ -53,9 +53,6 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
 
         cfg.setDataStorageConfiguration(createDbConfig());
 
-        if (getTestIgniteInstanceIndex(gridName) == 1)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -98,7 +95,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
         ig.active(true);
 
         for (int j = 0; j < NUM_ITERATIONS; j++) {
-            Ignite client = startGrid(1);
+            Ignite client = startClientGrid(1);
 
             for (int i = 0; i < NUM_CACHES; i++) {
                 IgniteCache<?, ?> cache = ig.cache(NAME_PREFIX + i);

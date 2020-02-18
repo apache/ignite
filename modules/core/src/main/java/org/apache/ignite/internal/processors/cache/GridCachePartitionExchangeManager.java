@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -79,7 +80,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
@@ -404,32 +404,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
                     }
-                    else if (exchangeInProgress()) {
-                        if (log.isInfoEnabled())
-                            log.info("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
 
-                        return;
-                    }
-
-                    if (!crdInitFut.isDone() && !msg.restoreState()) {
-                        GridDhtPartitionExchangeId exchId = msg.exchangeId();
-
-                        if (log.isInfoEnabled()) {
-                            log.info("Waiting for coordinator initialization [node=" + node.id() +
-                                ", nodeOrder=" + node.order() +
-                                ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
-                        }
-
-                        crdInitFut.listen(new CI1<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture fut) {
-                                processSinglePartitionUpdate(node, msg);
-                            }
-                        });
-
-                        return;
-                    }
-
-                    processSinglePartitionUpdate(node, msg);
+                    preprocessSingleMessage(node, msg);
                 }
             });
 
@@ -513,6 +489,34 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+    }
+
+    /**
+     * Preprocess {@code msg} which was sended by {@code node}.
+     *
+     * @param node Cluster node.
+     * @param msg Message.
+     */
+    private void preprocessSingleMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
+        if (!crdInitFut.isDone() && !msg.restoreState()) {
+            GridDhtPartitionExchangeId exchId = msg.exchangeId();
+
+            if (log.isInfoEnabled()) {
+                log.info("Waiting for coordinator initialization [node=" + node.id() +
+                    ", nodeOrder=" + node.order() +
+                    ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
+            }
+
+            crdInitFut.listen(new CI1<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    processSinglePartitionUpdate(node, msg);
+                }
+            });
+
+            return;
+        }
+
+        processSinglePartitionUpdate(node, msg);
     }
 
     /**
@@ -1113,6 +1117,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public boolean hasPendingExchange() {
         return exchWorker.hasPendingExchange();
+    }
+
+    /**
+     * @return {@code True} if pending future queue contains server exchange task.
+     */
+    public boolean hasPendingServerExchange() {
+        return exchWorker.hasPendingServerExchange();
     }
 
     /**
@@ -2151,7 +2162,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (warnings.canAddMessage()) {
                             warnings.add(longRunningTransactionWarning(tx, curTime));
 
-                            if (ltrDumpLimiter.allowAction(tx))
+                            if (cctx.tm().txOwnerDumpRequestsAllowed()
+                                && !Optional.ofNullable(cctx.kernalContext().config().isClientMode()).orElse(false)
+                                && tx.local()
+                                && tx.state() == TransactionState.ACTIVE
+                                && ltrDumpLimiter.allowAction(tx))
                                 dumpLongRunningTransaction(tx);
                         }
                         else
@@ -2232,76 +2247,74 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param tx Transaction.
      */
     private void dumpLongRunningTransaction(IgniteInternalTx tx) {
-        if (cctx.tm().txOwnerDumpRequestsAllowed() && tx.local() && tx.state() == TransactionState.ACTIVE) {
-            Collection<UUID> masterNodeIds = tx.masterNodeIds();
+        Collection<UUID> masterNodeIds = tx.masterNodeIds();
 
-            if (masterNodeIds.size() == 1) {
-                UUID nearNodeId = masterNodeIds.iterator().next();
+        if (masterNodeIds.size() == 1) {
+            UUID nearNodeId = masterNodeIds.iterator().next();
 
-                long txOwnerThreadId = tx.threadId();
+            long txOwnerThreadId = tx.threadId();
 
-                Ignite ignite = cctx.kernalContext().grid();
+            Ignite ignite = cctx.kernalContext().grid();
 
-                ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
+            ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);
 
-                String txRequestInfo = String.format(
-                    "[xidVer=%s, nodeId=%s]",
-                    tx.xidVersion().toString(),
-                    nearNodeId.toString()
-                );
+            String txRequestInfo = String.format(
+                "[xidVer=%s, nodeId=%s]",
+                tx.xidVersion().toString(),
+                nearNodeId.toString()
+            );
 
-                if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
-                    IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
+            if (allNodesSupports(nearNode.nodes(), TRANSACTION_OWNER_THREAD_DUMP_PROVIDING)) {
+                IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
 
-                    try {
-                        compute
-                            .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
-                            .listen(new IgniteInClosure<IgniteFuture<String>>() {
-                                @Override public void apply(IgniteFuture<String> strIgniteFut) {
-                                    String traceDump = null;
+                try {
+                    compute
+                        .callAsync(new FetchActiveTxOwnerTraceClosure(txOwnerThreadId))
+                        .listen(new IgniteInClosure<IgniteFuture<String>>() {
+                            @Override public void apply(IgniteFuture<String> strIgniteFut) {
+                                String traceDump = null;
 
-                                    try {
-                                        traceDump = strIgniteFut.get();
-                                    }
-                                    catch (ClusterGroupEmptyException e) {
-                                        U.error(
-                                            diagnosticLog,
-                                            "Could not get thread dump from transaction owner because near node " +
-                                                    "is now out of topology. " + txRequestInfo
-                                        );
-                                    }
-                                    catch (Exception e) {
-                                        U.error(
-                                            diagnosticLog,
-                                            "Could not get thread dump from transaction owner near node " + txRequestInfo,
-                                            e
-                                        );
-                                    }
-
-                                    if (traceDump != null) {
-                                        U.warn(
-                                            diagnosticLog,
-                                            String.format(
-                                                "Dumping the near node thread that started transaction %s\n%s",
-                                                txRequestInfo,
-                                                traceDump
-                                            )
-                                        );
-                                    }
+                                try {
+                                    traceDump = strIgniteFut.get();
                                 }
-                            });
-                    }
-                    catch (Exception e) {
-                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
-                    }
+                                catch (ClusterGroupEmptyException e) {
+                                    U.error(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner because near node " +
+                                                "is out of topology now. " + txRequestInfo
+                                    );
+                                }
+                                catch (Exception e) {
+                                    U.error(
+                                        diagnosticLog,
+                                        "Could not get thread dump from transaction owner near node " + txRequestInfo,
+                                        e
+                                    );
+                                }
+
+                                if (traceDump != null) {
+                                    U.warn(
+                                        diagnosticLog,
+                                        String.format(
+                                            "Dumping the near node thread that started transaction %s\n%s",
+                                            txRequestInfo,
+                                            traceDump
+                                        )
+                                    );
+                                }
+                            }
+                        });
                 }
-                else {
-                    U.warn(
-                        diagnosticLog,
-                        "Could not send dump request to transaction owner near node: node does not support this feature. " +
-                            txRequestInfo
-                    );
+                catch (Exception e) {
+                    U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
                 }
+            }
+            else {
+                U.warn(
+                    diagnosticLog,
+                    "Could not send dump request to transaction owner near node: node does not support this feature. " +
+                        txRequestInfo
+                );
             }
         }
     }
@@ -2783,30 +2796,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private boolean currentThreadIsExchanger() {
         return exchWorker != null && Thread.currentThread() == exchWorker.runner();
-    }
-
-    /**
-     * @return {@code True} If there is any exchange future in progress.
-     */
-    private boolean exchangeInProgress() {
-        if (exchWorker.hasPendingServerExchange())
-            return true;
-
-        GridDhtPartitionsExchangeFuture current = lastTopologyFuture();
-
-        if (current == null)
-            return false;
-
-        GridDhtTopologyFuture finished = lastFinishedFut.get();
-
-        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0) {
-            ClusterNode triggeredBy = current.firstEvent().eventNode();
-
-            if (current.partitionChangesInProgress() && !triggeredBy.isClient())
-                return true;
-       }
-
-        return false;
     }
 
     /** */
@@ -3434,7 +3423,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled || hasPendingExchange()) {
+                        if (assignsCancelled || hasPendingServerExchange()) {
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');

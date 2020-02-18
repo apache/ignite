@@ -178,6 +178,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
+
+            userAttrs = reader.readMap();
         }
 
         if (ver.compareTo(VER_2_9_0) >= 0)

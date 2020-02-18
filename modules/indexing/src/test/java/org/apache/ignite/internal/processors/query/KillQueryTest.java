@@ -189,11 +189,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(commSpi);
 
-        if (++cntr == NODES_COUNT) {
-            cfg.setClientMode(true);
-
+        if (++cntr == NODES_COUNT)
             clientBlocker = commSpi;
-        }
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
@@ -279,7 +276,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         GridQueryProcessor.idxCls = MockedIndexing.class;
 
-        startGrids(NODES_COUNT);
+        startGrids(NODES_COUNT - 1);
+        startClientGrid(NODES_COUNT - 1);
 
         // Let's set baseline topology manually. Doing so we are sure that partitions are distributed beetween our 2 srv
         // nodes, not belong only one node.
@@ -669,7 +667,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
             ).getAll();
 
             return null;
-        }, IgniteException.class, "The query was cancelled while executing.");
+        }, CacheException.class, "The query was cancelled while executing.");
 
         // Ensures that there were no exceptions within async cancellation process.
         cancelRes.get(CHECK_RESULT_TIMEOUT);
@@ -1310,10 +1308,10 @@ public class KillQueryTest extends GridCommonAbstractTest {
             setMapper(new ReducePartitionMapper(ctx, ctx.log(GridReduceQueryExecutor.class)) {
                 /** {@inheritDoc} */
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
-                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
 
                     return retryNodePartMapping ? RETRY_RESULT :
-                        super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+                        super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
                 }
             });
 

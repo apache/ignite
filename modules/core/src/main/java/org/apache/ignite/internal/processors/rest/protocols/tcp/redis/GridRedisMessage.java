@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
@@ -223,5 +224,15 @@ public class GridRedisMessage implements GridClientMessage {
     /** {@inheritDoc} */
     @Override public void sessionToken(byte[] sesTok) {
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> userAttributes() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void userAttributes(Map<String, String> userAttrs) {
+        // No-op.
     }
 }
