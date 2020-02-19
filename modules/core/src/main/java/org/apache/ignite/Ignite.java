@@ -665,12 +665,12 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Changes Ignite grid state to active or inactive.
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see org.apache.ignite.ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * @see ClusterState#INACTIVE
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
-     * @deprecated Use {@link IgniteCluster#state(ClusterState)}
+     * @deprecated Use {@link IgniteCluster#state(ClusterState, boolean)}
      * or {@link IgniteCluster#state(ClusterState, boolean)} instead.
      */
     @Deprecated

@@ -71,6 +71,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
+    /** Forced change of cluster state. */
+    private boolean force = true;
+
     /**
      * @param reqId State change request ID.
      * @param initiatingNodeId Node initiated state change.
@@ -203,6 +206,16 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @Nullable public BaselineTopology baselineTopology() {
         return baselineTopology;
     }
+
+    /**
+     * @return Whether state changing must not check safety of this operation.
+     */
+    boolean force() {
+        return force;
+    }
+
+    /** */
+    void force(boolean force){ this.force = force; }
 
     /**
      * @return Timestamp.

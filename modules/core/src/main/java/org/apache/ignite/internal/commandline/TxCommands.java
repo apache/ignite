@@ -49,7 +49,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
 
-import static org.apache.ignite.internal.commandline.Command.checkFeatureSupportedByCluster;
+import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 import static org.apache.ignite.internal.commandline.CommandList.TX;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;

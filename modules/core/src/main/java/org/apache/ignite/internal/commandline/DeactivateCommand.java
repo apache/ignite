@@ -37,7 +37,7 @@ public class DeactivateCommand implements Command<Void> {
     /** Cluster name. */
     private String clusterName;
 
-    /** Force cluster deactivation even it might have in-mem caches. */
+    /** Force cluster deactivation even it might have in-memory caches. */
     private boolean force;
 
     /** {@inheritDoc} */

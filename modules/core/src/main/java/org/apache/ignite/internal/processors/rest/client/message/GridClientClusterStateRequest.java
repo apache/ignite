@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * @deprecated Use {@link GridClientClusterStateForcedRequest}
+ * @deprecated Use {@link GridClientClusterStateRequestV2}
  */
 @Deprecated
 public class GridClientClusterStateRequest extends GridClientAbstractMessage {

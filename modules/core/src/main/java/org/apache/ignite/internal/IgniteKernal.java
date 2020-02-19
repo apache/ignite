@@ -4745,14 +4745,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void clusterState(String state) {
-        clusterState(state, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clusterState(String state, boolean force) {
         ClusterState newState = ClusterState.valueOf(state);
 
-        cluster().state(newState, force);
+        cluster().state(newState);
     }
 
     /** {@inheritDoc} */

@@ -42,7 +42,6 @@ import org.apache.ignite.util.GridCommandHandlerSslTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
-import org.apache.ignite.util.mbeans.GridMBeanClusterStateTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -81,9 +80,7 @@ import org.junit.runners.Suite;
     MasterKeyChangeTest.class,
     MasterKeyChangeConsistencyCheckTest.class,
 
-    EncryptionMXBeanTest.class,
-
-    GridMBeanClusterStateTest.class
+    EncryptionMXBeanTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

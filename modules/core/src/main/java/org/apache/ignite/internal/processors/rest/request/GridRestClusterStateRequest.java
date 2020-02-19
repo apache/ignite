@@ -36,8 +36,8 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     private boolean force;
 
     /** */
-    public void forced(boolean forced) {
-        force = forced;
+    public void force(boolean force) {
+        this.force = force;
     }
 
     /** */
@@ -51,7 +51,9 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     }
 
     /** */
-    public boolean forced(){ return force; }
+    public boolean force() {
+        return force;
+    }
 
     /** */
     public ClusterState state() {

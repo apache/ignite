@@ -430,7 +430,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int i = 0; i < srvs + clients; i++)
             checkCachesOnNode(i, DEFAULT_CACHES_COUNT);
 
-        ignite(activateFrom).cluster().state(INACTIVE, true);
+        ignite(activateFrom).cluster().state(INACTIVE);
         ignite(activateFrom).cluster().state(state);
 
         if (state == ACTIVE)
@@ -594,8 +594,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             blockExchangeSingleMessage(spi, STATE_CHANGE_TOP_VER);
         }
 
-        IgniteInternalFuture<?> stateChangeFut = runAsync(() ->
-            ignite(stateChangeFrom).cluster().state(targetState, true));
+        IgniteInternalFuture<?> stateChangeFut = runAsync(() -> ignite(stateChangeFrom).cluster().state(targetState));
 
         for (TestRecordingCommunicationSpi spi : spis)
             spi.waitForBlocked();
@@ -930,7 +929,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         checkClusterState(nodesCnt, initialState);
 
-        ignite(changeFrom).cluster().state(targetState, true);
+        ignite(changeFrom).cluster().state(targetState);
 
         checkClusterState(nodesCnt, targetState);
 
@@ -1174,7 +1173,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             if (transition) {
                 blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
 
-                stateFut.set(runAsync(() -> srv.cluster().state(targetState, true), initialState + "->" + targetState));
+                stateFut.set(runAsync(() -> srv.cluster().state(targetState), initialState + "->" + targetState));
 
                 try {
                     U.sleep(500);
@@ -1184,7 +1183,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 }
             }
             else
-                srv.cluster().state(targetState, true);
+                srv.cluster().state(targetState);
         });
 
         if (transition) {
@@ -1590,7 +1589,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int gridIdx = 0; gridIdx < nodes; gridIdx++)
             blockExchangeSingleMessage(TestRecordingCommunicationSpi.spi(grid(gridIdx)), deactivationTopVer);
 
-        IgniteInternalFuture deactivationFut = runAsync(() -> crd.cluster().state(INACTIVE, true));
+        IgniteInternalFuture deactivationFut = runAsync(() -> crd.cluster().state(INACTIVE));
 
         // Wait for deactivation start.
         assertTrue(GridTestUtils.waitForCondition(
@@ -1708,7 +1707,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             assertTrue(cache.internalCaches().stream().allMatch(c -> c.context().isRecoveryMode()));
         }
     }
-
 
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {

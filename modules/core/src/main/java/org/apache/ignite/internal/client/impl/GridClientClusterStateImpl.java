@@ -31,7 +31,7 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteFeatures.FORCED_CHANGE_OF_CLUSTER_STATE;
-import static org.apache.ignite.internal.commandline.Command.checkFeatureSupportedByCluster;
+import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 
 /**
  *
@@ -72,7 +72,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws GridClientException {
-        state(newState, false);
+        state(newState, true);
     }
 
     /** {@inheritDoc} */

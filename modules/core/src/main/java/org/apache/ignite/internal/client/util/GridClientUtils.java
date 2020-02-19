@@ -23,12 +23,18 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
+import org.apache.ignite.internal.client.GridServerDoesNotSupportException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -173,5 +179,42 @@ public abstract class GridClientUtils {
         i = Math.abs(i);
 
         return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Checks that all cluster nodes support specified feature.
+     *
+     * @param client Client.
+     * @param feature Feature.
+     * @param validateClientNodes Whether client nodes should be checked as well.
+     * @param failIfUnsupportedFound If {@code True}, fails when found a node unsupporting {@code feature}.
+     * @throws GridServerDoesNotSupportException If {@code failIfUnsupportedFound} is {@code True} and found a node
+     * unsupporting {@code feature}.
+     * @return Id of node unsupporting {@code feature}. {@code null} if all nodes support {@code feature} .
+     */
+    public static UUID checkFeatureSupportedByCluster(
+        GridClient client,
+        IgniteFeatures feature,
+        boolean validateClientNodes,
+        boolean failIfUnsupportedFound
+    ) throws GridClientException {
+        Collection<GridClientNode> nodes = validateClientNodes ?
+            client.compute().nodes() :
+            client.compute().nodes(GridClientNode::connectable);
+
+        for (GridClientNode node : nodes) {
+            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
+
+            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
+                if (failIfUnsupportedFound) {
+                    throw new GridServerDoesNotSupportException("Failed to execute command: cluster contains node that " +
+                        "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
+                }
+                else
+                    return node.nodeId();
+            }
+        }
+
+        return null;
     }
 }

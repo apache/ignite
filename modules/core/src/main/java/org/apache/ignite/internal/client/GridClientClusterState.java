@@ -62,7 +62,8 @@ public interface GridClientClusterState {
      * is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see org.apache.ignite.ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * @see ClusterState#INACTIVE
      *
      * @param newState New cluster state.
      * @param force New cluster state.
