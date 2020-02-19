@@ -92,6 +92,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
@@ -902,8 +904,13 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 break;
 
             case GET_OR_CREATE_CACHE:
+                perm = SecurityPermission.CACHE_CREATE;
+                name = ((GridRestCacheRequest)req).cacheName();
+
+                break;
+
             case DESTROY_CACHE:
-                perm = SecurityPermission.ADMIN_CACHE;
+                perm = SecurityPermission.CACHE_DESTROY;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
@@ -948,8 +955,28 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 throw new AssertionError("Unexpected command: " + req.command());
         }
 
-        if (perm != null)
+        if (perm != null) {
+                if (req.command().equals(GET_OR_CREATE_CACHE) || req.command().equals(DESTROY_CACHE))
+                    withPermissionAdminCacheSupport(name, perm);
+                else
+                    ctx.security().authorize(name, perm);
+
+        }
+    }
+
+    /**
+     * Maintaining compatibility SecurityPermission.ADMIN_CACHE.
+     *
+     * @param name name.
+     * @param perm SecurityPermission.
+     */
+    private void withPermissionAdminCacheSupport(String name, SecurityPermission perm){
+        try{
+            ctx.security().authorize(name, SecurityPermission.ADMIN_CACHE);
+        }
+        catch (SecurityException e) {
             ctx.security().authorize(name, perm);
+        }
     }
 
     /**

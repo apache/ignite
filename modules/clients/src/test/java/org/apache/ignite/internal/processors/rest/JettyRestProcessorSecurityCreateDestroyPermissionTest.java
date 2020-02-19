@@ -26,6 +26,7 @@ import java.net.URLConnection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -37,6 +38,8 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CACHE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
+import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /** */
@@ -44,11 +47,17 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     /** Admin client. */
     private static final String ADMIN = "admin";
 
-    /** Allowed client. */
-    private static final String ALLOWED_CLNT = "allowed_clnt";
+    /** Allowed client with cache permission. */
+    private static final String ALLOWED_CLNT_CACHE = "allowed_clnt_cache";
 
-    /** Unallowed client. */
-    private static final String UNALLOWED_CLNT = "unallowed_clnt";
+    /** Unallowed client without cache permission. */
+    private static final String UNALLOWED_CLNT_CACHE = "unallowed_clnt_cache";
+
+    /** Allowed client with system permission. */
+    private static final String ALLOWED_CLNT_SYSTEM = "allowed_clnt_system";
+
+    /** Unallowed client without system permission. */
+    private static final String UNALLOWED_CLNT_SYSTEM = "unallowed_clnt_system";
 
     /** Default password. */
     private static final String DFLT_PWD = "ignite";
@@ -65,20 +74,37 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     /** Cache name for tests. */
     private static final String CACHE_NAME = "TEST_CACHE";
 
+    /** Not declared cache name for tests. */
+    private static final String NOT_DECLARED_CACHE = "NOT_DECLARED_CACHE";
+
+    /** Empty permission. */
+    private static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         TestSecurityData[] clientData = new TestSecurityData[] {
             new TestSecurityData(ADMIN,
-                SecurityPermissionSetBuilder.create()
-                    .build()
-            ),
-            new TestSecurityData(ALLOWED_CLNT,
                 SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                     .appendSystemPermissions(ADMIN_CACHE)
                     .build()
             ),
-            new TestSecurityData(UNALLOWED_CLNT,
+            new TestSecurityData(ALLOWED_CLNT_CACHE,
+                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                    .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_DESTROY)
+                    .build()
+            ),
+            new TestSecurityData(UNALLOWED_CLNT_CACHE,
+                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                    .appendCachePermissions(CACHE_NAME, EMPTY_PERM)
+                    .build()
+            ),
+            new TestSecurityData(ALLOWED_CLNT_SYSTEM,
+                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+                    .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY)
+                    .build()
+            ),
+            new TestSecurityData(UNALLOWED_CLNT_SYSTEM,
                 SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                     .build()
             )
@@ -94,19 +120,63 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        IgniteEx server = grid(0);
+
+        server.cacheNames().forEach(server::destroyCache);
+
+        super.afterTest();
+    }
+
     /** */
     @Test
-    public void testGetOrCreate() throws Exception {
-        checkFailWithError(restGetOrCreate(UNALLOWED_CLNT, CACHE_NAME), ADMIN_CACHE);
-
+    public void testGetOrCreateWithAdminPerms() throws Exception {
         assertNull(grid(0).cache(CACHE_NAME));
+        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
 
-        checkSucces(restGetOrCreate(ALLOWED_CLNT, CACHE_NAME));
+        checkSucces(restGetOrCreate(ADMIN, CACHE_NAME));
+        checkSucces(restGetOrCreate(ADMIN, NOT_DECLARED_CACHE));
 
         assertNotNull(grid(0).cache(CACHE_NAME));
+        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+    }
+
+    /** */
+    @Test
+    public void testGetOrCreateWithCachePermission() throws Exception {
+        checkFailWithError(restGetOrCreate(UNALLOWED_CLNT_CACHE, CACHE_NAME), CACHE_CREATE);
+        checkFailWithError(restGetOrCreate(UNALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE), CACHE_CREATE);
+
+        assertNull(grid(0).cache(CACHE_NAME));
+        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+
+        checkSucces(restGetOrCreate(ALLOWED_CLNT_CACHE, CACHE_NAME));
+
+        checkFailWithError(restGetOrCreate(ALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE), CACHE_CREATE);
+
+        assertNotNull(grid(0).cache(CACHE_NAME));
+        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+    }
+
+    /** */
+    @Test
+    public void testGetOrCreateWithSystemPermission() throws Exception {
+        checkFailWithError(restGetOrCreate(UNALLOWED_CLNT_SYSTEM, CACHE_NAME), CACHE_CREATE);
+        checkFailWithError(restGetOrCreate(UNALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE), CACHE_CREATE);
+
+        assertNull(grid(0).cache(CACHE_NAME));
+        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+
+        checkSucces(restGetOrCreate(ALLOWED_CLNT_SYSTEM, CACHE_NAME));
+        checkSucces(restGetOrCreate(ALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE));
+
+        assertNotNull(grid(0).cache(CACHE_NAME));
+        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
     }
 
     /**
+     * @param login Login.
      * @param cacheName Cache name.
      */
     private String restGetOrCreate(String login, String cacheName) throws Exception {
@@ -115,19 +185,58 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
 
     /** */
     @Test
-    public void testDestroyCache() throws Exception {
-        restGetOrCreate(ADMIN, CACHE_NAME);
+    public void testDestroyCacheWithAdminPerms() throws Exception {
+        assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
+        assertNotNull(grid(0).getOrCreateCache(NOT_DECLARED_CACHE));
 
-        checkFailWithError(restDestroy(UNALLOWED_CLNT, CACHE_NAME), ADMIN_CACHE);
-
-        assertNotNull(grid(0).cache(CACHE_NAME));
-
-        checkSucces(restDestroy(ALLOWED_CLNT, CACHE_NAME));
+        checkSucces(restDestroy(ADMIN, CACHE_NAME));
+        checkSucces(restDestroy(ADMIN, NOT_DECLARED_CACHE));
 
         assertNull(grid(0).cache(CACHE_NAME));
+        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+    }
+
+    /** */
+    @Test
+    public void testDestroyCacheWithCachePermissions() throws Exception {
+        assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
+        assertNotNull(grid(0).getOrCreateCache(NOT_DECLARED_CACHE));
+
+        checkFailWithError(restDestroy(UNALLOWED_CLNT_CACHE, CACHE_NAME), CACHE_DESTROY);
+        checkFailWithError(restDestroy(UNALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE), CACHE_DESTROY);
+
+        assertNotNull(grid(0).cache(CACHE_NAME));
+        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+
+        checkSucces(restDestroy(ALLOWED_CLNT_CACHE, CACHE_NAME));
+
+        checkFailWithError(restDestroy(ALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE), CACHE_DESTROY);
+
+        assertNull(grid(0).cache(CACHE_NAME));
+        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+    }
+
+    /** */
+    @Test
+    public void testDestroyCacheWithSystemPermissions() throws Exception {
+        assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
+        assertNotNull(grid(0).getOrCreateCache(NOT_DECLARED_CACHE));
+
+        checkFailWithError(restDestroy(UNALLOWED_CLNT_SYSTEM, CACHE_NAME), CACHE_DESTROY);
+        checkFailWithError(restDestroy(UNALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE), CACHE_DESTROY);
+
+        assertNotNull(grid(0).cache(CACHE_NAME));
+        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+
+        checkSucces(restDestroy(ALLOWED_CLNT_SYSTEM, CACHE_NAME));
+        checkSucces(restDestroy(ALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE));
+
+        assertNull(grid(0).cache(CACHE_NAME));
+        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
     }
 
     /**
+     * @param login Login.
      * @param cacheName Cache name.
      */
     private String restDestroy(String login, String cacheName) throws Exception {
@@ -139,6 +248,12 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         return null;
     }
 
+    /**
+     * @param login Login.
+     * @param cacheName Cache name.
+     * @param cmd Command.
+     * @param params Params.
+     */
     protected String content(String login, String cacheName, GridRestCommand cmd, String... params) throws Exception {
         Map<String, String> paramsMap = new LinkedHashMap<>();
 
@@ -154,17 +269,17 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
                 paramsMap.put(params[i], params[i + 1]);
         }
 
-        return content(paramsMap,login);
+        return content(login, paramsMap);
     }
 
 
     /**
      * Execute REST command and return result.
      *
-     * @param params Params.
      * @param login Login.
+     * @param params Params.
      */
-    protected String content(Map<String, String> params, String login) throws Exception {
+    protected String content(String login, Map<String, String> params) throws Exception {
         SB sb = new SB(restUrl());
         sb.a("ignite.login=").a(login).a("&ignite.password=&");
 
@@ -185,6 +300,11 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         }
 
         return buf.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /**
