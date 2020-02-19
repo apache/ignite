@@ -22,7 +22,7 @@ import org.junit.Test;
 /** */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invcations. */
-    private static final int INVOKE_CNT = 500;
+    private static final int INVOKE_CNT = 100;
 
     /** Utility holder of current grid number. */
     private final AtomicInteger gridNum = new AtomicInteger();
@@ -166,13 +166,13 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testServiceInvocationMetricsProxiedMultySkew() throws Exception {
-        serviceInvocationMetricsProxied(5, 3, 1, 1);
+        serviceInvocationMetricsProxied(5, 3, 2, 1);
     }
 
     /** */
     @Test
     public void testServiceInvocationMetricsProxiedMultyFlatDuplicated() throws Exception {
-        serviceInvocationMetricsProxied(3, 5, 3, 3);
+        serviceInvocationMetricsProxied(3, 2, 3, 3);
     }
 
     /** */

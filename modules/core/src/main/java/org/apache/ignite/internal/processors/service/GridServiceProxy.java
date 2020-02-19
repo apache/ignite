@@ -45,7 +45,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 
@@ -93,49 +91,6 @@ public class GridServiceProxy<T> implements Serializable {
 
     /** Service availability wait timeout. */
     private final long waitTimeout;
-
-    /**
-     * Calls method of service and allows timing of its duration. To measure the method performance pass
-     * {@link IgniteServiceProcessor} as {@code srvcProc}.
-     *
-     * @param srvcProc - Current implementation of service processor.
-     * @param svcCtx - Context of the service being invoked.
-     * @param key - Reflection key of service method. If {@code Null} will be caclulated.
-     * @param mtd - Service method to invoke.
-     * @param args - Arguments for method {@code mtd}.
-     */
-    static Object callAndMeasureServiceMethod(ServiceProcessorAdapter srvcProc, ServiceContextImpl svcCtx,
-        @Nullable GridServiceMethodReflectKey key, Method mtd, @Nullable Object[] args) throws Exception {
-
-        HistogramMetricImpl invokeMetric = null;
-
-        IgniteServiceProcessor advancedSvcProc = srvcProc instanceof IgniteServiceProcessor
-            ? (IgniteServiceProcessor)srvcProc : null;
-
-        if (advancedSvcProc != null) {
-            if (key == null)
-                key = new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes());
-
-            invokeMetric = svcCtx.invokeHistogramm(key, () -> advancedSvcProc.invocationsMetric(svcCtx.name(), mtd));
-        }
-
-        long time = System.nanoTime();
-
-        Object callResult;
-
-        try {
-            callResult = mtd.invoke(svcCtx.service(), args);
-        }
-        catch (InvocationTargetException e) {
-            throw new ServiceProxyException(e.getCause());
-        }
-
-        // The metric may be not activated.
-        if (invokeMetric != null)
-            invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
-
-        return callResult;
-    }
 
     /**
      * @param prj Grid projection.
@@ -467,7 +422,12 @@ public class GridServiceProxy<T> implements Serializable {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
-            return callAndMeasureServiceMethod(((IgniteEx)ignite).context().service(), svcCtx, key, mtd, args);
+            try {
+                return mtd.invoke(svcCtx.service(), args);
+            }
+            catch (InvocationTargetException e) {
+                throw new ServiceProxyException(e.getCause());
+            }
         }
 
         /** {@inheritDoc} */

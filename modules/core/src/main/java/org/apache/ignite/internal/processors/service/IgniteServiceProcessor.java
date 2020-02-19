@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -99,7 +100,6 @@ import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.service.GridServiceProxy.callAndMeasureServiceMethod;
 
 /**
  * Ignite service processor.
@@ -977,7 +977,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     Service srvc = ctx.service();
 
                     if (srvc != null)
-                        return (T)localServiceProxy(ctx);
+                        return (T)srvc;
                 }
 
                 return null;
@@ -991,10 +991,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * @return Local service proxy allowing timing of service method.
      */
-    private Object localServiceProxy(ServiceContextImpl srvcCtx) {
-        return Proxy.newProxyInstance(srvcCtx.service().getClass().getClassLoader(),
-            Stream.of(srvcCtx.service().getClass().getInterfaces()).filter(Service.class::isAssignableFrom)
-                .toArray(Class[]::new), new LocalInvocationHandler(srvcCtx, ctx.service()));
+    private Service localServiceProxy(Service srvc, ServiceContextImpl srvcCtx) {
+        Set<Class<?>> interfaces = new HashSet<>();
+
+        Class<?> cur = srvc.getClass();
+
+        while (cur != null) {
+            interfaces.addAll(Arrays.asList(cur.getInterfaces()));
+
+            cur = cur.getSuperclass();
+        }
+
+        return (Service)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
+            interfaces.toArray(new Class<?>[0]), new LocalInvocationHandler(srvc, srvcCtx));
     }
 
     /** {@inheritDoc} */
@@ -1055,7 +1064,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         throw new IgniteException("Service does not implement specified interface [srvcCls=" +
                             srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
 
-                    return (T)localServiceProxy(ctx);
+                    return (T)srvc;
                 }
             }
         }
@@ -1321,7 +1330,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 // Initialize service.
                 srvc.init(srvcCtx);
 
-                srvcCtx.service(srvc);
+                srvcCtx.service(localServiceProxy(srvc, srvcCtx));
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
@@ -1902,9 +1911,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void registerMetrics(Service srvc, ServiceContextImpl srvcCtx) {
         for (Class<?> iface : srvc.getClass().getInterfaces()) {
-            if (!Service.class.isAssignableFrom(iface))
-                continue;
-
             for (Method m : iface.getMethods()) {
                 if (m.getDeclaringClass().equals(Service.class))
                     continue;
@@ -1972,25 +1978,46 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** Invocation proxy handler for service to measure durations of its methods. */
-    private static class LocalInvocationHandler implements InvocationHandler {
+    private class LocalInvocationHandler implements InvocationHandler {
         /** */
-        private final ServiceContextImpl srvCtx;
+        private final Service svc;
 
         /** */
-        private final ServiceProcessorAdapter srvcProc;
+        private final ServiceContextImpl svcCtx;
 
         /** */
-        private LocalInvocationHandler(ServiceContextImpl srvc, ServiceProcessorAdapter srvcProc) {
-            this.srvCtx = srvc;
-            this.srvcProc = srvcProc;
+        private LocalInvocationHandler(Service svc, ServiceContextImpl srvc) {
+            this.svc = svc;
+            this.svcCtx = srvc;
         }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
             if (mtd.getDeclaringClass().equals(Service.class))
-                return mtd.invoke(srvCtx.service(), args);
+                return mtd.invoke(svc, args);
 
-            return callAndMeasureServiceMethod(srvcProc, srvCtx, null, mtd, args);
+            HistogramMetricImpl invokeMetric = svcCtx.invokeHistogramm(
+                new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes()),
+                () -> invocationsMetric(svcCtx.name(), mtd));
+
+            long time = invokeMetric == null ? 0 : System.nanoTime();
+
+            Object callResult;
+
+            // Support not-public invocations like of package level interfaces.
+            mtd.setAccessible(true);
+
+            try {
+                callResult = mtd.invoke(svc, args);
+            } catch (InvocationTargetException e){
+                throw e.getTargetException();
+            }
+
+            // The metric may be not activated.
+            if (invokeMetric != null)
+                invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
+
+            return callResult;
         }
     }
 }
