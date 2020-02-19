@@ -33,8 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-
 /**
  * Test covers parallel start and stop of caches.
  */
@@ -156,7 +154,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
 
         assertCaches(igniteEx2);
 
-        igniteEx.cluster().state(INACTIVE, true);
+        igniteEx.cluster().active(false);
 
         assertCachesAfterStop(igniteEx);
 

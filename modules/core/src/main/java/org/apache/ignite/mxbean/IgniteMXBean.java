@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
@@ -383,17 +382,8 @@ public interface IgniteMXBean {
     );
 
     /**
-     * Changes grid state to active or inactive.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
-     * @see ClusterState#INACTIVE
-     *
      * @param active Activate/DeActivate flag.
-     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
-     * @deprecated Use {@link #clusterState(String, boolean)} instead.
      */
-    @Deprecated
     @MXBeanDescription(
         "Execute activate or deactivate process."
     )
@@ -668,38 +658,14 @@ public interface IgniteMXBean {
 
     /**
      * Changes current cluster state.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
-     * @see ClusterState#INACTIVE
      *
      * @param state String representation of new cluster state.
-     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * See {@link ClusterState}
-     * @deprecated Use {@link #clusterState(String, boolean)} instead
      */
-    @Deprecated
     @MXBeanDescription("Changes current cluster state.")
-    @MXBeanParametersNames("state")
-    @MXBeanParametersDescriptions("New cluster state.")
-    public void clusterState(String state);
-
-    /**
-     * Changes current cluster state. Can skip checking safety of the operation.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
-     * @see ClusterState#INACTIVE
-     *
-     * @param state String representation of new cluster state.
-     * @param force If {@code True} then skips checking of operation safety.
-     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss and the force flag is not set.
-     * @see ClusterState
-     */
-    @MXBeanDescription("Changes current cluster state. Can skip checking if this operation is safe.")
-    @MXBeanParametersNames({"state", "force"})
-    @MXBeanParametersDescriptions({"New cluster state.", "If true then skips checking of operation safety."})
-    public void clusterState(String state, boolean force);
+    public void clusterState(
+        @MXBeanParameter(name = "state", description = "New cluster state.") String state
+    );
 
     /**
      * Gets last cluster state change operation.

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.impl;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -77,17 +78,16 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState, boolean force) throws GridClientException {
-        // Check compapability of new forced deactivation on all nodes.
-        UUID oldVerServerNode = checkFeatureSupportedByCluster(client, FORCED_CHANGE_OF_CLUSTER_STATE,
-            false, false);
+        boolean allNodesSupport = IgniteFeatures.allNodesSupports(client.compute().nodes(GridClientNode::connectable),
+            FORCED_CHANGE_OF_CLUSTER_STATE);
 
-        if (oldVerServerNode == null)
+        if (allNodesSupport)
             withReconnectHandling((con, nodeId) -> con.changeState(newState, force, nodeId)).get();
         else {
             if (force) {
                 throw new GridServerDoesNotSupportException("Unable to forcibly change state of cluster on \""
-                    + newState.name() + "\". Found a node not supporting forced version this command: "
-                    + oldVerServerNode + ". You can try without the flag 'force'.");
+                    + newState.name() + "\". Found a node not supporting forced version this comman. " +
+                    "You can try without the flag 'force'.");
             }
             else {
                 // Send old version of the command not supporting 'force'.

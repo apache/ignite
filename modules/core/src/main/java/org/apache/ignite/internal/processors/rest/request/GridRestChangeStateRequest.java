@@ -59,8 +59,14 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     }
 
     /** */
-    public void force(boolean force){ this.force = force; }
+    public void force(boolean force) {
+        this.force = force;
+    }
 
-    /** */
-    public boolean force() { return force; }
+    /**
+     * @return Whether state changing must not check safety of this operation.
+     */
+    public boolean force() {
+        return force;
+    }
 }

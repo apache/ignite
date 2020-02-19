@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientAbstr
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateForcedRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequestV2;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse;
@@ -390,7 +390,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         else if (msg instanceof GridClientClusterStateRequest) {
             GridClientClusterStateRequest req = (GridClientClusterStateRequest)msg;
 
-            boolean forced = msg instanceof GridClientClusterStateForcedRequest;
+            boolean force = !(msg instanceof GridClientClusterStateRequestV2)
+                || ((GridClientClusterStateRequestV2)msg).force();
 
             GridRestClusterStateRequest restChangeReq = new GridRestClusterStateRequest();
 
@@ -402,8 +403,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restChangeReq.state(req.state());
                 restChangeReq.command(CLUSTER_SET_STATE);
 
-                if (forced)
-                    restChangeReq.forced(((GridClientClusterStateForcedRequest)msg).forced());
+                restChangeReq.force(force);
             }
 
             restReq = restChangeReq;

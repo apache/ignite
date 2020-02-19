@@ -147,7 +147,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
                 assertEquals(k,  cache0.get(k));
         }
 
-        grid(0).cluster().state(INACTIVE, true);
+        grid(0).cluster().state(INACTIVE);
 
         checkInactive(GRID_CNT);
 

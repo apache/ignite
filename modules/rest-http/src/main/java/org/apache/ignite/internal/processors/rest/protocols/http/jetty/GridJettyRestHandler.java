@@ -221,7 +221,8 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return Boolean value from parameters map or {@code dfltVal} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    private static boolean boolValue(String key, Map<String, Object> params, boolean dfltVal) throws IgniteCheckedException {
+    private static boolean boolValue(String key, Map<String, Object> params, boolean dfltVal)
+        throws IgniteCheckedException {
         assert key != null;
 
         String val = (String)params.get(key);
@@ -830,7 +831,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                     restReq0.state(newState);
 
-                    restReq0.forced(boolValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+                    restReq0.force(boolValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
                 }
 
                 restReq = restReq0;

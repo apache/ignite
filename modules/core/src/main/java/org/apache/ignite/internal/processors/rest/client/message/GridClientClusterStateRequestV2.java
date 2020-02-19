@@ -27,7 +27,7 @@ import org.apache.ignite.cluster.ClusterState;
  * Introduced to support forced version of the change state command and keep backward compatibility
  * with nodes of old version that may occur in cluster at the rolling updates.
  */
-public class GridClientClusterStateForcedRequest extends GridClientClusterStateRequest {
+public class GridClientClusterStateRequestV2 extends GridClientClusterStateRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,24 +39,26 @@ public class GridClientClusterStateForcedRequest extends GridClientClusterStateR
      * @param force Forced change of cluster state.
      * @return Cluster state change request.
      */
-    public static GridClientClusterStateForcedRequest state(ClusterState state, boolean force) {
-        return new GridClientClusterStateForcedRequest(GridClientClusterStateRequest.state(state), force);
+    public static GridClientClusterStateRequestV2 state(ClusterState state, boolean force) {
+        return new GridClientClusterStateRequestV2(GridClientClusterStateRequest.state(state), force);
     }
 
     /** Default constructor for the exernalization. */
-    public GridClientClusterStateForcedRequest() {
+    public GridClientClusterStateRequestV2() {
         // No op.
     }
 
     /** Copying constructor. */
-    private GridClientClusterStateForcedRequest(GridClientClusterStateRequest clusterStateReq, boolean force) {
+    private GridClientClusterStateRequestV2(GridClientClusterStateRequest clusterStateReq, boolean force) {
         super(clusterStateReq);
 
         this.force = force;
     }
 
-    /** */
-    public boolean forced() {
+    /**
+     * @return Whether state changing must not check safety of this operation.
+     */
+    public boolean force() {
         return force;
     }
 

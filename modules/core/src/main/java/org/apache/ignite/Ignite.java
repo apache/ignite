@@ -671,7 +671,7 @@ public interface Ignite extends AutoCloseable {
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link IgniteCluster#state(ClusterState)}
+     * @deprecated Use {@link IgniteCluster#state(ClusterState, boolean)}
      * or {@link IgniteCluster#state(ClusterState, boolean)} instead.
      */
     @Deprecated

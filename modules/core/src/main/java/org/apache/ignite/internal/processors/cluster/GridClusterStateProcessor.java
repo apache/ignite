@@ -117,7 +117,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
-    /** Warning of unsafe deactivation. May be used with {@link #isDeactivationSafe()}. */
+    /** Warning of unsafe deactivation. */
     public static final String DATA_LOST_ON_DEACTIVATION_WARNING =
         "Cluster has caches configured without persistence. " +
             "During deactivation in-memory data and objects can be lost!";
@@ -629,7 +629,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
         else {
             if (isApplicable(msg, state)) {
-                if (msg.state() == INACTIVE && !msg.forced() && !isDeactivationSafe()) {
+                if (msg.state() == INACTIVE && !msg.force() && !isDeactivationSafe()) {
                     GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
                     if (stateFut != null) {
@@ -1162,7 +1162,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             System.currentTimeMillis()
         );
 
-        msg.forced(force);
+        msg.force(force);
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 

@@ -45,7 +45,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     /** Cluster name. */
     private String clusterName;
 
-    /** Force cluster deactivation even it might have in-mem caches. */
+    /** Force cluster deactivation even it might have in-memory caches. */
     private boolean force;
 
     /** {@inheritDoc} */
@@ -82,7 +82,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
             return null;
         }
         catch (Throwable e) {
-            log.info("Failed to change cluster state to " + state);
+            log.info("Failed to change cluster state to " +  state);
 
             throw e;
         }
