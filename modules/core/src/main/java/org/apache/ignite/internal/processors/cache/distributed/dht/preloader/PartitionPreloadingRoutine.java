@@ -173,7 +173,9 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * Initialize and start partitions preloading.
+     * Start partitions preloading.
+     *
+     * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> startPartitionsPreloading() {
         requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>(remaining.size()));

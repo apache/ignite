@@ -148,7 +148,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         if (!locJoinBaselineChange) {
             if (log.isDebugEnabled())
-                log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
+                log.debug("Partition file preloading skipped [grp=" + grp.cacheOrGroupName() + "]");
 
             if (!(hasIdleParttition = hasIdleParttition(grp)))
                 return;
@@ -183,7 +183,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param rebalanceId Current rebalance id.
      * @param exchFut Exchange future.
      * @param assignments A map of cache assignments grouped by grpId.
-     * @return Group identifiers with futures that will be completed when partitions are preloaded.
+     * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
         long rebalanceId,
@@ -206,19 +206,21 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             return Collections.emptyMap();
         }
 
-        PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
+        PartitionPreloadingRoutine preloadRoutine = partPreloadingRoutine;
 
         lock.lock();
 
         try {
-            if (!rebRoutine.isDone())
-                rebRoutine.cancel();
+            assert preloadRoutine.isDone();
+
+            if (isStopping())
+                return Collections.emptyMap();
 
             // Start new rebalance session.
-            partPreloadingRoutine = rebRoutine = new PartitionPreloadingRoutine(orderedAssigns,
+            partPreloadingRoutine = preloadRoutine = new PartitionPreloadingRoutine(orderedAssigns,
                 exchFut.topologyVersion(), cctx, exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
-            return rebRoutine.startPartitionsPreloading();
+            return preloadRoutine.startPartitionsPreloading();
         }
         finally {
             lock.unlock();
@@ -294,7 +296,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         boolean required = false;
 
-        // File rebalancing should start only if all partitions are in inactive mode.
+        // Partition file preloading should start only if all partitions are in inactive state.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (part.active())
                 return false;
