@@ -313,7 +313,8 @@ public abstract class GridClientConnection {
      * Change grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * @see ClusterState#INACTIVE
      *
      * @param active Active.
      * @param force If {@code True} then skips checking of operation safety.
@@ -343,7 +344,8 @@ public abstract class GridClientConnection {
      * Changes grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
+     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * @see ClusterState#INACTIVE
      *
      * @param state New cluster state.
      * @param force If {@code True} then skips checking of operation safety.
