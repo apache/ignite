@@ -18,9 +18,11 @@
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
@@ -109,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Tests the cache metrics enable/disable 
+        /// Tests the cache metrics enable/disable for cluster group
         /// </summary>
         [Test]
         public void TestClusterGroupEnableStatistics()
@@ -118,6 +120,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestEnableStatistics(
                 cacheName,
                 (cache, b) => cache.Ignite.GetCluster().EnableStatistics(new[] {cacheName}, b));
+
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterEnableStatsValidName"));
+            var cluster = ignite.GetCluster();
+
+            Assert.DoesNotThrow(() => cluster.EnableStatistics(Enumerable.Empty<string>(), true));
+
+            // Nonexistent cache name
+            Assert.Throws<IgniteException>(
+                () => cluster.EnableStatistics(new[] {"clusterEnableStatsInValidName"}, true));
         }
 
         /// <summary>
