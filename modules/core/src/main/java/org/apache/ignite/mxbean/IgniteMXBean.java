@@ -396,7 +396,6 @@ public interface IgniteMXBean {
      * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param active Activate/DeActivate flag.
-     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * @deprecated Use {@link #clusterState(String, boolean)} instead.
      */
     @Deprecated
@@ -711,7 +710,6 @@ public interface IgniteMXBean {
      * Be aware that cluster deactivation leads to loss of in-memory data. @see ClusterState#INACTIVE.
      *
      * @param state String representation of new cluster state.
-     * @throws ChangeOfClusterStateIsNotSafeException if state stange leads to data loss.
      * See {@link ClusterState}
      * @deprecated Use {@link #clusterState(String, boolean)} instead
      */

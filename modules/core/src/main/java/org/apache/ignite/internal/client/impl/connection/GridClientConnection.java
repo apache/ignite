@@ -324,9 +324,8 @@ public abstract class GridClientConnection {
             throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Changes grid global state. Fails if the operation is not safe.
-     * Uses old version of change state request that guaranties comaptibility with old-version-servers.
-     * But cannot pass the force flag like {@link #changeState(ClusterState, boolean, UUID)}.
+     * Changes grid global state. Uses old version of change state request that guaranties comaptibility with
+     * old-version-servers. But cannot pass the force flag like {@link #changeState(ClusterState, boolean, UUID)}.
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.

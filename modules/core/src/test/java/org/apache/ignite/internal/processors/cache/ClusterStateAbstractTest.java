@@ -73,14 +73,14 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        grid(0).cluster().state(INACTIVE, true);
+        grid(0).cluster().state(INACTIVE);
 
         checkInactive(nodesCount());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cluster().state(INACTIVE, true);
+        grid(0).cluster().state(INACTIVE);
 
         checkInactive(nodesCount());
 
@@ -130,7 +130,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
     protected abstract CacheConfiguration cacheConfiguration(String cacheName);
 
     /** */
-    protected abstract void changeState(ClusterState state, boolean force);
+    protected abstract void changeState(ClusterState state);
 
     /**
      * Changes cluster state from {@code initialState} to {@code targetState}.
@@ -163,7 +163,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
 
         checkClusterState(nodesCount(), initialState);
 
-        changeState(targetState, true);
+        changeState(targetState);
 
         checkClusterState(nodesCount(), targetState);
 

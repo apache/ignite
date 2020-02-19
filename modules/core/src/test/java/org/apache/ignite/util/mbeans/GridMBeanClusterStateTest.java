@@ -33,25 +33,6 @@ public class GridMBeanClusterStateTest extends GridCommonAbstractTest {
 
         assertFalse(ignite.context().state().isDeactivationSafe());
 
-        // Manual deactivation must not fail and warn of possible data loss.
-        assertThrows(log, () -> {
-            mxBean.active(false);
-
-            return null;
-        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-        assertThrows(log, () -> {
-            ignite.active(false);
-
-            return null;
-        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-        assertThrows(log, () -> {
-            mxBean.clusterState(INACTIVE.name());
-
-            return null;
-        }, ChangeOfClusterStateIsNotSafeException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
         assertThrows(log, () -> {
             mxBean.clusterState(INACTIVE.name(), false);
 

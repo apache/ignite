@@ -388,7 +388,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         else if (msg instanceof GridClientClusterStateRequest) {
             GridClientClusterStateRequest req = (GridClientClusterStateRequest)msg;
 
-            boolean forced = msg instanceof GridClientClusterStateForcedRequest;
+            boolean forced = !(msg instanceof GridClientClusterStateForcedRequest)
+                || ((GridClientClusterStateForcedRequest)msg).forced();
 
             GridRestClusterStateRequest restChangeReq = new GridRestClusterStateRequest();
 
@@ -400,8 +401,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 restChangeReq.state(req.state());
                 restChangeReq.command(CLUSTER_SET_STATE);
 
-                if (forced)
-                    restChangeReq.forced(((GridClientClusterStateForcedRequest)msg).forced());
+                restChangeReq.forced(forced);
             }
 
             restReq = restChangeReq;

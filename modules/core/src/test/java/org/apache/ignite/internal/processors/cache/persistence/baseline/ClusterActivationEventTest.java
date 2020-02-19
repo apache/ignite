@@ -193,7 +193,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
     private void clusterChangeState(ClusterState initState, ClusterState state, int evtType) throws Exception {
         assertNotSame(initState, state);
 
-        checkClusterEvents(cluster -> cluster.state(state, true), lsnr, initState, evtType, 1);
+        checkClusterEvents(cluster -> cluster.state(state), lsnr, initState, evtType, 1);
     }
 
     /**
@@ -208,7 +208,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
     private void clusterChangeStateWithDelay(ClusterState initState, ClusterState state, int evtType) throws Exception {
         assertNotSame(initState, state);
 
-        checkClusterEvents(cluster -> cluster.state(state, true), delayLsnr, initState, evtType, 1);
+        checkClusterEvents(cluster -> cluster.state(state), delayLsnr, initState, evtType, 1);
     }
 
     /**
@@ -225,8 +225,8 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
 
         ClusterActivationTestTask task = new ClusterActivationTestTask() {
             @Override public void execute(IgniteCluster cluster) {
-                cluster.state(state, true);
-                cluster.state(state, true);
+                cluster.state(state);
+                cluster.state(state);
             }
         };
 
@@ -249,7 +249,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
         IgniteEx crd = grid(0);
 
         if (crd.cluster().state() != initState)
-            crd.cluster().state(initState, true);
+            crd.cluster().state(initState);
 
         for (Ignite ignite : G.allGrids())
             assertEquals(ignite.name(), initState, ignite.cluster().state());
