@@ -30,13 +30,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationResult;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Abstract test with utility methods for interruption testing.
  */
-@RunWith(Parameterized.class)
 public abstract class PartitionReconciliationInterruptionTest extends PartitionReconciliationAbstractTest {
     /** Nodes. */
     protected static final int NODES_CNT = 4;
@@ -45,11 +42,9 @@ public abstract class PartitionReconciliationInterruptionTest extends PartitionR
     protected static final int BROKEN_KEYS_CNT = 500;
 
     /** Cache atomicity mode. */
-    @Parameterized.Parameter(0)
     public CacheAtomicityMode cacheAtomicityMode;
 
     /** Cache atomicity mode. */
-    @Parameterized.Parameter(1)
     public boolean persistence;
 
     /** Crd server node. */
@@ -67,7 +62,6 @@ public abstract class PartitionReconciliationInterruptionTest extends PartitionR
     /**
      *
      */
-    @Parameterized.Parameters(name = "atomicity = {0}, persistence = {1}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 

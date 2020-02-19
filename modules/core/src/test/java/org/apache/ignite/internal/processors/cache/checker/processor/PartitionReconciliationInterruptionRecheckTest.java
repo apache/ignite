@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -41,16 +42,34 @@ import static org.apache.ignite.internal.processors.cache.checker.processor.Reco
  * Tests different scenario of interruption of recheck stage.
  */
 public class PartitionReconciliationInterruptionRecheckTest extends PartitionReconciliationInterruptionTest {
+    /** First recheck finished. */
+    private static volatile CountDownLatch firstRecheckFinished;
+
+    /** Wait in task. */
+    private static volatile CountDownLatch waitInTask;
+
+    /** Wait on processing before action. */
+    private static volatile CountDownLatch waitOnProcessingBeforeAction;
+
     /**
      * Stop node during check.
      */
     @Test
     public void testStopNodeDuringCheck() throws Exception {
-        interruptionDuringCheck(() -> stopGrid(2), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-            assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
-        }, false);
+            beforeTest();
+
+            interruptionDuringCheck(() -> stopGrid(2), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -58,11 +77,20 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testStartNewNodeDuringCheck() throws Exception {
-        interruptionDuringCheck(() -> startGrid(5), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-            assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
-        }, false);
+            beforeTest();
+
+            interruptionDuringCheck(() -> startGrid(5), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -70,13 +98,22 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testStartNewClientNodeDuringCheck() throws Exception {
-        batchSize = BROKEN_KEYS_CNT / 3;
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-        interruptionDuringCheck(() -> startClientGrid(5), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+            beforeTest();
 
-            assertTrue(res.errors().isEmpty());
-        }, false);
+            batchSize = BROKEN_KEYS_CNT / 3;
+
+            interruptionDuringCheck(() -> startClientGrid(5), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertTrue(res.errors().isEmpty());
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -84,15 +121,24 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testStopClientNodeDuringCheck() throws Exception {
-        batchSize = BROKEN_KEYS_CNT / 3;
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-        startClientGrid(5);
+            beforeTest();
 
-        interruptionDuringCheck(() -> stopGrid(5), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+            batchSize = BROKEN_KEYS_CNT / 3;
 
-            assertTrue(res.errors().isEmpty());
-        }, false);
+            startClientGrid(5);
+
+            interruptionDuringCheck(() -> stopGrid(5), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertTrue(res.errors().isEmpty());
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -100,13 +146,22 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testStartNewThinClientNodeDuringCheck() throws Exception {
-        batchSize = BROKEN_KEYS_CNT / 3;
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-        interruptionDuringCheck(() -> Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800")), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+            beforeTest();
 
-            assertTrue(res.errors().isEmpty());
-        }, false);
+            batchSize = BROKEN_KEYS_CNT / 3;
+
+            interruptionDuringCheck(() -> Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800")), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertTrue(res.errors().isEmpty());
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -114,15 +169,24 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testStopThinClientNodeDuringCheck() throws Exception {
-        batchSize = BROKEN_KEYS_CNT / 3;
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-        IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"));
+            beforeTest();
 
-        interruptionDuringCheck(client::close, res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+            batchSize = BROKEN_KEYS_CNT / 3;
 
-            assertTrue(res.errors().isEmpty());
-        }, false);
+            IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"));
+
+            interruptionDuringCheck(client::close, res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertTrue(res.errors().isEmpty());
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -130,11 +194,20 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testCreateCacheDuringCheck() throws Exception {
-        interruptionDuringCheck(() -> client.createCache("SOME_CACHE"), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-            assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
-        }, false);
+            beforeTest();
+
+            interruptionDuringCheck(() -> client.createCache("SOME_CACHE"), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -142,12 +215,21 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testRemoveNotProcessedCacheDuringCheck() throws Exception {
-        IgniteCache<Object, Object> notProcessedCache = client.createCache("SOME_CACHE");
-        interruptionDuringCheck(notProcessedCache::destroy, res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-            assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
-        }, false);
+            beforeTest();
+
+            IgniteCache<Object, Object> notProcessedCache = client.createCache("SOME_CACHE");
+            interruptionDuringCheck(notProcessedCache::destroy, res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertErrorMsgLeastOne(res, TOPOLOGY_CHANGE_MSG);
+            }, false);
+
+            afterTest();
+        }
     }
 
     /**
@@ -155,11 +237,20 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
      */
     @Test
     public void testRemoveProcessedCacheDuringCheck() throws Exception {
-        interruptionDuringCheck(() -> client.cache(DEFAULT_CACHE_NAME).destroy(), res -> {
-            assertFalse(res.partitionReconciliationResult().isEmpty());
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            persistence = (boolean)parameter[1];
 
-            assertFalse(res.errors().isEmpty());
-        }, true);
+            beforeTest();
+
+            interruptionDuringCheck(() -> client.cache(DEFAULT_CACHE_NAME).destroy(), res -> {
+                assertFalse(res.partitionReconciliationResult().isEmpty());
+
+                assertFalse(res.errors().isEmpty());
+            }, true);
+
+            afterTest();
+        }
     }
 
     /**
@@ -168,9 +259,9 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
     private <E extends Throwable> void interruptionDuringCheck(ThrowUp<E> act,
         Consumer<ReconciliationResult> assertions,
         boolean waitOnProcessing) throws E, InterruptedException, IgniteInterruptedCheckedException {
-        CountDownLatch firstRecheckFinished = new CountDownLatch(1);
-        CountDownLatch waitInTask = new CountDownLatch(1);
-        CountDownLatch waitOnProcessingBeforeAction = new CountDownLatch(1);
+        firstRecheckFinished = new CountDownLatch(1);
+        waitInTask = new CountDownLatch(1);
+        waitOnProcessingBeforeAction = new CountDownLatch(1);
 
         ReconciliationEventListenerFactory.defaultListenerInstance((stage, workload) -> {
             if (firstRecheckFinished.getCount() == 0) {
@@ -231,5 +322,10 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
         assertTrue(GridTestUtils.waitForCondition(() -> res.get() != null, 100_000));
 
         assertions.accept(res.get());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 3 * 60 * 1000;
     }
 }

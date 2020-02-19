@@ -45,15 +45,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ConsoleTestLogger;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.LATEST;
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.MAJORITY;
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.PRIMARY;
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.REMOVE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -86,17 +82,14 @@ public class RepairRequestTaskTest extends TestCase {
     private static final String KEY = "some_key";
 
     /** Repair algorithm. */
-    @Parameterized.Parameter(0)
     public RepairAlgorithm repairAlgorithm;
 
     /** Repair algorithm. */
-    @Parameterized.Parameter(1)
     public boolean fixed;
 
     /**
      *
      */
-    @Parameterized.Parameters(name = "repairAlgorithm = {0}, fixed={1}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
@@ -110,71 +103,28 @@ public class RepairRequestTaskTest extends TestCase {
         return params;
     }
 
-
-
-
     /**
      * Test can't resolve conflict and should use user algorithm.
      */
     @Test
     public void testNotFullSetOfOldKeysUsesUserRepairAlg() throws IllegalAccessException {
-        Map<PartitionKeyVersion, Map<UUID, VersionedValue>> data = new HashMap<>();
-        PartitionKeyVersion key = new PartitionKeyVersion(null, new KeyCacheObjectImpl(), null);
-        Map<UUID, VersionedValue> keyVers = new HashMap<>();
-        keyVers.put(NODE_1, versionedValue("1", 1));
-        keyVers.put(NODE_2, versionedValue("2", 2));
-        keyVers.put(NODE_3, versionedValue("2", 2));
-        keyVers.put(NODE_4, versionedValue("4", 4));
-        data.put(key, keyVers);
+        for (Object[] parameter : parameters()) {
+            repairAlgorithm = (RepairAlgorithm)parameter[0];
+            fixed = (boolean)parameter[1];
 
-        IgniteEx igniteMock = igniteMock(true);
+            Map<PartitionKeyVersion, Map<UUID, VersionedValue>> data = new HashMap<>();
+            PartitionKeyVersion key = new PartitionKeyVersion(null, new KeyCacheObjectImpl(), null);
+            Map<UUID, VersionedValue> keyVers = new HashMap<>();
+            keyVers.put(NODE_1, versionedValue("1", 1));
+            keyVers.put(NODE_2, versionedValue("2", 2));
+            keyVers.put(NODE_3, versionedValue("2", 2));
+            keyVers.put(NODE_4, versionedValue("4", 4));
+            data.put(key, keyVers);
 
-        ExecutionResult<RepairResult> res = injectIgnite(repairJob(data, 5, 1), igniteMock).execute();
+            IgniteEx igniteMock = igniteMock(true);
 
-        assertTrue(res.getResult().keysToRepair().isEmpty());
-        assertEquals(1, res.getResult().repairedKeys().size());
+            ExecutionResult<RepairResult> res = injectIgnite(repairJob(data, 5, 1), igniteMock).execute();
 
-        Map.Entry<PartitionKeyVersion, RepairMeta> entry = res.getResult()
-            .repairedKeys().entrySet().iterator().next();
-        assertEquals(keyVers, entry.getValue().getPreviousValue());
-
-        RepairMeta repairMeta = entry.getValue();
-        assertTrue(repairMeta.fixed());
-        assertEquals(repairAlgorithm, repairMeta.repairAlg());
-
-        switch (repairAlgorithm) {
-            case LATEST:
-                assertCacheObjectEquals(keyVers.get(NODE_4).value(), repairMeta.value());
-                break;
-            case PRIMARY:
-                assertCacheObjectEquals(keyVers.get(NODE_1).value(), repairMeta.value());
-                break;
-            case MAJORITY:
-                assertCacheObjectEquals(keyVers.get(NODE_2).value(), repairMeta.value());
-                break;
-            case REMOVE:
-                assertCacheObjectEquals(null, repairMeta.value());
-                break;
-        }
-    }
-
-    /**
-     * This reparation works with GRID_MAX_VERSION and ignores th user algorithm.
-     */
-    @Test
-    public void testFullOwnerSetNotMaxAttempt() throws IllegalAccessException {
-        Map<PartitionKeyVersion, Map<UUID, VersionedValue>> data = new HashMap<>();
-        PartitionKeyVersion key = new PartitionKeyVersion(null, new KeyCacheObjectImpl(), null);
-        Map<UUID, VersionedValue> keyVers = new HashMap<>();
-        keyVers.put(NODE_1, versionedValue("1", 1));
-        keyVers.put(NODE_2, versionedValue("2", 2));
-        data.put(key, keyVers);
-
-        IgniteEx igniteMock = igniteMock(fixed);
-
-        ExecutionResult<RepairResult> res = injectIgnite(repairJob(data, 2, 1), igniteMock).execute();
-
-        if (fixed) {
             assertTrue(res.getResult().keysToRepair().isEmpty());
             assertEquals(1, res.getResult().repairedKeys().size());
 
@@ -184,16 +134,66 @@ public class RepairRequestTaskTest extends TestCase {
 
             RepairMeta repairMeta = entry.getValue();
             assertTrue(repairMeta.fixed());
-            assertEquals(LATEST, repairMeta.repairAlg());
+            assertEquals(repairAlgorithm, repairMeta.repairAlg());
+
+            switch (repairAlgorithm) {
+                case LATEST:
+                    assertCacheObjectEquals(keyVers.get(NODE_4).value(), repairMeta.value());
+                    break;
+                case PRIMARY:
+                    assertCacheObjectEquals(keyVers.get(NODE_1).value(), repairMeta.value());
+                    break;
+                case MAJORITY:
+                    assertCacheObjectEquals(keyVers.get(NODE_2).value(), repairMeta.value());
+                    break;
+                case REMOVE:
+                    assertCacheObjectEquals(null, repairMeta.value());
+                    break;
+            }
         }
-        else {
-            assertTrue(res.getResult().repairedKeys().isEmpty());
-            assertEquals(1, res.getResult().keysToRepair().size());
+    }
 
-            Map.Entry<PartitionKeyVersion, Map<UUID, VersionedValue>> entry = res.getResult()
-                .keysToRepair().entrySet().iterator().next();
+    /**
+     * This reparation works with GRID_MAX_VERSION and ignores th user algorithm.
+     */
+    @Test
+    public void testFullOwnerSetNotMaxAttempt() throws IllegalAccessException {
+        for (Object[] parameter : parameters()) {
+            repairAlgorithm = (RepairAlgorithm)parameter[0];
+            fixed = (boolean)parameter[1];
 
-            assertEquals(keyVers, entry.getValue());
+            Map<PartitionKeyVersion, Map<UUID, VersionedValue>> data = new HashMap<>();
+            PartitionKeyVersion key = new PartitionKeyVersion(null, new KeyCacheObjectImpl(), null);
+            Map<UUID, VersionedValue> keyVers = new HashMap<>();
+            keyVers.put(NODE_1, versionedValue("1", 1));
+            keyVers.put(NODE_2, versionedValue("2", 2));
+            data.put(key, keyVers);
+
+            IgniteEx igniteMock = igniteMock(fixed);
+
+            ExecutionResult<RepairResult> res = injectIgnite(repairJob(data, 2, 1), igniteMock).execute();
+
+            if (fixed) {
+                assertTrue(res.getResult().keysToRepair().isEmpty());
+                assertEquals(1, res.getResult().repairedKeys().size());
+
+                Map.Entry<PartitionKeyVersion, RepairMeta> entry = res.getResult()
+                    .repairedKeys().entrySet().iterator().next();
+                assertEquals(keyVers, entry.getValue().getPreviousValue());
+
+                RepairMeta repairMeta = entry.getValue();
+                assertTrue(repairMeta.fixed());
+                assertEquals(LATEST, repairMeta.repairAlg());
+            }
+            else {
+                assertTrue(res.getResult().repairedKeys().isEmpty());
+                assertEquals(1, res.getResult().keysToRepair().size());
+
+                Map.Entry<PartitionKeyVersion, Map<UUID, VersionedValue>> entry = res.getResult()
+                    .keysToRepair().entrySet().iterator().next();
+
+                assertEquals(keyVers, entry.getValue());
+            }
         }
     }
 
@@ -202,44 +202,48 @@ public class RepairRequestTaskTest extends TestCase {
      */
     @Test
     public void testFullOwnerSetMaxAttempt() throws IllegalAccessException {
-        Map<PartitionKeyVersion, Map<UUID, VersionedValue>> data = new HashMap<>();
-        PartitionKeyVersion key = new PartitionKeyVersion(null, new KeyCacheObjectImpl(), null);
-        Map<UUID, VersionedValue> keyVers = new HashMap<>();
-        keyVers.put(NODE_1, versionedValue("1", 1));
-        keyVers.put(NODE_2, versionedValue("2", 2));
-        keyVers.put(NODE_3, versionedValue("2", 2));
-        keyVers.put(NODE_4, versionedValue("4", 4));
-        data.put(key, keyVers);
+        for (Object[] parameter : parameters()) {
+            repairAlgorithm = (RepairAlgorithm)parameter[0];
+            fixed = (boolean)parameter[1];
+            Map<PartitionKeyVersion, Map<UUID, VersionedValue>> data = new HashMap<>();
+            PartitionKeyVersion key = new PartitionKeyVersion(null, new KeyCacheObjectImpl(), null);
+            Map<UUID, VersionedValue> keyVers = new HashMap<>();
+            keyVers.put(NODE_1, versionedValue("1", 1));
+            keyVers.put(NODE_2, versionedValue("2", 2));
+            keyVers.put(NODE_3, versionedValue("2", 2));
+            keyVers.put(NODE_4, versionedValue("4", 4));
+            data.put(key, keyVers);
 
-        IgniteEx igniteMock = igniteMock(true);
+            IgniteEx igniteMock = igniteMock(true);
 
-        final int lastAttempt = 3;
-        ExecutionResult<RepairResult> res = injectIgnite(repairJob(data, 4, lastAttempt), igniteMock).execute();
+            final int lastAttempt = 3;
+            ExecutionResult<RepairResult> res = injectIgnite(repairJob(data, 4, lastAttempt), igniteMock).execute();
 
-        assertTrue(res.getResult().keysToRepair().isEmpty());
-        assertEquals(1, res.getResult().repairedKeys().size());
+            assertTrue(res.getResult().keysToRepair().isEmpty());
+            assertEquals(1, res.getResult().repairedKeys().size());
 
-        Map.Entry<PartitionKeyVersion, RepairMeta> entry = res.getResult()
-            .repairedKeys().entrySet().iterator().next();
-        assertEquals(keyVers, entry.getValue().getPreviousValue());
+            Map.Entry<PartitionKeyVersion, RepairMeta> entry = res.getResult()
+                .repairedKeys().entrySet().iterator().next();
+            assertEquals(keyVers, entry.getValue().getPreviousValue());
 
-        RepairMeta repairMeta = entry.getValue();
-        assertTrue(repairMeta.fixed());
-        assertEquals(repairAlgorithm, repairMeta.repairAlg());
+            RepairMeta repairMeta = entry.getValue();
+            assertTrue(repairMeta.fixed());
+            assertEquals(repairAlgorithm, repairMeta.repairAlg());
 
-        switch (repairAlgorithm) {
-            case LATEST:
-                assertCacheObjectEquals(keyVers.get(NODE_4).value(), repairMeta.value());
-                break;
-            case PRIMARY:
-                assertCacheObjectEquals(keyVers.get(NODE_1).value(), repairMeta.value());
-                break;
-            case MAJORITY:
-                assertCacheObjectEquals(keyVers.get(NODE_2).value(), repairMeta.value());
-                break;
-            case REMOVE:
-                assertCacheObjectEquals(null, repairMeta.value());
-                break;
+            switch (repairAlgorithm) {
+                case LATEST:
+                    assertCacheObjectEquals(keyVers.get(NODE_4).value(), repairMeta.value());
+                    break;
+                case PRIMARY:
+                    assertCacheObjectEquals(keyVers.get(NODE_1).value(), repairMeta.value());
+                    break;
+                case MAJORITY:
+                    assertCacheObjectEquals(keyVers.get(NODE_2).value(), repairMeta.value());
+                    break;
+                case REMOVE:
+                    assertCacheObjectEquals(null, repairMeta.value());
+                    break;
+            }
         }
     }
 

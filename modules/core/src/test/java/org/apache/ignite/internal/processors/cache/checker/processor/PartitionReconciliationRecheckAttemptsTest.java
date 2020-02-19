@@ -47,6 +47,12 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
     /** Nodes. */
     protected static final int NODES_CNT = 4;
 
+    /** Wait to start first last recheck. */
+    protected static  volatile CountDownLatch waitToStartFirstLastRecheck;
+
+    /** Wait key reporation. */
+    protected static volatile CountDownLatch waitKeyReporation;
+
     /** Crd server node. */
     protected IgniteEx ig;
 
@@ -112,8 +118,8 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
     public void testBrokenKeysWillFixedDuringRecheck() throws InterruptedException, IgniteInterruptedCheckedException {
         final ConcurrentMap<UUID, AtomicInteger> recheckAttempts = new ConcurrentHashMap<>();
 
-        CountDownLatch waitToStartFirstLastRecheck = new CountDownLatch(1);
-        CountDownLatch waitKeyReporation = new CountDownLatch(1);
+        waitToStartFirstLastRecheck = new CountDownLatch(1);
+        waitKeyReporation = new CountDownLatch(1);
 
         ReconciliationEventListenerFactory.defaultListenerInstance((stage, workload) -> {
             if (stage.equals(STARTING) && workload instanceof RecheckRequest) {

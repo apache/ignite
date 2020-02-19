@@ -21,11 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
-import org.junit.Test;
-import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.MAJORITY;
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.LATEST;
+import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.MAJORITY;
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.PRIMARY;
 import static org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm.REMOVE;
 
@@ -36,9 +34,7 @@ public class PartitionReconciliationFixStressTest extends PartitionReconciliatio
     /**
      * Makes different variations of input params.
      */
-    @Parameterized.Parameters(
-        name = "atomicity = {0}, partitions = {1}, fixModeEnabled = {2}, repairAlgorithm = {3}, parallelism = {4}")
-    public static List<Object[]> parameters() {
+    @Override public List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
         CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
@@ -64,10 +60,13 @@ public class PartitionReconciliationFixStressTest extends PartitionReconciliatio
      *
      * @throws Exception If failed.
      */
-     @Test
-     @Override public void testReconciliationOfColdKeysUnderLoad() throws Exception {
-        super.testReconciliationOfColdKeysUnderLoad();
+    @Override public void testReconciliationOfColdKeysUnderLoad() throws Exception {
+        super.reconciliationOfColdKeysUnderLoad(() -> assertFalse(idleVerify(ig, DEFAULT_CACHE_NAME).hasConflicts()));
 
-        assertFalse(idleVerify(ig, DEFAULT_CACHE_NAME).hasConflicts());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
     }
 }

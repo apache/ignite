@@ -37,14 +37,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationResult;
 import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Tests the utility under loading.
  */
-@RunWith(Parameterized.class)
 public class PartitionReconciliationStressTest extends PartitionReconciliationAbstractTest {
     /** Nodes. */
     protected static final int NODES_CNT = 4;
@@ -56,23 +52,18 @@ public class PartitionReconciliationStressTest extends PartitionReconciliationAb
     protected static final int BROKEN_KEYS_CNT = 500;
 
     /** Cache atomicity mode. */
-    @Parameterized.Parameter(0)
     public CacheAtomicityMode cacheAtomicityMode;
 
     /** Parts. */
-    @Parameterized.Parameter(1)
     public int parts;
 
     /** Fix mode. */
-    @Parameterized.Parameter(2)
     public boolean fixMode;
 
     /** Repair algorithm. */
-    @Parameterized.Parameter(3)
     public RepairAlgorithm repairAlgorithm;
 
     /** Parallelism. */
-    @Parameterized.Parameter(4)
     public int parallelism;
 
     /** Crd server node. */
@@ -106,7 +97,7 @@ public class PartitionReconciliationStressTest extends PartitionReconciliationAb
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    protected void beforeTest0() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -119,7 +110,7 @@ public class PartitionReconciliationStressTest extends PartitionReconciliationAb
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    protected void afterTest0() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -128,9 +119,7 @@ public class PartitionReconciliationStressTest extends PartitionReconciliationAb
     /**
      * Makes different variations of input params.
      */
-    @Parameterized.Parameters(
-        name = "atomicity = {0}, partitions = {1}, fixModeEnabled = {2}, repairAlgorithm = {3}, parallelism = {4}")
-    public static List<Object[]> parameters() {
+    public List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
         CacheAtomicityMode[] atomicityModes = new CacheAtomicityMode[] {
@@ -154,70 +143,91 @@ public class PartitionReconciliationStressTest extends PartitionReconciliationAb
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testReconciliationOfColdKeysUnderLoad() throws Exception {
-        IgniteCache<Integer, String> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        reconciliationOfColdKeysUnderLoad(() -> {
+        });
+    }
 
-        Set<Integer> correctKeys = new HashSet<>();
+    /**
+     *
+     */
+    public void reconciliationOfColdKeysUnderLoad(Runnable additionalCheck) throws Exception {
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            parts = (int)parameter[1];
+            fixMode = (boolean)parameter[2];
+            repairAlgorithm = (RepairAlgorithm)parameter[3];
+            parallelism = (int)parameter[4];
 
-        for (int i = 0; i < KEYS_CNT; i++) {
-            clientCache.put(i, String.valueOf(i));
-            correctKeys.add(i);
-        }
+            beforeTest0();
 
-        log.info(">>>> Initial data loading finished");
+            IgniteCache<Integer, String> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
-        int firstBrokenKey = KEYS_CNT / 2;
+            Set<Integer> correctKeys = new HashSet<>();
 
-        GridCacheContext[] nodeCacheCtxs = new GridCacheContext[NODES_CNT];
-
-        for (int i = 0; i < NODES_CNT; i++)
-            nodeCacheCtxs[i] = grid(i).cachex(DEFAULT_CACHE_NAME).context();
-
-        Set<Integer> corruptedColdKeys = new HashSet<>();
-        Set<Integer> corruptedHotKeys = new HashSet<>();
-
-        for (int i = firstBrokenKey; i < firstBrokenKey + BROKEN_KEYS_CNT; i++) {
-            if (isHotKey(i))
-                corruptedHotKeys.add(i);
-            else
-                corruptedColdKeys.add(i);
-
-            correctKeys.remove(i);
-
-            if (i % 3 == 0)
-                simulateMissingEntryCorruption(nodeCacheCtxs[i % NODES_CNT], i);
-            else
-                simulateOutdatedVersionCorruption(nodeCacheCtxs[i % NODES_CNT], i);
-        }
-
-        log.info(">>>> Simulating data corruption finished");
-
-        AtomicBoolean stopRandomLoad = new AtomicBoolean(false);
-
-        IgniteInternalFuture<Long> randLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-            while (!stopRandomLoad.get()) {
-                int i = (KEYS_CNT / 2) + ThreadLocalRandom.current().nextInt(BROKEN_KEYS_CNT);
-
-                if (isHotKey(i))
-                    clientCache.put(i, String.valueOf(2 * i));
+            for (int i = 0; i < KEYS_CNT; i++) {
+                clientCache.put(i, String.valueOf(i));
+                correctKeys.add(i);
             }
-        }, 4, "rand-loader");
 
-        ReconciliationResult res = partitionReconciliation(ig, fixMode, repairAlgorithm, parallelism, DEFAULT_CACHE_NAME);
+            log.info(">>>> Initial data loading finished");
 
-        log.info(">>>> Partition reconciliation finished");
+            int firstBrokenKey = KEYS_CNT / 2;
 
-        stopRandomLoad.set(true);
+            GridCacheContext[] nodeCacheCtxs = new GridCacheContext[NODES_CNT];
 
-        randLoadFut.get();
+            for (int i = 0; i < NODES_CNT; i++)
+                nodeCacheCtxs[i] = grid(i).cachex(DEFAULT_CACHE_NAME).context();
 
-        assertResultContainsConflictKeys(res, DEFAULT_CACHE_NAME, corruptedColdKeys);
+            Set<Integer> corruptedColdKeys = new HashSet<>();
+            Set<Integer> corruptedHotKeys = new HashSet<>();
 
-        Set<Integer> conflictKeys = conflictKeys(res, DEFAULT_CACHE_NAME);
+            for (int i = firstBrokenKey; i < firstBrokenKey + BROKEN_KEYS_CNT; i++) {
+                if (isHotKey(i))
+                    corruptedHotKeys.add(i);
+                else
+                    corruptedColdKeys.add(i);
 
-        for (Integer correctKey : correctKeys)
-            assertFalse("Correct key detected as broken: " + correctKey, conflictKeys.contains(correctKey));
+                correctKeys.remove(i);
+
+                if (i % 3 == 0)
+                    simulateMissingEntryCorruption(nodeCacheCtxs[i % NODES_CNT], i);
+                else
+                    simulateOutdatedVersionCorruption(nodeCacheCtxs[i % NODES_CNT], i);
+            }
+
+            log.info(">>>> Simulating data corruption finished");
+
+            AtomicBoolean stopRandomLoad = new AtomicBoolean(false);
+
+            IgniteInternalFuture<Long> randLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+                while (!stopRandomLoad.get()) {
+                    int i = (KEYS_CNT / 2) + ThreadLocalRandom.current().nextInt(BROKEN_KEYS_CNT);
+
+                    if (isHotKey(i))
+                        clientCache.put(i, String.valueOf(2 * i));
+                }
+            }, 4, "rand-loader");
+
+            ReconciliationResult res = partitionReconciliation(ig, fixMode, repairAlgorithm, parallelism, DEFAULT_CACHE_NAME);
+
+            log.info(">>>> Partition reconciliation finished");
+
+            stopRandomLoad.set(true);
+
+            randLoadFut.get();
+
+            assertResultContainsConflictKeys(res, DEFAULT_CACHE_NAME, corruptedColdKeys);
+
+            Set<Integer> conflictKeys = conflictKeys(res, DEFAULT_CACHE_NAME);
+
+            for (Integer correctKey : correctKeys)
+                assertFalse("Correct key detected as broken: " + correctKey, conflictKeys.contains(correctKey));
+
+            additionalCheck.run();
+
+            afterTest0();
+        }
     }
 
     /**

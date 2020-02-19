@@ -36,13 +36,10 @@ import org.apache.ignite.internal.processors.cache.checker.objects.Reconciliatio
 import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationKeyMeta;
 import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Tests that reconciliation works with binary objects that are absent in the nodes classpath.
  */
-@RunWith(Parameterized.class)
 public class PartitionReconciliationBinaryObjectsTest extends PartitionReconciliationAbstractTest {
     /** Nodes. */
     protected static final int NODES_CNT = 4;
@@ -60,11 +57,9 @@ public class PartitionReconciliationBinaryObjectsTest extends PartitionReconcili
     private static final String CUSTOM_VAL_CLS = "org.apache.ignite.tests.p2p.ReconciliationCustomValue";
 
     /** Cache atomicity mode. */
-    @Parameterized.Parameter(0)
     public CacheAtomicityMode cacheAtomicityMode;
 
     /** Fix mode. */
-    @Parameterized.Parameter(1)
     public boolean fixMode;
 
     /** Flag indicates additional classes should be included into the class-path. */
@@ -116,7 +111,6 @@ public class PartitionReconciliationBinaryObjectsTest extends PartitionReconcili
     /**
      *
      */
-    @Parameterized.Parameters(name = "atomicity = {0}, fixMode = {1}")
     public static List<Object[]> parameters() {
         ArrayList<Object[]> params = new ArrayList<>();
 
@@ -138,84 +132,92 @@ public class PartitionReconciliationBinaryObjectsTest extends PartitionReconcili
      */
     @Test
     public void testReconciliationOfColdKeysUnderLoad() throws Exception {
-        useExtendedClasses = true;
+        for (Object[] parameter : parameters()) {
+            cacheAtomicityMode = (CacheAtomicityMode)parameter[0];
+            fixMode = (boolean)parameter[1];
 
-        IgniteEx ig = startGrids(NODES_CNT);
+            beforeTest();
 
-        IgniteEx client = startClientGrid(NODES_CNT);
+            useExtendedClasses = true;
 
-        ig.cluster().active(true);
+            IgniteEx ig = startGrids(NODES_CNT);
 
-        Class customKeyCls = ig.configuration().getClassLoader().loadClass(CUSTOM_KEY_CLS);
-        Class customValCls = ig.configuration().getClassLoader().loadClass(CUSTOM_VAL_CLS);
+            IgniteEx client = startClientGrid(NODES_CNT);
 
-        Constructor keyCtor = customKeyCls.getDeclaredConstructor(int.class);
+            ig.cluster().active(true);
 
-        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
+            Class customKeyCls = ig.configuration().getClassLoader().loadClass(CUSTOM_KEY_CLS);
+            Class customValCls = ig.configuration().getClassLoader().loadClass(CUSTOM_VAL_CLS);
 
-        Set<Integer> correctKeys = new HashSet<>();
+            Constructor keyCtor = customKeyCls.getDeclaredConstructor(int.class);
 
-        for (int i = 0; i < KEYS_CNT; i++) {
-            clientCache.put(keyCtor.newInstance(i), customValCls.newInstance());
-            correctKeys.add(i);
-        }
+            IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
-        log.info(">>>> Initial data loading finished");
+            Set<Integer> correctKeys = new HashSet<>();
 
-        int firstBrokenKey = KEYS_CNT / 2;
-
-        GridCacheContext[] nodeCacheCtxs = new GridCacheContext[NODES_CNT];
-
-        for (int i = 0; i < NODES_CNT; i++)
-            nodeCacheCtxs[i] = grid(i).cachex(DEFAULT_CACHE_NAME).context();
-
-        Set<Object> brokenKeys = new HashSet<>();
-
-        for (int i = firstBrokenKey; i < firstBrokenKey + BROKEN_KEYS_CNT; i++) {
-            Object brokenKey = keyCtor.newInstance(i);
-
-            brokenKeys.add(brokenKey);
-
-            if (i % 3 == 0)
-                simulateMissingEntryCorruption(nodeCacheCtxs[i % NODES_CNT], brokenKey);
-            else
-                simulateOutdatedVersionCorruption(nodeCacheCtxs[i % NODES_CNT], brokenKey);
-        }
-
-        forceCheckpoint();
-
-        log.info(">>>> Simulating data corruption finished");
-
-        stopAllGrids();
-
-        useExtendedClasses = false;
-
-        ig = startGrids(NODES_CNT);
-
-        ig.cluster().active(true);
-
-        ReconciliationResult res = partitionReconciliation(ig, fixMode, RepairAlgorithm.PRIMARY, 4, DEFAULT_CACHE_NAME);
-
-        log.info(">>>> Partition reconciliation finished");
-
-        Set<PartitionReconciliationKeyMeta> conflictKeyMetas = conflictKeyMetas(res, DEFAULT_CACHE_NAME);
-
-        assertEquals(BROKEN_KEYS_CNT, conflictKeyMetas.size());
-
-        for (int i = firstBrokenKey; i < firstBrokenKey + BROKEN_KEYS_CNT; i++) {
-            boolean keyMatched = false;
-
-            for (PartitionReconciliationKeyMeta keyMeta : conflictKeyMetas) {
-                if (keyMeta.stringView(true).contains("dummyField=" + String.valueOf(i)))
-                    keyMatched = true;
+            for (int i = 0; i < KEYS_CNT; i++) {
+                clientCache.put(keyCtor.newInstance(i), customValCls.newInstance());
+                correctKeys.add(i);
             }
 
-            assertTrue(
-                "Unmatched key: " + i + ", got conflict key metas: " +
-                    conflictKeyMetas.stream().map(m -> m.stringView(true)).reduce((s1, s2) -> s1 + ", " + s2).get(),
-                keyMatched
-            );
-        }
+            log.info(">>>> Initial data loading finished");
 
+            int firstBrokenKey = KEYS_CNT / 2;
+
+            GridCacheContext[] nodeCacheCtxs = new GridCacheContext[NODES_CNT];
+
+            for (int i = 0; i < NODES_CNT; i++)
+                nodeCacheCtxs[i] = grid(i).cachex(DEFAULT_CACHE_NAME).context();
+
+            Set<Object> brokenKeys = new HashSet<>();
+
+            for (int i = firstBrokenKey; i < firstBrokenKey + BROKEN_KEYS_CNT; i++) {
+                Object brokenKey = keyCtor.newInstance(i);
+
+                brokenKeys.add(brokenKey);
+
+                if (i % 3 == 0)
+                    simulateMissingEntryCorruption(nodeCacheCtxs[i % NODES_CNT], brokenKey);
+                else
+                    simulateOutdatedVersionCorruption(nodeCacheCtxs[i % NODES_CNT], brokenKey);
+            }
+
+            forceCheckpoint();
+
+            log.info(">>>> Simulating data corruption finished");
+
+            stopAllGrids();
+
+            useExtendedClasses = false;
+
+            ig = startGrids(NODES_CNT);
+
+            ig.cluster().active(true);
+
+            ReconciliationResult res = partitionReconciliation(ig, fixMode, RepairAlgorithm.PRIMARY, 4, DEFAULT_CACHE_NAME);
+
+            log.info(">>>> Partition reconciliation finished");
+
+            Set<PartitionReconciliationKeyMeta> conflictKeyMetas = conflictKeyMetas(res, DEFAULT_CACHE_NAME);
+
+            assertEquals(BROKEN_KEYS_CNT, conflictKeyMetas.size());
+
+            for (int i = firstBrokenKey; i < firstBrokenKey + BROKEN_KEYS_CNT; i++) {
+                boolean keyMatched = false;
+
+                for (PartitionReconciliationKeyMeta keyMeta : conflictKeyMetas) {
+                    if (keyMeta.stringView(true).contains("dummyField=" + String.valueOf(i)))
+                        keyMatched = true;
+                }
+
+                assertTrue(
+                    "Unmatched key: " + i + ", got conflict key metas: " +
+                        conflictKeyMetas.stream().map(m -> m.stringView(true)).reduce((s1, s2) -> s1 + ", " + s2).get(),
+                    keyMatched
+                );
+            }
+
+            afterTest();
+        }
     }
 }
