@@ -819,10 +819,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertNotNull(memorySysCacheCtx);
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s0",
-            "default-volatile-ds-group@volatileDsMemPlc"), true, false, new GridCacheVersion(0, 0, 0), "broken");
+            "default-volatile-ds-group"), true, false, new GridCacheVersion(0, 0, 0), "broken");
 
         corruptDataEntry(memorySysCacheCtx.caches().get(0), new GridCacheInternalKeyImpl("s" + parts / 2,
-            "default-volatile-ds-group@volatileDsMemPlc"), false, true, new GridCacheVersion(0, 0, 0), "broken");
+            "default-volatile-ds-group"), false, true, new GridCacheVersion(0, 0, 0), "broken");
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM"));
 
