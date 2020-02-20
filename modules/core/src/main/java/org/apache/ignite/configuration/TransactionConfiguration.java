@@ -61,7 +61,10 @@ public class TransactionConfiguration implements Serializable {
     /** Default timeout before starting deadlock detection. */
     public static final long DFLT_DEADLOCK_TIMEOUT = 10_000;
 
-    /** Default size of pessimistic transactions log. */
+    /** 
+      * Default size of pessimistic transactions log.
+      * @deprecated Pessimistic tx log linger property has no effect.
+      */
     public static final int DFLT_PESSIMISTIC_TX_LOG_LINGER = 10_000;
 
     /** Default transaction serializable flag. */
@@ -86,9 +89,11 @@ public class TransactionConfiguration implements Serializable {
     private long deadlockTimeout = DFLT_DEADLOCK_TIMEOUT;
 
     /** Pessimistic tx log size. */
+    @Deprecated
     private int pessimisticTxLogSize;
 
     /** Pessimistic tx log linger. */
+    @Deprecated
     private int pessimisticTxLogLinger = DFLT_PESSIMISTIC_TX_LOG_LINGER;
 
     /** Name of class implementing GridCacheTmLookup. */
@@ -300,7 +305,9 @@ public class TransactionConfiguration implements Serializable {
      * If not set, default value is {@code 0} which means unlimited log size.
      *
      * @return Pessimistic transaction log size.
+     * @deprecated Pessimistic tx log size property has no effect.
      */
+    @Deprecated
     public int getPessimisticTxLogSize() {
         return pessimisticTxLogSize;
     }
@@ -311,7 +318,9 @@ public class TransactionConfiguration implements Serializable {
      * @param pessimisticTxLogSize Pessimistic transactions log size.
      * @see #getPessimisticTxLogSize()
      * @return {@code this} for chaining.
+     * @deprecated Pessimistic tx log size property has no effect.
      */
+    @Deprecated
     public TransactionConfiguration setPessimisticTxLogSize(int pessimisticTxLogSize) {
         this.pessimisticTxLogSize = pessimisticTxLogSize;
 
@@ -324,7 +333,9 @@ public class TransactionConfiguration implements Serializable {
      * If not set, default value is {@link #DFLT_PESSIMISTIC_TX_LOG_LINGER}.
      *
      * @return Pessimistic log cleanup delay in milliseconds.
+     * @deprecated Pessimistic tx log linger property has no effect.
      */
+    @Deprecated
     public int getPessimisticTxLogLinger() {
         return pessimisticTxLogLinger;
     }
@@ -335,7 +346,9 @@ public class TransactionConfiguration implements Serializable {
      * @param pessimisticTxLogLinger Pessimistic log cleanup delay.
      * @see #getPessimisticTxLogLinger()
      * @return {@code this} for chaining.
+     * @deprecated Pessimistic tx log linger property has no effect.
      */
+    @Deprecated
     public TransactionConfiguration setPessimisticTxLogLinger(int pessimisticTxLogLinger) {
         this.pessimisticTxLogLinger = pessimisticTxLogLinger;
 
