@@ -96,16 +96,10 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         igniteCfg.setConsistentId(igniteInstanceName);
 
-        if (igniteInstanceName.startsWith(CLIENT_NAME)) {
-            igniteCfg.setClientMode(true);
-
-            if (clientLog != null)
+        if (igniteInstanceName.startsWith(CLIENT_NAME) && clientLog != null)
                 igniteCfg.setGridLogger(clientLog);
-        }
-        else {
-            if (srvLog != null)
+        else if (srvLog != null)
                 igniteCfg.setGridLogger(srvLog);
-        }
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
         fields.put("keyStr", String.class.getName());
@@ -415,7 +409,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         srvLog.unregisterListener(lsnr);
 
-        IgniteEx client = startGrid(CLIENT_NAME);
+        IgniteEx client = startClientGrid(CLIENT_NAME);
 
         cache = client.cache(DEFAULT_CACHE_NAME);
 
@@ -636,7 +630,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         IgniteEx ig0 = startGrid(0);
 
-        IgniteEx client = startGrid(CLIENT_NAME);
+        IgniteEx client = startClientGrid(CLIENT_NAME);
 
         GridQueryProcessor qryProc = ig0.context().query();
 

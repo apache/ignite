@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
@@ -89,6 +90,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendIfOneOfNodesIsLocalAndTopicIsEnum() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -104,6 +106,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendUserMessageThinVersionIfOneOfNodesIsLocal() throws Exception {
         Object msg = new Object();
 
@@ -129,6 +132,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendUserMessageUnorderedThickVersionIfOneOfNodesIsLocal() throws Exception {
         Object msg = new Object();
 
@@ -154,6 +158,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12661")
     public void testSendUserMessageOrderedThickVersionIfOneOfNodesIsLocal() throws Exception {
         Object msg = new Object();
 

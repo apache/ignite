@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -34,16 +35,23 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.DurableBackgroundCleanupIndexTreeTask;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -144,6 +152,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
     };
 
+    /** Override it for test purposes. */
+    public static H2TreeFactory h2TreeFactory = H2Tree::new;
+
     /** Query context registry. */
     private final QueryContextRegistry qryCtxRegistry;
 
@@ -203,9 +214,23 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         treeName = BPlusTree.treeName((table.rowDescriptor() == null ? "" : typeId + "_") + idxName, "H2Tree");
 
-        IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(unwrappedColsList, inlineSize);
+        IndexColumn[] unwrappedCols = unwrappedColsList.toArray(H2Utils.EMPTY_COLUMNS);
 
-        IndexColumnsInfo wrappedColsInfo = new IndexColumnsInfo(wrappedColsList, inlineSize);
+        IndexColumnsInfo unwrappedColsInfo = new IndexColumnsInfo(
+            unwrappedCols,
+            getAvailableInlineColumns(unwrappedCols),
+            inlineSize,
+            cctx.config().getSqlIndexMaxInlineSize()
+        );
+
+        IndexColumn[] wrappedCols = wrappedColsList.toArray(H2Utils.EMPTY_COLUMNS);
+
+        IndexColumnsInfo wrappedColsInfo = new IndexColumnsInfo(
+            wrappedCols,
+            getAvailableInlineColumns(wrappedCols),
+            inlineSize,
+            cctx.config().getSqlIndexMaxInlineSize()
+        );
 
         IndexColumn[] cols;
 
@@ -229,7 +254,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             try {
                 RootPage page = getMetaPage(i);
 
-                segments[i] = new H2Tree(
+                segments[i] = h2TreeFactory.create(
                     cctx,
                     table,
                     treeName,
@@ -508,19 +533,57 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public void destroy(boolean rmvIdx) {
+        destroy0(rmvIdx, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void asyncDestroy(boolean rmvIdx) {
+        destroy0(rmvIdx, true);
+    }
+
+    /**
+     * Internal method for destroying index with async option.
+     *
+     * @param rmvIdx Flag remove.
+     * @param async Destroy asynchronously.
+     */
+    private void destroy0(boolean rmvIdx, boolean async) {
         try {
             if (cctx.affinityNode() && rmvIdx) {
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
+                List<Long> rootPages = new ArrayList<>(segments.length);
+                List<H2Tree> trees = new ArrayList<>(segments.length);
+
                 for (int i = 0; i < segments.length; i++) {
                     H2Tree tree = segments[i];
 
-                    tree.destroy();
+                    if (async) {
+                        tree.markDestroyed();
+
+                        rootPages.add(tree.getMetaPageId());
+                        trees.add(tree);
+                    }
+                    else
+                        tree.destroy();
 
                     dropMetaPage(i);
                 }
 
                 ctx.metric().remove(stats.metricRegistryName());
+
+                if (async) {
+                    DurableBackgroundTask task = new DurableBackgroundCleanupIndexTreeTask(
+                        rootPages,
+                        trees,
+                        cctx.group().name(),
+                        cctx.cache().name(),
+                        table.getSchema().getName(),
+                        idxName
+                    );
+
+                    cctx.kernalContext().durableBackgroundTasksProcessor().startDurableBackgroundTask(task, cctx.config());
+                }
             }
         }
         catch (IgniteCheckedException e) {
@@ -895,7 +958,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      *
      */
     @SuppressWarnings({"PublicInnerClass", "AssignmentOrReturnOfFieldWithMutableType"})
-    public class IndexColumnsInfo {
+    public static class IndexColumnsInfo {
         /** */
         private final int inlineSize;
 
@@ -906,15 +969,23 @@ public class H2TreeIndex extends H2TreeIndexBase {
         private final List<InlineIndexHelper> inlineIdx;
 
         /**
-         * @param colsList Index columns list
+         * @param cols Index columns.
+         * @param inlineIdxHelpers Inline helpers for index columns.
          * @param cfgInlineSize Inline size from cache config.
+         * @param maxInlineSize Max inline size.
          */
         @SuppressWarnings("ZeroLengthArrayAllocation")
-        public IndexColumnsInfo(List<IndexColumn> colsList, int cfgInlineSize) {
-            cols = colsList.toArray(new IndexColumn[0]);
+        public IndexColumnsInfo(
+            IndexColumn[] cols,
+            List<InlineIndexHelper> inlineIdxHelpers,
+            int cfgInlineSize,
+            int maxInlineSize
+        ) {
+            this.cols = cols;
 
-            inlineIdx = getAvailableInlineColumns(cols);
-            inlineSize = computeInlineSize(inlineIdx, cfgInlineSize, cctx.config());
+            inlineIdx = inlineIdxHelpers;
+
+            inlineSize = computeInlineSize(inlineIdx, cfgInlineSize, maxInlineSize);
         }
 
         /**
@@ -937,5 +1008,38 @@ public class H2TreeIndex extends H2TreeIndexBase {
         public List<InlineIndexHelper> inlineIdx() {
             return inlineIdx;
         }
+    }
+
+    /**
+     * Interface for {@link H2Tree} factory class.
+     */
+    public interface H2TreeFactory {
+        /** */
+        public H2Tree create(
+            GridCacheContext cctx,
+            GridH2Table table,
+            String name,
+            String idxName,
+            String cacheName,
+            String tblName,
+            ReuseList reuseList,
+            int grpId,
+            String grpName,
+            PageMemory pageMem,
+            IgniteWriteAheadLogManager wal,
+            AtomicLong globalRmvId,
+            long metaPageId,
+            boolean initNew,
+            H2TreeIndex.IndexColumnsInfo unwrappedColsInfo,
+            H2TreeIndex.IndexColumnsInfo wrappedColsInfo,
+            AtomicInteger maxCalculatedInlineSize,
+            boolean pk,
+            boolean affinityKey,
+            boolean mvccEnabled,
+            @Nullable H2RowCache rowCache,
+            @Nullable FailureProcessor failureProcessor,
+            IgniteLogger log,
+            IoStatisticsHolder stats
+        ) throws IgniteCheckedException;
     }
 }

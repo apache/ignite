@@ -44,9 +44,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Near-only cache node startup test.
  */
 public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
-    /** Near only flag. */
-    private boolean cilent;
-
     /** Use cache flag. */
     private boolean cache = true;
 
@@ -58,9 +55,6 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (cilent)
-            cfg.setClientMode(true);
 
         if (cache) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -115,11 +109,11 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < 4; i++) {
-                cilent = i == 0;
+                boolean client = i == 0;
 
-                Ignite ignite = startGrid(i);
+                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
 
-                if (cilent)
+                if (client)
                     ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
 
@@ -138,18 +132,17 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < 4; i++) {
-                cilent = i == 0;
+                boolean client = i == 0;
 
-                Ignite ignite = startGrid(i);
+                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
 
-                if (cilent)
+                if (client)
                     ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
 
             cache = false;
-            cilent = true;
 
-            Ignite compute = startGrid(4);
+            Ignite compute = startClientGrid(4);
 
             for (int i = 0; i < 100; i++) {
                 ClusterNode node = compute.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i);
@@ -170,11 +163,11 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < 2; i++) {
-                cilent = i == 0;
+                boolean client = i == 0;
 
-                Ignite ignite = startGrid(i);
+                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
 
-                if (cilent)
+                if (client)
                     ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
             }
 
@@ -245,11 +238,11 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cache = true;
 
             for (int i = 0; i < totalNodeCnt; i++) {
-                cilent = nearNodeIdx == i;
+                boolean client = nearNodeIdx == i;
 
-                Ignite ignite = startGrid(i);
+                Ignite ignite = client ? startClientGrid(i) : startGrid(i);
 
-                if (cilent)
+                if (client)
                     ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
             }
         }

@@ -64,9 +64,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /** Key. */
     protected static int iterableKey;
 
-    /** Is client flag. */
-    protected boolean client;
-
     /** Backups count. */
     protected Integer backupsCount() {
         return 3;
@@ -90,10 +87,8 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
 
         grid(0).getOrCreateCache(cacheConfiguration());
 
-        client = true;
-
-        startGrid(G.allGrids().size() + 1); // Client node 1.
-        startGrid(G.allGrids().size() + 1); // Client node 2.
+        startClientGrid(G.allGrids().size() + 1); // Client node 1.
+        startClientGrid(G.allGrids().size() + 1); // Client node 2.
 
         final IgniteEvents evts = ignite.events();
 
@@ -144,8 +139,6 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 

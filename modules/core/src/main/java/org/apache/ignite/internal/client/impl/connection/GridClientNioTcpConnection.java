@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -163,6 +164,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
+    /** User attributes. */
+    Map<String, String> userAttrs;
+
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
      *
@@ -194,7 +198,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         GridClientMarshaller marsh,
         Byte marshId,
         GridClientTopology top,
-        Object cred
+        SecurityCredentials cred,
+        Map<String, String> userAttrs
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -203,6 +208,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
+        this.userAttrs = userAttrs;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -893,11 +899,28 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             return old;
 
         msg.nodeId(id);
+
+        setupMessage(inclAttrs, inclMetrics, destNodeId, msg);
+
+        return makeRequest(msg, fut);
+    }
+
+    /**
+     * @param inclAttrs Include attributes flag.
+     * @param inclMetrics Include metrics flag.
+     * @param destNodeId Destination node id.
+     * @param msg Message.
+     */
+    private void setupMessage(boolean inclAttrs, boolean inclMetrics, UUID destNodeId, GridClientTopologyRequest msg) {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
+        msg.userAttributes(userAttrs);
 
-        return makeRequest(msg, fut);
+        if (credentials() != null) {
+            msg.login((String) credentials().getLogin());
+            msg.password((String) credentials().getPassword());
+        }
     }
 
     /** {@inheritDoc} */
@@ -918,9 +941,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         };
 
         msg.nodeIp(ipAddr);
-        msg.includeAttributes(inclAttrs);
-        msg.includeMetrics(includeMetrics);
-        msg.destinationId(destNodeId);
+
+        setupMessage(inclAttrs, includeMetrics, destNodeId, msg);
 
         return makeRequest(msg, fut);
     }
@@ -944,9 +966,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             }
         };
 
-        msg.includeAttributes(inclAttrs);
-        msg.includeMetrics(inclMetrics);
-        msg.destinationId(destNodeId);
+        setupMessage(inclAttrs, inclMetrics, destNodeId, msg);
 
         return makeRequest(msg, fut);
     }
