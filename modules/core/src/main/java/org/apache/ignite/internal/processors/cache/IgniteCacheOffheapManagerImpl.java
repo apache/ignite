@@ -964,6 +964,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public final CacheDataStore createCacheDataStore(int p) throws IgniteCheckedException {
+        if (!busyLock.enterBusy())
+            throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
         CacheDataStore dataStore;
 
         partStoreLock.lock(p);
@@ -977,6 +980,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
         finally {
             partStoreLock.unlock(p);
+
+            busyLock.leaveBusy();
         }
 
         return dataStore;

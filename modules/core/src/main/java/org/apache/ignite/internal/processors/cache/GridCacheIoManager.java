@@ -556,7 +556,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             stopping = true;
         }
         finally {
-            rw.writeLock().unlock();
+            writeUnlock();
         }
     }
 

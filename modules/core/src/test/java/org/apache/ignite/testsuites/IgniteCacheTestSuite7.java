@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheDataRegionConfigurationT
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsManageTest;
 import org.apache.ignite.internal.processors.cache.GridTransactionsSystemUserTimeMetricsTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheAndNodeStop;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.SafeLogTxFinishErrorTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
@@ -134,6 +135,8 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
 
         suite.addTestSuite(TxRecoveryWithConcurrentRollbackTest.class);
+
+        suite.addTest(new TestSuite(IgniteDynamicCacheAndNodeStop.class));
 
         suite.addTestSuite(AtomicPartitionCounterStateConsistencyTest.class);
         suite.addTestSuite(AtomicPartitionCounterStateConsistencyHistoryRebalanceTest.class);

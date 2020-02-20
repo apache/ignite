@@ -80,8 +80,6 @@ public class TxOnCachesStartTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTransactionCloseOnCachesStartAndStop() throws Exception {
-        fail("https://ggsystems.atlassian.net/browse/GG-27704");
-        
         Ignite srv =  startGrids(5);
 
         IgniteEx client1 = startGrid(getConfiguration("client-1").setClientMode(true));

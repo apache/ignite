@@ -752,8 +752,6 @@ public class CacheGroupContext {
 
             preldr.onKernalStop();
         }
-
-        offheapMgr.onKernalStop();
     }
 
     /**
