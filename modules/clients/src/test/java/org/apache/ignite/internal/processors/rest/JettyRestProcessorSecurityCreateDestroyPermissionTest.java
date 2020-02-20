@@ -145,6 +145,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         checkFailWithError(restGetOrCreate(ALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE), CACHE_CREATE);
 
         assertNotNull(grid(0).cache(CACHE_NAME));
+
         assertNull(grid(0).cache(NOT_DECLARED_CACHE));
     }
 
@@ -202,6 +203,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
         checkFailWithError(restDestroy(ALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE), CACHE_DESTROY);
 
         assertNull(grid(0).cache(CACHE_NAME));
+
         assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
     }
 
