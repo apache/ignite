@@ -168,7 +168,7 @@ public enum IgniteFeatures {
     }
 
     /**
-     * @param ctx Kernal context.
+     * @param cfg Configuration.
      * @param feature Feature to check.
      *
      * @return {@code True} if all nodes in the cluster support given feature.
