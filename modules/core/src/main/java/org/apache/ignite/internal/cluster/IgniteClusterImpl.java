@@ -74,9 +74,10 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.IgniteFeatures.FORCED_CHANGE_OF_CLUSTER_STATE;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.specifications;
 
@@ -336,12 +337,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            if (state() != INACTIVE && newState == INACTIVE && !force && !ctx.state().isDeactivationSafe()) {
-                throw new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
-                    + " To change cluster state on '" + newState.name() + "' pass the force flag.");
-            }
+            boolean allNodesSupport = newState != INACTIVE
+                || allNodesSupports(forServers().nodes(), FORCED_CHANGE_OF_CLUSTER_STATE);
 
-            ctx.state().changeGlobalState(newState, serverNodes(), false).get();
+            if (allNodesSupport || force)
+                ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
+
+            throw new IgniteException("Cannot change cluster state on \"" + newState.name()
+                + "\". Not all nodes support safe deactivation. You can try IgniteCluster#state(INACTIVE, true)." +
+                " Be aware that the deactivation clears in-memory data.");
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

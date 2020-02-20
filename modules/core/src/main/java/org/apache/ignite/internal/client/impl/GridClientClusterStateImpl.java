@@ -86,7 +86,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
         else {
             if (!force) {
                 throw new GridServerDoesNotSupportException("Unable to change state of cluster on \""
-                    + newState.name() + "\". Found a node supporting only not-forced version this command: "
+                    + newState.name() + "\". Found a node not supporting safe deactivation: "
                     + oldVerServerNode + ". It can cause no checking of deactivation safety " +
                     "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory " +
                     "data.");
