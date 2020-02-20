@@ -18,9 +18,13 @@
 package org.apache.ignite.internal;
 
 import java.util.BitSet;
+import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
@@ -85,8 +89,8 @@ public enum IgniteFeatures {
     /** Cluster has task to get value from cache by key value. */
     WC_GET_CACHE_VALUE(31),
 
-    /** Partition reconciliation utility. */
-    PARTITION_RECONCILIATION(34);
+    /** */
+    VOLATILE_DATA_STRUCTURES_REGION(33);
 
     /**
      * Unique feature identifier.
@@ -161,6 +165,24 @@ public enum IgniteFeatures {
         }
 
         return true;
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param feature Feature to check.
+     *
+     * @return {@code True} if all nodes in the cluster support given feature.
+     */
+    public static boolean allNodesSupport(IgniteConfiguration cfg, IgniteFeatures feature) {
+        DiscoverySpi discoSpi = cfg.getDiscoverySpi();
+
+        if (discoSpi instanceof IgniteDiscoverySpi)
+            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(feature);
+        else {
+            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
+
+            return allNodesSupports(nodes, feature);
+        }
     }
 
     /**

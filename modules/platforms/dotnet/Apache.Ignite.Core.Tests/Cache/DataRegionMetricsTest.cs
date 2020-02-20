@@ -82,10 +82,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                 memMetrics.PhysicalMemoryPages * (memMetrics.PageSize + PageOverhead));
             Assert.Greater(memMetrics.OffHeapSize, memMetrics.PhysicalMemoryPages);
             Assert.Greater(memMetrics.OffheapUsedSize, memMetrics.PhysicalMemoryPages);
-            
+
             var sysMetrics = metrics[4];
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
+
+            var volatileMetrics = metrics[5];
+            Assert.AreEqual("volatileDsMemPlc", volatileMetrics.Name);
+            AssertMetricsAreEmpty(volatileMetrics);
 
             // Metrics by name.
             // In-memory region.
@@ -105,6 +109,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             sysMetrics = ignite.GetDataRegionMetrics("sysMemPlc");
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
+
+            volatileMetrics = ignite.GetDataRegionMetrics("volatileDsMemPlc");
+            Assert.AreEqual("volatileDsMemPlc", volatileMetrics.Name);
+            AssertMetricsAreEmpty(volatileMetrics);
 
             // Invalid name.
             Assert.IsNull(ignite.GetDataRegionMetrics("boo"));
