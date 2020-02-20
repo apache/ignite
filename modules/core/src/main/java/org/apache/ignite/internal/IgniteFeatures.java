@@ -90,7 +90,10 @@ public enum IgniteFeatures {
     WC_GET_CACHE_VALUE(31),
 
     /** */
-    VOLATILE_DATA_STRUCTURES_REGION(33);
+    VOLATILE_DATA_STRUCTURES_REGION(33),
+
+    /** Partition reconciliation utility. */
+    PARTITION_RECONCILIATION(34);
 
     /**
      * Unique feature identifier.
