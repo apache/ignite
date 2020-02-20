@@ -262,6 +262,8 @@ public class PartitionReconciliationInterruptionRepairTest extends PartitionReco
         CountDownLatch waitInTask = new CountDownLatch(1);
         CountDownLatch waitOnProcessingBeforeAction = new CountDownLatch(1);
 
+        awaitPartitionMapExchange(true, true, null);
+
         ReconciliationEventListenerFactory.defaultListenerInstance((stage, workload) -> {
             if (firstRecheckFinished.getCount() == 0) {
                 try {
@@ -292,7 +294,7 @@ public class PartitionReconciliationInterruptionRepairTest extends PartitionReco
         }
 
         VisorPartitionReconciliationTaskArg.Builder builder = new VisorPartitionReconciliationTaskArg.Builder();
-        ;
+
         builder.batchSize(batchSize);
         builder.parallelism(1);
         builder.fixMode(true);

@@ -259,6 +259,9 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
     private <E extends Throwable> void interruptionDuringCheck(ThrowUp<E> act,
         Consumer<ReconciliationResult> assertions,
         boolean waitOnProcessing) throws E, InterruptedException, IgniteInterruptedCheckedException {
+
+        awaitPartitionMapExchange(true, true, null);
+
         firstRecheckFinished = new CountDownLatch(1);
         waitInTask = new CountDownLatch(1);
         waitOnProcessingBeforeAction = new CountDownLatch(1);
@@ -277,8 +280,10 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
                 }
             }
 
-            if (stage.equals(FINISHING) && workload instanceof RecheckRequest)
+            if (stage.equals(FINISHING) && workload instanceof RecheckRequest) {
+                log.info("RecheckRequest finishing!");
                 firstRecheckFinished.countDown();
+            }
         });
 
         GridCacheContext[] nodeCacheCtxs = new GridCacheContext[NODES_CNT];
