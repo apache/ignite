@@ -100,6 +100,8 @@ public class CacheCommands implements Command<CacheSubcommands> {
             case RESET_LOST_PARTITIONS:
             case LIST:
             case IDLE_VERIFY:
+            case PARTITION_RECONCILIATION:
+            case PARTITION_RECONCILIATION_CANCEL:
             case VALIDATE_INDEXES:
             case FIND_AND_DELETE_GARBAGE:
             case CONTENTION:

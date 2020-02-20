@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import javax.management.InstanceNotFoundException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
@@ -50,11 +50,14 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -1277,6 +1280,53 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         memMetrics.pageMemory(pageMem);
 
         return pageMem;
+    }
+
+    /**
+     * @param cacheCtx Cache context to apply an update.
+     * @param dataEntry Data entry to apply.
+     * @throws IgniteCheckedException If failed to restore.
+     */
+    protected void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+        int partId = dataEntry.partitionId();
+
+        if (partId == -1)
+            partId = cacheCtx.affinity().partition(dataEntry.key());
+
+        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
+
+        switch (dataEntry.op()) {
+            case CREATE:
+            case UPDATE:
+                cacheCtx.offheap().update(
+                    cacheCtx,
+                    dataEntry.key(),
+                    dataEntry.value(),
+                    dataEntry.writeVersion(),
+                    0L,
+                    locPart,
+                    null);
+
+                if (dataEntry.partitionCounter() != 0)
+                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter() - 1, 1);
+
+                break;
+
+            case DELETE:
+                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+
+                if (dataEntry.partitionCounter() != 0)
+                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter() - 1, 1);
+
+                break;
+
+            case READ:
+                // do nothing
+                break;
+
+            default:
+                throw new IgniteCheckedException("Invalid operation for WAL entry update: " + dataEntry.op());
+        }
     }
 
     /**

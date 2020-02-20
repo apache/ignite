@@ -33,6 +33,7 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
@@ -50,6 +51,7 @@ import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.PartitionReconciliation.PARALLELISM_FORMAT_MESSAGE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.junit.Assert.assertArrayEquals;
@@ -112,12 +114,12 @@ public class CommandHandlerParsingTest extends TestCase {
             UUID nodeId = UUID.randomUUID();
 
             ConnectionAndSslParameters args = parseArgs(Arrays.asList(
-                    CACHE.text(),
-                    VALIDATE_INDEXES.text(),
-                    nodeId.toString(),
-                    CHECK_THROUGH.toString(),
-                    Integer.toString(expectedParam)
-                ));
+                CACHE.text(),
+                VALIDATE_INDEXES.text(),
+                nodeId.toString(),
+                CHECK_THROUGH.toString(),
+                Integer.toString(expectedParam)
+            ));
 
             assertTrue(args.command() instanceof CacheCommands);
 
@@ -202,7 +204,7 @@ public class CommandHandlerParsingTest extends TestCase {
         }
     }
 
-    private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
+    private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>... optional) {
         List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
 
         ArrayList<List<String>> res = new ArrayList<>();
@@ -238,7 +240,6 @@ public class CommandHandlerParsingTest extends TestCase {
 
         return res;
     }
-
 
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
@@ -303,7 +304,6 @@ public class CommandHandlerParsingTest extends TestCase {
             assertEquals(cmd.command(), args.command());
         }
     }
-
 
     /**
      * Tests parsing and validation for user and password arguments.
@@ -420,7 +420,7 @@ public class CommandHandlerParsingTest extends TestCase {
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(Arrays.asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(Arrays.asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
@@ -445,8 +445,7 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
-     * Tests host and port arguments.
-     * Tests connection settings arguments.
+     * Tests host and port arguments. Tests connection settings arguments.
      */
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
@@ -590,7 +589,9 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
     }
 
-    /** */
+    /**
+     *
+     */
     public void testValidateIndexesNotAllowedForSystemCache() {
         GridTestUtils.assertThrows(
             null,
@@ -600,7 +601,9 @@ public class CommandHandlerParsingTest extends TestCase {
         );
     }
 
-    /** */
+    /**
+     *
+     */
     public void testIdleVerifyWithCheckCrcNotAllowedForSystemCache() {
         GridTestUtils.assertThrows(
             null,
@@ -621,6 +624,116 @@ public class CommandHandlerParsingTest extends TestCase {
             () -> parseArgs(asList("--cache", "idle_verify", "--check-crc", "ignite-sys-cache")),
             IllegalArgumentException.class,
             "idle_verify with --check-crc not allowed for `ignite-sys-cache` cache."
+        );
+    }
+
+    /**
+     * Argument validation test.
+     *
+     * validate that following partition-reconciliation arguments validated as expected:
+     *
+     * --repair if value is missing - IllegalArgumentException (The repair algorithm should be specified. The following
+     * values can be used: [LATEST, PRIMARY, MAJORITY, REMOVE, PRINT_ONLY].) is expected. if unsupported value is used -
+     * IllegalArgumentException (Invalid repair algorithm: <invalid-repair-alg>. The following values can be used:
+     * [LATEST, PRIMARY, MAJORITY, REMOVE, PRINT_ONLY].) is expected.
+     *
+     * --parallelism Int value from [0, 128] is expected. If value is missing of differs from metioned integer -
+     * IllegalArgumentException (Invalid parallelism) is expected.
+     *
+     * --batch-size if value is missing - IllegalArgumentException (The batch size should be specified.) is expected. if
+     * unsupported value is used - IllegalArgumentException (Invalid batch size: <invalid-batch-size>. Int value greater
+     * than zero should be used.) is expected.
+     *
+     * --recheck-attempts if value is missing - IllegalArgumentException (The recheck attempts should be specified.) is
+     * expected. if unsupported value is used - IllegalArgumentException (Invalid recheck attempts:
+     * <invalid-recheck-attempts>. Int value between 1 and 5 should be used.) is expected.
+     *
+     * As invalid values use values that produce NumberFormatException and out-of-range values. Also ensure that in case
+     * of appropriate parameters parseArgs() doesn't throw any exceptions.
+     */
+    public void testPartitionReconciliationArgumentsValidation() {
+        assertParseArgsThrows("The repair algorithm should be specified. The following values can be used: "
+            + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition-reconciliation", "--repair");
+
+        assertParseArgsThrows("Invalid repair algorithm: invalid-repair-alg. The following values can be used: "
+                + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition-reconciliation", "--repair",
+            "invalid-repair-alg");
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--fix-alg", "PRIMARY"));
+
+        // --load-factor
+        assertParseArgsThrows("The parallelism level should be specified.",
+            "--cache", "partition-reconciliation", "--parallelism");
+
+        assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "abc"),
+            "--cache", "partition-reconciliation", "--parallelism", "abc");
+
+        assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "0.5"),
+            "--cache", "partition-reconciliation", "--parallelism", "0.5");
+
+        assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "-1"),
+            "--cache", "partition-reconciliation", "--parallelism", "-1");
+
+        assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "129"),
+            "--cache", "partition-reconciliation", "--parallelism", "129");
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--parallelism", "8"));
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--parallelism", "1"));
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--parallelism", "0"));
+
+        // --batch-size
+        assertParseArgsThrows("The batch size should be specified.",
+            "--cache", "partition-reconciliation", "--batch-size");
+
+        assertParseArgsThrows("Invalid batch size: abc. Int value greater than zero should be used.",
+            "--cache", "partition-reconciliation", "--batch-size", "abc");
+
+        assertParseArgsThrows("Invalid batch size: 0. Int value greater than zero should be used.",
+            "--cache", "partition-reconciliation", "--batch-size", "0");
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--batch-size", "10"));
+
+        // --recheck-attempts
+        assertParseArgsThrows("The recheck attempts should be specified.",
+            "--cache", "partition-reconciliation", "--recheck-attempts");
+
+        assertParseArgsThrows("Invalid recheck attempts: abc. Int value between 1 and 5 should be used.",
+            "--cache", "partition-reconciliation", "--recheck-attempts", "abc");
+
+        assertParseArgsThrows("Invalid recheck attempts: 6. Int value between 1 and 5 should be used.",
+            "--cache", "partition-reconciliation", "--recheck-attempts", "6");
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-attempts", "1"));
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-attempts", "5"));
+
+        // --recheck-delay
+        assertParseArgsThrows("The recheck delay should be specified.",
+            "--cache", "partition-reconciliation", "--recheck-delay");
+
+        assertParseArgsThrows("Invalid recheck delay: abc. Int value between 0 and 100 should be used.",
+            "--cache", "partition-reconciliation", "--recheck-delay", "abc");
+
+        assertParseArgsThrows("Invalid recheck delay: 101. Int value between 0 and 100 should be used.",
+            "--cache", "partition-reconciliation", "--recheck-delay", "101");
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-delay", "0"));
+
+        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-delay", "50"));
+    }
+
+    /**
+     * @param msg Message.
+     * @param args Args.
+     */
+    private void assertParseArgsThrows(String msg, String... args) {
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(asList(args)),
+            IllegalArgumentException.class,
+            msg
         );
     }
 
