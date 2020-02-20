@@ -2929,53 +2929,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @param cacheCtx Cache context to apply an update.
-     * @param dataEntry Data entry to apply.
-     * @throws IgniteCheckedException If failed to restore.
-     */
-    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
-        int partId = dataEntry.partitionId();
-
-        if (partId == -1)
-            partId = cacheCtx.affinity().partition(dataEntry.key());
-
-        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
-
-        switch (dataEntry.op()) {
-            case CREATE:
-            case UPDATE:
-                cacheCtx.offheap().update(
-                    cacheCtx,
-                    dataEntry.key(),
-                    dataEntry.value(),
-                    dataEntry.writeVersion(),
-                    0L,
-                    locPart,
-                    null);
-
-                if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter() - 1, 1);
-
-                break;
-
-            case DELETE:
-                cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
-
-                if (dataEntry.partitionCounter() != 0)
-                    cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter() - 1, 1);
-
-                break;
-
-            case READ:
-                // do nothing
-                break;
-
-            default:
-                throw new IgniteCheckedException("Invalid operation for WAL entry update: " + dataEntry.op());
-        }
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     private void finalizeCheckpointOnRecovery(
