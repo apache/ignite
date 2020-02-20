@@ -127,27 +127,9 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param baselineNodes New baseline nodes.
      * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean)}
-     */
-    @Deprecated
-    default IgniteInternalFuture<?> changeGlobalState(
-        ClusterState state,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(state, true, baselineNodes, forceChangeBaselineTopology);
-    }
-
-    /**
-     * @param state New cluster state.
-     * @param force If {@code True} skips checking of the operation safety.
-     * @param baselineNodes New baseline nodes.
-     * @param forceChangeBaselineTopology Force change baseline topology.
-     * @return State change future.
      */
     IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
-        boolean force,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     );

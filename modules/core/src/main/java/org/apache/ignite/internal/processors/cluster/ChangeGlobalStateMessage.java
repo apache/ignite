@@ -215,7 +215,9 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    void force(boolean force){ this.force = force; }
+    void force(boolean force) {
+        this.force = force;
+    }
 
     /**
      * @return Timestamp.

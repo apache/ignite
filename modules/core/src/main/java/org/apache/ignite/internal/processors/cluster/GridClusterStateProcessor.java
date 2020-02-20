@@ -48,7 +48,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
@@ -627,17 +626,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
         else {
             if (isApplicable(msg, state)) {
-                if (msg.state() == INACTIVE && !msg.force() && !isDeactivationSafe()) {
-                    GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
-
-                    if (stateFut != null) {
-                        stateFut.onDone(new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
-                            + " To change cluster state on '" + msg.state().name() + "' pass the force flag."));
-                    }
-
-                    return false;
-                }
-
                 ExchangeActions exchangeActions;
 
                 try {
@@ -950,11 +938,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
-        boolean force,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     ) {
-        return changeGlobalState(state, force, baselineNodes, forceChangeBaselineTopology, false);
+        return changeGlobalState(state, baselineNodes, forceChangeBaselineTopology, false);
     }
 
     /**
@@ -963,7 +950,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param forceChangeBaselineTopology Force change BLT.
      * @param isAutoAdjust Auto adjusting flag.
      * @return Global change state future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean, boolean)} instead.
+     * @deprecated Use {@link #changeGlobalState(ClusterState, Collection, boolean, boolean)} instead.
      */
     @Deprecated
     public IgniteInternalFuture<?> changeGlobalState(
@@ -972,12 +959,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        return changeGlobalState(activate ? ACTIVE : INACTIVE, true, baselineNodes, forceChangeBaselineTopology, isAutoAdjust);
+        return changeGlobalState(activate ? ACTIVE : INACTIVE, baselineNodes, forceChangeBaselineTopology, isAutoAdjust);
     }
 
     /**
      * @param state New activate state.
-     * @param force If {@code True}, skips checking of the operation safety.
      * @param baselineNodes New BLT nodes.
      * @param forceChangeBaselineTopology Force change BLT.
      * @param isAutoAdjust Auto adjusting flag.
@@ -985,7 +971,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      */
     public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
-        boolean force,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
@@ -994,7 +979,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             null :
             calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
 
-        return changeGlobalState0(state, force, newBlt, forceChangeBaselineTopology, isAutoAdjust);
+        return changeGlobalState0(state, newBlt, forceChangeBaselineTopology, isAutoAdjust);
     }
 
     /** */
@@ -1064,7 +1049,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(
         ClusterState state,
-        boolean force,
         BaselineTopology blt,
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
@@ -1159,8 +1143,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             forceChangeBaselineTopology,
             System.currentTimeMillis()
         );
-
-        msg.force(force);
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 

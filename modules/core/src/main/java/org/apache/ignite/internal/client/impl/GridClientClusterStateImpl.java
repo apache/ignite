@@ -84,10 +84,12 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
         if (oldVerServerNode == null)
             withReconnectHandling((con, nodeId) -> con.changeState(newState, force, nodeId)).get();
         else {
-            if (force) {
-                throw new GridServerDoesNotSupportException("Unable to forcibly change state of cluster on \""
-                    + newState.name() + "\". Found a node not supporting forced version this command: "
-                    + oldVerServerNode + ". You can try without the flag 'force'.");
+            if (!force) {
+                throw new GridServerDoesNotSupportException("Unable to change state of cluster on \""
+                    + newState.name() + "\". Found a node supporting only not-forced version this command: "
+                    + oldVerServerNode + ". It can cause no checking of deactivation safety " +
+                    "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory " +
+                    "data.");
             }
             else {
                 // Send old version of the command not supporting 'force'.
