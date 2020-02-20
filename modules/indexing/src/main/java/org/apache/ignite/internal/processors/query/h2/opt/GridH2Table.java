@@ -558,8 +558,6 @@ public class GridH2Table extends TableBase {
         try {
             ensureNotDestroyed();
 
-            assert sessions.isEmpty() : sessions;
-
             destroyed = true;
 
             for (int i = 1, len = idxs.size(); i < len; i++)
