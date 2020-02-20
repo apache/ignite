@@ -342,10 +342,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             if (allNodesSupport || force)
                 ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
-
-            throw new IgniteException("Cannot change cluster state on \"" + newState.name()
-                + "\". Not all nodes support safe deactivation. You can try IgniteCluster#state(INACTIVE, true)." +
-                " Be aware that the deactivation clears in-memory data.");
+            else {
+                throw new IgniteException("Cannot change cluster state on \"" + newState.name()
+                    + "\". Not all nodes support safe deactivation. You can try IgniteCluster#state(INACTIVE, true)." +
+                    " Be aware that the deactivation clears in-memory data.");
+            }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
