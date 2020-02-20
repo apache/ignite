@@ -17,11 +17,17 @@
 
 package org.apache.ignite.spi.metric;
 
+import org.apache.ignite.lang.IgniteExperimental;
+
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Histogram metric calculates counts of measurements that gets into each bounds interval.
  * Note, that {@link #value()} will return array length of {@code bounds.length + 1}.
  * Last element will contains count of measurements bigger then most right value of bounds.
  */
+@IgniteExperimental
 public interface HistogramMetric extends ObjectMetric<long[]> {
     /** @return Bounds of this histogram. */
     public long[] bounds();

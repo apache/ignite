@@ -18,10 +18,14 @@
 package org.apache.ignite.spi.metric;
 
 import java.util.function.Predicate;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Exporter of metric information to the external recipient.
  * Expected, that each implementation would support some specific protocol.
  *
@@ -39,6 +43,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * @see ObjectMetric
  * @see JmxMetricExporterSpi
  */
+@IgniteExperimental
 public interface MetricExporterSpi extends IgniteSpi {
     /**
      * Sets metrics registry that SPI should export.

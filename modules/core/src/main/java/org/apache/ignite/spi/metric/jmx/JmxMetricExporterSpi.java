@@ -26,6 +26,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -36,8 +37,12 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.util.IgniteUtils.makeMBeanName;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * This SPI implementation exports metrics as JMX beans.
  */
+@IgniteExperimental
 public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */
     private ReadOnlyMetricManager mreg;
