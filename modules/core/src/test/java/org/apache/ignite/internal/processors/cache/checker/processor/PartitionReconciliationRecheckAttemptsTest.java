@@ -71,6 +71,7 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
 
         cfg.setCacheConfiguration(ccfg);
         cfg.setConsistentId(name);
+        cfg.setActiveOnStart(false);
 
         return cfg;
     }

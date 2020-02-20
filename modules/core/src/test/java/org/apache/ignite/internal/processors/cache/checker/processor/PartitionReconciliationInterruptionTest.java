@@ -94,6 +94,8 @@ public abstract class PartitionReconciliationInterruptionTest extends PartitionR
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         ccfg.setBackups(NODES_CNT - 1);
 
+        cfg.setActiveOnStart(false);
+
         cfg.setCacheConfiguration(ccfg);
         cfg.setConsistentId(name);
 
