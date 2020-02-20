@@ -208,18 +208,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Whether state changing must not check safety of this operation.
-     */
-    boolean force() {
-        return force;
-    }
-
-    /** */
-    void force(boolean force) {
-        this.force = force;
-    }
-
-    /**
      * @return Timestamp.
      */
     public long timestamp() {
