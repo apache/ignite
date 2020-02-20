@@ -3226,8 +3226,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         for (int i = 0; i < params.length; ++i) {
             String p = params[i];
+
             if ("force".equals(p) && params[i + 1].equals("true"))
                 force = true;
+
             if (cmd == GridRestCommand.CLUSTER_SET_STATE && p.equals("state"))
                 deactivate = params[i + 1].equals(INACTIVE.name());
         }

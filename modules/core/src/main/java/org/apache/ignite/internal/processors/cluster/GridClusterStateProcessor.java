@@ -1162,8 +1162,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             System.currentTimeMillis()
         );
 
-        msg.force(force);
-
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
         try {

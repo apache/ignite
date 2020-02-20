@@ -87,9 +87,9 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
             if (!force) {
                 throw new GridServerDoesNotSupportException("Unable to change state of cluster on \""
                     + newState.name() + "\". Found a node not supporting safe deactivation: "
-                    + oldVerServerNode + ". It can cause no checking of deactivation safety " +
-                    "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory " +
-                    "data.");
+                    + oldVerServerNode + ". It can cause no checking of deactivation safety "
+                    + "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory"
+                    + " data.");
             }
             else {
                 // Send old version of the command not supporting 'force'.
