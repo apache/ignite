@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheStat;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteUuid;
@@ -1037,15 +1038,20 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
-     * Update index from within entry lock, passing key, value, and expiration time to provided closure.
+     * Update index from within entry lock, passing key, value, and expiration time to provided closure and collect
+     * statistics about index update to {@code stat}, if it is present.
      *
      * @param filter Row filter.
      * @param clo Closure to apply to key, value, and expiration time.
+     * @param stat Object for collecting statistics about index update (can be {@code null}).
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
+    public void updateIndex(
+        SchemaIndexCacheFilter filter,
+        SchemaIndexCacheVisitorClosure clo,
+        @Nullable SchemaIndexCacheStat stat
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.
