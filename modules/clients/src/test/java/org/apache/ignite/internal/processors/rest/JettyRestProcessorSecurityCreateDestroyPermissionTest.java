@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -79,7 +78,6 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         TestSecurityData[] clientData = new TestSecurityData[] {
             new TestSecurityData(ADMIN,
                 SecurityPermissionSetBuilder.create().defaultAllowAll(false)
@@ -107,14 +105,8 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
             )
         };
 
-        PluginProvider pluginProvider = new TestSecurityPluginProvider(igniteInstanceName, "",
-            ALLOW_ALL, false, clientData);
-
-        cfg.setPluginProviders(pluginProvider);
-        cfg.setCacheConfiguration(null);
-
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setPluginProviders(new TestSecurityPluginProvider(igniteInstanceName, "", ALLOW_ALL, false, clientData));
     }
 
     /** {@inheritDoc} */
