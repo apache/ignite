@@ -382,6 +382,12 @@ public interface IgniteMXBean {
     );
 
     /**
+     * Changes grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * @see ClusterState#INACTIVE
+     *
      * @param active Activate/DeActivate flag.
      */
     @MXBeanDescription(
@@ -658,6 +664,10 @@ public interface IgniteMXBean {
 
     /**
      * Changes current cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * @see ClusterState#INACTIVE
      *
      * @param state String representation of new cluster state.
      * See {@link ClusterState}

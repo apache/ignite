@@ -425,9 +425,4 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     @Override public void state(ClusterState newState) throws IgniteException {
         cluster.state(newState);
     }
-
-    /** {@inheritDoc} */
-    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
-        cluster.state(newState, force);
-    }
 }

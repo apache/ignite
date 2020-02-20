@@ -73,9 +73,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.IgniteFeatures.FORCED_CHANGE_OF_CLUSTER_STATE;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -312,7 +309,17 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        state(active ? ClusterState.ACTIVE : INACTIVE);
+        guard();
+
+        try {
+            ctx.state().changeGlobalState(active, serverNodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
@@ -329,24 +336,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
-        state(newState, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void state(ClusterState newState, boolean force) throws IgniteException {
         guard();
 
         try {
-            boolean allNodesSupport = newState != INACTIVE
-                || allNodesSupports(forServers().nodes(), FORCED_CHANGE_OF_CLUSTER_STATE);
-
-            if (allNodesSupport || force)
-                ctx.state().changeGlobalState(newState, force, serverNodes(), false).get();
-            else {
-                throw new IgniteException("Cannot change cluster state on \"" + newState.name()
-                    + "\". Not all nodes support safe deactivation. You can try IgniteCluster#state(INACTIVE, true)." +
-                    " Be aware that the deactivation clears in-memory data.");
-            }
+            ctx.state().changeGlobalState(newState, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

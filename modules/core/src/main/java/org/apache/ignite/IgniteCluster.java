@@ -454,13 +454,15 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean active();
 
     /**
-     * Changes Ignite grid state to active or inactive.
-     * Fails if the operation is not safe.
+     * Changes grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
+     * Be aware that cluster deactivation leads to loss of in-memory data.
      * @see ClusterState#INACTIVE
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
+     * @deprecated Use {@link #state(ClusterState)} instead.
      */
     @Deprecated
     public void active(boolean active);
@@ -474,29 +476,15 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
 
     /**
      * Changes current cluster state to given {@code newState} cluster state.
-     * Fails if the operation is not safe.
-     * @see ClusterState#INACTIVE
-     *
-     * @param newState New cluster state.
-     * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
-     */
-    @Deprecated
-    public void state(ClusterState newState) throws IgniteException;
-
-    /**
-     * Changes current cluster state to given {@code newState} cluster state.
-     * Fails if the operation is not safe and {@code force} is not set.
      * <p>
      * <b>NOTE:</b>
      * Be aware that cluster deactivation leads to loss of in-memory data.
      * @see ClusterState#INACTIVE
      *
      * @param newState New cluster state.
-     * @param force If {@code True} then skips checking of operation safety.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
      */
-    public void state(ClusterState newState, boolean force) throws IgniteException;
+    public void state(ClusterState newState) throws IgniteException;
 
     /**
      * Gets current baseline topology. If baseline topology was not set, will return {@code null}.
