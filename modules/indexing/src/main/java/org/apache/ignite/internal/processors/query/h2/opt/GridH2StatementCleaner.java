@@ -83,7 +83,7 @@ public class GridH2StatementCleaner implements AutoCloseable {
         }
     }
 
-    /** {@inheritDoc */
+    /** {@inheritDoc} */
     @Override public void close() throws Exception {
         for (TableFilter f : filters)
             f.set(null); // Help GC to collect current rows.
