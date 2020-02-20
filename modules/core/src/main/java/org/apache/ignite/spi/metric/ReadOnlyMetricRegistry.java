@@ -17,11 +17,16 @@
 
 package org.apache.ignite.spi.metric;
 
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Read only metric registry.
  */
+@IgniteExperimental
 public interface ReadOnlyMetricRegistry extends Iterable<Metric> {
     /** @return Registry name. */
     public String name();

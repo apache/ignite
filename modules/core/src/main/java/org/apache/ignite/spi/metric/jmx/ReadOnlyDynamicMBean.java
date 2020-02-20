@@ -24,10 +24,15 @@ import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Base class for read only {@link DynamicMBean} implementations.
  */
+@IgniteExperimental
 public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
     /** {@inheritDoc} */
     @Override public void setAttribute(Attribute attribute) {

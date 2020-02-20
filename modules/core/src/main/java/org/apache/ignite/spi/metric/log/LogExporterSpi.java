@@ -19,10 +19,15 @@ package org.apache.ignite.spi.metric.log;
 
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * This SPI implementation exports metrics to Ignite log.
  */
+@IgniteExperimental
 public class LogExporterSpi extends PushMetricsExporterAdapter {
     /** {@inheritDoc} */
     @Override public void export() {

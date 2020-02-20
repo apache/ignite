@@ -17,9 +17,15 @@
 
 package org.apache.ignite.spi.metric;
 
+import org.apache.ignite.lang.IgniteExperimental;
+
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Interface for the metrics that holds double primitive.
  */
+@IgniteExperimental
 public interface DoubleMetric extends Metric {
     /** @return Value of the metric. */
     public double value();

@@ -27,6 +27,7 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -42,8 +43,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.INF;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * MBean for exporting values of metric registry.
  */
+@IgniteExperimental
 public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     /** Metric registry. */
     ReadOnlyMetricRegistry mreg;

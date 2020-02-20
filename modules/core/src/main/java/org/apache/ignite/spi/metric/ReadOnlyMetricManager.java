@@ -18,10 +18,15 @@
 package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Read only metric manager.
  */
+@IgniteExperimental
 public interface ReadOnlyMetricManager extends Iterable<ReadOnlyMetricRegistry> {
     /**
      * Adds listener of metrics registry creation events.
