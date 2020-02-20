@@ -59,9 +59,6 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
     /** Unallowed client without system permission. */
     private static final String UNALLOWED_CLNT_SYSTEM = "unallowed_clnt_system";
 
-    /** Default password. */
-    private static final String DFLT_PWD = "ignite";
-
     /** Status. */
     private static final String STATUS = "successStatus";
 
@@ -110,7 +107,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Jetty
             )
         };
 
-        PluginProvider pluginProvider = new TestSecurityPluginProvider(igniteInstanceName, DFLT_PWD,
+        PluginProvider pluginProvider = new TestSecurityPluginProvider(igniteInstanceName, "",
             ALLOW_ALL, false, clientData);
 
         cfg.setPluginProviders(pluginProvider);
