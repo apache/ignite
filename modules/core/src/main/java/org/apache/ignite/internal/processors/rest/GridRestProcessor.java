@@ -956,8 +956,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         }
 
         if (perm != null) {
-                if (req.command().equals(GET_OR_CREATE_CACHE) || req.command().equals(DESTROY_CACHE))
-                    withPermissionAdminCacheSupport(name, perm);
+                if (req.command() == GET_OR_CREATE_CACHE || req.command() == DESTROY_CACHE)
+                    withPermissionAdminCacheCompatibility(name, perm);
                 else
                     ctx.security().authorize(name, perm);
 
@@ -970,8 +970,8 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @param name name.
      * @param perm SecurityPermission.
      */
-    private void withPermissionAdminCacheSupport(String name, SecurityPermission perm){
-        try{
+    private void withPermissionAdminCacheCompatibility(String name, SecurityPermission perm){
+        try {
             ctx.security().authorize(name, SecurityPermission.ADMIN_CACHE);
         }
         catch (SecurityException e) {
