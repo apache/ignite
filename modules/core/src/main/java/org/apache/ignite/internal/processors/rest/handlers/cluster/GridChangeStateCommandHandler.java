@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.cluster;
 
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -76,7 +77,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
                     log.warning(req.command().key() + " is deprecated. Use newer commands.");
                 default:
                     ctx.state().changeGlobalState(req.active() ? ACTIVE : INACTIVE, req.force(),
-                        ctx.cluster().get().forServers().nodes(), false).get();
+                        Collections.emptyList(), false).get();
 
                     res.setResponse(req.command().key() + " started");
                     break;
