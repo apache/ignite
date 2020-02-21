@@ -2851,7 +2851,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             throw new IgniteException(errMsgConstructor.apply());
     }
 
-
     /**
      * Sets if dump requests from local node to near node are allowed, when long running transaction
      * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
