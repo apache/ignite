@@ -48,7 +48,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.cluster.ChangeOfClusterStateIsNotSafeException;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
@@ -633,7 +632,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
                     if (stateFut != null) {
-                        stateFut.onDone(new ChangeOfClusterStateIsNotSafeException(DATA_LOST_ON_DEACTIVATION_WARNING
+                        stateFut.onDone(new IgniteException(DATA_LOST_ON_DEACTIVATION_WARNING
                             + " To change cluster state on '" + msg.state().name() + "' pass the force flag."));
                     }
 

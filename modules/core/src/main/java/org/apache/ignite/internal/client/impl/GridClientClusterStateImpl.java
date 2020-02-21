@@ -24,7 +24,6 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
-import org.apache.ignite.internal.client.GridServerDoesNotSupportException;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 
@@ -85,7 +84,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
             withReconnectHandling((con, nodeId) -> con.changeState(newState, force, nodeId)).get();
         else {
             if (!force) {
-                throw new GridServerDoesNotSupportException("Unable to change state of cluster on \""
+                throw new GridClientException("Unable to change state of cluster on \""
                     + newState.name() + "\". Found a node not supporting safe deactivation: "
                     + oldVerServerNode + ". It can cause no checking of deactivation safety "
                     + "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory"
