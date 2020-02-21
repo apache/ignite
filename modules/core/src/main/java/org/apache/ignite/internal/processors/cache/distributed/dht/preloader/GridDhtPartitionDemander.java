@@ -1394,9 +1394,9 @@ public class GridDhtPartitionDemander {
         }
 
         /**
-         * Cancel future or mark for cancel {@link RebalanceFutureState#MARK_CANCELLED}.
+         * Cancel future or mark for cancel {@code RebalanceFutureState#MARK_CANCELLED}.
          */
-        public void tryCacnel() {
+        private void tryCacnel() {
             if (stateUpd.compareAndSet(this, RebalanceFutureState.INIT, RebalanceFutureState.MARK_CANCELLED))
                 return;
 
@@ -1653,7 +1653,7 @@ public class GridDhtPartitionDemander {
         /**
          * @param otherAssignments Newest assigmnets.
          *
-         * @return {@code True} when future compared with other, {@False} otherwise.
+         * @return {@code True} when future compared with other, {@code False} otherwise.
          */
         public boolean compatibleWith(GridDhtPreloaderAssignments otherAssignments) {
             if (isInitial())
