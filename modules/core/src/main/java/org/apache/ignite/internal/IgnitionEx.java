@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal;
 
+import javax.management.JMException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,9 +49,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -143,6 +143,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_CONSISTEN
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RESTART_CODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -1804,11 +1805,9 @@ public class IgnitionEx {
                                 new IgniteException(S.toString(GridWorker.class, deadWorker))));
                     }
                 },
-                IgniteSystemProperties.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT,
-                    cfg.getSystemWorkerBlockedTimeout() != null
-                    ? cfg.getSystemWorkerBlockedTimeout()
-                    : cfg.getFailureDetectionTimeout()),
-                log);
+                getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, cfg.getSystemWorkerBlockedTimeout()),
+                log
+            );
 
             stripedExecSvc = new StripedExecutor(
                 cfg.getStripedPoolSize(),

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.util.Map;
-import java.util.UUID;
-import java.util.zip.Deflater;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
@@ -29,6 +24,11 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
+import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.util.Map;
+import java.util.UUID;
+import java.util.zip.Deflater;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -239,6 +239,9 @@ public class IgniteConfiguration {
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
+
+    /** Default system worker blocked timeout in millis. */
+    public static final Long DFLT_SYS_WORKER_BLOCKED_TIMEOUT = 2 * 60 * 1000L;
 
     /** Default failure detection timeout for client nodes in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
@@ -481,7 +484,7 @@ public class IgniteConfiguration {
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
     /** Timeout for blocked system workers detection. */
-    private Long sysWorkerBlockedTimeout;
+    private Long sysWorkerBlockedTimeout = DFLT_SYS_WORKER_BLOCKED_TIMEOUT;
 
     /** Failure detection timeout for client nodes. */
     private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
