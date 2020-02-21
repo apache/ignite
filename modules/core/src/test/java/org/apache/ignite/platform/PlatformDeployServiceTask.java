@@ -76,7 +76,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            ignite.services().deployNodeSingleton(serviceName, new PlatformTestService());
+            ignite.services().deployNodeSingleton(serviceName, new PlatformTestServiceImpl());
 
             return null;
         }
@@ -85,7 +85,25 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    public static class PlatformTestService implements Service {
+    private static interface PlatformTestService {
+        /**
+         * Returns a value indicating whether this service is cancelled.
+         */
+        boolean isCancelled();
+
+        /**
+         * Returns a value indicating whether this service is initialized.
+         */
+        boolean isInitialized();
+
+        /**
+         * Returns a value indicating whether this service is executed.
+         */
+        boolean isExecuted();
+    }
+
+    /** {@inheritDoc} */
+    private static class PlatformTestServiceImpl implements Service, PlatformTestService {
         /** */
         private boolean isCancelled;
 
@@ -110,24 +128,18 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             isExecuted = true;
         }
 
-        /**
-         * Returns a value indicating whether this service is cancelled.
-         */
-        public boolean isCancelled() {
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
             return isCancelled;
         }
 
-        /**
-         * Returns a value indicating whether this service is initialized.
-         */
-        public boolean isInitialized() {
+        /** {@inheritDoc} */
+        @Override public boolean isInitialized() {
             return isInitialized;
         }
 
-        /**
-         * Returns a value indicating whether this service is executed.
-         */
-        public boolean isExecuted() {
+        /** {@inheritDoc} */
+        @Override public boolean isExecuted() {
             return isExecuted;
         }
 

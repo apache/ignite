@@ -564,7 +564,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *
      * @param name Service name.
      * @param <T> Service type
-     * @return Deployed service with specified name.
+     * @return Proxy over local service.
      */
     public <T> T service(String name);
 
@@ -586,7 +586,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param svcItf Interface for the service.
      * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
-     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @return Proxy over either remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
@@ -602,7 +602,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *      service or try to load-balance between services.
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
-     * @return Either proxy over remote service or local service if it is deployed locally.
+     * @return Proxy over either remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)

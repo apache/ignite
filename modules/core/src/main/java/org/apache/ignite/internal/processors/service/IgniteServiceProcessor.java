@@ -394,6 +394,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         deployedServices.clear();
 
+        ctx.metric().remove(METRIC_REGISTRY_INVOCATIONS);
+
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
 
@@ -1298,9 +1300,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
+        ServiceContextImpl firstInitialized = ctxs.isEmpty() ? null : ctxs.iterator().next();
+
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
+
+                if (cancelCnt >= ctxs.size())
+                    ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
 
                 cancel(ctxs, cancelCnt);
             }
@@ -1347,7 +1354,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            registerMetrics(srvc, srvcCtx);
+            registerMetrics(srvc, srvcCtx, firstInitialized);
+
+            if (firstInitialized == null)
+                firstInitialized = srvcCtx;
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1475,9 +1485,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to clean up service (will ignore): " + ctx.name(), e);
                 }
-                finally {
-                    unregisterMetrics(ctx);
-                }
             }
         }
 
@@ -1503,6 +1510,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (ctxs != null) {
             synchronized (ctxs) {
+                ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
+
                 cancel(ctxs, ctxs.size());
             }
         }
@@ -1908,16 +1917,22 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      *
      * @param srvc Service for ivocations measurement.
      * @param srvcCtx Context of {@code srvc}.
+     * @param previousSrvcCtx First context of another serice instance initialized once before.
      */
-    private void registerMetrics(Service srvc, ServiceContextImpl srvcCtx) {
+    private void registerMetrics(Service srvc, ServiceContextImpl srvcCtx,
+        @Nullable ServiceContextImpl previousSrvcCtx) {
         for (Class<?> iface : srvc.getClass().getInterfaces()) {
             for (Method m : iface.getMethods()) {
-                if (m.getDeclaringClass().equals(Service.class))
-                    continue;
+                if (!m.getDeclaringClass().equals(Service.class)) {
 
-                // Pre-cache metric for the method.
-                srvcCtx.invokeHistogramm(new GridServiceMethodReflectKey(m.getName(), m.getParameterTypes()),
-                    () -> invocationsMetric(srvcCtx.name(), m));
+                    GridServiceMethodReflectKey mtdKey =
+                        new GridServiceMethodReflectKey(m.getName(), m.getParameterTypes());
+
+                    // Create metric for the methd or take the same one from the previous service context.
+                    srvcCtx.invokeHistogramm(mtdKey, () -> previousSrvcCtx == null ?
+                        invocationsMetric(srvcCtx.name(), m) :
+                        previousSrvcCtx.invokeHistogramm(mtdKey, null));
+                }
             }
         }
     }
