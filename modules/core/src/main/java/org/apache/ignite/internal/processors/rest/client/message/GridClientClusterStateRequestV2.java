@@ -48,14 +48,21 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
         // No op.
     }
 
-    /** Copying constructor. */
+    /**
+     * Copying constructor.
+     *
+     * @param clusterStateReq Original request, of the previous version.
+     * @param force If {@code True}, indicates to skip checking of state change safety.
+     */
     private GridClientClusterStateRequestV2(GridClientClusterStateRequest clusterStateReq, boolean force) {
         super(clusterStateReq);
 
         this.force = force;
     }
 
-    /** */
+    /**
+     * @return {@code True} if there is no need to check if state change is safe.
+     */
     public boolean force() {
         return force;
     }

@@ -27,7 +27,7 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /** Request current state. */
     private boolean reqCurrentState;
 
-    /** Forced chage state. */
+    /** Forced chage state without checking of operation safety. */
     private boolean force;
 
     /**
@@ -58,12 +58,18 @@ public class GridRestChangeStateRequest extends GridRestRequest {
         reqCurrentState = true;
     }
 
-    /** */
+    /**
+     * Sets forced state change witout checking of operation safety.
+     *
+     * @param force If {@code True}, indicates to skip checking of state change safety.
+     */
     public void force(boolean force) {
         this.force = force;
     }
 
-    /** */
+    /**
+     * @return {@code True} if there is no need to check if state change is safe.
+     */
     public boolean force() {
         return force;
     }

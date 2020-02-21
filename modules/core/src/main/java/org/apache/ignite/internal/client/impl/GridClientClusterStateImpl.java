@@ -80,6 +80,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
         UUID oldVerServerNode = checkFeatureSupportedByCluster(client, FORCED_CHANGE_OF_CLUSTER_STATE,
             false, false);
 
+        // Send new version of state change request supporting 'force' feature.
         if (oldVerServerNode == null)
             withReconnectHandling((con, nodeId) -> con.changeState(newState, force, nodeId)).get();
         else {
@@ -91,7 +92,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
                     + " data.");
             }
             else {
-                // Send old version of the command not supporting 'force'.
+                // Send old version of the command not supporting 'force' feature.
                 withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
             }
         }
