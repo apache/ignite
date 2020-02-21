@@ -52,6 +52,9 @@ public enum CommandList {
     /** */
     DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
+    /** */
+    BEEP_SOUND("--sound", new SoundNotificationCommands()),
+
     /** Encryption features command. */
     ENCRYPTION("--encryption", new EncryptionCommand());
 
