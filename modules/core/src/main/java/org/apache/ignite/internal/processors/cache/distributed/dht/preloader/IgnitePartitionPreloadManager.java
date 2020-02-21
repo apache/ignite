@@ -44,11 +44,9 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -137,14 +135,15 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         assert partPreloadingRoutine.isDone();
 
-        boolean locJoinBaselineChange = isLocalBaselineChange(exchActions);
-
-        // At this point, cache updates are queued, and we can safely
-        // switch partitions to inactive mode and vice versa.
         if (!supports(grp))
             return;
 
         boolean hasIdleParttition = false;
+
+        Object constId = cctx.localNode().consistentId();
+
+        boolean locJoinBaselineChange = exchActions != null && exchActions.changedBaseline() &&
+            !exchActions.stateChangeRequest().prevBaselineTopologyHistoryItem().consistentIds().contains(constId);
 
         if (!locJoinBaselineChange) {
             if (log.isDebugEnabled())
@@ -156,6 +155,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         boolean disable = !hasIdleParttition && filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
+        // At this point, cache updates are queued, and we can safely
+        // switch partitions to inactive mode and vice versa.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (disable)
                 part.disable();
@@ -328,27 +329,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         }
 
         return false;
-    }
-
-    /**
-     * @param exchangeActions Exchange future.
-     * @return {@code True} if the cluster baseline was changed by local node join.
-     */
-    private boolean isLocalBaselineChange(ExchangeActions exchangeActions) {
-        if (exchangeActions == null)
-            return false;
-
-        StateChangeRequest req = exchangeActions.stateChangeRequest();
-
-        if (req == null)
-            return false;
-
-        BaselineTopologyHistoryItem prevBaseline = req.prevBaselineTopologyHistoryItem();
-
-        if (prevBaseline == null)
-            return false;
-
-        return !prevBaseline.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
