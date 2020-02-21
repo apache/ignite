@@ -1766,6 +1766,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr.reset();
         }
 
+        /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            pCntr.resetInitialCounter();
+        }
+
         /**
          * @return Partition meta stoage.
          */

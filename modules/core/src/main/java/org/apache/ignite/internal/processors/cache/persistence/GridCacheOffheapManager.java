@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -2542,6 +2541,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     return;
 
                 delegate0.resetUpdateCounter();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 == null)
+                    return;
+
+                delegate0.resetInitialUpdateCounter();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
