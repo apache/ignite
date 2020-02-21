@@ -244,7 +244,6 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridNearTxEnlistResponse.class);
 //        gen.generateAndWrite(GenerateEncryptionKeyRequest.class);
 //        gen.generateAndWrite(GenerateEncryptionKeyResponse.class);
-//        gen.generateAndWrite(RequestSnapshotMessage.class);
     }
 
     /**

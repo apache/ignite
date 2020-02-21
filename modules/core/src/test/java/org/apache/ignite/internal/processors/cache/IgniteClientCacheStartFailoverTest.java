@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -518,7 +518,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     private List<String> startCaches(Ignite node, int keys) {
         List<String> cacheNames = new ArrayList<>();
 
-        final Map<Integer, Integer> map = new HashMap<>();
+        final Map<Integer, Integer> map = new TreeMap<>();
 
         for (int i = 0; i < keys; i++)
             map.put(i, i);

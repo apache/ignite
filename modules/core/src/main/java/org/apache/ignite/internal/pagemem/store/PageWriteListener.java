@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 
 /**
- *
+ * Each page write attempt to a {@link FilePageStore} may be covered by such listener.
+ * If it is necessary, a page data can be handled by another process prior to actually
+ * written to the PageStore.
  */
 @FunctionalInterface
 public interface PageWriteListener {

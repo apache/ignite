@@ -187,44 +187,6 @@
         <url>http://issues.apache.org/jira/browse/IGNITE</url>
     </issueManagement>
 
-    <developers>
-        <developer>
-            <id>dsetrakyan</id>
-            <name>Dmitriy Setrakyan</name>
-            <email>dsetrakyan at apache dot org</email>
-        </developer>
-        <developer>
-            <id>agoncharuk</id>
-            <name>Alexey Goncharuk</name>
-            <email>agoncharuk at apache dot org</email>
-        </developer>
-        <developer>
-            <id>vkulichenko</id>
-            <name>Valentin Kulichenko</name>
-            <email>vkulichenko at apache dot org</email>
-        </developer>
-        <developer>
-            <id>svladykin</id>
-            <name>Sergi Vladykin</name>
-            <email>sergi dot vladykin at gmail dot com</email>
-        </developer>
-        <developer>
-            <id>yzhdanov</id>
-            <name>Yakov Zhdanov</name>
-            <email>yzhdanov at apache dot org</email>
-        </developer>
-        <developer>
-            <id>sboikov</id>
-            <name>Semyon Boikov</name>
-            <email>sboikov at gridgain dot com</email>
-        </developer>
-        <developer>
-            <id>vozerov</id>
-            <name>Vladimir Ozerov</name>
-            <email>vozerov at gridgain dot com</email>
-        </developer>
-    </developers>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -325,9 +287,6 @@
                         <author>false</author>
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
-                        <links>
-                            <link>https://hadoop.apache.org/docs/current/api/</link>
-                        </links>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
@@ -504,10 +463,6 @@
                             <group>
                                 <title>Ignite ML</title>
                                 <packages>org.apache.ignite.ml*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite TensorFlow</title>
-                                <packages>org.apache.ignite.tensorflow*</packages>
                             </group>
                             <group>
                                 <title>Encryption SPI</title>

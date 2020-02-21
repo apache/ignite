@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
@@ -335,6 +337,21 @@ public class TcpIgniteClient implements IgniteClient {
         /** Type ID -> class name map. */
         private Map<Integer, String> cache = new ConcurrentHashMap<>();
 
+        /** System types. */
+        private final Collection<String> sysTypes = new HashSet<>();
+
+        /**
+         * Default constructor.
+         */
+        public ClientMarshallerContext() {
+            try {
+                MarshallerUtils.processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+            }
+            catch (IOException e) {
+                throw new IllegalStateException("Failed to initialize marshaller context.", e);
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public boolean registerClassName(
             byte platformId,
@@ -431,7 +448,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         /** {@inheritDoc} */
         @Override public boolean isSystemType(String typeName) {
-            return false;
+            return sysTypes.contains(typeName);
         }
 
         /** {@inheritDoc} */
