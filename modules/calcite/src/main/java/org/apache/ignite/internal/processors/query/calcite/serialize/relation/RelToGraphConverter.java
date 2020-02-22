@@ -29,7 +29,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -95,6 +97,16 @@ public class RelToGraphConverter implements RelOp<IgniteRel, RelGraph> {
         /** {@inheritDoc} */
         @Override public Item visit(IgniteSender rel) {
             return new Item(graph.addNode(curParent, SenderNode.create(rel)), Commons.cast(rel.getInputs()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Item visit(IgniteTableModify rel) {
+            return new Item(graph.addNode(curParent, TableModifyNode.create(rel, rexTranslator)), Commons.cast(rel.getInputs()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Item visit(IgniteValues rel) {
+            return new Item(graph.addNode(curParent, ValuesNode.create(rel, rexTranslator)), Collections.emptyList());
         }
 
         /** {@inheritDoc} */

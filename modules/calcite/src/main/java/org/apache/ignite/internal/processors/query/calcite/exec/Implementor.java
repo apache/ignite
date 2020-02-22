@@ -35,10 +35,14 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
+import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Implements a query plan.
@@ -57,7 +61,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
     private final MailboxRegistry mailboxRegistry;
 
     /** */
-    private final ScalarFactory scalarFactory;
+    private final ExpressionFactory expressionFactory;
 
     /**
      * @param partitionService Affinity service.
@@ -73,7 +77,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
         this.exchangeService = exchangeService;
         this.ctx = ctx;
 
-        scalarFactory = new ScalarFactory(ctx.getTypeFactory(), failure, log);
+        expressionFactory = new ExpressionFactory(ctx.getTypeFactory(), failure, log);
     }
 
     /** {@inheritDoc} */
@@ -93,25 +97,44 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
-        Predicate<Object[]> predicate = scalarFactory.filterPredicate(ctx, rel.getCondition(), rel.getRowType());
+        Predicate<Object[]> predicate = expressionFactory.filterPredicate(ctx, rel.getCondition(), rel.getRowType());
         return new FilterNode(ctx, visit(rel.getInput()), predicate);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteProject rel) {
-        Function<Object[], Object[]> projection = scalarFactory.projectExpression(ctx, rel.getProjects(), rel.getInput().getRowType());
+        Function<Object[], Object[]> projection = expressionFactory.projectExpression(ctx, rel.getProjects(), rel.getInput().getRowType());
         return new ProjectNode(ctx, visit(rel.getInput()), projection);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteJoin rel) {
-        BiFunction<Object[], Object[], Object[]> expression = scalarFactory.joinExpression(ctx, rel.getCondition(), rel.getLeft().getRowType(), rel.getRight().getRowType());
+        BiFunction<Object[], Object[], Object[]> expression = expressionFactory.joinExpression(ctx, rel.getCondition(), rel.getRowType());
         return new JoinNode(ctx, visit(rel.getLeft()), visit(rel.getRight()), expression);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTableScan rel) {
         return new ScanNode(ctx, rel.getTable().unwrap(ScannableTable.class).scan(ctx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteValues rel) {
+        return new ScanNode(ctx, expressionFactory.values(ctx, Commons.cast(rel.getTuples()), rel.getRowType()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteTableModify rel) {
+        switch (rel.getOperation()){
+            case INSERT:
+            case UPDATE:
+            case DELETE:
+                return new ModifyNode(ctx, rel.getTable().unwrap(TableDescriptor.class), rel.getOperation(), rel.getUpdateColumnList(), visit(rel.getInput()));
+            case MERGE:
+                throw new UnsupportedOperationException();
+            default:
+                throw new AssertionError();
+        }
     }
 
     /** {@inheritDoc} */
@@ -123,7 +146,7 @@ public class Implementor implements IgniteRelVisitor<Node<Object[]>>, RelOp<Igni
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, source.mapping().nodes(), scalarFactory.comparator(ctx, rel.collations(), rel.getRowType()));
+        inbox.init(ctx, source.mapping().nodes(), expressionFactory.comparator(ctx, rel.collations(), rel.getRowType()));
 
         return inbox;
     }

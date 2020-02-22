@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.serialize.relation;
 
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.serialize.expression.ExpToRexTranslator;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  * Provides context to complete RelGraph to RelNode tree conversion.
@@ -30,7 +30,7 @@ public interface ConversionContext extends RelOptTable.ToRelContext {
     /**
      * @return Type factory.
      */
-    RelDataTypeFactory getTypeFactory();
+    IgniteTypeFactory getTypeFactory();
 
     /**
      * @return Schema.

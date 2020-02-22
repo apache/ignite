@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  * Runtime context allowing access to the tables in a database.
@@ -129,7 +129,7 @@ public class ExecutionContext implements DataContext {
     }
 
     /** {@inheritDoc} */
-    @Override public JavaTypeFactory getTypeFactory() {
+    @Override public IgniteTypeFactory getTypeFactory() {
         return ctx.typeFactory();
     }
 

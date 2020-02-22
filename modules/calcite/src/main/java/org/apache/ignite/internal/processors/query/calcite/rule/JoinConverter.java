@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Ignite Join converter.
@@ -45,7 +46,7 @@ public class JoinConverter extends IgniteConverter {
     }
 
     /** {@inheritDoc} */
-    @Override protected List<RelNode> convert0(RelNode rel) {
+    @Override protected List<RelNode> convert0(@NotNull RelNode rel) {
         LogicalJoin join = (LogicalJoin) rel;
 
         RelNode left = convert(join.getLeft(), IgniteConvention.INSTANCE);

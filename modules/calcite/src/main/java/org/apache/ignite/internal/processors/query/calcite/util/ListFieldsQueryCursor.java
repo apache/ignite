@@ -25,6 +25,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -38,14 +40,19 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
     /** */
     private final List<GridQueryFieldMetadata> fieldsMeta;
 
+    /** */
+    private final boolean isQuery;
+
     /**
+     * @param plan Query plan.
      * @param it Iterator.
      * @param converter Row converter.
-     * @param fieldsMeta Fields metadata.
      */
-    public ListFieldsQueryCursor(Iterator<T> it, Function<T, List<?>> converter, List<GridQueryFieldMetadata> fieldsMeta) {
+    public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<T> it, Function<T, List<?>> converter) {
+        fieldsMeta = plan.fieldsMetadata();
+        isQuery = plan.type() == QueryPlan.Type.QUERY;
+
         this.it = new ConvertingClosableIterator<>(it, converter);
-        this.fieldsMeta = fieldsMeta;
     }
 
     /** {@inheritDoc} */
@@ -95,7 +102,7 @@ public class ListFieldsQueryCursor<T> implements FieldsQueryCursor<List<?>>, Que
 
     /** {@inheritDoc} */
     @Override public boolean isQuery() {
-        return true; // TODO pass and check QueryPlan.Type
+        return isQuery;
     }
 
     /** {@inheritDoc} */

@@ -31,7 +31,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 
 /**
@@ -73,7 +75,17 @@ public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, L
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTableModify rel) {
+        return visitChildren(rel);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
+        return rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteValues rel) {
         return rel;
     }
 

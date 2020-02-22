@@ -27,15 +27,12 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -45,10 +42,6 @@ import org.jetbrains.annotations.Nullable;
  * Utility methods.
  */
 public final class Commons {
-    /** */
-    public static final RelOptCluster EMPTY_CLUSTER =
-        RelOptCluster.create(NoOpPlanner.INSTANCE, new RexBuilder(new IgniteTypeFactory()));
-
     /** */
     private Commons(){}
 

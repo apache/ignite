@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -32,29 +31,18 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * Distributed query plan.
+ *
  */
-public class MultiStepPlanImpl implements MultiStepPlan {
+public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** */
-    private final List<Fragment> fragments;
+    protected final List<Fragment> fragments;
 
     /** */
-    private final List<GridQueryFieldMetadata> fieldsMeta;
+    protected final List<GridQueryFieldMetadata> fieldsMeta;
 
-    /**
-     * @param fragments Query fragments.
-     */
-    public MultiStepPlanImpl(List<Fragment> fragments) {
-        this(fragments, ImmutableList.of());
-    }
-
-    /**
-     * @param fragments Query fragments.
-     * @param fieldsMeta Fields metadata.
-     */
-    public MultiStepPlanImpl(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
-        this.fieldsMeta = fieldsMeta;
+    protected AbstractMultiStepPlan(List<Fragment> fragments, List<GridQueryFieldMetadata> fieldsMeta) {
         this.fragments = fragments;
+        this.fieldsMeta = fieldsMeta;
     }
 
     /** {@inheritDoc} */
@@ -112,10 +100,5 @@ public class MultiStepPlanImpl implements MultiStepPlan {
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public MultiStepPlan clone(RelOptCluster cluster) {
-        return new Cloner(cluster).go(this);
     }
 }

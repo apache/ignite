@@ -15,37 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.serialize.type;
+package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
+import java.util.Collections;
+import java.util.List;
+import org.apache.calcite.plan.ViewExpanders;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Java type.
+ *
  */
-public class JavaType implements DataType {
+public class TableConverter extends IgniteConverter {
     /** */
-    private final Class<?> clazz;
+    public static final ConverterRule INSTANCE = new TableConverter();
 
     /**
-     * Factory method.
+     * Creates a ConverterRule.
      */
-    public static JavaType fromType(RelDataType type) {
-        assert type instanceof RelDataTypeFactoryImpl.JavaType : type;
-
-        return new JavaType(((RelDataTypeFactoryImpl.JavaType) type).getJavaClass());
-    }
-
-    /**
-     * @param clazz Value class.
-     */
-    private JavaType(Class<?> clazz) {
-        this.clazz = clazz;
+    public TableConverter() {
+        super(LogicalTableScan.class, "TableConverter");
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType toRelDataType(RelDataTypeFactory factory) {
-        return factory.createJavaType(clazz);
+    @Override protected List<RelNode> convert0(@NotNull RelNode rel) {
+        LogicalTableScan scan = (LogicalTableScan) rel;
+
+        return Collections.singletonList(scan.getTable().toRel(ViewExpanders.simpleContext(scan.getCluster())));
     }
 }

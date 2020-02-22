@@ -28,6 +28,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Abstract converter, that converts logical relational expression into one or more physical ones.
@@ -44,29 +45,28 @@ public abstract class IgniteConverter extends ConverterRule {
     }
 
     /** {@inheritDoc} */
-    @Override public void onMatch(RelOptRuleCall call) {
+    @Override public void onMatch(@NotNull RelOptRuleCall call) {
         RelNode rel = call.rel(0);
-        if (rel.getTraitSet().contains(Convention.NONE)) {
-            List<RelNode> rels = convert0(rel);
-            if (F.isEmpty(rels))
-                return;
 
-            Map<RelNode, RelNode> equiv = ImmutableMap.of();
+        List<RelNode> rels = convert0(rel);
+        if (F.isEmpty(rels))
+            return;
 
-            if (rels.size() > 1) {
-                equiv = new HashMap<>();
+        Map<RelNode, RelNode> equiv = ImmutableMap.of();
 
-                for (int i = 1; i < rels.size(); i++) {
-                    equiv.put(rels.get(i), rel);
-                }
+        if (rels.size() > 1) {
+            equiv = new HashMap<>();
+
+            for (int i = 1; i < rels.size(); i++) {
+                equiv.put(rels.get(i), rel);
             }
-
-            call.transformTo(F.first(rels), equiv);
         }
+
+        call.transformTo(F.first(rels), equiv);
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode convert(RelNode rel) {
+    @Override public RelNode convert(@NotNull RelNode rel) {
         List<RelNode> converted = convert0(rel);
 
         if (converted.size() > 1) {
@@ -84,5 +84,5 @@ public abstract class IgniteConverter extends ConverterRule {
      * @param rel Logical relational expression.
      * @return A list of physical expressions.
      */
-    protected abstract List<RelNode> convert0(RelNode rel);
+    protected abstract List<RelNode> convert0(@NotNull RelNode rel);
 }

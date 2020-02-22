@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Edge;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
@@ -137,6 +138,13 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      */
     public FragmentInfo fragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
         return new FragmentInfo(rel.getTable().unwrap(DistributedTable.class).mapping(Commons.context(rel)));
+    }
+
+    /**
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     */
+    public FragmentInfo fragmentInfo(IgniteValues rel, RelMetadataQuery mq) {
+        return new FragmentInfo();
     }
 
     /**
