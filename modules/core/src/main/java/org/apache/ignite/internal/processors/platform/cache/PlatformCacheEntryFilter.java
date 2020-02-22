@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Platform cache entry filter interface.
  */
+@SuppressWarnings("rawtypes")
 public interface PlatformCacheEntryFilter extends IgniteBiPredicate {
     /**
      * Callback invoked when filter is no longer needed.
      */
     public void onClose();
+
+    /**
+     * Sets the cache context.
+     *
+     * @param cctx Cache context.
+     */
+    void cacheContext(GridCacheContext cctx);
 }

@@ -69,5 +69,15 @@ namespace Apache.Ignite.Core.Impl.Common
             return Task.Factory.StartNew(func, CancellationToken.None, TaskCreationOptions.None,
                 TaskScheduler.Default);
         }
+
+        /// <summary>
+        /// Gets a completed task from a given result.
+        /// </summary>
+        public static Task<TResult> FromResult<TResult>(TResult result)
+        {
+            var tcs = new TaskCompletionSource<TResult>();
+            tcs.SetResult(result);
+            return tcs.Task;
+        }
     }
 }

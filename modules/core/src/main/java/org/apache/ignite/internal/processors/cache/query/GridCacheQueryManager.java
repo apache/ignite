@@ -800,6 +800,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         try {
             injectResources(keyValFilter);
 
+            if (keyValFilter instanceof PlatformCacheEntryFilter) {
+                ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
+            }
+
             Integer part = cctx.isLocal() ? null : qry.partition();
 
             if (part != null && (part < 0 || part >= cctx.affinity().partitions()))

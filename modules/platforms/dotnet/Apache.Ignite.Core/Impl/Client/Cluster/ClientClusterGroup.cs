@@ -211,9 +211,10 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
             int nodesCount = reader.ReadInt();
 
             var nodeIds = new Guid[nodesCount];
+            var stream = ((BinaryReader) reader).Stream;
+            
             for (int i = 0; i < nodesCount; i++)
             {
-                var stream = ((BinaryReader) reader).Stream;
                 nodeIds[i] = BinaryUtils.ReadGuid(stream);
             }
 

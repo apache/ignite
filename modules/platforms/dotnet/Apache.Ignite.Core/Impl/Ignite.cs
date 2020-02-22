@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Near;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -97,7 +98,9 @@ namespace Apache.Ignite.Core.Impl
             IsBaselineAutoAdjustmentEnabled = 32,
             SetBaselineAutoAdjustmentEnabled = 33,
             GetBaselineAutoAdjustTimeout = 34,
-            SetBaselineAutoAdjustTimeout = 35
+            SetBaselineAutoAdjustTimeout = 35,
+            GetCacheConfig = 36,
+            GetThreadLocal = 37
         }
 
         /** */
@@ -141,6 +144,9 @@ namespace Apache.Ignite.Core.Impl
         /** Plugin processor. */
         private readonly PluginProcessor _pluginProcessor;
 
+        /** Near cache manager. */
+        private readonly NearCacheManager _nearCacheManager;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -182,6 +188,8 @@ namespace Apache.Ignite.Core.Impl
             SetCompactFooter();
 
             _pluginProcessor = new PluginProcessor(this);
+            
+            _nearCacheManager = new NearCacheManager(this);
         }
 
         /// <summary>
@@ -606,13 +614,19 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICacheAffinity GetAffinity(string cacheName)
+        CacheAffinityImpl IIgniteInternal.GetAffinity(string cacheName)
         {
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
 
             var aff = DoOutOpObject((int) Op.GetAffinity, w => w.WriteString(cacheName));
             
             return new CacheAffinityImpl(aff, false);
+        }
+
+        /** <inheritdoc /> */
+        public ICacheAffinity GetAffinity(string cacheName)
+        {
+            return ((IIgniteInternal) this).GetAffinity(cacheName);
         }
 
         /** <inheritdoc /> */
@@ -722,6 +736,21 @@ namespace Apache.Ignite.Core.Impl
 
                 return (ICollection<string>) res;
             });
+        }
+
+        /** <inheritdoc /> */
+        public CacheConfiguration GetCacheConfiguration(int cacheId)
+        {
+            return Target.InStreamOutStream((int) Op.GetCacheConfig,
+                w => w.WriteInt(cacheId),
+                s => new CacheConfiguration(
+                    BinaryUtils.Marshaller.StartUnmarshal(s), ClientSocket.CurrentProtocolVersion));
+        }
+
+        /** <inheritdoc /> */
+        public object GetJavaThreadLocal()
+        {
+            return Target.OutStream((int) Op.GetThreadLocal, r => r.ReadObject<object>());
         }
 
         /** <inheritdoc /> */
@@ -967,6 +996,14 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Gets the near cache manager.
+        /// </summary>
+        public NearCacheManager NearCacheManager
+        {
+            get { return _nearCacheManager; }
+        }
+
+        /// <summary>
         /// Updates the node information from stream.
         /// </summary>
         /// <param name="memPtr">Stream ptr.</param>
@@ -1025,7 +1062,7 @@ namespace Apache.Ignite.Core.Impl
         internal void OnClientDisconnected()
         {
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
-
+            
             var handler = ClientDisconnected;
             if (handler != null)
                 handler.Invoke(this, EventArgs.Empty);

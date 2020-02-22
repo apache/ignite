@@ -72,11 +72,11 @@ namespace Apache.Ignite.Examples.Datagrid
                     cache.Put(i, i * 10);
 
                 Console.WriteLine(">>> Cache size: [Total={0}, Near={1}]", 
-                    cache.GetSize(), cache.GetSize(CachePeekMode.Near));
+                    cache.GetSize(), cache.GetSize(CachePeekMode.NativeNear));
 
                 Console.WriteLine("\n>>> Reading from near cache...");
 
-                foreach (var entry in cache.GetLocalEntries(CachePeekMode.Near))
+                foreach (var entry in cache.GetLocalEntries(CachePeekMode.NativeNear))
                     Console.WriteLine(entry);
 
                 Console.WriteLine("\n>>> Example finished, press any key to exit ...");

@@ -213,6 +213,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
             AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
             AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
+            AddHandler(UnmanagedCallbackOp.NearCacheUpdate, NearCacheUpdate);
+            AddHandler(UnmanagedCallbackOp.OnCacheStopped, OnCacheStopped);
+            AddHandler(UnmanagedCallbackOp.OnAffinityTopologyVersionChanged, OnAffinityTopologyVersionChanged);
         }
 
         /// <summary>
@@ -418,6 +421,47 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var val = marsh.Unmarshal<object>(inOutStream);
 
             return holder.Process(key, val, val != null, grid);
+        }
+        
+        /// <summary>
+        /// Updates near cache entry.
+        /// </summary>
+        /// <param name="memPtr">Memory pointer.</param>
+        /// <returns>Unused.</returns>
+        private long NearCacheUpdate(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var cacheId = stream.ReadInt();
+
+                _ignite.NearCacheManager.Update(cacheId, stream, _ignite.Marshaller);
+            }
+
+            return 0;
+        }
+        
+        /// <summary>
+        /// Called on cache stop.
+        /// </summary>
+        /// <param name="cacheId">Cache id.</param>
+        private long OnCacheStopped(long cacheId)
+        {
+            _ignite.NearCacheManager.Stop((int) cacheId);
+            
+            return 0;
+        }
+        
+        /// <summary>
+        /// Called on affinity topology version change.
+        /// </summary>
+        private long OnAffinityTopologyVersionChanged(
+            long topologyVersion, long minorTopologyVersion, long unused, void* arg)
+        {
+            var affinityTopologyVersion = new AffinityTopologyVersion(topologyVersion, (int) minorTopologyVersion);
+            
+            _ignite.NearCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
+            
+            return 0;
         }
 
         #endregion

@@ -320,7 +320,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// <param name="offset">Offset.</param>
         /// <param name="origin">Seek origin.</param>
         /// <returns>Position.</returns>
-        int Seek(int offset, SeekOrigin origin);
+        int Seek(int offset, SeekOrigin origin = SeekOrigin.Begin);
 
         /// <summary>
         /// Applies specified processor to the raw stream data.

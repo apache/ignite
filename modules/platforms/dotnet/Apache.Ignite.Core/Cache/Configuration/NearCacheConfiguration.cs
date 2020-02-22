@@ -44,10 +44,28 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.
         /// </summary>
+        /// <param name="enablePlatformNearCache">When true, sets <see cref="PlatformNearConfiguration"/>
+        /// to a default instance.</param>
+        public NearCacheConfiguration(bool enablePlatformNearCache) : this()
+        {
+            if (enablePlatformNearCache)
+            {
+                PlatformNearConfiguration = new PlatformNearCacheConfiguration();
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.
+        /// </summary>
         internal NearCacheConfiguration(IBinaryRawReader reader)
         {
             NearStartSize = reader.ReadInt();
             EvictionPolicy = EvictionPolicyBase.Read(reader);
+
+            if (reader.ReadBoolean())
+            {
+                PlatformNearConfiguration = new PlatformNearCacheConfiguration(reader);
+            }
         }
 
         /// <summary>
@@ -57,6 +75,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         {
             writer.WriteInt(NearStartSize);
             EvictionPolicyBase.Write(writer, EvictionPolicy);
+
+            if (PlatformNearConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PlatformNearConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
         }
 
         /// <summary>
@@ -71,5 +99,29 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultNearStartSize)]
         public int NearStartSize { get; set; }
+        
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public PlatformNearCacheConfiguration PlatformNearConfiguration { get; set; }
+
+        /// <summary>
+        /// Convenience method to set <see cref="PlatformNearConfiguration"/> with specified key and value types.
+        /// </summary>
+        /// <param name="keepBinary">Whether to enable binary mode for the platform near cache.</param>
+        /// <typeparam name="TK">Key type for near cache map.</typeparam>
+        /// <typeparam name="TV">Value type for near cache map.</typeparam>
+        /// <returns>This instance for chaining.</returns>
+        public NearCacheConfiguration EnablePlatformNearCache<TK, TV>(bool keepBinary = false)
+        {
+            PlatformNearConfiguration = new PlatformNearCacheConfiguration
+            {
+                KeepBinary = keepBinary,
+                KeyTypeName = typeof(TK).AssemblyQualifiedName,
+                ValueTypeName = typeof(TV).AssemblyQualifiedName
+            };
+            
+            return this;
+        }
     }
 }

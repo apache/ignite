@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
-import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Interop filter. Delegates apply to native platform.
@@ -32,6 +31,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate implements PlatformCacheEntryFilter {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private transient boolean platfromNearEnabled;
 
     /**
      * {@link java.io.Externalizable} support.
@@ -63,11 +65,27 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
             writer.writeLong(ptr);
 
             writer.writeObject(k);
-            writer.writeObject(v);
 
-            out.synchronize();
+            try {
+                if (platfromNearEnabled) {
+                    // Normally, platform near cache already has the value.
+                    // Put value to platform thread local so it can be requested when missing.
+                    writer.writeBoolean(false);
+                    ctx.kernalContext().platform().setThreadLocal(v);
+                } else {
+                    writer.writeBoolean(true);
+                    writer.writeObject(v);
+                }
 
-            return ctx.gateway().cacheEntryFilterApply(mem.pointer()) != 0;
+                out.synchronize();
+
+                return ctx.gateway().cacheEntryFilterApply(mem.pointer()) != 0;
+            }
+            finally {
+                if (platfromNearEnabled) {
+                    ctx.kernalContext().platform().setThreadLocal(null);
+                }
+            }
         }
     }
 
@@ -83,15 +101,18 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         ptr = 0;
     }
 
-    /**
-     * @param ignite Ignite instance.
-     */
-    @IgniteInstanceResource
-    public void setIgniteInstance(Ignite ignite) {
-        ctx = PlatformUtils.platformContext(ignite);
-
+    /** {@inheritDoc} */
+    @SuppressWarnings("rawtypes")
+    @Override public void cacheContext(GridCacheContext cctx) {
         if (ptr != 0)
             return;
+
+        ctx = cctx.kernalContext().platform().context();
+
+        NearCacheConfiguration nearCfg = cctx.config().getNearConfiguration();
+
+        platfromNearEnabled = nearCfg != null && nearCfg.getPlatformNearConfiguration() != null &&
+                ctx.isNativeNearCacheSupported();
 
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
@@ -99,6 +120,8 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
             BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
+
+            writer.writeInt(cctx.cacheId());
 
             out.synchronize();
 

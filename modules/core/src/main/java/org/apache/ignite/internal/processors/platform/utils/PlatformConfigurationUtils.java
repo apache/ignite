@@ -68,6 +68,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.PlatformNearCacheConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -331,6 +332,15 @@ public class PlatformConfigurationUtils {
         cfg.setNearStartSize(in.readInt());
         cfg.setNearEvictionPolicy(readEvictionPolicy(in));
 
+        if (in.readBoolean()) {
+            PlatformNearCacheConfiguration platCfg = new PlatformNearCacheConfiguration()
+                    .setKeyTypeName(in.readString())
+                    .setValueTypeName(in.readString())
+                    .setKeepBinary(in.readBoolean());
+
+            cfg.setPlatformNearConfiguration(platCfg);
+        }
+
         return cfg;
     }
 
@@ -415,6 +425,17 @@ public class PlatformConfigurationUtils {
 
         out.writeInt(cfg.getNearStartSize());
         writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+
+        PlatformNearCacheConfiguration platCfg = cfg.getPlatformNearConfiguration();
+        if (platCfg != null) {
+            out.writeBoolean(true);
+            out.writeString(platCfg.getKeyTypeName());
+            out.writeString(platCfg.getValueTypeName());
+            out.writeBoolean(platCfg.isKeepBinary());
+        }
+        else {
+            out.writeBoolean(false);
+        }
     }
 
     /**

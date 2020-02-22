@@ -58,6 +58,11 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Peeks value from the off-heap storage only, without loading off-heap value into cache.
         /// </summary>
-        Offheap = 0x20
+        Offheap = 0x20,
+        
+        /// <summary>
+        /// Peeks value from local native .NET near cache. 
+        /// </summary>
+        NativeNear = 0x1000
     }
 }
