@@ -83,7 +83,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -146,6 +145,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getFlagByPartId;
 import static org.apache.ignite.internal.util.IgniteUtils.getBaselineTopology;
+import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.PREPARE_RESTORE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT;
@@ -272,8 +272,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         prepareRestoreSnpProc = new DistributedProcess<>(ctx, PREPARE_RESTORE_SNAPSHOT, this::prepareSnapshotRestore,
             this::prepareSnapshotRestoreResult);
 
-        restoreSnpProc = new DistributedProcess<>(ctx, RESTORE_SNAPSHOT, this::snapshotRestore,
-            this::snapshotRestoreResult);
+        restoreSnpProc = new DistributedProcess<>(ctx, RESTORE_SNAPSHOT, this::snapshotRestoreTask,
+            this::snapshotRestoreTaskResult);
     }
 
     /**
@@ -886,7 +886,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     restoreSnpFut = null;
                 }
             }
-            else
+            else if (isLocalNodeCoordinator(cctx.discovery()))
                 restoreSnpProc.start(id, restoringSnpName);
         }
     }
@@ -895,7 +895,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param snpName Snapshot name which offered to restore.
      * @return Future which will be completed on restore operation prepared.
      */
-    IgniteInternalFuture<Boolean> snapshotRestore(String snpName) {
+    IgniteInternalFuture<Boolean> snapshotRestoreTask(String snpName) {
         if (log.isInfoEnabled())
             log.info("Start snapshot restore on local node [snpName=" + snpName + ", nodeId=" + cctx.localNode().id() + ']');
 
@@ -907,9 +907,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param res Results of prepare restore process.
      * @param err Errors if occurred.
      */
-    void snapshotRestoreResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
+    void snapshotRestoreTaskResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
         if (log.isInfoEnabled())
             log.info("Finish snapshot restore on local node [snpName=" + restoringSnpName + ", nodeId=" + cctx.localNode().id() + ']');
+
+        if (err.isEmpty() && restoreSnpFut != null)
+            restoreSnpFut.onDone();
     }
 
     /** {@inheritDoc} */
