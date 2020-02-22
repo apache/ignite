@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
@@ -120,16 +121,37 @@ namespace Apache.Ignite.Core.Tests.Cache
             TestEnableStatistics(
                 cacheName,
                 (cache, b) => cache.Ignite.GetCluster().EnableStatistics(new[] {cacheName}, b));
+        }
 
+        /// <summary>
+        /// Tests that empty cache names can be passed to <see cref="IClusterGroup.EnableStatistics"/>
+        /// </summary>
+        [Test]
+        public void  TestClusterEnableStatisticsAllowsEmptyCacheNames()
+        {
             var ignite = Ignition.GetIgnite();
-            ignite.CreateCache<int, int>(new CacheConfiguration("clusterEnableStatsValidName"));
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterEnableStatisticsAllowsEmptyCacheNames"));
             var cluster = ignite.GetCluster();
 
             Assert.DoesNotThrow(() => cluster.EnableStatistics(Enumerable.Empty<string>(), true));
+        }
 
-            // Nonexistent cache name
-            Assert.Throws<IgniteException>(
-                () => cluster.EnableStatistics(new[] {"clusterEnableStatsInValidName"}, true));
+        /// <summary>
+        /// Tests exception when invalid cache name is passed to <see cref="IClusterGroup.EnableStatistics"/>
+        /// </summary>
+        [Test]
+        public void TestClusterEnableStatisticsThrowsOnInvalidCacheName()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterEnableStatisticsThrowsOnInvalidCacheName"));
+            var cluster = ignite.GetCluster();
+
+            var invalidCacheName = "clusterEnableStatsInvalidName";
+
+            var msg = Assert.Throws<IgniteException>(
+                () => cluster.EnableStatistics(new[] {invalidCacheName}, true)).Message;
+            Assert.IsTrue(msg.Contains(invalidCacheName));
+            Assert.IsTrue(msg.Contains("One or more cache descriptors not found"));
         }
 
         /// <summary>
