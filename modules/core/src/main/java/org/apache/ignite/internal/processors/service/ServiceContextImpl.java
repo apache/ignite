@@ -196,16 +196,12 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Creates utility recod by method key {@code key}. Thread-safe.  */
     private IgniteBiTuple<Method, HistogramMetricImpl> methodRecord(GridServiceMethodReflectKey key) {
-        IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = mtds.get(key);
+        return mtds.compute(key, (k, v) -> {
+            if (v == null)
+                v = new IgniteBiTuple<>();
 
-        if (mtdRecord == null) {
-            IgniteBiTuple<Method, HistogramMetricImpl> prevRecord = mtds.putIfAbsent(key,
-                mtdRecord = new IgniteBiTuple<>());
-
-            mtdRecord = prevRecord == null ? mtdRecord : prevRecord;
-        }
-
-        return mtdRecord;
+            return v;
+        });
     }
 
     /**

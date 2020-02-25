@@ -2019,6 +2019,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             Object callResult;
 
+            boolean accessible = mtd.isAccessible();
+
             // Support not-public invocations like of package level interfaces.
             mtd.setAccessible(true);
 
@@ -2026,6 +2028,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 callResult = mtd.invoke(svc, args);
             } catch (InvocationTargetException e){
                 throw e.getTargetException();
+            } finally {
+                mtd.setAccessible(accessible);
             }
 
             // The metric may be not activated.
