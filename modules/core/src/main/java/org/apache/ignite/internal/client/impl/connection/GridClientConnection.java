@@ -37,6 +37,7 @@ import org.apache.ignite.internal.client.impl.GridClientDataMetricsAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureCallback;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -57,7 +58,7 @@ public abstract class GridClientConnection {
     private SSLContext sslCtx;
 
     /** Client credentials. */
-    private Object cred;
+    private SecurityCredentials cred;
 
     /** Reason why connection was closed. {@code null} means connection is still alive. */
     protected volatile GridClientConnectionCloseReason closeReason;
@@ -72,7 +73,7 @@ public abstract class GridClientConnection {
      * @param cred Client credentials.
      */
     protected GridClientConnection(UUID clientId, InetSocketAddress srvAddr, SSLContext sslCtx, GridClientTopology top,
-        Object cred) {
+        SecurityCredentials cred) {
         assert top != null;
 
         this.clientId = clientId;
@@ -340,7 +341,6 @@ public abstract class GridClientConnection {
     public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
-
     /**
      * Gets current grid global state.
      *
@@ -435,7 +435,7 @@ public abstract class GridClientConnection {
      *
      * @return Credentials.
      */
-    protected Object credentials() {
+    protected SecurityCredentials credentials() {
         return cred;
     }
 

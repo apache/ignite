@@ -207,6 +207,9 @@ public final class IgniteSystemProperties {
     /** */
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
+    /** PME-free switch explicitly disabled. */
+    public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
+
     /**
      * Name of the system property defining name of command line program.
      */
@@ -1242,15 +1245,6 @@ public final class IgniteSystemProperties {
      * Scan the classpath on startup and log all the files containing in it.
      */
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
-
-    /**
-     * Index rebuilding parallelism level. It sets a number of threads will be used for index rebuilding.
-     * Zero value means default should be used.
-     * Default value is calculated as <code>CPU count / 4</code> with upper limit of <code>4</code>.
-     * <p>
-     * Note: Number of threads is bounded within the range from <code>1</code> up to <code>CPU count</code>.
-     */
-    public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
 
     /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with

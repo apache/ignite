@@ -32,7 +32,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -71,16 +70,6 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     private static final int KEY_RANGE = 1000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 6 * 60 * 1000;
     }
@@ -98,7 +87,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRID_CNT - 1);
 
-        startGrid(GRID_CNT - 1);
+        startClientGrid(GRID_CNT - 1);
     }
 
     /**

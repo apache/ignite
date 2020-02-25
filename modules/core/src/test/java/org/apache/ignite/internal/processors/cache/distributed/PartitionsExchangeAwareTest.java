@@ -233,7 +233,6 @@ public class PartitionsExchangeAwareTest extends GridCommonAbstractTest {
         System.out.println("^^^^success");
     }
 
-
     /**
      * Asserts that update operations do (or don't) hang according to the passed flag.
      *
@@ -263,10 +262,14 @@ public class PartitionsExchangeAwareTest extends GridCommonAbstractTest {
 
         assertEquals(updatePossible, GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                assertTrue(txUpdateFut.isDone() == atomicUpdateFut.isDone());
-
-                return atomicUpdateFut.isDone();
+                return atomicUpdateFut.isDone() && txUpdateFut.isDone();
             }
         }, TIMEOUT_SECONDS * 1000));
+
+        if (!updatePossible) {
+            assertFalse(atomicUpdateFut.isDone());
+
+            assertFalse(txUpdateFut.isDone());
+        }
     }
 }

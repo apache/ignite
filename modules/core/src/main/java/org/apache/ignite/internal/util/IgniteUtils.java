@@ -137,8 +137,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Consumer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -11668,5 +11668,35 @@ public abstract class IgniteUtils {
                 U.warn(log, "Listener error", e);
             }
         }
+    }
+
+    /**
+     * Stops workers from given collection and waits for their completion.
+     *
+     * @param workers Workers collection.
+     * @param cancel Wheter should cancel workers.
+     * @param log Logger.
+     */
+    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, IgniteLogger log) {
+        for (GridWorker worker : workers) {
+            try {
+                if (cancel)
+                    worker.cancel();
+
+                worker.join();
+            }
+            catch (Exception e) {
+                log.warning(String.format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+            }
+        }
+    }
+
+    /**
+     * Unquote the given string.
+     * @param s String.
+     * @return Unquoted string.
+     */
+    public static String unquote(String s) {
+        return s == null ? null : s.replaceAll("^\"|\"$", "");
     }
 }

@@ -43,14 +43,8 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
         Ignite node1 = startGrid("node1", node1cfg);
         Ignite node2 = startGrid("node2", node2cfg);
 
-        IgniteConfiguration clientCfg1 = getConfiguration("client");
-        clientCfg1.setClientMode(true);
-
-        IgniteConfiguration clientCfg2 = getConfiguration("client");
-        clientCfg2.setClientMode(true);
-
-        final IgniteEx client1 = (IgniteEx)startGrid("client1", clientCfg1);
-        final IgniteEx client2 = (IgniteEx)startGrid("client2", clientCfg2);
+        final IgniteEx client1 = startClientGrid("client1", getConfiguration("client"));
+        final IgniteEx client2 = startClientGrid("client2", getConfiguration("client"));
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 

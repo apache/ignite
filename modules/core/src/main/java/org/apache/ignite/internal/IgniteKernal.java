@@ -159,6 +159,7 @@ import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -232,6 +233,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
@@ -966,6 +968,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
+     * @param buildIdxExecSvc Create/rebuild indexes executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
@@ -991,6 +994,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
+        @Nullable ExecutorService buildIdxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
@@ -1117,6 +1121,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 restExecSvc,
                 affExecSvc,
                 idxExecSvc,
+                buildIdxExecSvc,
                 callbackExecSvc,
                 qryExecSvc,
                 schemaExecSvc,
@@ -1257,6 +1262,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
+                startProcessor(new DurableBackgroundTasksProcessor(ctx));
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -1519,21 +1525,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }, metricsLogFreq, metricsLogFreq);
         }
 
-        final long longOpDumpTimeout = IgniteSystemProperties.getLong(
-                IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT,
-                DFLT_LONG_OPERATIONS_DUMP_TIMEOUT
-        );
-
-        if (longOpDumpTimeout > 0) {
-            longOpDumpTask = ctx.timeout().schedule(new Runnable() {
-                @Override public void run() {
-                    GridKernalContext ctx = IgniteKernal.this.ctx;
-
-                    if (ctx != null)
-                        ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout);
-                }
-            }, longOpDumpTimeout, longOpDumpTimeout);
-        }
+        scheduleLongOperationsDumpTask(ctx.cache().context().tm().longOperationsDumpTimeout());
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
 
@@ -1556,6 +1548,36 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static DecimalFormat doubleFormat() {
         return new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
+    }
+
+    /**
+     * Scheduling tasks for dumping long operations. Closes current task
+     * (if any) and if the {@code longOpDumpTimeout > 0} schedules a new task
+     * with a new timeout, delay and start period equal to
+     * {@code longOpDumpTimeout}, otherwise task is deleted.
+     *
+     * @param longOpDumpTimeout Long operations dump timeout.
+     */
+    public void scheduleLongOperationsDumpTask(long longOpDumpTimeout) {
+        if (isStopping())
+            return;
+
+        synchronized (this) {
+            GridTimeoutProcessor.CancelableTask task = longOpDumpTask;
+
+            if (nonNull(task))
+                task.close();
+
+            if (longOpDumpTimeout > 0) {
+                longOpDumpTask = ctx.timeout().schedule(
+                    () -> ctx.cache().context().exchange().dumpLongRunningOperations(longOpDumpTimeout),
+                    longOpDumpTimeout,
+                    longOpDumpTimeout
+                );
+            }
+            else
+                longOpDumpTask = null;
+        }
     }
 
     /**

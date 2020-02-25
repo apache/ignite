@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -734,6 +735,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public DiagnosticProcessor diagnostic() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService buildIndexExecutorService() {
         return null;
     }
 }

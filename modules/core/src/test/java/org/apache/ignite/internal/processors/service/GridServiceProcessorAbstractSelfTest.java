@@ -123,7 +123,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         for (int i = 0; i < clients; i++) {
             final String nodeName = getTestIgniteInstanceName(nodeCount() + servers + i);
 
-            startGrid(nodeName, getConfiguration(nodeName).setClientMode(true));
+            startClientGrid(nodeName, getConfiguration(nodeName));
         }
     }
 

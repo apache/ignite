@@ -67,9 +67,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestIgniteInstanceIndex(igniteInstanceName) == CLI_NODE)
-            cfg.setClientMode(true);
-
         cfg.setAuthenticationEnabled(true);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -100,7 +97,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
-        startGrids(NODES_COUNT);
+        startGrids(NODES_COUNT - 1);
+        startClientGrid(CLI_NODE);
 
         grid(0).cluster().active(true);
 
@@ -484,7 +482,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
             stopAllGrids();
 
-            startGrids(NODES_COUNT);
+            startGrids(NODES_COUNT - 1);
+            startClientGrid(CLI_NODE);
 
             for (int i = 0; i < NODES_COUNT; ++i) {
                 for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
@@ -521,7 +520,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
             U.sleep(500);
 
-            startGrids(NODES_COUNT);
+            startGrids(NODES_COUNT - 1);
+            startClientGrid(CLI_NODE);
 
             for (int i = 0; i < NODES_COUNT; ++i) {
                 AuthorizationContext  actx = grid(i).context().authentication()

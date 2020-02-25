@@ -58,7 +58,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     public void testMasterKeyChangeFromClient() throws Exception {
         IgniteEx ignite = startGrid(GRID_0);
 
-        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+        IgniteEx client = startClientGrid(getConfiguration("client"));
 
         ignite.cluster().active(true);
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -40,22 +39,12 @@ public class IgniteRoundRobinErrorAfterClientReconnectTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid(SRV_IDX);
-        startGrid(CLI_IDX);
+        startClientGrid(CLI_IDX);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.endsWith("1"))
-            cfg.setClientMode(true);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
