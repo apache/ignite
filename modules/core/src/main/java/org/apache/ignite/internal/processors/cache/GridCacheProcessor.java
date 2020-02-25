@@ -117,7 +117,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesLis
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -207,6 +206,7 @@ import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -5481,32 +5481,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public void onBaselineChange() {
             onKernalStopCaches(true);
 
-            Collection<IgniteInternalFuture<Void>> clearFuts = new ArrayList<>(cacheGrps.size());
+            for (DataRegion region : sharedCtx.database().dataRegions()) {
+                if (!region.config().isPersistenceEnabled() ||
+                    INTERNAL_DATA_REGION_NAMES.contains(region.config().getName()))
+                    continue;
 
-            long start = U.currentTimeMillis();
-
-            Set<DataRegion> regions = new HashSet<>();
-
-            for (CacheGroupContext grp : cacheGrps.values()) {
-                if (grp.persistenceEnabled())
-                    regions.add(grp.dataRegion());
-            }
-
-            for (DataRegion region : regions)
-                clearFuts.add(((PageMemoryEx)region.pageMemory()).clearAsync((grpId, pageIdg) -> true, false));
-
-            for (IgniteInternalFuture<Void> clearFut : clearFuts) {
-                try {
-                    clearFut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to clear page memory", e);
-                }
-            }
-
-            if (log.isInfoEnabled()) {
-                log.info("Page memory cleanup took " + (U.currentTimeMillis() - start) + " ms " +
-                    F.viewReadOnly(regions, r -> r.config().getName()));
+                region.pageMemory().stop(false);
+                region.pageMemory().start();
             }
 
             stopCaches(true);
