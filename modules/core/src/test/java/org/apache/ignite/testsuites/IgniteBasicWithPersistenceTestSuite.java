@@ -23,6 +23,7 @@ import org.apache.ignite.failure.IoomFailureHandlerTest;
 import org.apache.ignite.failure.SystemWorkersBlockingTest;
 import org.apache.ignite.failure.SystemWorkersTerminationTest;
 import org.apache.ignite.internal.ClusterBaselineNodesMetricsSelfTest;
+import org.apache.ignite.internal.GridNodeMetricsLogPdsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessorTest;
@@ -73,6 +74,8 @@ public class IgniteBasicWithPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridCommandHandlerClusterByClassTest.class);
         suite.addTestSuite(GridCommandHandlerSslTest.class);
         suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
+        suite.addTestSuite(GridNodeMetricsLogPdsSelfTest.class);
+
         suite.addTestSuite(PluginNodeValidationTest.class);
 
         suite.addTestSuite(SingleNodePersistenceSslTest.class);
