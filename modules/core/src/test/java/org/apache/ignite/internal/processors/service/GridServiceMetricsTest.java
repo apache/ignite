@@ -9,6 +9,9 @@ import java.util.stream.Stream;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.platform.PlatformProcessorImpl;
+import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
+import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.internal.processors.service.inner.NamingService;
@@ -43,6 +46,18 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         System.clearProperty(IGNITE_SERVICE_METRICS_ENABLED);
+    }
+
+    @Test
+    public void fix() throws Exception {
+        IgniteEx server = startGrid(0);
+
+        PlatformProcessorImpl platformProcessor = new PlatformProcessorImpl(server.context());
+
+        PlatformClusterGroup platformTarget = (PlatformClusterGroup)platformProcessor.processOutObject(10);
+
+        PlatformServices platformServices = (PlatformServices)platformTarget.processOutObject(34);
+
     }
 
     /** Makes sure {@code IgniteSystemProperties#IGNITE_SERVICE_METRICS_ENABLED} works correctly. */
