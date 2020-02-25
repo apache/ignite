@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesFastTest;
+import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesLongTest;
 import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallbackSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
@@ -157,6 +159,10 @@ import org.junit.runners.Suite;
     LocalQueryLazyTest.class,
 
     LongRunningQueryTest.class,
+
+    SqlStatisticsUserQueriesFastTest.class,
+    SqlStatisticsUserQueriesLongTest.class,
+
     DmlBatchSizeDeadlockTest.class,
 
     GridCachePartitionedTxMultiNodeSelfTest.class,

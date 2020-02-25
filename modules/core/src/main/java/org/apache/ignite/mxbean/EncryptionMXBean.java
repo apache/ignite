@@ -40,7 +40,7 @@ public interface EncryptionMXBean {
      * @see IgniteEncryption#changeMasterKey(String)
      */
     @MXBeanDescription("Change master key name.")
-    @MXBeanParametersNames("masterKeyName")
-    @MXBeanParametersDescriptions("Master key name.")
-    public void changeMasterKey(String masterKeyName);
+    public void changeMasterKey(
+        @MXBeanParameter(name = "masterKeyName", description = "Master key name.") String masterKeyName
+    );
 }
