@@ -86,6 +86,8 @@ import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
@@ -154,7 +156,7 @@ public class IgniteConfiguration {
     public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT);
+    public static final int DFLT_PUBLIC_THREAD_CNT = max(8, AVAILABLE_PROC_CNT);
 
     /** Default size of data streamer thread pool. */
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
@@ -179,6 +181,9 @@ public class IgniteConfiguration {
 
     /** Default size of query thread pool. */
     public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Default size of index create/rebuild thread pool. */
+    public static final int DFLT_BUILD_IDX_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
 
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
@@ -301,6 +306,9 @@ public class IgniteConfiguration {
 
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
+
+    /** Index create/rebuild pool size. */
+    private int buildIdxPoolSize = DFLT_BUILD_IDX_THREAD_POOL_SIZE;
 
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
@@ -693,6 +701,7 @@ public class IgniteConfiguration {
         pluginProvs = cfg.getPluginProviders();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
+        buildIdxPoolSize = cfg.getBuildIndexThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
         rebalanceTimeout = cfg.getRebalanceTimeout();
         rebalanceBatchesPrefetchCnt = cfg.getRebalanceBatchesPrefetchCount();
@@ -1079,6 +1088,31 @@ public class IgniteConfiguration {
      */
     public int getQueryThreadPoolSize() {
         return qryPoolSize;
+    }
+
+    /**
+     * Size of thread pool for create/rebuild index.
+     * <p>
+     * If not provided, executor service will have size
+     * {@link #DFLT_BUILD_IDX_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool size for create/rebuild index.
+     */
+    public int getBuildIndexThreadPoolSize() {
+        return buildIdxPoolSize;
+    }
+
+    /**
+     * Sets index create/rebuild thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getBuildIndexThreadPoolSize()
+     */
+    public IgniteConfiguration setBuildIndexThreadPoolSize(int poolSize) {
+        buildIdxPoolSize = poolSize;
+
+        return this;
     }
 
     /**
