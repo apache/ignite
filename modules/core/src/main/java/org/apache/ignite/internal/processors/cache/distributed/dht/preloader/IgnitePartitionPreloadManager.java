@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -169,7 +168,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
 
                 if (fut != null) {
-                    U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
 
                     fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
                         ", success=" + (!f.isCancelled() && f.error() == null) + "]"));

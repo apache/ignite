@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,9 +53,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
 /**
@@ -82,7 +81,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private final GridDhtPartitionExchangeId exchId;
 
     /** Assignments ordered by cache rebalance priority and node. */
-    private final Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssgnments;
+    private final Iterable<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
     /** Unique partition identifier with node identifier. */
     private final Map<Long, UUID> partsToNodes;
@@ -91,7 +90,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     @GridToStringInclude
     private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
 
-    /** todo */
+    /** */
     private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpRoutines;
 
     /** Count of partition snapshots received. */
@@ -113,7 +112,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     public PartitionPreloadingRoutine() {
         this(Collections.emptyList(), null, null, null, 0, null);
 
-        onDone(true);
+        onDone(false);
     }
 
     /**
@@ -125,7 +124,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param cpLsnr Checkpoint listener.
      */
     public PartitionPreloadingRoutine(
-        Collection<T2<UUID, Map<Integer, Set<Integer>>>> assigns,
+        Iterable<T2<UUID, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
@@ -139,7 +138,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         orderedAssgnments = assigns;
         topVer = startVer;
-        log = cctx == null ? null : cctx.logger(getClass());
+        log = cctx == null ? null : cctx.kernalContext().log(getClass());
 
         // initialize
         Map<DataRegion, Set<Long>> regionToParts = new HashMap<>();
@@ -216,7 +215,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             if (isDone())
                 return;
 
-            U.log(log, "Preloading partition files [supplier=" + nodeId + ", groups=" + currGroups + "]");
+            if (log.isInfoEnabled())
+                log.info("Preloading partition files [supplier=" + nodeId + ", groups=" + currGroups + "]");
 
             (snapshotFut = cctx.snapshotMgr()
                 .createRemoteSnapshot(nodeId,
@@ -286,7 +286,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 });
 
             if (receivedCnt.incrementAndGet() == partsToNodes.size()) {
-                U.log(log, "All partition files are received - triggering checkpoint to complete rebalancing.");
+                if (log.isInfoEnabled())
+                    log.info("All partition files are received - triggering checkpoint to complete rebalancing.");
 
                 cctx.database().wakeupForCheckpoint("Partition files preload complete.");
             }
@@ -333,7 +334,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 IgniteInternalFuture<?> fut = qryProc.rebuildIndexesFromHash(ctx);
 
                 if (fut != null) {
-                    U.log(log, "Starting index rebuild [cache=" + ctx.cache().name() + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
 
                     fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
                         ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
@@ -357,8 +359,10 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         int remainGroupsCnt = remaining.size();
 
-        U.log(log, "Completed" + (remainGroupsCnt == 0 ? " (final)" : "") +
-            " cache group files preloading [grp=" + grpName + ", remain=" + remainGroupsCnt + "]");
+        if (log.isInfoEnabled()) {
+            log.info("Completed" + (remainGroupsCnt == 0 ? " (final)" : "") +
+                " partition files preloading [grp=" + grpName + ", remain=" + remainGroupsCnt + "]");
+        }
 
         if (remainGroupsCnt == 0)
             onDone(true);
@@ -383,13 +387,11 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             if (orderedAssgnments == null)
                 return true;
 
-            if (!isCancelled() && !isFailed()) {
-                U.log(log, "The final file preloading is done [result=" + res + ']');
-
+            if (!isCancelled() && !isFailed())
                 return true;
-            }
 
-            U.log(log, "Cancelling File preloading [topVer=" + topVer + "]");
+            if (log.isInfoEnabled())
+                log.info("Cancelling File preloading [topVer=" + topVer + "]");
 
             if (snapshotFut != null && !snapshotFut.isDone()) {
                 if (log.isDebugEnabled())

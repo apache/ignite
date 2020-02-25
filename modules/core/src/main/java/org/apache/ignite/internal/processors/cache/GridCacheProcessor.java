@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesLis
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -5479,6 +5480,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void onBaselineChange() {
             onKernalStopCaches(true);
+
+            Collection<IgniteInternalFuture<Void>> clearFuts = new ArrayList<>(cacheGrps.size());
+
+            long start = U.currentTimeMillis();
+
+            Set<DataRegion> regions = new HashSet<>();
+
+            for (CacheGroupContext grp : cacheGrps.values()) {
+                if (grp.persistenceEnabled())
+                    regions.add(grp.dataRegion());
+            }
+
+            for (DataRegion region : regions)
+                clearFuts.add(((PageMemoryEx)region.pageMemory()).clearAsync((grpId, pageIdg) -> true, false));
+
+            for (IgniteInternalFuture<Void> clearFut : clearFuts) {
+                try {
+                    clearFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to clear page memory", e);
+                }
+            }
+
+            if (log.isInfoEnabled()) {
+                log.info("Page memory cleanup took " + (U.currentTimeMillis() - start) + " ms " +
+                    F.viewReadOnly(regions, r -> r.config().getName()));
+            }
 
             stopCaches(true);
 
