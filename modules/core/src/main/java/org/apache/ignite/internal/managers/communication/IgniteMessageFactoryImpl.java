@@ -50,6 +50,15 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private boolean initialized;
 
+    /** Min index of registered message supplier. */
+    private int minIdx = Integer.MAX_VALUE;
+
+    /** Max index of registered message supplier. */
+    private int maxIdx = -1;
+
+    /** Count of registered message suppliers. */
+    private int cnt;
+
     /**
      * Contructor.
      *
@@ -102,15 +111,21 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
 
         Supplier<Message> curr = msgSuppliers[idx];
 
-        if (curr == null)
+        if (curr == null) {
             msgSuppliers[idx] = supplier;
+
+            minIdx = Math.min(idx, minIdx);
+
+            maxIdx = Math.max(idx, maxIdx);
+
+            cnt++;
+        }
         else
             throw new IgniteException("Message factory is already registered for direct type: " + directType);
     }
 
     /**
      * Creates new message instance of provided direct type.
-     * <p>
      *
      * @param directType Message direct type.
      * @return Message instance.
@@ -126,6 +141,24 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
             throw new IgniteException("Invalid message type: " + directType);
 
         return supplier.get();
+    }
+
+    /**
+     * Returns direct types of all registered messages.
+     *
+     * @return Direct types of all registered messages.
+     */
+    public short[] registeredDirectTypes() {
+        short[] res = new short[cnt];
+
+        if (cnt > 0) {
+            for (int i = minIdx, p = 0; i <= maxIdx; i++) {
+                if (msgSuppliers[i] != null)
+                    res[p++] = indexToDirectType(i);
+            }
+        }
+
+        return res;
     }
 
     /**
