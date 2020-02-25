@@ -121,7 +121,7 @@ public class BreakRebalanceChainTest extends GridCommonAbstractTest {
 
         communicationSpi.waitForBlocked();
 
-        assertEquals("Several parallel rebalace detected.", blocketDemand(rebalancingCaches), 1);
+        assertEquals("Several parallel rebalace detected.", blockedDemand(rebalancingCaches), 1);
 
         IgniteEx filteredNode = startGrid(getTestIgniteInstanceName(3) + FITERED_NODE_SUFFIX);
 
@@ -130,7 +130,7 @@ public class BreakRebalanceChainTest extends GridCommonAbstractTest {
         for (IgniteInternalFuture fut : futs)
             fut.get(10_000);
 
-        assertEquals("Several parallel rebalace detected.", blocketDemand(rebalancingCaches), 1);
+        assertEquals("Several parallel rebalace detected.", blockedDemand(rebalancingCaches), 1);
 
         communicationSpi.stopBlock();
 
@@ -141,14 +141,14 @@ public class BreakRebalanceChainTest extends GridCommonAbstractTest {
      * @param rebalancingCaches Map of blocked demande messages for caches.
      * @return Count of blocked messages.
      */
-    private int blocketDemand(ConcurrentHashMap<String, Long> rebalancingCaches) {
+    private int blockedDemand(ConcurrentHashMap<String, Long> rebalancingCaches) {
         int mesages = 0;
 
         for (Map.Entry<String, Long> entry : rebalancingCaches.entrySet()) {
             if (entry.getValue() > 0) {
                 mesages++;
 
-                log.info("Dmand for partiotnos on cache " + entry.getKey() + " rebalance id " + entry.getValue());
+                log.info("Demand for partitions on cache " + entry.getKey() + " rebalance id " + entry.getValue());
             }
         }
 
