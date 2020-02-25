@@ -667,7 +667,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
             ).getAll();
 
             return null;
-        }, IgniteException.class, "The query was cancelled while executing.");
+        }, CacheException.class, "The query was cancelled while executing.");
 
         // Ensures that there were no exceptions within async cancellation process.
         cancelRes.get(CHECK_RESULT_TIMEOUT);
@@ -1308,10 +1308,10 @@ public class KillQueryTest extends GridCommonAbstractTest {
             setMapper(new ReducePartitionMapper(ctx, ctx.log(GridReduceQueryExecutor.class)) {
                 /** {@inheritDoc} */
                 @Override public ReducePartitionMapResult nodesForPartitions(List<Integer> cacheIds,
-                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly, long qryId) {
+                    AffinityTopologyVersion topVer, int[] parts, boolean isReplicatedOnly) {
 
                     return retryNodePartMapping ? RETRY_RESULT :
-                        super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly, qryId);
+                        super.nodesForPartitions(cacheIds, topVer, parts, isReplicatedOnly);
                 }
             });
 

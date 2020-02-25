@@ -19,9 +19,11 @@ package org.apache.ignite.plugin.security;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Authentication context.
@@ -126,7 +128,7 @@ public class AuthenticationContext {
      * @return Node attributes or empty map for {@link SecuritySubjectType#REMOTE_CLIENT}.
      */
     public Map<String, Object> nodeAttributes() {
-        return nodeAttrs != null ? nodeAttrs : Collections.<String, Object>emptyMap();
+        return nodeAttrs != null ? nodeAttrs : Collections.emptyMap();
     }
 
     /**
@@ -134,8 +136,8 @@ public class AuthenticationContext {
      *
      * @param nodeAttrs Node attributes.
      */
-    public void nodeAttributes(Map<String, Object> nodeAttrs) {
-        this.nodeAttrs = nodeAttrs;
+    public void nodeAttributes(Map<String, ?> nodeAttrs) {
+        this.nodeAttrs = F.isEmpty(nodeAttrs) ? null : new HashMap<>(nodeAttrs);
     }
 
     /**

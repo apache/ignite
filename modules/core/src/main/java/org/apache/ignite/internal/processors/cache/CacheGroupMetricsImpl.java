@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -483,6 +484,14 @@ public class CacheGroupMetricsImpl {
 
     /** Removes all metric for cache group. */
     public void remove() {
+        if (ctx.shared().kernalContext().isStopping())
+            return;
+
+        if (ctx.config().getNearConfiguration() != null)
+            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true));
+
+        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false));
+
         ctx.shared().kernalContext().metric().remove(metricGroupName());
     }
 
