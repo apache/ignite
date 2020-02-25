@@ -512,8 +512,12 @@ public class CommandHandler {
 
         if (args.sslKeyStorePassword() != null)
             factory.setKeyStorePassword(args.sslKeyStorePassword());
-        else
-            factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
+        else {
+            char[] keyStorePwd = requestPasswordFromConsole("SSL keystore password: ");
+
+            args.sslKeyStorePassword(keyStorePwd);
+            factory.setKeyStorePassword(keyStorePwd);
+        }
 
         factory.setKeyStoreType(args.sslKeyStoreType());
 
@@ -524,8 +528,12 @@ public class CommandHandler {
 
             if (args.sslTrustStorePassword() != null)
                 factory.setTrustStorePassword(args.sslTrustStorePassword());
-            else
-                factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
+            else {
+                char[] trustStorePwd = requestPasswordFromConsole("SSL truststore password: ");
+
+                args.sslTrustStorePassword(trustStorePwd);
+                factory.setTrustStorePassword(trustStorePwd);
+            }
 
             factory.setTrustStoreType(args.sslTrustStoreType());
         }
