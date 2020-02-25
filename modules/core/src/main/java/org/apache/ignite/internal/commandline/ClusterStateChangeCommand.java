@@ -99,6 +99,8 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
             throw new IllegalArgumentException("Can't parse new cluster state. State: " + s, e);
         }
 
+        force = false;
+
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
 

@@ -83,6 +83,8 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
+        force = false;
+
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
 
