@@ -245,7 +245,6 @@ public class GridNioServer<T> {
     /** Outbound messages queue size. */
     @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
 
-
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 

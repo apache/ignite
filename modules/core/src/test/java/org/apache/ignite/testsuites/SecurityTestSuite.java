@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
+import org.apache.ignite.internal.processors.security.GridCommandHandlerSslWithSecurityTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.cache.ContinuousQueryPermissionCheckTest;
@@ -27,6 +29,9 @@ import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQu
 import org.apache.ignite.internal.processors.security.cache.closure.ContinuousQueryWithTransformerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
+import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
@@ -56,6 +61,7 @@ import org.junit.runners.Suite;
     EntryProcessorPermissionCheckTest.class,
     ComputePermissionCheckTest.class,
     ThinClientPermissionCheckTest.class,
+    ThinClientPermissionCheckSecurityTest.class,
     ContinuousQueryPermissionCheckTest.class,
 
     DistributedClosureRemoteSecurityContextCheckTest.class,
@@ -70,6 +76,8 @@ import org.junit.runners.Suite;
     ContinuousQueryWithTransformerRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
+    AdditionalSecurityCheckTest.class,
+    AdditionalSecurityCheckWithGlobalAuthTest.class,
 
     CacheSandboxTest.class,
     DataStreamerSandboxTest.class,
@@ -78,6 +86,8 @@ import org.junit.runners.Suite;
     IgniteOperationsInsideSandboxTest.class,
     SecuritySubjectPermissionsTest.class,
     AccessToClassesInsideInternalPackageTest.class,
+    IgniteSecurityProcessorTest.class,
+    GridCommandHandlerSslWithSecurityTest.class
 })
 public class SecurityTestSuite {
 }

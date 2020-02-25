@@ -1190,7 +1190,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private Map<Integer, Integer> generateDataMap(int startKey, int cnt) {
         Random rnd = ThreadLocalRandom.current();
 
-        Map<Integer, Integer> data = U.newHashMap(cnt);
+        Map<Integer, Integer> data = new TreeMap<>();
 
         for (int i = 0; i < cnt; i++)
             data.put(startKey++, rnd.nextInt());

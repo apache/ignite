@@ -392,7 +392,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalRemoveAllJob<K, V> extends TopologyVersionAwareJob {
+    public static class GlobalRemoveAllJob<K, V> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -409,6 +409,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * @param cacheName Cache name.
          * @param topVer Topology version.
          * @param skipStore Skip store flag.
+         * @param keepBinary Keep binary flag.
          */
         private GlobalRemoveAllJob(
             String cacheName,

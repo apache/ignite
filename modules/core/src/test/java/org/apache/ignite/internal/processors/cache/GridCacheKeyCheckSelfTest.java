@@ -125,7 +125,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+            IgniteCache<IncorrectCacheKey, String> cache = cache();
 
             cache.get(new IncorrectCacheKey(0));
 
@@ -145,7 +145,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+            IgniteCache<IncorrectCacheKey, String> cache = cache();
 
             cache.put(new IncorrectCacheKey(0), "test_value");
 
@@ -165,7 +165,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+            IgniteCache<IncorrectCacheKey, String> cache = cache();
 
             cache.remove(new IncorrectCacheKey(0));
 
@@ -176,6 +176,13 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
 
             assertTrue(e.getMessage().startsWith("Cache key must override hashCode() and equals() methods"));
         }
+    }
+
+    /** */
+    private IgniteCache<IncorrectCacheKey, String> cache() {
+        grid(0).context().cache().internalCache(DEFAULT_CACHE_NAME).forceKeyCheck();
+
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
