@@ -100,7 +100,7 @@ param (
 # 0) Functions
 function Make-Dir([string]$dirPath) {
     New-Item -Path $dirPath -ItemType "directory" -Force
-    Remove-Item -Force $dirPath\*.*
+    Remove-Item -Force -Recurse $dirPath\*.*
 }
 
 function Exec([string]$command) {
