@@ -175,8 +175,15 @@ public class GridServiceProxy<T> implements Serializable {
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
 
-                            if (svc != null)
+                            if (svc != null) {
+                                System.err.println("MYDEBUG: Service class: " + svc.getClass().getName());
+                                System.out.println("MYDEBUG: Service class: " + svc.getClass().getName());
+
+                                System.err.println("MYDEBUG: Mtd object class: " + mtd.getDeclaringClass().getName());
+                                System.out.println("MYDEBUG: Mtd object class: " + mtd.getDeclaringClass().getName());
+
                                 return mtd.invoke(svc, args);
+                            }
                         }
                     }
                     else {

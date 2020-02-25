@@ -85,7 +85,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    private static interface PlatformTestService {
+    public static interface PlatformTestService {
         /**
          * Returns a value indicating whether this service is cancelled.
          */

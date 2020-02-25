@@ -12,11 +12,14 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.PlatformContextImpl;
 
+import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.internal.processors.service.inner.NamingService;
 import org.apache.ignite.internal.processors.service.inner.NamingServiceImpl;
+import org.apache.ignite.platform.PlatformDeployServiceTask;
+import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -49,14 +52,27 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         System.clearProperty(IGNITE_SERVICE_METRICS_ENABLED);
     }
 
+    /** TODO : delete me */
     @Test
-    public void fix() throws Exception {
-        IgniteEx server = startGrid(0);
+    public void fix() throws Throwable {
+//        IgniteEx server = startGrid(0);
+//        IgniteEx client = startClientGrid(1);
+//
+//        String serviceName = "myService";
+//
+//        server.services().deployNodeSingleton(serviceName, new PlatformDeployServiceTask.PlatformTestServiceImpl());
+//
+//        GridServiceProxy proxy = new GridServiceProxy<>(client.services().clusterGroup(), serviceName, Service.class, false, 0,
+//            client.context());
+//
+//        Method mtd = PlatformServices.ServiceProxyHolder.getMethod(PlatformDeployServiceTask.PlatformTestService.class, "isInitialized", new Object[0]);
+//
+//        proxy.invokeMethod(mtd, new Object[0]);
 
-        PlatformServices platformServices = new PlatformServices(new PlatformContextImpl(server.context(), null, null, "dotnet"),
-            server.services(),false);
-
-        platformServices.processInObjectStreamOutObjectStream(4, null, null, null);
+//        PlatformServices platformServices = new PlatformServices(new PlatformContextImpl(server.context(), null, null, "dotnet"),
+//            server.services(),false);
+//
+//        platformServices.processInObjectStreamOutObjectStream(4, null, null, null);
 
 //        PlatformProcessorImpl platformProcessor = new PlatformProcessorImpl(server.context());
 //
