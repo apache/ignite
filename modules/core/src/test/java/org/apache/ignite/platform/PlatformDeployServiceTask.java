@@ -205,7 +205,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     }
 
     /** {@inheritDoc} */
-    private static class PlatformTestServiceImpl implements Service, PlatformTestService {
+    public static class PlatformTestServiceImpl implements Service, PlatformTestService {
         /** */
         private boolean isCancelled;
 
