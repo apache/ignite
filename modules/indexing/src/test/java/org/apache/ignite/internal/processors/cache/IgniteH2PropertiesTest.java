@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.Before;
 
 /**
- * Test that the valuse of SysProperties variable OBJECT_CACHE is disable
+ * Test to check the values of SysProperties variables are correct
  */
 public class IgniteH2PropertiesTest extends GridCommonAbstractTest {
     /** Instance name. */
