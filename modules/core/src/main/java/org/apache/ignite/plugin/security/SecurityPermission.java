@@ -73,7 +73,10 @@ public enum SecurityPermission {
     CACHE_DESTROY,
 
     /** Join as server node permission. */
-    JOIN_AS_SERVER;
+    JOIN_AS_SERVER,
+
+    /** Change snapshot security level. */
+    CHANGE_SNAPSHOT_SECURITY_LEVEL;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();
