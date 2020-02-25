@@ -959,8 +959,9 @@ public class PlatformCallbackGateway {
         enter();
 
         try {
-            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
-                PlatformCallbackOp.ExtensionInLongLongOutLong, typ, arg1, arg2, null);
+            return  envPtr;
+//            return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+//                PlatformCallbackOp.ExtensionInLongLongOutLong, typ, arg1, arg2, null);
         }
         finally {
             leave();

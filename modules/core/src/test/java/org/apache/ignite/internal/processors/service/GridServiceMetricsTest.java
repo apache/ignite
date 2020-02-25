@@ -6,11 +6,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.platform.PlatformProcessorImpl;
-import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGroup;
+import org.apache.ignite.internal.processors.platform.PlatformContextImpl;
+
 import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
@@ -52,11 +53,16 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void fix() throws Exception {
         IgniteEx server = startGrid(0);
 
-        PlatformProcessorImpl platformProcessor = new PlatformProcessorImpl(server.context());
+        PlatformServices platformServices = new PlatformServices(new PlatformContextImpl(server.context(), null, null, "dotnet"),
+            server.services(),false);
 
-        PlatformClusterGroup platformTarget = (PlatformClusterGroup)platformProcessor.processOutObject(10);
+        platformServices.processInObjectStreamOutObjectStream(4, null, null, null);
 
-        PlatformServices platformServices = (PlatformServices)platformTarget.processOutObject(34);
+//        PlatformProcessorImpl platformProcessor = new PlatformProcessorImpl(server.context());
+//
+//        PlatformClusterGroup platformTarget = (PlatformClusterGroup)platformProcessor.processOutObject(10);
+//
+//        PlatformServices platformServices = (PlatformServices)platformTarget.processOutObject(34);
 
     }
 
