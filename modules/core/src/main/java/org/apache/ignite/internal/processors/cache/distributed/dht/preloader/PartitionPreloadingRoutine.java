@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,11 +50,9 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
 /**
@@ -107,15 +104,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private final Consumer<Runnable> cpLsnr;
 
     /**
-     * Dummy constructor.
-     */
-    public PartitionPreloadingRoutine() {
-        this(Collections.emptyList(), null, null, null, 0, null);
-
-        onDone(false);
-    }
-
-    /**
      * @param assigns Assigns.
      * @param startVer Topology version on which the rebalance started.
      * @param cctx Cache shared context.
@@ -138,7 +126,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         orderedAssgnments = assigns;
         topVer = startVer;
-        log = cctx == null ? null : cctx.kernalContext().log(getClass());
+        log = cctx.kernalContext().log(getClass());
 
         // initialize
         Map<DataRegion, Set<Long>> regionToParts = new HashMap<>();
@@ -375,12 +363,10 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-        boolean nodeIsStopping = X.hasCause(err, NodeStoppingException.class);
-
         lock.lock();
 
         try {
-            if (!super.onDone(res, nodeIsStopping ? null : err, nodeIsStopping || cancel))
+            if (!super.onDone(res, err, cancel))
                 return false;
 
             // Dummy routine - no additional actions required.
@@ -408,9 +394,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
                 return true;
             }
-
-            if (nodeIsStopping)
-                return true;
 
             return true;
         }

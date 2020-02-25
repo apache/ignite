@@ -78,7 +78,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
     /** Partition File rebalancing routine. */
-    private volatile PartitionPreloadingRoutine partPreloadingRoutine = new PartitionPreloadingRoutine();
+    private volatile PartitionPreloadingRoutine partPreloadingRoutine;
 
     /**
      * @param ktx Kernal context.
@@ -99,7 +99,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
-            partPreloadingRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
+            if (partPreloadingRoutine != null)
+                partPreloadingRoutine.onDone(false, null, false);
         }
         finally {
             lock.unlock();
@@ -126,13 +127,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
 
-        PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
+        PartitionPreloadingRoutine preloadRoutine = partPreloadingRoutine;
 
         // Abort the current rebalancing procedure if it is still in progress
-        if (!rebRoutine.isDone())
-            rebRoutine.cancel();
-
-        assert partPreloadingRoutine.isDone();
+        if (preloadRoutine != null && !preloadRoutine.isDone())
+            preloadRoutine.cancel();
 
         if (!supports(grp))
             return;
@@ -212,7 +211,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         lock.lock();
 
         try {
-            assert preloadRoutine.isDone();
+            assert preloadRoutine == null || preloadRoutine.isDone();
 
             if (isStopping())
                 return Collections.emptyMap();
@@ -313,9 +312,9 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return {@code True} If the last rebalance attempt was incomplete for specified cache group.
      */
     public boolean incompleteRebalance(CacheGroupContext grp) {
-        PartitionPreloadingRoutine rebalanceRoutine = partPreloadingRoutine;
+        PartitionPreloadingRoutine routine = partPreloadingRoutine;
 
-        return rebalanceRoutine.isDone() && rebalanceRoutine.remainingGroups().contains(grp.groupId());
+        return routine != null && routine.isDone() && routine.remainingGroups().contains(grp.groupId());
     }
 
     /**
@@ -337,6 +336,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param cntrs Partition counters.
      * @param globalSizes Global partition sizes.
      * @param suppliers Historical suppliers.
+     * @return {@code True} if file preloading is applicable for specified cache group.
      */
     private boolean filePreloadingApplicable(
         AffinityTopologyVersion resVer,
