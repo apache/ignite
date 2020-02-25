@@ -124,7 +124,7 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
     }
 
     /**
-     * Fills printer {@link Consumer<String>} by string view of this class.
+     * Fills printer {@code Consumer<String>} by string view of this class.
      */
     public void print(Consumer<String> printer, boolean verbose) {
         if (inconsistentKeys != null && !inconsistentKeys.isEmpty()) {
