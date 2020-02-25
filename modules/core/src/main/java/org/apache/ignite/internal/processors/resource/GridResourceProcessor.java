@@ -74,8 +74,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             new GridResourceLoggerInjector(ctx.config().getGridLogger());
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
             new GridResourceBasicInjector<>(ctx.grid());
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.METRIC_MANAGER.ordinal()] =
-            new GridResourceSupplierInjector<>(ctx::metric);
     }
 
     /** {@inheritDoc} */
@@ -336,15 +334,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             case LOAD_BALANCER:
             case TASK_CONTINUOUS_MAPPER:
             case CACHE_STORE_SESSION:
+            case FILESYSTEM_RESOURCE:
                 res = new GridResourceBasicInjector<>(param);
                 break;
 
             case JOB_CONTEXT:
                 res = new GridResourceJobContextInjector((ComputeJobContext)param);
-                break;
-
-            case FILESYSTEM_RESOURCE:
-                res = new GridResourceBasicInjector<>(param);
                 break;
 
             default:
@@ -411,7 +406,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         injectToJob(dep, taskCls, obj, ses, jobCtx);
 
         if (obj instanceof GridInternalWrapper) {
-            Object usrObj = ((GridInternalWrapper)obj).userObject();
+            Object usrObj = ((GridInternalWrapper<?>)obj).userObject();
 
             if (usrObj != null)
                 injectToJob(dep, taskCls, usrObj, ses, jobCtx);
