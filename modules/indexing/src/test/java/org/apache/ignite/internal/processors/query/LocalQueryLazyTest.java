@@ -28,6 +28,8 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,6 +45,12 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
     /** Queries count. */
     private static final int QRY_CNT = 10;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setFailureHandler(new StopNodeFailureHandler());
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -230,6 +238,53 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
             return null;
         }, QueryRetryException.class, "Table was modified concurrently (please retry the query)");
+    }
+
+    /** */
+    public void testDropTableWithOpenCursor() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        distributedSql(grid(), "CREATE TABLE TBL0 (id INT PRIMARY KEY, name VARCHAR)");
+
+        for (int i = 0; i < 100; ++i)
+            distributedSql(grid(), "INSERT INTO TBL0 (id, name) VALUES (?, ?)", i, "val0_" + i);
+
+        final Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM TBL0")
+            .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setPageSize(1), false).iterator();
+
+        it.next();
+
+        distributedSql(grid(), "DROP TABLE TBL0");
+
+        GridTestUtils.assertThrows(log, () -> {
+            it.next();
+
+            return null;
+        }, QueryRetryException.class, "Table was modified concurrently (please retry the query)");
+    }
+
+    /** */
+    public void testDeactivateWithOpenCursor() throws Exception {
+        startGrid(0);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        final Iterator<List<?>> it = grid().context().query().querySqlFields(new SqlFieldsQuery("SELECT * FROM test")
+            .setLocal(true)
+            .setLazy(true)
+            .setSchema("TEST")
+            .setPageSize(1), false).iterator();
+
+        it.next();
+
+        grid(0).cluster().active(false);
+
+        assertFalse(grid().cluster().active());
     }
 
     /**
