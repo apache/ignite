@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
@@ -19,10 +20,13 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_METRICS_ENABLED;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.METRIC_REGISTRY_INVOCATIONS;
+
 /** */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invcations. */
-    private static final int INVOKE_CNT = 100;
+    private static final int INVOKE_CNT = 50;
 
     /** Utility holder of current grid number. */
     private final AtomicInteger gridNum = new AtomicInteger();
@@ -32,6 +36,65 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /** */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        System.clearProperty(IGNITE_SERVICE_METRICS_ENABLED);
+    }
+
+    /** Makes sure {@code IgniteSystemProperties#IGNITE_SERVICE_METRICS_ENABLED} works correctly. */
+    @Test
+    public void testMetricsEnabledDisabled() throws Exception {
+        IgniteEx server = startGrid(0);
+
+        assertFalse("Service metric registry must not be created yet.",
+            findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+
+        String srvcName = "testMetricsEnabledService";
+
+        server.services().deploy(serviceCfg(srvcName, 1, 1));
+
+        assertTrue("Service metric registry must be already created.",
+            findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+
+        stopAllGrids();
+
+        System.setProperty(IGNITE_SERVICE_METRICS_ENABLED, "false");
+
+        server = startGrid(0);
+
+        assertFalse("Service metric registry must not be created again.",
+            findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+
+        server.services().deploy(serviceCfg(srvcName, 1, 1));
+
+        MyService srvc = server.services().service(srvcName);
+
+        srvc.hello();
+
+        srvc = server.services().serviceProxy(srvcName, MyService.class, false);
+
+        srvc.hello();
+
+        srvc = server.services().serviceProxy(srvcName, MyService.class, true);
+
+        srvc.hello();
+
+        IgniteEx client = startClientGrid(1);
+
+        srvc = client.services().serviceProxy(srvcName, MyService.class, false);
+
+        srvc.hello();
+
+        srvc = client.services().serviceProxy(srvcName, MyService.class, true);
+
+        srvc.hello();
+
+        assertFalse("Service metric registry must not be created when \""+IGNITE_SERVICE_METRICS_ENABLED +
+                "\" is false.", findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
     }
 
     /** Ensures metric are created when service is deployed and removed when service is undeployed. */
@@ -301,5 +364,17 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             ++cnt;
 
         return cnt;
+    }
+
+    /**
+     * @return {@code True} if metrics registry found in {@code metricMgr} by name {@code registryName}.
+     */
+    private static boolean findMetric(GridMetricManager metricMgr, String registryName) {
+        for (ReadOnlyMetricRegistry registry : metricMgr) {
+            if (registry.name().startsWith(registryName))
+                return true;
+        }
+
+        return false;
     }
 }

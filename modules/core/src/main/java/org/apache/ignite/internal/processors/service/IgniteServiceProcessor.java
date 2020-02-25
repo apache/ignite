@@ -95,6 +95,8 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_METRICS_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -181,6 +183,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** Services topologies update mutex. */
     private final Object servicesTopsUpdateMux = new Object();
+
+    /** Leverages collecting of service metrics. */
+    private final boolean metricsEnabled;
 
     /**
      * Operations lock. The main purpose is to avoid a hang of users operation futures.
@@ -289,6 +294,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             new ServiceViewWalker(),
             registeredServices.values(),
             ServiceView::new);
+
+        metricsEnabled = getBoolean(IGNITE_SERVICE_METRICS_ENABLED, true);
     }
 
     /** {@inheritDoc} */
@@ -394,7 +401,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         deployedServices.clear();
 
-        ctx.metric().remove(METRIC_REGISTRY_INVOCATIONS);
+        if (metricsEnabled)
+            ctx.metric().remove(METRIC_REGISTRY_INVOCATIONS);
 
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
@@ -991,21 +999,29 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * @return Local service proxy allowing timing of service method.
+     * @param srvc The serive to wrap into invocation proxy.
+     * @param srvcCtx Context of service {@code srvc}.
+     *
+     * @return Local service proxy allowing timing of service method if {@code metricsEnabled} is {@code True}.
+     * If {@code metricsEnabled} is {@code False}, returns the service instance {@code srvc}.
      */
     private Service localServiceProxy(Service srvc, ServiceContextImpl srvcCtx) {
-        Set<Class<?>> interfaces = new HashSet<>();
+        if (metricsEnabled) {
+            Set<Class<?>> interfaces = new HashSet<>();
 
-        Class<?> cur = srvc.getClass();
+            Class<?> cur = srvc.getClass();
 
-        while (cur != null) {
-            interfaces.addAll(Arrays.asList(cur.getInterfaces()));
+            while (cur != null) {
+                interfaces.addAll(Arrays.asList(cur.getInterfaces()));
 
-            cur = cur.getSuperclass();
+                cur = cur.getSuperclass();
+            }
+
+            return (Service)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
+                interfaces.toArray(new Class<?>[0]), new LocalInvocationHandler(srvc, srvcCtx));
         }
-
-        return (Service)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
-            interfaces.toArray(new Class<?>[0]), new LocalInvocationHandler(srvc, srvcCtx));
+        else
+            return srvc;
     }
 
     /** {@inheritDoc} */
@@ -1300,13 +1316,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
-        ServiceContextImpl firstInitialized = ctxs.isEmpty() ? null : ctxs.iterator().next();
+        ServiceContextImpl firstInitialized = !metricsEnabled || ctxs.isEmpty() ? null : ctxs.iterator().next();
 
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
 
-                if (cancelCnt >= ctxs.size())
+                if (metricsEnabled && cancelCnt >= ctxs.size())
                     ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
 
                 cancel(ctxs, cancelCnt);
@@ -1354,10 +1370,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            registerMetrics(srvc, srvcCtx, firstInitialized);
+            if (metricsEnabled) {
+                registerMetrics(srvc, srvcCtx, firstInitialized);
 
-            if (firstInitialized == null)
-                firstInitialized = srvcCtx;
+                if (firstInitialized == null)
+                    firstInitialized = srvcCtx;
+            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1510,7 +1528,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (ctxs != null) {
             synchronized (ctxs) {
-                ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
+                if (metricsEnabled)
+                    ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
 
                 cancel(ctxs, ctxs.size());
             }

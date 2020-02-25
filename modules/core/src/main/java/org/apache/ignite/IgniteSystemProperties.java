@@ -1117,6 +1117,19 @@ public final class IgniteSystemProperties {
         = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
 
     /**
+     * Manages service metrics collecting for a node. Works only if
+     * {@code IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED} is {@code true}. Note that Enabled service metrics can
+     * slightly hit service performance.
+     * <p/>
+     * If the property is {@code true} then service metrics are collected.
+     * <p/>
+     * If the property is {@code false} then service metrics are not collected.
+     * <p/>
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_SERVICE_METRICS_ENABLED = "IGNITE_SERVICE_METRICS_ENABLED";
+
+    /**
      * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this
      * case message contains only cluster metrics). By default cache metrics are included into the message and
      * calculated each time the message is sent.
