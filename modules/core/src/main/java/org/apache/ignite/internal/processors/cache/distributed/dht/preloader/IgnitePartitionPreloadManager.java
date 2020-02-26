@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -78,13 +77,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
     /** Partition File rebalancing routine. */
     private volatile PartitionPreloadingRoutine partPreloadingRoutine;
-
-    /**
-     * @param ktx Kernal context.
-     */
-    public IgnitePartitionPreloadManager(GridKernalContext ktx) {
-        assert CU.isPersistenceEnabled(ktx.config()) : "Persistence must be enabled to use file preloading";
-    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {

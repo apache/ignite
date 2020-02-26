@@ -3020,7 +3020,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
-            preloadMgr = new IgnitePartitionPreloadManager(ctx);
             snapshotMgr = new IgniteSnapshotManager(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
@@ -3041,6 +3040,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dbMgr = new IgniteCacheDatabaseSharedManager();
         }
+
+        if (!ctx.clientNode())
+            preloadMgr = new IgnitePartitionPreloadManager();
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 

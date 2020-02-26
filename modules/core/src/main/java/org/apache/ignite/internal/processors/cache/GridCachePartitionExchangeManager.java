@@ -96,7 +96,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgnitePartitionPreloadManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -3168,8 +3167,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
 
-                    IgnitePartitionPreloadManager partPreloadMgr = cctx.preloader();
-
                     boolean forcePreload = false;
 
                     GridDhtPartitionExchangeId exchId;
@@ -3374,12 +3371,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
-                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> fileGrps;
-
-                        if (partPreloadMgr != null)
-                            fileGrps = partPreloadMgr.preloadAsync(cnt, exchFut, assignsMap);
-                        else
-                            fileGrps = Collections.emptyMap();
+                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> fileGrps =
+                            cctx.preloader().preloadAsync(cnt, exchFut, assignsMap);
 
                         int size = assignsMap.size();
 

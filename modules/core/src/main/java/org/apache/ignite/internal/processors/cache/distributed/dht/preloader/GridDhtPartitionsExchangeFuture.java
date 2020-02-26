@@ -3265,7 +3265,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
-        boolean fileRebalancingSupported = grp != null && cctx.preloader() != null &&
+        boolean fileRebalancingSupported = grp != null &&
             cctx.preloader().supports(grp, cctx.discovery().aliveServerNodes());
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;

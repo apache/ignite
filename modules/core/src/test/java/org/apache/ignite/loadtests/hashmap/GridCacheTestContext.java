@@ -89,7 +89,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null,
                 null,
                 new CacheDiagnosticManager(),
-                new IgnitePartitionPreloadManager(ctx)
+                new IgnitePartitionPreloadManager()
             ),
             defaultCacheConfiguration(),
             null,
