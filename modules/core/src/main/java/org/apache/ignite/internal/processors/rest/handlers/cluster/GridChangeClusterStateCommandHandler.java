@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.handlers.cluster;
 
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -74,7 +73,7 @@ public class GridChangeClusterStateCommandHandler extends GridRestCommandHandler
                     U.log(log, "Received cluster state change request to " + req.state() +
                         " state from client node with ID: " + req.clientId());
 
-                    ctx.state().changeGlobalState(req.state(), req.force(), Collections.emptyList(),
+                    ctx.state().changeGlobalState(req.state(), req.force(), ctx.cluster().get().forServers().nodes(),
                         false).get();
 
                     res.setResponse(req.command().key() + " done");
