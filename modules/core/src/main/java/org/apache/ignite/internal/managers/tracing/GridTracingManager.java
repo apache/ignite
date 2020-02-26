@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *      https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.tracing;
+package org.apache.ignite.internal.managers.tracing;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.tracing.NoopTracingSpi;
+import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.processors.tracing.SpanTags;
+import org.apache.ignite.internal.processors.tracing.Tracing;
+import org.apache.ignite.internal.processors.tracing.TracingSpi;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesHandler;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.NotNull;
@@ -28,53 +33,53 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.NODE;
 
 /**
- * Tracing sub-system implementation.
+ * Tracing Manager.
  */
-public class TracingProcessor extends GridProcessorAdapter implements Tracing {
-    /** Spi. */
-    private TracingSpi spi;
+public class GridTracingManager extends GridManagerAdapter<TracingSpi> implements Tracing {
 
     /** Traceable messages handler. */
     private final TraceableMessagesHandler msgHnd;
 
     /**
-     * @param ctx Kernal context.
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param useNoopTracingSpi Flag that signals that NoOp tracing spi should be used instead of the one,
+     * specified in the context. It's a part of the failover logic that is suitable if an exception is thrown
+     * when the manager starts.
      */
-    public TracingProcessor(GridKernalContext ctx) {
-        super(ctx);
+    public GridTracingManager(GridKernalContext ctx, boolean useNoopTracingSpi) {
+        super(ctx, useNoopTracingSpi ? new NoopTracingSpi() : ctx.config().getTracingSpi());
 
-        spi = ctx.config().getTracingSpi();
-
-        msgHnd = new TraceableMessagesHandler(this, ctx.log(TracingProcessor.class));
+        msgHnd = new TraceableMessagesHandler(this, ctx.log(GridTracingManager.class));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
     @Override public void start() throws IgniteCheckedException {
-        super.start();
-
         try {
-            ctx.resource().inject(spi);
-
-            spi.spiStart(ctx.igniteInstanceName());
+            startSpi();
         }
         catch (IgniteSpiException e) {
-            log.warning("Failed to start tracing processor with spi: " + spi.getName()
+            log.warning("Failed to start tracing processor with spi: " + getSpi().getName()
                 + ". Noop implementation will be used instead.", e);
 
-            spi = new NoopTracingSpi();
-
-            spi.spiStart(ctx.igniteInstanceName());
+            throw e;
         }
 
-        if (log.isInfoEnabled())
-            log.info("Started tracing processor with configured spi: " + spi.getName());
+        if (log.isDebugEnabled())
+            log.debug(startInfo());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
+        stopSpi();
 
-        spi.spiStop();
+        if (log.isDebugEnabled())
+            log.debug(stopInfo());
     }
 
     /**
@@ -87,26 +92,26 @@ public class TracingProcessor extends GridProcessorAdapter implements Tracing {
         span.addTag(SpanTags.NODE_ID, ctx.localNodeId().toString());
         span.addTag(SpanTags.tag(NODE, SpanTags.NAME), ctx.igniteInstanceName());
 
-        ClusterNode localNode = ctx.discovery().localNode();
-        if (localNode != null && localNode.consistentId() != null)
-            span.addTag(SpanTags.tag(NODE, SpanTags.CONSISTENT_ID), localNode.consistentId().toString());
+        ClusterNode locNode = ctx.discovery().localNode();
+        if (locNode != null && locNode.consistentId() != null)
+            span.addTag(SpanTags.tag(NODE, SpanTags.CONSISTENT_ID), locNode.consistentId().toString());
 
         return span;
     }
 
     /** {@inheritDoc} */
     @Override public Span create(@NotNull String name, @Nullable Span parentSpan) {
-        return enrichWithLocalNodeParameters(spi.create(name, parentSpan));
+        return enrichWithLocalNodeParameters(getSpi().create(name, parentSpan));
     }
 
     /** {@inheritDoc} */
     @Override public Span create(@NotNull String name, @Nullable byte[] serializedSpanBytes) {
-        return enrichWithLocalNodeParameters(spi.create(name, serializedSpanBytes));
+        return enrichWithLocalNodeParameters(getSpi().create(name, serializedSpanBytes));
     }
 
     /** {@inheritDoc} */
     @Override public byte[] serialize(@NotNull Span span) {
-        return spi.serialize(span);
+        return getSpi().serialize(span);
     }
 
     /** {@inheritDoc} */

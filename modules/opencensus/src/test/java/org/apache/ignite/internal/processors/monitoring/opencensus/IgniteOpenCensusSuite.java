@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.opencensus.spi;
+package org.apache.ignite.internal.processors.monitoring.opencensus;
 
-import org.apache.ignite.opencensus.spi.metric.OpenCensusMetricExporterSpiTest;
-import org.apache.ignite.opencensus.spi.tracing.OpenCensusTracingSpiTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     OpenCensusMetricExporterSpiTest.class,
-    OpenCensusTracingSpiTest.class
+    OpenCensusTracingSpiTest.class,
+    MixedTracingSpiTest.class
 })
 /**
  * Suite to test OpenCensus integration.
