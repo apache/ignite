@@ -104,7 +104,6 @@ public class IgniteMessageFactoryImplTest {
         new IgniteMessageFactoryImpl(factories);
     }
 
-
     /**
      * {@link MessageFactoryProvider} implementation.
      */

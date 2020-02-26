@@ -24,18 +24,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Provides MBean method parameters names.
- *
- * @deprecated Use {@link MXBeanParameter} instead.
+ * Provides name and description for MBean method parameter.
  */
-@Deprecated
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface MXBeanParametersNames {
+@Target({ElementType.PARAMETER})
+public @interface MXBeanParameter {
     /**
-     *
-     * Array of parameter names in MBean.
+     * Parameter name.
      */
-    public String[] value();
+    String name();
+
+    /**
+     * Parameter description.
+     */
+    String description();
 }
