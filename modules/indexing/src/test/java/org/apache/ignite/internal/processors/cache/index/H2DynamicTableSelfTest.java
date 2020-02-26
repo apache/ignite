@@ -1533,7 +1533,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             List<Object> resData = new ArrayList<>();
 
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-                try (ResultSet colsRs = conn.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "T", ".*")) {
+                try (ResultSet colsRs = conn.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "T", "%")) {
                     while (colsRs.next())
                         resCols.put(colsRs.getString("COLUMN_NAME"),
                             DataType.getTypeClassName(DataType.convertSQLTypeToValueType(colsRs
