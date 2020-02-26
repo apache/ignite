@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
@@ -43,7 +44,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -135,7 +135,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
             attrs.put(ATTR_SECURITY_SUBJECT_ID, res.subject().id());
 
-            ((TcpDiscoveryNode)node).setAttributes(attrs);
+            if (node instanceof IgniteClusterNode)
+                ((IgniteClusterNode)node).setAttributes(attrs);
+            else
+                throw new IgniteCheckedException("Node must implement interface IgniteClusterNode.");
         }
 
         return res;
