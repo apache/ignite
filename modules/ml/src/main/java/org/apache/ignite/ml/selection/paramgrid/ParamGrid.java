@@ -74,7 +74,6 @@ public class ParamGrid implements Serializable {
         return this;
     }
 
-
     /** Returns the Hyper-parameter tuning strategy. */
     public HyperParameterTuningStrategy getHyperParameterTuningStrategy() {
         return paramSearchStgy;
