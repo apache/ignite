@@ -75,7 +75,11 @@ public class GridClientClusterStateRequest extends GridClientAbstractMessage {
         // No op.
     }
 
-    /** Copying constructor. */
+    /**
+     * Copying constructor.
+     *
+     * @param src The request to copy data from.
+     */
     protected GridClientClusterStateRequest(GridClientClusterStateRequest src) {
         reqCurrentState = src.reqCurrentState;
         state = src.state;
