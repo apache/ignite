@@ -502,6 +502,18 @@ public class CommandHandlerParsingTest {
         assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
+    @Test
+    public void testBeepSoundFunctiomality() {
+        ConnectionAndSslParameters args;
+
+        args = parseArgs(asList("--deactivate", "--sound", "--host", "127.001.001.127", "--port", "20"));
+
+        //assertThrows(IllegalArgumentException.class, new CommandHandler().execute(args));
+
+        args = parseArgs(asList("--sound"));
+
+    }
+
     /**
      * @param args Raw arg list.
      * @return Common parameters container object.
