@@ -25,7 +25,10 @@ import java.lang.annotation.Target;
 
 /**
  * Provides MBean method parameters description.
+ *
+ * @deprecated Use {@link MXBeanParameter} instead.
  */
+@Deprecated
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
