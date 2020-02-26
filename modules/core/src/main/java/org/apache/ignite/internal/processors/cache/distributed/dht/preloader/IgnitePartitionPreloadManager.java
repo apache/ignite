@@ -37,7 +37,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -275,8 +274,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             return false;
 
         // Do not rebalance system cache with files as they are not exists.
-        if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
-            return false;
+        assert grp.groupId() != CU.cacheId(UTILITY_CACHE_NAME) : "Should not preload utility cache partitions";
 
         for (GridCacheContext ctx : grp.caches()) {
             if (ctx.config().getAtomicityMode() == ATOMIC)

@@ -174,7 +174,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param rebTopVer Current rebalance topology version.
+     * @param resVer Exchange result version.
+     * @param exchFut Exchange future.
+     * @return {@code True} if rebalance should be restarted.
+     */
     private boolean rebalanceRequired(
         AffinityTopologyVersion rebTopVer,
         AffinityTopologyVersion resVer,
@@ -196,10 +201,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         IgniteInternalFuture<Boolean> rebFut = rebalanceFuture();
 
-        if (rebFut.isDone() && !rebFut.result())
-            return true; // Required, previous rebalance cancelled.
-
-        if (rebFut.isDone() && !rebFut.result() || (ctx.preloader() != null && ctx.preloader().incompleteRebalance(grp)))
+        if ((rebFut.isDone() && !rebFut.result()) ||
+            (ctx.preloader() != null && ctx.preloader().incompleteRebalance(grp)))
             return true; // Required, previous rebalance cancelled.
 
         AffinityTopologyVersion lastAffChangeTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(resVer);
