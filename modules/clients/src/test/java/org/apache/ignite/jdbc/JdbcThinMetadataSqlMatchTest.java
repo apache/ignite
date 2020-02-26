@@ -85,33 +85,44 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     public void createTables() throws Exception {
         executeDDl("CREATE TABLE MY_FAV_TABLE (id INT PRIMARY KEY, val VARCHAR)");
         executeDDl("CREATE TABLE MY0FAV0TABLE (id INT PRIMARY KEY, val VARCHAR)");
+        executeDDl("CREATE TABLE \"MY\\FAV\\TABLE\" (id INT PRIMARY KEY, val VARCHAR)");
         executeDDl("CREATE TABLE OTHER_TABLE (id INT PRIMARY KEY, val VARCHAR)");
     }
 
     /** Drop tables. */
     @After
     public void dropTables() throws Exception {
-        // two tables that both matched by "TABLE MY_FAV_TABLE" sql pattern:
+        // tables that matched by "TABLE MY_FAV_TABLE" sql pattern:
         executeDDl("DROP TABLE MY_FAV_TABLE");
         executeDDl("DROP TABLE MY0FAV0TABLE");
+        executeDDl("DROP TABLE \"MY\\FAV\\TABLE\"");
 
         // and another one that doesn't:
         executeDDl("DROP TABLE OTHER_TABLE");
     }
 
     /**
-     * Test for escaping the "_" character in the table metadata request
+     * Test for escaping the "_" character in the table metadata request.
      */
     @Test
     public void testTablesMatch() throws SQLException {
-        assertEqualsCollections(asList("MY0FAV0TABLE", "MY_FAV_TABLE"), getTableNames("MY_FAV_TABLE"));
+        assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE"), getTableNames("MY_FAV_TABLE"));
         assertEqualsCollections(singletonList("MY_FAV_TABLE"), getTableNames("MY\\_FAV\\_TABLE"));
 
         assertEqualsCollections(Collections.emptyList(), getTableNames("\\%"));
-        assertEqualsCollections(asList("MY0FAV0TABLE", "MY_FAV_TABLE", "OTHER_TABLE"), getTableNames("%"));
+        assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE", "OTHER_TABLE"), getTableNames("%"));
 
         assertEqualsCollections(Collections.emptyList(), getTableNames(""));
-        assertEqualsCollections(asList("MY0FAV0TABLE", "MY_FAV_TABLE", "OTHER_TABLE"), getTableNames(null));
+        assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE", "OTHER_TABLE"), getTableNames(null));
+    }
+
+    /**
+     * Test to check that "\" character is handling properly in the table metadata request.
+     */
+    @Test
+    public void testTablesWithBackslashInTheNameMatch() throws SQLException {
+        assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE"), getTableNames("MY_FAV_TABLE"));
+        assertEqualsCollections(singletonList("MY\\FAV\\TABLE"), getTableNames("MY\\FAV\\TABLE"));
     }
 
     /**
