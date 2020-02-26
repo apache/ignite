@@ -205,10 +205,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
-            if (!ctx.clientNode())
+            if (!ctx.clientNode()) {
                 metadataFileStore = (BinaryMetadataFileStore)createBinaryWriter(ctx.config().getWorkDirectory());
 
-            metadataFileStore.start();
+                metadataFileStore.start();
+            }
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
