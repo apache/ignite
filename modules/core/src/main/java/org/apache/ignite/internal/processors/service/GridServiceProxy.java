@@ -146,7 +146,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @return Result.
      */
     @SuppressWarnings("BusyWait")
-    public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
+    public Object invokeMethod(Method mtd, final Object[] args) throws Throwable {
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -176,11 +176,8 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null) {
-                                System.err.println("MYDEBUG: Service class: " + svc.getClass().getName());
-                                System.out.println("MYDEBUG: Service class: " + svc.getClass().getName());
-
-                                System.err.println("MYDEBUG: Mtd object class: " + mtd.getDeclaringClass().getName());
-                                System.out.println("MYDEBUG: Mtd object class: " + mtd.getDeclaringClass().getName());
+                                if (Proxy.isProxyClass(svc.getClass()))
+                                    mtd = svc.getClass().getMethod(mtd.getName(), mtd.getParameterTypes());
 
                                 return mtd.invoke(svc, args);
                             }

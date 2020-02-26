@@ -379,19 +379,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (d == null)
                     throw new IgniteException("Failed to find deployed service: " + name);
 
-                System.err.println("MYDEBUG: Service name: " + name);
-                System.out.println("MYDEBUG: Service name: " + name);
-
-                System.err.println("MYDEBUG: Service class: " + d.serviceClass().getName());
-                System.out.println("MYDEBUG: Service class: " + d.serviceClass().getName());
-
                 Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
                     ? services.serviceProxy(name, PlatformService.class, sticky)
                     : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, 0,
                         platformCtx.kernalContext());
-
-                System.err.println("MYDEBUG: Proxy class: " + proxy.getClass().getName());
-                System.out.println("MYDEBUG: Proxy class: " + proxy.getClass().getName());
 
                 return new ServiceProxyHolder(proxy, d.serviceClass(), platformContext());
             }
@@ -526,7 +517,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * Proxy holder.
      */
     @SuppressWarnings("unchecked")
-    public static class ServiceProxyHolder extends PlatformAbstractTarget {
+    private static class ServiceProxyHolder extends PlatformAbstractTarget {
         /** */
         private final Object proxy;
 
@@ -590,9 +581,6 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
-                System.err.println("MYDEBUG: Method to invoke: " + mtd.getDeclaringClass() + ", " + mtd.getName());
-                System.out.println("MYDEBUG: Method to invoke: " + mtd.getDeclaringClass() + ", " + mtd.getName());
-
                 try {
                     return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
                 }
@@ -611,7 +599,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @return Method.
          * @throws NoSuchMethodException On error.
          */
-        public static Method getMethod(Class clazz, String mthdName, Object[] args) throws NoSuchMethodException {
+        private static Method getMethod(Class clazz, String mthdName, Object[] args) throws NoSuchMethodException {
             assert clazz != null;
             assert mthdName != null;
             assert args != null;
