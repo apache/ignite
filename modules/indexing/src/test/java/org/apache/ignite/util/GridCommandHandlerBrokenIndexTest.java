@@ -40,7 +40,9 @@ import org.apache.ignite.testframework.LogListener;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
+import org.h2.index.IndexType;
 import org.h2.result.SearchRow;
+import org.h2.table.IndexColumn;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -52,6 +54,9 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
  * Tests failed start of iteration through index.
  */
 public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerClusterPerMethodAbstractTest{
+    /** */
+    private final String IDX_NAME = "bad_index";
+
     /** */
     private static final String EXCEPTION_MSG = "Exception from BadIndex#find";
 
@@ -165,7 +170,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
 
                     for (Index idx : indexes) {
                         if (idx instanceof H2TreeIndexBase) {
-                            bi = new BadIndex(gridH2Tbl);
+                            bi = new BadIndex(gridH2Tbl, IDX_NAME, idx.getIndexColumns(), idx.getIndexType());
 
                             break;
                         }
@@ -188,8 +193,8 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
         /**
          * Constructor.
          */
-        protected BadIndex(GridH2Table tbl) {
-            super(tbl);
+        protected BadIndex(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
+            super(tbl, name, cols, type);
         }
 
         /** */
