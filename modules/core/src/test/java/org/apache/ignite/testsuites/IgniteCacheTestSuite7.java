@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLos
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLostWhileClearingTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRebalanceThreadPoolTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheScheduleResendPartitionsAfterEvictionTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
@@ -99,6 +100,7 @@ public class IgniteCacheTestSuite7 extends TestSuite {
         suite.addTestSuite(Cache64kPartitionsTest.class);
         suite.addTestSuite(GridCacheRebalancingPartitionCountersTest.class);
         suite.addTestSuite(GridCacheRebalancingWithAsyncClearingTest.class);
+        suite.addTestSuite(GridCacheScheduleResendPartitionsAfterEvictionTest.class);
 
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
