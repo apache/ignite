@@ -32,9 +32,9 @@ public interface MetricsMxBean {
      * @param registry Metrics registry name.
      */
     @MXBeanDescription("Resets metrics of a given registry.")
-    @MXBeanParametersNames("registry")
-    @MXBeanParametersDescriptions("Metrics registry.")
-    public void resetMetrics(String registry);
+    public void resetMetrics(
+        @MXBeanParameter(name = "registry", description = "Metrics registry.") String registry
+    );
 
     /**
      * Change {@link HitRateMetric} configuration.
@@ -45,9 +45,10 @@ public interface MetricsMxBean {
      * @throws IgniteException If some error occured.
      */
     @MXBeanDescription("Configure hitrate metric.")
-    @MXBeanParametersNames({"name", "cfg"})
-    @MXBeanParametersDescriptions({"Metric name.", "New rate time interval."})
-    public void configureHitRateMetric(String name, long rateTimeInterval) throws IgniteException;
+    public void configureHitRateMetric(
+        @MXBeanParameter(name = "name", description = "Metric name.") String name,
+        @MXBeanParameter(name = "cfg", description = "New rate time interval.") long rateTimeInterval
+    ) throws IgniteException;
 
     /**
      * Change {@link HistogramMetric} configuration.
@@ -58,7 +59,8 @@ public interface MetricsMxBean {
      * @throws IgniteException If some error occured.
      */
     @MXBeanDescription("Configure histogram metric.")
-    @MXBeanParametersNames({"name", "cfg"})
-    @MXBeanParametersDescriptions({"Metric name.", "New bounds."})
-    public void configureHistogramMetric(String name, long[] bounds) throws IgniteException;
+    public void configureHistogramMetric(
+        @MXBeanParameter(name = "name", description = "Metric name.") String name,
+        @MXBeanParameter(name = "cfg", description = "New bounds.") long[] bounds
+    ) throws IgniteException;
 }

@@ -378,7 +378,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         doSleep(autoAdjustTimeout / 2);
 
-        IgniteEx igniteClient = startGrid(getConfiguration(getTestIgniteInstanceName(2)).setClientMode(true));
+        IgniteEx igniteClient = startClientGrid(getConfiguration(getTestIgniteInstanceName(2)));
 
         doSleep(autoAdjustTimeout / 2);
 

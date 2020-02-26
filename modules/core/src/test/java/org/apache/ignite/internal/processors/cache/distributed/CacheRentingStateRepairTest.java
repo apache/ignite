@@ -56,8 +56,6 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(CLIENT.equals(igniteInstanceName));
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS).setPartitions(64));
@@ -303,7 +301,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
                         // Trigger partition clear on next topology version.
                         if (client)
-                            startGrid(CLIENT);
+                            startClientGrid(CLIENT);
                         else
                             startGrid(2);
 

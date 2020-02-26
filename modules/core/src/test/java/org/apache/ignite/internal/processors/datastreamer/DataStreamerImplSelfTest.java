@@ -476,7 +476,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         streamer.addData(1, 1);
 
         for (int topChanges = 0; topChanges < 30; topChanges++) {
-            IgniteEx node = startGrid(getConfiguration("flapping-client").setClientMode(true));
+            IgniteEx node = startClientGrid(getConfiguration("flapping-client"));
 
             streamer.addData(1, 1);
 

@@ -21,6 +21,7 @@ import java.security.Security;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -109,6 +110,22 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID nodeId) {
         return withContext(secCtxs.computeIfAbsent(nodeId, secPrc::securityContext));
+    }
+
+    /**
+     * Resolves cluster node by its ID.
+     *
+     * @param nodeId Node id.
+     * @throws IllegalStateException If node with provided ID doesn't exist.
+     */
+    private ClusterNode findNode(UUID nodeId) {
+        ClusterNode node = Optional.ofNullable(ctx.discovery().node(nodeId))
+            .orElseGet(() -> ctx.discovery().historicalNode(nodeId));
+
+        if (node == null)
+            throw new IllegalStateException("Failed to find node with given ID for security context setup: " + nodeId);
+
+        return node;
     }
 
     /** {@inheritDoc} */

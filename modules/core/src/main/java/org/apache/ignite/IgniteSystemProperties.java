@@ -1247,15 +1247,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
 
     /**
-     * Index rebuilding parallelism level. It sets a number of threads will be used for index rebuilding.
-     * Zero value means default should be used.
-     * Default value is calculated as <code>CPU count / 4</code> with upper limit of <code>4</code>.
-     * <p>
-     * Note: Number of threads is bounded within the range from <code>1</code> up to <code>CPU count</code>.
-     */
-    public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
-
-    /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
      * information about how much time did it spent in system time (time while aquiring locks, preparing,
      * commiting, etc) and user time (time when client node runs some code while holding transaction and not
