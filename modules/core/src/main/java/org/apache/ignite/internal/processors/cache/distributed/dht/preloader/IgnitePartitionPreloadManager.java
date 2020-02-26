@@ -37,21 +37,17 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
@@ -81,7 +77,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
     /** Partition File rebalancing routine. */
-    private volatile PartitionPreloadingRoutine partPreloadingRoutine = new PartitionPreloadingRoutine();
+    private volatile PartitionPreloadingRoutine partPreloadingRoutine;
 
     /**
      * @param ktx Kernal context.
@@ -102,7 +98,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         try {
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
-            partPreloadingRoutine.onDone(false, new NodeStoppingException("Local node is stopping."), false);
+            if (partPreloadingRoutine != null)
+                partPreloadingRoutine.onDone(false, null, false);
         }
         finally {
             lock.unlock();
@@ -129,26 +126,25 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     ) {
         assert !cctx.kernalContext().clientNode() : "File preloader should never be created on the client node";
 
-        PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
+        PartitionPreloadingRoutine preloadRoutine = partPreloadingRoutine;
 
         // Abort the current rebalancing procedure if it is still in progress
-        if (!rebRoutine.isDone())
-            rebRoutine.cancel();
+        if (preloadRoutine != null && !preloadRoutine.isDone())
+            preloadRoutine.cancel();
 
-        assert partPreloadingRoutine.isDone();
-
-        boolean locJoinBaselineChange = isLocalBaselineChange(exchActions);
-
-        // At this point, cache updates are queued, and we can safely
-        // switch partitions to inactive mode and vice versa.
         if (!supports(grp))
             return;
 
         boolean hasIdleParttition = false;
 
+        Object constId = cctx.localNode().consistentId();
+
+        boolean locJoinBaselineChange = exchActions != null && exchActions.changedBaseline() &&
+            !exchActions.stateChangeRequest().prevBaselineTopologyHistoryItem().consistentIds().contains(constId);
+
         if (!locJoinBaselineChange) {
             if (log.isDebugEnabled())
-                log.debug("File rebalancing skipped [grp=" + grp.cacheOrGroupName() + "]");
+                log.debug("Partition file preloading skipped [grp=" + grp.cacheOrGroupName() + "]");
 
             if (!(hasIdleParttition = hasIdleParttition(grp)))
                 return;
@@ -156,17 +152,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         boolean disable = !hasIdleParttition && filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
+        // At this point, cache updates are queued, and we can safely
+        // switch partitions to inactive mode and vice versa.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (disable) {
-                // todo only for debugging - should be removed
-                try {
-                    assert !cctx.pageStore().exists(grp.groupId(), part.id());
-                } catch (IgniteCheckedException ignore) {
-                    assert false : "grp=" + grp.groupId() + " p=" + part.id();
-                }
-
+            if (disable)
                 part.disable();
-            }
             else
                 part.enable();
         }
@@ -176,7 +166,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
 
                 if (fut != null) {
-                    U.log(log,"Starting index rebuild [cache=" + ctx.cache().name() + "]");
+                    if (log.isInfoEnabled())
+                        log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
 
                     fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
                         ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
@@ -186,19 +177,17 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * This method initiates new partition preload process from given {@code assignments} by creating new partition file
-     * rebalance future based on them. Cancels previous file rebalance future and sends rebalance started event. In case
-     * of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
+     * This method initiates new partitions preload process from given {@code assignments}.
      *
      * @param rebalanceId Current rebalance id.
      * @param exchFut Exchange future.
      * @param assignments A map of cache assignments grouped by grpId.
-     * @return Runnable to execute the chain.
+     * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut,
-        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignments
+        Map<Integer, GridDhtPreloaderAssignments> assignments
     ) {
         Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
 
@@ -216,19 +205,21 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             return Collections.emptyMap();
         }
 
-        PartitionPreloadingRoutine rebRoutine = partPreloadingRoutine;
+        PartitionPreloadingRoutine preloadRoutine = partPreloadingRoutine;
 
         lock.lock();
 
         try {
-            if (!rebRoutine.isDone())
-                rebRoutine.cancel();
+            assert preloadRoutine == null || preloadRoutine.isDone();
+
+            if (isStopping())
+                return Collections.emptyMap();
 
             // Start new rebalance session.
-            partPreloadingRoutine = rebRoutine = new PartitionPreloadingRoutine(orderedAssigns,
+            partPreloadingRoutine = preloadRoutine = new PartitionPreloadingRoutine(orderedAssigns,
                 exchFut.topologyVersion(), cctx, exchFut.exchangeId(), rebalanceId, checkpointLsnr::schedule);
 
-            return rebRoutine.startPartitionsPreloading();
+            return preloadRoutine.startPartitionsPreloading();
         }
         finally {
             lock.unlock();
@@ -273,7 +264,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if file rebalancing is applicable for specified cache group.
      */
     public boolean supports(CacheGroupContext grp) {
-        if (!fileRebalanceEnabled || !grp.persistenceEnabled() || grp.isLocal())
+        if (grp == null || !fileRebalanceEnabled || !grp.persistenceEnabled() || grp.isLocal())
             return false;
 
         if (!IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
@@ -283,8 +274,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             return false;
 
         // Do not rebalance system cache with files as they are not exists.
-        if (grp.groupId() == CU.cacheId(UTILITY_CACHE_NAME))
-            return false;
+        assert grp.groupId() != CU.cacheId(UTILITY_CACHE_NAME) : "Should not preload utility cache partitions";
 
         for (GridCacheContext ctx : grp.caches()) {
             if (ctx.config().getAtomicityMode() == ATOMIC)
@@ -304,7 +294,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         boolean required = false;
 
-        // File rebalancing should start only if all partitions are in inactive mode.
+        // Partition file preloading should start only if all partitions are in inactive state.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (part.active())
                 return false;
@@ -320,9 +310,9 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return {@code True} If the last rebalance attempt was incomplete for specified cache group.
      */
     public boolean incompleteRebalance(CacheGroupContext grp) {
-        PartitionPreloadingRoutine rebalanceRoutine = partPreloadingRoutine;
+        PartitionPreloadingRoutine routine = partPreloadingRoutine;
 
-        return rebalanceRoutine.isDone() && rebalanceRoutine.remainingGroups().contains(grp.groupId());
+        return routine != null && routine.isDone() && routine.remainingGroups().contains(grp.groupId());
     }
 
     /**
@@ -339,32 +329,12 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param exchangeActions Exchange future.
-     * @return {@code True} if the cluster baseline was changed by local node join.
-     */
-    private boolean isLocalBaselineChange(ExchangeActions exchangeActions) {
-        if (exchangeActions == null)
-            return false;
-
-        StateChangeRequest req = exchangeActions.stateChangeRequest();
-
-        if (req == null)
-            return false;
-
-        BaselineTopologyHistoryItem prevBaseline = req.prevBaselineTopologyHistoryItem();
-
-        if (prevBaseline == null)
-            return false;
-
-        return !prevBaseline.consistentIds().contains(cctx.localNode().consistentId());
-    }
-
-    /**
      * @param resVer Exchange result version.
      * @param grp Cache group.
      * @param cntrs Partition counters.
      * @param globalSizes Global partition sizes.
      * @param suppliers Historical suppliers.
+     * @return {@code True} if file preloading is applicable for specified cache group.
      */
     private boolean filePreloadingApplicable(
         AffinityTopologyVersion resVer,
@@ -409,12 +379,12 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
     private List<T2<UUID, Map<Integer, Set<Integer>>>> reorderAssignments(
-        Map<CacheGroupContext, GridDhtPreloaderAssignments> assignsMap
+        Map<Integer, GridDhtPreloaderAssignments> assignsMap
     ) {
         Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sorted = new TreeMap<>();
 
-        for (Map.Entry<CacheGroupContext, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-            CacheGroupContext grp = e.getKey();
+        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
             GridDhtPreloaderAssignments assigns = e.getValue();
 
             if (!required(grp) || assigns.isEmpty())
@@ -440,11 +410,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         return ordered;
     }
-
-//    public IgniteInternalFuture<GridDhtPreloaderAssignments> preloadFuture(CacheGroupContext grp) {
-//        // todo
-//        return partPreloadingRoutine.groupRoutine(grp);
-//    }
 
     /** */
     private static class CheckpointListener implements DbCheckpointListener {

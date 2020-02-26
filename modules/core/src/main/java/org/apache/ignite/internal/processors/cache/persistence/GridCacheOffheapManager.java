@@ -2926,6 +2926,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public boolean disable() {
+            assert delegate == null && !ctx.pageStore().exists(grp.groupId(), partId) :
+                "grp=" + grp.cacheOrGroupName() + " p=" + partId;
+
             return changeMode(false);
         }
 
@@ -2939,17 +2942,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (active.compareAndSet(!activeMode, activeMode)) {
                 if (log.isInfoEnabled()) {
                     log.info("Partition data store mode changed [grp=" + grp.cacheOrGroupName() +
-                        ", p=" + partId() +
+                        ", p=" + partId +
                         ", cntr=" + updateCounter() +
                         ", size=" + fullSize() +
                         ", mode=" + (activeMode ? "ACTIVE" : "DISABLED") + "]");
                 }
 
-                if (!activeMode) {
-                    assert delegate == null : "grp=" + grp.cacheOrGroupName() + " p=" + partId;
-
+                if (!activeMode)
                     noopModeCntr = new PartitionUpdateCounterTrackingImpl(grp);
-                }
 
                 return true;
             }

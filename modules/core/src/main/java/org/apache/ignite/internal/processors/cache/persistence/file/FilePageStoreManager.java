@@ -90,7 +90,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
@@ -535,10 +534,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(int grpId, int partId) throws IgniteCheckedException {
-        PageStore store = getStore(grpId, partId);
-
-        return store.exists();
+    @Override public boolean exists(int grpId, int partId) {
+        try {
+            return getStore(grpId, partId).exists();
+        }
+        catch (IgniteCheckedException ignore) {
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

@@ -776,7 +776,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         U.sleep(timeout);
 
-        log.info(">>> Stopping grid 3 (timeout=" + timeout + ")");
+        log.info(">>> Starting grid 3 (timeout=" + timeout + ")");
 
         ignite3 = startGrid(3);
 
@@ -864,8 +864,11 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
                 CacheGroupContext ctx = ((IgniteEx)g).cachex(name).context().group();
 
-                for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
-                    log.info("\tp="+part.id() + " size=" + part.fullSize() + " init=" + part.initialUpdateCounter() + ", cntr=" + part.updateCounter() + ", state="+ part.state() + " mode=" + (part.primary(ctx.affinity().lastVersion()) ? "PRIMARY" : "BACKUP"));
+                for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+                    log.info("\tp=" + part.id() + " size=" + part.fullSize() + " init=" +
+                        part.initialUpdateCounter() + ", cntr=" + part.updateCounter() + ", state=" +
+                        part.state() + " mode=" + (part.primary(ctx.affinity().lastVersion()) ? "PRIMARY" : "BACKUP"));
+                }
 
                 for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
                     boolean primary = part.primary(ctx.affinity().lastVersion());

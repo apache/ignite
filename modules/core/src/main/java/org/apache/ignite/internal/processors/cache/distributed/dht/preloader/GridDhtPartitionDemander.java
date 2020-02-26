@@ -298,8 +298,8 @@ public class GridDhtPartitionDemander {
         final Runnable next,
         @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-//        if (log.isDebugEnabled())
-            log.info("Adding partition assignments: " + assignments);
+        if (log.isDebugEnabled())
+            log.debug("Adding partition assignments: " + assignments);
 
         assert force == (forcedRebFut != null);
 
@@ -355,8 +355,8 @@ public class GridDhtPartitionDemander {
             grp.preloader().sendRebalanceStartedEvent(assignments.exchangeId().discoveryEvent());
 
             if (assignments.cancelled()) { // Pending exchange.
-//                if (log.isDebugEnabled())
-                    log.info("Rebalancing skipped due to cancelled assignments.");
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to cancelled assignments.");
 
                 fut.onDone(false);
 
@@ -366,8 +366,8 @@ public class GridDhtPartitionDemander {
             }
 
             if (assignments.isEmpty()) { // Nothing to rebalance.
-//                if (log.isDebugEnabled())
-                    log.info("Rebalancing skipped due to empty assignments.");
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to empty assignments.");
 
                 fut.onDone(true);
 

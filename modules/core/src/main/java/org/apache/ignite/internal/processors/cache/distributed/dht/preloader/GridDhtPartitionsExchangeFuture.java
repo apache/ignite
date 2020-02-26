@@ -2335,16 +2335,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (localReserved != null) {
                 for (Map.Entry<T2<Integer, Integer>, Long> e : localReserved.entrySet()) {
-                    boolean reserved = cctx.database().reserveHistoryForPreloading(
+                    boolean success = cctx.database().reserveHistoryForPreloading(
                         e.getKey().get1(), e.getKey().get2(), e.getValue());
 
                     // We can't fail here since history is reserved for exchange.
-                    assert reserved : "History was not reserved";
-
-                    if (!reserved) {
-                        // In case of disabled assertions.
-                        err = new IgniteCheckedException("Could not reserve history for preloading");
-                    }
+                    assert success : "History was not reserved";
                 }
             }
 
@@ -3270,7 +3265,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
-        boolean fileRebalanceApplicable = grp != null && cctx.preloader() != null &&
+        boolean fileRebalancingSupported = grp != null && cctx.preloader() != null &&
             cctx.preloader().supports(grp, cctx.discovery().aliveServerNodes());
 
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
@@ -3290,49 +3285,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (maxCntr == 0)
                 continue;
 
-            // todo historical rebalancing and file rebalancing could not start on same group at the same time.
-            if (localReserved != null) {
-                Long localHistCntr = localReserved.get(p);
+            Map<UUID, Long> msgCntrs = F.viewReadOnly(msgs, v -> v.partitionHistoryCounters(top.groupId()).get(p));
 
-                if (localHistCntr != null) {
-                    if (minCntr != 0 && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
+            Collection<Map.Entry<UUID, Long>> cntrsView = localReserved == null ? msgCntrs.entrySet() :
+                F.concat(false, new T2<>(cctx.localNodeId(), localReserved.get(p)), msgCntrs.entrySet());
 
-                        haveHistory.add(p);
+            for (Map.Entry<UUID, Long> e0 : cntrsView) {
+                Long histCntr = e0.getValue();
+                UUID nodeId = e0.getKey();
 
-                        continue;
-                    }
-                    else
-                    if (minCntr == 0 && fileRebalanceApplicable && localHistCntr <= maxCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, maxCntr);
+                if (histCntr != null &&
+                    maxCntrObj.nodes.contains(nodeId) &&
+                    ((minCntr != 0 && histCntr <= minCntr) || (minCntr == 0 && fileRebalancingSupported))) {
+                    partHistSuppliers.put(nodeId, top.groupId(), p, minCntr == 0 ? maxCntr : histCntr);
 
-                        haveHistory.add(p);
+                    haveHistory.add(p);
 
-                        continue;
-                    }
-                }
-            }
-
-            for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
-                Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
-
-                if (histCntr != null) {
-                    if (minCntr != 0 && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
-
-                        haveHistory.add(p);
-
-                        break;
-                    }
-                    else
-                    if (minCntr == 0 && fileRebalanceApplicable && histCntr <= maxCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                        // For file rebalancing we need to reserve history from current update counter.
-                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, maxCntr);
-
-                        haveHistory.add(p);
-
-                        break;
-                    }
+                    break;
                 }
             }
         }

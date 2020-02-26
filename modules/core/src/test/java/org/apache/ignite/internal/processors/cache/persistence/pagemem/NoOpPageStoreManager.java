@@ -93,7 +93,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public boolean exists(int cacheId, int partId) {
         return false;
     }
 

@@ -206,6 +206,7 @@ import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.INTERNAL_DATA_REGION_NAMES;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -5479,6 +5480,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void onBaselineChange() {
             onKernalStopCaches(true);
+
+            for (DataRegion region : sharedCtx.database().dataRegions()) {
+                if (!region.config().isPersistenceEnabled() ||
+                    INTERNAL_DATA_REGION_NAMES.contains(region.config().getName()))
+                    continue;
+
+                region.pageMemory().stop(false);
+                region.pageMemory().start();
+            }
 
             stopCaches(true);
 
