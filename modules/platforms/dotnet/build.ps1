@@ -247,9 +247,10 @@ if ($asmDirs) {
         }
 
         if ($projName.StartsWith("Apache.Ignite")) {
-            $target = "$projName\bin\Release"
-            Make-Dir($target)
+            $target = [IO.Path]::Combine($projName, "bin", $configuration)
+            New-Item -Path $target -ItemType "directory" -Force
 
+            echo "Copying '$_' to '$target'"
             Copy-Item -Force $_.FullName $target
         }
     }    
