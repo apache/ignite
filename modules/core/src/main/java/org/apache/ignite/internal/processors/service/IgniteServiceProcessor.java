@@ -1978,10 +1978,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (mtd.getDeclaringClass().equals(Service.class))
                 return mtd.invoke(svc, args);
 
-            HistogramMetricImpl invokeMetric = invocationHistograms.get(mtd);
-
-            assert invokeMetric != null;
-
             boolean accessible = mtd.isAccessible();
 
             // Support not-public invocations like of package level interfaces.
@@ -1992,7 +1988,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             try {
                 Object res = mtd.invoke(svc, args);
 
-                invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
+                time = U.nanosToMillis(System.nanoTime() - time);
+
+                invocationHistograms.get(mtd).value(time);
 
                 return res;
             }
