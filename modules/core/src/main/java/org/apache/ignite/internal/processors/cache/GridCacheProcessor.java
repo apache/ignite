@@ -195,7 +195,8 @@ import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUt
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
- * Cache processor.
+ * The main responsibility of this processor is orchestrating of starting, stopping caches and everything related
+ * to that activity like validation of cache configuration, restoring configuration from persistence, etc.
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
