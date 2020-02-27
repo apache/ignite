@@ -2821,7 +2821,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         return getMxBean(igniteInstanceName, grp, metrics, DynamicMBean.class);
     }
 
-
     /**
      * Return JMX bean.
      *
