@@ -66,7 +66,6 @@ public class IgniteCacheGroupsSqlTest extends GridCommonAbstractTest {
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setMaxSize(200L * 1024 * 1024)
-                        .setPersistenceEnabled(false)
                 ));
 
         return cfg;
