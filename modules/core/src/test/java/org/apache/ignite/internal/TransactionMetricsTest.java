@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -32,7 +28,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -298,21 +293,9 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionMetricsMxBean txMetricsMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(igniteInt),
-            "TransactionMetrics",
-            TransactionMetricsMxBeanImpl.class.getSimpleName()
-        );
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TransactionMetricsMxBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "TransactionMetrics",
+            TransactionMetricsMxBeanImpl.class, TransactionMetricsMxBean.class);
     }
 }

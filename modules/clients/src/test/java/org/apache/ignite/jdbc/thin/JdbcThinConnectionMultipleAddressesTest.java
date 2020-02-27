@@ -17,7 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -27,10 +26,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,7 +33,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
@@ -328,22 +322,8 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
      * @return MBean.
      */
     private ClientProcessorMXBean clientProcessorBean(int igniteInt) {
-        ObjectName mbeanName = null;
-
-        try {
-            mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "Clients",
-                ClientListenerProcessor.class.getSimpleName());
-        }
-        catch (MalformedObjectNameException e) {
-            fail("Failed to register MBean.");
-        }
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, ClientProcessorMXBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Clients",
+            ClientListenerProcessor.class, ClientProcessorMXBean.class);
     }
 
     /**
