@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -18,6 +19,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -27,10 +29,19 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 /** */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invcations. */
-    private static final int INVOKE_CNT = 50;
+    private static final int INVOKE_CNT = 30;
 
     /** Utility holder of current grid number. */
     private final AtomicInteger gridNum = new AtomicInteger();
+
+    /** */
+    private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName();
+
+    /** */
+    private static final String METRICS_MUST_NOT_BE_CREATED = "Service metric registry must not be created.";
+
+    /** */
+    private static final String METRICS_MUST_BE_CREATED = "Service metric registry not fount.";
 
     /** */
     @Override protected void afterTest() throws Exception {
@@ -46,20 +57,59 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         System.clearProperty(IGNITE_SERVICE_METRICS_ENABLED);
     }
 
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
+
+        return cfg;
+    }
+
+    /** */
+    @Test
+    public void testMetricsMultiple() throws Throwable {
+        IgniteEx server = startGrid(0);
+
+        IgniteEx client = startClientGrid(1);
+
+        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+
+        int srvcInstanceCnt = 2;
+
+        server.services().deployMultiple(SRVC_NAME, MyServiceFactory.create(), srvcInstanceCnt, 2);
+
+        awaitPartitionMapExchange();
+
+        Stream.generate(()->server.services().serviceProxy(SRVC_NAME, MyService.class, true))
+            .limit(srvcInstanceCnt).forEach(srvc->((MyService)srvc).hello());
+
+        Stream.generate(()->client.services().serviceProxy(SRVC_NAME, MyService.class, true))
+            .limit(srvcInstanceCnt).forEach(srvc->((MyService)srvc).hello());
+
+        ReadOnlyMetricRegistry metrics = findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS);
+
+        int callsCnt = 0;
+
+        for(Metric m : metrics) {
+            if (m instanceof HistogramMetric)
+                callsCnt += LongStream.of(((HistogramMetric)m).value()).reduce(Long::sum).getAsLong();
+        }
+
+        assertEquals(callsCnt, srvcInstanceCnt*2);
+    }
+
     /** Makes sure {@code IgniteSystemProperties#IGNITE_SERVICE_METRICS_ENABLED} works correctly. */
     @Test
     public void testMetricsEnabledDisabled() throws Throwable {
         IgniteEx server = startGrid(0);
 
-        assertFalse("Service metric registry must not be created yet.",
-            findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
 
-        String srvcName = "testMetricsEnabledService";
+        server.services().deploy(serviceCfg(SRVC_NAME, 1, 1));
 
-        server.services().deploy(serviceCfg(srvcName, 1, 1));
+        awaitPartitionMapExchange();
 
-        assertTrue("Service metric registry must be already created.",
-            findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+        assertNotNull(METRICS_MUST_BE_CREATED, findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
 
         stopAllGrids();
 
@@ -67,61 +117,55 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         server = startGrid(0);
 
-        assertFalse("Service metric registry must not be created again.",
-            findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
 
-        server.services().deploy(serviceCfg(srvcName, 1, 1));
+        server.services().deploy(serviceCfg(SRVC_NAME, 1, 1));
 
-        MyService srvc = server.services().service(srvcName);
-
-        srvc.hello();
-
-        srvc = server.services().serviceProxy(srvcName, MyService.class, false);
+        MyService srvc = server.services().service(SRVC_NAME);
 
         srvc.hello();
 
-        srvc = server.services().serviceProxy(srvcName, MyService.class, true);
+        srvc = server.services().serviceProxy(SRVC_NAME, MyService.class, false);
+
+        srvc.hello();
+
+        srvc = server.services().serviceProxy(SRVC_NAME, MyService.class, true);
 
         srvc.hello();
 
         IgniteEx client = startClientGrid(1);
 
-        srvc = client.services().serviceProxy(srvcName, MyService.class, false);
+        srvc = client.services().serviceProxy(SRVC_NAME, MyService.class, false);
 
         srvc.hello();
 
-        srvc = client.services().serviceProxy(srvcName, MyService.class, true);
+        srvc = client.services().serviceProxy(SRVC_NAME, MyService.class, true);
 
         srvc.hello();
 
-        assertFalse("Service metric registry must not be created when \""+IGNITE_SERVICE_METRICS_ENABLED +
-                "\" is false.", findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
+        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetric(server.context().metric(), METRIC_REGISTRY_INVOCATIONS));
     }
 
     /** Ensures metric are created when service is deployed and removed when service is undeployed. */
     @Test
-    public void testMetricDeplotmentIndeployment() throws Exception {
+    public void testMetricDeplotmentUndeployment() throws Exception {
         List<IgniteEx> servers = startGrids(3, false);
 
-        String srvcName = "namingService";
-
         // 2 services per node.
-        servers.get(0).services().deploy(serviceCfg(srvcName, servers.size(), 2));
+        servers.get(0).services().deploy(serviceCfg(SRVC_NAME, servers.size(), 2));
 
         awaitPartitionMapExchange();
-
-        String srvcMetricRegName = IgniteServiceProcessor.serviceMetricsName(srvcName);
 
         // Make sure metrics are registered.
         for (IgniteEx ignite : servers)
-            assertEquals(metricsCnt(ignite, srvcMetricRegName), MyService.class.getDeclaredMethods().length);
+            assertEquals(metricsCnt(ignite, METRIC_REGISTRY_INVOCATIONS), MyService.class.getDeclaredMethods().length);
 
-        servers.get(0).services().cancel(srvcName);
+        servers.get(0).services().cancel(SRVC_NAME);
 
         awaitPartitionMapExchange();
 
         for (IgniteEx ignite : servers)
-            assertEquals(metricsCnt(ignite, srvcMetricRegName), 0);
+            assertEquals(metricsCnt(ignite, METRIC_REGISTRY_INVOCATIONS), 0);
     }
 
     /** Checks two different histograms are created for the same short names of service methods. */
@@ -129,11 +173,9 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testMetricNaming() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        String srvcName = "namingService";
+        ignite.services().deployNodeSingleton(SRVC_NAME, new NamingServiceImpl());
 
-        ignite.services().deployNodeSingleton(srvcName, new NamingServiceImpl());
-
-        NamingService srvc = ignite.services().serviceProxy(srvcName, NamingService.class, false);
+        NamingService srvc = ignite.services().serviceProxy(SRVC_NAME, NamingService.class, false);
 
         assertEquals(srvc.process(new org.apache.ignite.internal.processors.service.inner.impl.Param()),
             org.apache.ignite.internal.processors.service.inner.impl.Param.VALUE);
@@ -141,9 +183,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(srvc.process(new org.apache.ignite.internal.processors.service.inner.experimental.Param()),
             org.apache.ignite.internal.processors.service.inner.experimental.Param.VALUE);
 
-        String srvcMetricRegName = IgniteServiceProcessor.serviceMetricsName(srvcName);
-
-        MetricRegistry registry = ignite.context().metric().registry(srvcMetricRegName);
+        MetricRegistry registry = ignite.context().metric().registry(METRIC_REGISTRY_INVOCATIONS);
 
         int metricsCnt = 0;
 
@@ -171,17 +211,13 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testServiceInvocationMetricsOnLocals() throws Throwable {
         List<IgniteEx> grids = startGrids(3, false);
 
-        String srvcName = "InvokeTestService";
-
         int callCounter = 100;
 
         Method mtd = MyService.class.getMethod("hello");
 
-        String mtdMetricName = IgniteServiceProcessor.methodMetricName(mtd, 0);
+        String mtdMetricName = IgniteServiceProcessor.methodMetricName(SRVC_NAME, mtd, 0);
 
-        String srvcMetricRegName = IgniteServiceProcessor.serviceMetricsName(srvcName);
-
-        grids.get(0).services().deployNodeSingleton(srvcName, MyServiceFactory.create());
+        grids.get(0).services().deployNodeSingleton(SRVC_NAME, MyServiceFactory.create());
 
         awaitPartitionMapExchange();
 
@@ -189,12 +225,12 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         for (IgniteEx ignite : grids) {
             HistogramMetric invokeHistogramm = null;
 
-            MyService srv = ignite.services().service(srvcName);
+            MyService srv = ignite.services().service(SRVC_NAME);
 
-            GridServiceProxy<Service> proxySticky = new GridServiceProxy<>(ignite.cluster(), srvcName, Service.class,
+            GridServiceProxy<Service> proxySticky = new GridServiceProxy<>(ignite.cluster(), SRVC_NAME, Service.class,
                 true, 0, ignite.context());
 
-            GridServiceProxy<Service> proxyAny = new GridServiceProxy<>(ignite.cluster(), srvcName, Service.class,
+            GridServiceProxy<Service> proxyAny = new GridServiceProxy<>(ignite.cluster(), SRVC_NAME, Service.class,
                 false, 0, ignite.context());
 
             Object[] args = new Object[0];
@@ -207,12 +243,12 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
                 proxyAny.invokeMethod(mtd, args);
             }
 
-            MetricRegistry metrics = ignite.context().metric().registry(srvcMetricRegName);
+            MetricRegistry metrics = ignite.context().metric().registry(METRIC_REGISTRY_INVOCATIONS);
 
             assertNotNull("Metric registry not found.", metrics);
 
             for (Metric metric : metrics) {
-                if (metric.name().startsWith(srvcMetricRegName) && metric.name().endsWith(mtdMetricName) &&
+                if (metric.name().startsWith(METRIC_REGISTRY_INVOCATIONS) && metric.name().endsWith(mtdMetricName) &&
                     metric instanceof HistogramMetric) {
                     assertNull("Duplicated invocation histogramm found.", invokeHistogramm);
 
@@ -266,17 +302,13 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         List<IgniteEx> clients = startGrids(clientCnt, true);
 
-        String srvcName = "InvokeTestService";
-
         Method mtd = MyService.class.getMethod("hello");
 
         Object[] methodArgs = new Object[0];
 
-        String mtdMetricName = IgniteServiceProcessor.methodMetricName(mtd, 0);
+        String mtdMetricName = IgniteServiceProcessor.methodMetricName(SRVC_NAME, mtd, 0);
 
-        String srvcMetricRegName = IgniteServiceProcessor.serviceMetricsName(srvcName);
-
-        servers.get(0).services().deploy(serviceCfg(srvcName, perClusterCnt, perNodeCnt));
+        servers.get(0).services().deploy(serviceCfg(SRVC_NAME, perClusterCnt, perNodeCnt));
 
         awaitPartitionMapExchange();
 
@@ -284,20 +316,20 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         for (int s = 0; s < INVOKE_CNT; ++s) {
             IgniteEx server = servers.get(s % servers.size());
 
-            server.services().serviceProxy(srvcName, MyService.class, false).hello();
+            server.services().serviceProxy(SRVC_NAME, MyService.class, false).hello();
 
             // Direct call of sticky client proxy.
-            new GridServiceProxy<>(server.cluster(), srvcName, Service.class, true, 0, server.context())
+            new GridServiceProxy<>(server.cluster(), SRVC_NAME, Service.class, true, 0, server.context())
                 .invokeMethod(mtd, methodArgs);
 
             // Direct call of non-sticky client proxy.
-            new GridServiceProxy<>(server.cluster(), srvcName, Service.class, false, 0, server.context())
+            new GridServiceProxy<>(server.cluster(), SRVC_NAME, Service.class, false, 0, server.context())
                 .invokeMethod(mtd, methodArgs);
         }
 
         // Call service through the server proxies, sticky.
         List<MyService> stickies = servers.stream()
-            .map(ignite -> (MyService)ignite.services().serviceProxy(srvcName, MyService.class, true))
+            .map(ignite -> (MyService)ignite.services().serviceProxy(SRVC_NAME, MyService.class, true))
             .collect(Collectors.toList());
 
         for (int ss = 0; ss < INVOKE_CNT; ++ss)
@@ -307,20 +339,20 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         for (int c = 0; c < INVOKE_CNT; ++c) {
             IgniteEx client = clients.get(c % clients.size());
 
-            client.services().serviceProxy(srvcName, MyService.class, false).hello();
+            client.services().serviceProxy(SRVC_NAME, MyService.class, false).hello();
 
             // Direct call of sticky client proxy.
-            new GridServiceProxy<>(client.cluster(), srvcName, Service.class, true, 0, client.context())
+            new GridServiceProxy<>(client.cluster(), SRVC_NAME, Service.class, true, 0, client.context())
                 .invokeMethod(mtd, methodArgs);
 
             // Direct call of non-sticky client proxy.
-            new GridServiceProxy<>(client.cluster(), srvcName, Service.class, false, 0, client.context())
+            new GridServiceProxy<>(client.cluster(), SRVC_NAME, Service.class, false, 0, client.context())
                 .invokeMethod(mtd, methodArgs);
         }
 
         // Call service through the client proxies, sticky.
         stickies = clients.stream()
-            .map(ignite -> (MyService)ignite.services().serviceProxy(srvcName, MyService.class, true))
+            .map(ignite -> (MyService)ignite.services().serviceProxy(SRVC_NAME, MyService.class, true))
             .collect(Collectors.toList());
 
         for (int cs = 0; cs < INVOKE_CNT; ++cs)
@@ -335,7 +367,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             ReadOnlyMetricRegistry metrics = null;
 
             for (ReadOnlyMetricRegistry mr : ignite.context().metric()) {
-                if (mr.name().equals(srvcMetricRegName)) {
+                if (mr.name().equals(METRIC_REGISTRY_INVOCATIONS)) {
                     metrics = mr;
                     break;
                 }
@@ -346,15 +378,15 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
                 continue;
 
             for (Metric metric : metrics) {
-                if (metric.name().startsWith(srvcMetricRegName) && metric.name().endsWith(mtdMetricName) &&
+                if (metric.name().startsWith(METRIC_REGISTRY_INVOCATIONS) && metric.name().endsWith(mtdMetricName) &&
                     metric instanceof HistogramMetric) {
-                    assertNull("Duplicated invocation histogramm found", invokeHistogramm);
+                    assertNull("Duplicated invocation histogramm found.", invokeHistogramm);
 
                     invokeHistogramm = (HistogramMetric)metric;
                 }
             }
 
-            assertNotNull("Invocation histogramm not found", invokeHistogramm);
+            assertNotNull("Invocation histogramm not found.", invokeHistogramm);
 
             invokeCollector += LongStream.of(invokeHistogramm.value()).reduce(Long::sum).getAsLong();
         }
@@ -405,14 +437,14 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return {@code True} if metrics registry found in {@code metricMgr} by name {@code registryName}.
+     * @return Metric registry if it is found in {@code metricMgr} by name {@code registryName}. Null otherwise.
      */
-    private static boolean findMetric(GridMetricManager metricMgr, String registryName) {
+    private static ReadOnlyMetricRegistry findMetric(GridMetricManager metricMgr, String registryName) {
         for (ReadOnlyMetricRegistry registry : metricMgr) {
-            if (registry.name().startsWith(registryName))
-                return true;
+            if (registry.name().equals(registryName))
+                return registry;
         }
 
-        return false;
+        return null;
     }
 }

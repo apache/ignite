@@ -68,8 +68,6 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -84,12 +82,14 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
@@ -211,28 +211,17 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private volatile boolean disconnected;
 
     /**
-     * Creates proper registry name for service metrics.
-     *
-     * @param srvcName Name of the service.
-     * @return Registry name.
-     */
-    static String serviceMetricsName(String srvcName) {
-        return metricName(METRIC_REGISTRY_INVOCATIONS, srvcName);
-    }
-
-    /**
+     * @param srvcName     Name of the method's service.
      * @param method       Method for the invocation timings.
      * @param pkgNameDepth Level of package name abbreviation. @see #abbreviatePgkName(Class, int).
      * @return Metric name for {@code method}. Doesn't guaratee same name with same {@code pkgNameDepth} is used for
      * real metric registry.
      */
-    static String methodMetricName(Method method, int pkgNameDepth) {
+    static String methodMetricName(String srvcName, Method method, int pkgNameDepth) {
         StringBuilder sb = new StringBuilder();
 
-        // Name of the return type. Better for human readability.
-        sb.append(method.getReturnType() == null ? Void.class.getSimpleName() :
-            abbreviatePgkName(method.getReturnType(), pkgNameDepth));
-        sb.append(" ");
+        sb.append(srvcName);
+        sb.append("#");
         sb.append(method.getName());
         sb.append("(");
         sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviatePgkName(t, pkgNameDepth))
@@ -1115,13 +1104,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     HistogramMetricImpl invocationsMetric(String srvcName, Method method) {
         MetricRegistry metricRegistry = null;
 
-        metricRegistry = ctx.metric().registry(serviceMetricsName(srvcName));
+        metricRegistry = ctx.metric().registry(METRIC_REGISTRY_INVOCATIONS);
 
         HistogramMetricImpl histogram = null;
 
         // Find/create histogramm. For the counter @see #methodMetricName(Method, int).
         for (int i = 0; i < 4; ++i) {
-            String methodMetricName = methodMetricName(method, i);
+            String methodMetricName = methodMetricName(srvcName, method, i);
 
             synchronized (metricRegistry) {
                 // If the metric exists skip and try extending metric name in next cycle.
@@ -1962,7 +1951,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcCtx Service context.
      */
     private void unregisterMetrics(ServiceContext srvcCtx) {
-        ctx.metric().remove(metricName(METRIC_REGISTRY_INVOCATIONS, srvcCtx.name()));
+        ctx.metric().remove(METRIC_REGISTRY_INVOCATIONS);
     }
 
     /**
