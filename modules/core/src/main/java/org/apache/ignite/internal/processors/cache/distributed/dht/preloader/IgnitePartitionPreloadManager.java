@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.NotNull;
 
@@ -96,9 +92,9 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         GridDhtPartitionsExchangeFuture exchFut,
         Map<Integer, GridDhtPreloaderAssignments> assignments
     ) {
-        Collection<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssigns = reorderAssignments(assignments);
+        Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = reorderAssignments(assignments);
 
-        if (orderedAssigns.isEmpty()) {
+        if (assignsByNode.isEmpty()) {
             if (log.isDebugEnabled())
                 log.debug("Skipping file rebalancing due to empty assignments.");
 
@@ -121,7 +117,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
 
             // Start new rebalance session.
-            partPreloadingRoutine = new PartitionPreloadingRoutine(orderedAssigns,
+            partPreloadingRoutine = new PartitionPreloadingRoutine(assignsByNode,
                 exchFut.topologyVersion(), cctx, exchFut.exchangeId(), rebalanceId);
 
             return partPreloadingRoutine.startPartitionsPreloading();
@@ -353,10 +349,10 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param assignsMap The map of cache groups assignments to preload.
      * @return Collection of cache assignments sorted by rebalance order and grouped by node.
      */
-    private List<T2<UUID, Map<Integer, Set<Integer>>>> reorderAssignments(
+    private Map<UUID, Map<Integer, Set<Integer>>> reorderAssignments(
         Map<Integer, GridDhtPreloaderAssignments> assignsMap
     ) {
-        Map<Integer, Map<ClusterNode, Map<Integer, Set<Integer>>>> sorted = new TreeMap<>();
+        Map<UUID, Map<Integer, Set<Integer>>> nodeAssigns = new HashMap<>();
 
         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
             CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
@@ -365,24 +361,13 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             if (!required(grp) || assigns.isEmpty())
                 continue;
 
-            int order = grp.config().getRebalanceOrder();
-
-            Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns = sorted.computeIfAbsent(order, v -> new HashMap<>());
-
             for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
-                Map<Integer, Set<Integer>> grpAssigns = nodeAssigns.computeIfAbsent(e0.getKey(), v -> new HashMap<>());
+                Map<Integer, Set<Integer>> grpAssigns = nodeAssigns.computeIfAbsent(e0.getKey().id(), v -> new HashMap<>());
 
                 grpAssigns.put(grp.groupId(), e0.getValue().partitions().fullSet());
             }
         }
 
-        List<T2<UUID, Map<Integer, Set<Integer>>>> ordered = new ArrayList<>(8);
-
-        for (Map<ClusterNode, Map<Integer, Set<Integer>>> nodeAssigns : sorted.values()) {
-            for (Map.Entry<ClusterNode, Map<Integer, Set<Integer>>>  e : nodeAssigns.entrySet())
-                ordered.add(new T2<>(e.getKey().id(), e.getValue()));
-        }
-
-        return ordered;
+        return nodeAssigns;
     }
 }
