@@ -38,27 +38,35 @@ import java.util.List;
 import static com.amazonaws.util.StringUtils.isNullOrEmpty;
 
 /**
- * AWS ELB-based IP finder.
+ * AWS Classic load balancer based IP finder.
  *
- * <p>For information about Amazon ELB visit <a href="http://aws.amazon.com">aws.amazon.com</a>.</p>
+ * <p>
+ *     For information about Amazon Classic load balancers visit:
+ *     <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/introduction.html">aws.amazon.com</a>.
+ * </p>
  *
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * <ul>
  *     <li>{@link #setCredentialsProvider(AWSCredentialsProvider)}</li>
- *     <li>ELB name (see {@link #setLoadBalancerName(String)})</li>
- *     <li>ELB region (see {@link #setRegion(String)})</li>
+ *     <li>Classic load balancer name (see {@link #setLoadBalancerName(String)})</li>
+ *     <li>Classic load balancer region (see {@link #setRegion(String)})</li>
  * </ul>
  *
- * <p> The finder will fetch all nodes connected under an ELB and share with its peers for cluster awareness.</p>
+ * <p> The finder will fetch all nodes connected under an Classic load balancer and share with its peers for cluster
+ * awareness.</p>
  *
- * <p> Note that using AWS ELB service will result in charges to your AWS account.</p>
+ * <p> Note that using AWS Classic load balancer service will result in charges to your AWS account.</p>
  *
  * <p>
  * Choose another implementation of {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder}
  * for local or home network tests.</p>
  *
  * <p> Note that this finder is shared.</p>
+ *
+ * <p> Note that this finder can only be used on AWS EC2 instances that belong on a Load Balancer based auto scaling group.</p>
+ *
+ * @see TcpDiscoveryAlbIpFinder
  */
 public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** */
@@ -77,7 +85,7 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
     private String loadBalancerName;
 
     /**
-     * Creates ELB IP finder instance.
+     * Creates Classic load balancer IP finder instance.
      */
     public TcpDiscoveryElbIpFinder() {
         setShared(true);
@@ -133,10 +141,10 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets AWS Elastic Load Balancing name which nodes are plugged under it. For details refer to Amazon API
+     * Sets AWS Classic load balancer name which nodes are plugged under it. For details refer to Amazon API
      * reference.
      *
-     * @param loadBalancerName AWS Elastic Load Balancing name.
+     * @param loadBalancerName AWS Classic load balancer name.
      */
     @IgniteSpiConfiguration(optional = false)
     public void setLoadBalancerName(String loadBalancerName) {
@@ -144,11 +152,11 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Sets AWS Elastic Load Balancer's region.
+     * Sets Classic load balancer's region.
      *
      * For details refer to Amazon API reference.
      *
-     * @param region AWS Elastic Load Balancer region (i.e: us-east-1)
+     * @param region AWS Classic load balancer region (i.e: us-east-1)
      */
     @IgniteSpiConfiguration(optional = false)
     public void setRegion(String region) {
@@ -169,11 +177,11 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** {@inheritDoc} */
     @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        //No-op, ELB will take care of registration.
+        //No-op, Classic load balancer will take care of registration.
     }
 
     /** {@inheritDoc} */
     @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        // No-op, ELB will take care of this process.
+        // No-op, Classic load balancer will take care of this process.
     }
 }

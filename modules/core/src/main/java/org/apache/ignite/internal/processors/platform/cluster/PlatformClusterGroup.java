@@ -151,6 +151,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** */
     private static final int OP_DATA_STORAGE_METRICS = 37;
 
+    /** */
+    private static final int OP_ENABLE_STATISTICS = 38;
+
     /** Projection. */
     private final ClusterGroupEx prj;
 
@@ -352,6 +355,22 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 }
 
                 platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
+
+                return TRUE;
+            }
+
+            case OP_ENABLE_STATISTICS: {
+                boolean enabled = reader.readBoolean();
+
+                int cnt = reader.readInt();
+
+                Collection<String> cacheNames = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    cacheNames.add(reader.readString());
+                }
+
+                platformCtx.kernalContext().grid().cluster().enableStatistics(cacheNames, enabled);
 
                 return TRUE;
             }

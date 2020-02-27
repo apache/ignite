@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -39,7 +31,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -49,9 +40,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * for which message factory is already registered.
  */
 public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
-    /** Test plugin name. */
-    private static final String TEST_PLUGIN_NAME = "TEST_PLUGIN";
-
     /** Message direct type. Message with this direct type will be registered by {@link GridIoMessageFactory} first. */
     private static final short MSG_DIRECT_TYPE = -44;
 
@@ -83,99 +71,27 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
      * for which message factory is already registered.
      */
     @Test
+    @SuppressWarnings({"RedundantThrows", "ThrowableNotThrown"})
     public void testRegisterMessageFactoryWithConflictDirectTypeId() throws Exception {
         assertThrows(log, this::startGrid, IgniteCheckedException.class,
                 "Message factory is already registered for direct type: " + MSG_DIRECT_TYPE);
     }
 
-    /** Plugin with own message factory. */
-    private static class TestPlugin implements IgnitePlugin {
-    }
-
     /** */
-    public static class TestPluginProvider implements PluginProvider<TestPluginConfiguration> {
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
-            return TEST_PLUGIN_NAME;
+            return "TEST_PLUGIN";
         }
 
         /** {@inheritDoc} */
-        @Override  public <T extends IgnitePlugin> T plugin() {
-            return (T)new TestPlugin();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String version() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String copyright() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
                 @Override public void registerAll(IgniteMessageFactory factory) {
                     factory.register(MSG_DIRECT_TYPE, TestMessage::new);
                 }
             });
         }
-
-        /** {@inheritDoc} */
-        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStart() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStop(boolean cancel) {
-            // no-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node, Serializable data) {
-            // No-op.
-        }
-    }
-
-    /** */
-    private static class TestPluginConfiguration implements PluginConfiguration {
     }
 
     /** Test message with already registered direct type. */
@@ -205,5 +121,4 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
             // No-op.
         }
     }
-
 }
