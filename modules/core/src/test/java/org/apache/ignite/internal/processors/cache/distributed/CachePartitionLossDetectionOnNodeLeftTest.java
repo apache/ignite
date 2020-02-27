@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
@@ -29,9 +28,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -109,22 +106,6 @@ public class CachePartitionLossDetectionOnNodeLeftTest extends GridCommonAbstrac
 
             assertEquals("Node0", S.compact(expLostParts), S.compact(lost0));
             assertEquals("Node1", S.compact(expLostParts), S.compact(lost1));
-
-
-
-            startGrid(2);
-
-            Assert.assertTrue(grid(0).cache(DEFAULT_CACHE_NAME).lostPartitions().isEmpty());
-
-            lost0.clear();
-            lost1.clear();
-
-            stopGrid(2);
-
-            waitForReadyTopology(internalCache(1, DEFAULT_CACHE_NAME).context().topology(), new AffinityTopologyVersion(10, 0));
-
-            Assert.assertFalse(lost0.isEmpty());
-            Assert.assertFalse(lost1.isEmpty());
         }
         finally {
             stopAllGrids();
