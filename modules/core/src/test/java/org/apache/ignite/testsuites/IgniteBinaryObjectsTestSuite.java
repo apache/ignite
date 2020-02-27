@@ -56,7 +56,9 @@ import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheApiTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheStoreTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationEntryProcessorTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
@@ -144,7 +146,9 @@ import org.junit.runners.Suite;
     GridCacheClientNodeBinaryObjectMetadataTest.class,
     GridCacheBinaryObjectMetadataExchangeMultinodeTest.class,
     BinaryMetadataUpdatesFlowTest.class,
-    BinaryMetadataRegistrationTest.class,
+    BinaryMetadataRegistrationCacheApiTest.class,
+    BinaryMetadataRegistrationEntryProcessorTest.class,
+    BinaryMetadataRegistrationCacheStoreTest.class,
     GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class,
     IgniteBinaryMetadataUpdateChangingTopologySelfTest.class,
 

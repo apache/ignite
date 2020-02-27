@@ -21,6 +21,8 @@ import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -30,8 +32,6 @@ import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.regression.Rmse;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run kNN regression trainer ({@link KNNRegressionTrainer}) over distributed dataset.
@@ -84,7 +84,8 @@ public class KNNRegressionExample {
                 System.out.println("\n>>> Rmse = " + rmse);
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

@@ -240,6 +240,15 @@ public class ConnectionAndSslParameters {
     }
 
     /**
+     * Set keystore password.
+     *
+     * @param sslKeyStorePassword Keystore password.
+     */
+    public void sslKeyStorePassword(char[] sslKeyStorePassword) {
+        this.sslKeyStorePassword = sslKeyStorePassword;
+    }
+
+    /**
      * @return Truststore
      */
     public String sslTrustStorePath() {
@@ -258,5 +267,14 @@ public class ConnectionAndSslParameters {
      */
     public char[] sslTrustStorePassword() {
         return sslTrustStorePassword;
+    }
+
+    /**
+     * Set truststore password.
+     *
+     * @param sslTrustStorePassword Truststore password.
+     */
+    public void sslTrustStorePassword(char[] sslTrustStorePassword) {
+        this.sslTrustStorePassword = sslTrustStorePassword;
     }
 }
