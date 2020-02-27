@@ -673,6 +673,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         }
 
         /**
+         * It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
+         * This guarantee us that no pages will be modified and it's safe to init pages list
+         * which needs to be processed.
+         *
          * @param allocPages Total number of tracking pages.
          */
         public void init(int allocPages) {
