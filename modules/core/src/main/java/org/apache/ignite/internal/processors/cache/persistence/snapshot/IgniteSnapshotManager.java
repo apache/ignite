@@ -306,6 +306,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                         "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
                                 }
                             });
+
+                        dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
