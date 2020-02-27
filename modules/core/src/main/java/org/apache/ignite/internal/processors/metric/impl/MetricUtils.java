@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -121,6 +122,16 @@ public class MetricUtils {
             return metricName(CACHE_METRICS, cacheName, "near");
 
         return metricName(CACHE_METRICS, cacheName);
+    }
+
+    /**
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
+     */
+    public static String serviceMetricRegistryName(String srvcName) {
+        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 
     /**

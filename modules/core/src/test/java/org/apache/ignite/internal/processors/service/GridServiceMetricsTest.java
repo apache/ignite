@@ -25,8 +25,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_METRICS_ENABLED;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.metricRegistryName;
 
 /** Tests metrics of service invocations. */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
@@ -36,7 +36,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Utility holder of current grid number. */
     private final AtomicInteger gridNum = new AtomicInteger();
 
-    /** Service mane used in the tests. */
+    /** Service name used in the tests. */
     private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName();
 
     /** Error message of created metrics. */
@@ -62,7 +62,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** Checks metric behaviour when several service instance launched per one node. */
+    /** Checks metric behaviour when launched several service instances. */
     @Test
     public void testMetricsMultiple() throws Throwable {
         List<IgniteEx> servers = new ArrayList<>();
@@ -83,11 +83,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        // Call #totalInstance proxies on the servers.
+        // Call proxies on the servers.
         Stream.generate(()->server.services().serviceProxy(SRVC_NAME, MyService.class, true))
             .limit(totalInstance).forEach(srvc->((MyService)srvc).hello());
 
-        // Call #totalInstance proxies on the clients.
+        // Call proxies on the clients.
         Stream.generate(()->client.services().serviceProxy(SRVC_NAME, MyService.class, true))
             .limit(totalInstance).forEach(srvc->((MyService)srvc).hello());
 
@@ -103,7 +103,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         assertEquals(callsCnt, totalInstance*2);
 
-        // Add servers more that #totalInstance.
+        // Add servers more that service instances.
         servers.add(startGrid(gridNum.getAndIncrement()));
 
         servers.add(startGrid(gridNum.getAndIncrement()));
@@ -222,7 +222,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(srvc.process(new org.apache.ignite.internal.processors.service.inner.experimental.Param()),
             org.apache.ignite.internal.processors.service.inner.experimental.Param.VALUE);
 
-        MetricRegistry registry = ignite.context().metric().registry(metricRegistryName(SRVC_NAME));
+        MetricRegistry registry = ignite.context().metric().registry(serviceMetricRegistryName(SRVC_NAME));
 
         int metricsCnt = 0;
 
@@ -282,7 +282,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
                 proxyAny.invokeMethod(mtd, args);
             }
 
-            MetricRegistry metrics = ignite.context().metric().registry(metricRegistryName(SRVC_NAME));
+            MetricRegistry metrics = ignite.context().metric().registry(serviceMetricRegistryName(SRVC_NAME));
 
             assertNotNull("Metric registry not found.", metrics);
 
@@ -472,7 +472,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
      * @return Number of metrics contained in metric registry for {@code srvcName}.
      */
     private static int metricsCnt(IgniteEx ignite, String srvcName) {
-        MetricRegistry registry = ignite.context().metric().registry(IgniteServiceProcessor.metricRegistryName(srvcName));
+        MetricRegistry registry = ignite.context().metric().registry(serviceMetricRegistryName(srvcName));
 
         int cnt = 0;
 
@@ -487,7 +487,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
      */
     private static ReadOnlyMetricRegistry findMetric(GridMetricManager metricMgr, String srvcName) {
         for (ReadOnlyMetricRegistry registry : metricMgr) {
-            if (registry.name().equals(IgniteServiceProcessor.metricRegistryName(srvcName)))
+            if (registry.name().equals(serviceMetricRegistryName(srvcName)))
                 return registry;
         }
 

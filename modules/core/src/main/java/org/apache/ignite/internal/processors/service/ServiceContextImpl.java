@@ -22,8 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -60,9 +58,6 @@ public class ServiceContextImpl implements ServiceContext {
 
     /** Methods reflection cache. */
     private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
-
-    /** Keeps metrics data bound to service method. */
-    private final ConcurrentMap<Method, HistogramMetricImpl> metrics = new ConcurrentHashMap<>();
 
     /** Service. */
     @GridToStringExclude
@@ -157,21 +152,6 @@ public class ServiceContextImpl implements ServiceContext {
         }
 
         return mtd == NULL_METHOD ? null : mtd;
-    }
-
-    /**
-     * @param mtd The method.
-     * @param histogramInitiator Histogram supplier if the histogramm isn't initialized yet.
-     * @return Service method performance histogramm.
-     */
-    @Nullable HistogramMetricImpl invokeHistogram(Method mtd,
-        @Nullable Supplier<HistogramMetricImpl> histogramInitiator) {
-        HistogramMetricImpl histogram = metrics.computeIfAbsent(mtd, k ->
-            histogramInitiator == null ? null : histogramInitiator.get());
-
-        assert histogramInitiator == null || histogram != null;
-
-        return histogram;
     }
 
     /**

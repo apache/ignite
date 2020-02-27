@@ -103,7 +103,7 @@ import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.abbreviateName;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 
 /**
  * Ignite service processor.
@@ -126,7 +126,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SVCS_VIEW_DESC = "Services";
 
     /** Base name domain for invocation metrics. */
-    public static final String SERVICE_METRIC_REGISTRY = "services";
+    public static final String SERVICE_METRIC_REGISTRY = "service";
 
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Method duration in milliseconds.";
@@ -186,9 +186,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Services topologies update mutex. */
     private final Object servicesTopsUpdateMux = new Object();
 
-    /** Leverages collecting of service metrics. */
-    private final boolean metricsEnabled;
-
     /**
      * Operations lock. The main purpose is to avoid a hang of users operation futures.
      * <p/>
@@ -212,6 +209,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Disconnected flag. */
     private volatile boolean disconnected;
 
+    /** Leverages collecting of service metrics. */
+    private final boolean metricsEnabled;
+
+    /** Keeps metrics data bound to service method. */
+    private Map<String, Map<Method, HistogramMetricImpl>> invocationHistograms;
+
     /**
      * @param method       Method for the invocation timings.
      * @param pkgNameDepth Level of package name abbreviation. See {@link MetricUtils#abbreviateName(Class, int)}.
@@ -233,16 +236,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Gives proper name for service metric registry.
-     *
-     * @param srvcName Name of the service.
-     * @return registry name for service {@code srvcName}.
-     */
-    public static String metricRegistryName(String srvcName) {
-        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
-    }
-
-    /**
      * @param ctx Kernal context.
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
@@ -253,7 +246,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             registeredServices.values(),
             ServiceView::new);
 
-        metricsEnabled = getBoolean(IGNITE_SERVICE_METRICS_ENABLED, true);
+        if (metricsEnabled = getBoolean(IGNITE_SERVICE_METRICS_ENABLED, true))
+            invocationHistograms = new HashMap<>(0);
     }
 
     /** {@inheritDoc} */
@@ -958,12 +952,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * @param srvc The serive to wrap into invocation proxy.
-     * @param srvcCtx Context of service {@code srvc}.
+     * @param srvcName Name of service {@code srvc}.
      *
      * @return Local service proxy allowing timing of service method if {@code metricsEnabled} is {@code True}.
      * If {@code metricsEnabled} is {@code False}, returns the service instance {@code srvc}.
      */
-    private Service localServiceProxy(Service srvc, ServiceContextImpl srvcCtx) {
+    private Service localServiceProxy(Service srvc, String srvcName) {
         if (metricsEnabled) {
             Set<Class<?>> interfaces = new HashSet<>();
 
@@ -976,7 +970,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             return (Service)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
-                interfaces.toArray(new Class<?>[0]), new LocalInvocationHandler(srvc, srvcCtx));
+                interfaces.toArray(new Class<?>[0]),
+                new LocalInvocationHandler(srvc, invocationHistograms.get(srvcName)));
         }
         else
             return srvc;
@@ -1071,9 +1066,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @return Histogram of service method timings.
      */
     HistogramMetricImpl invocationsMetric(String srvcName, Method method) {
-        MetricRegistry metricRegistry = null;
-
-        metricRegistry = ctx.metric().registry(metricRegistryName(srvcName));
+        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcName));
 
         HistogramMetricImpl histogram = null;
 
@@ -1086,6 +1079,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 if (metricRegistry.findMetric(methodMetricName) == null) {
                     histogram = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
                         DESCRIPTION_OF_INVOCATION_METRIC);
+
                     break;
                 }
             }
@@ -1274,8 +1268,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
-        ServiceContextImpl firstInitialized = !metricsEnabled || ctxs.isEmpty() ? null : ctxs.iterator().next();
-
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
                 int cancelCnt = ctxs.size() - assignCnt;
@@ -1311,7 +1303,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 // Initialize service.
                 srvc.init(srvcCtx);
 
-                srvcCtx.service(localServiceProxy(srvc, srvcCtx));
+                if (metricsEnabled)
+                    registerMetrics(srvc, srvcCtx.name());
+
+                srvcCtx.service(localServiceProxy(srvc, srvcCtx.name()));
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
@@ -1327,13 +1322,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
-
-            if (metricsEnabled) {
-                registerMetrics(srvc, srvcCtx, firstInitialized);
-
-                if (firstInitialized == null)
-                    firstInitialized = srvcCtx;
-            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1893,21 +1881,24 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * Registers metrics for timings of service. Traverces all methods of service-related interfaces.
      *
      * @param srvc Service for ivocations measurement.
-     * @param srvcCtx Context of {@code srvc}.
-     * @param previousSrvcCtx First context of another serice instance initialized once before.
+     * @param srvcName Name of {@code srvc}.
      */
-    private void registerMetrics(Service srvc, ServiceContextImpl srvcCtx,
-        @Nullable ServiceContextImpl previousSrvcCtx) {
-        for (Class<?> iface : srvc.getClass().getInterfaces()) {
-            for (Method m : iface.getMethods()) {
-                if (!m.getDeclaringClass().equals(Service.class)) {
-                    // Create metric for the method or take the same one from the previous service context.
-                    srvcCtx.invokeHistogram(m, () -> previousSrvcCtx == null ?
-                        invocationsMetric(srvcCtx.name(), m) :
-                        previousSrvcCtx.invokeHistogram(m, null));
-                }
-            }
-        }
+    private void registerMetrics(Service srvc, String srvcName) {
+        Stream.of(srvc.getClass().getInterfaces()).map(Class::getMethods).flatMap(Arrays::stream)
+            .filter(mtd -> !mtd.getDeclaringClass().equals(Service.class))
+            .forEach(mtd -> {
+                // Create metric for the method or take the same one from the previous service context.
+                Map<Method, HistogramMetricImpl> srvcHistograms = invocationHistograms.computeIfAbsent(srvcName,
+                    name -> new HashMap<>(1));
+
+                srvcHistograms.computeIfAbsent(mtd, key -> {
+                    HistogramMetricImpl histogram = invocationsMetric(srvcName, mtd);
+
+                    assert histogram != null;
+
+                    return histogram;
+                });
+            });
     }
 
     /**
@@ -1916,7 +1907,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcCtx Service context.
      */
     private void unregisterMetrics(ServiceContext srvcCtx) {
-        ctx.metric().remove(metricRegistryName(srvcCtx.name()));
+        ctx.metric().remove(serviceMetricRegistryName(srvcCtx.name()));
     }
 
     /**
@@ -1966,20 +1957,20 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** Invocation proxy handler for service to measure durations of its methods. */
-    private class LocalInvocationHandler implements InvocationHandler {
+    private static class LocalInvocationHandler implements InvocationHandler {
         /** The service to call. */
         private final Service svc;
 
-        /** Context of the service. */
-        private final ServiceContextImpl svcCtx;
+        /** Histograms to measure durations of service method calls. */
+        private Map<Method, HistogramMetricImpl> invocationHistograms;
 
         /**
          * @param svc The service to call.
-         * @param srvc Context of the service {@code svc}.
+         * @param invocationHistograms Histogram map for service method timings.
          */
-        private LocalInvocationHandler(Service svc, ServiceContextImpl srvc) {
+        private LocalInvocationHandler(Service svc, Map<Method, HistogramMetricImpl> invocationHistograms) {
             this.svc = svc;
-            this.svcCtx = srvc;
+            this.invocationHistograms = invocationHistograms;
         }
 
         /** {@inheritDoc} */
@@ -1987,30 +1978,28 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (mtd.getDeclaringClass().equals(Service.class))
                 return mtd.invoke(svc, args);
 
-            HistogramMetricImpl invokeMetric = svcCtx.invokeHistogram(mtd, null);
-
-            long time = invokeMetric == null ? 0 : System.nanoTime();
-
-            Object callResult;
+            HistogramMetricImpl invokeMetric = invocationHistograms.get(mtd);
 
             boolean accessible = mtd.isAccessible();
 
             // Support not-public invocations like of package level interfaces.
             mtd.setAccessible(true);
 
+            long time = invokeMetric == null ? 0 : System.nanoTime();
+
             try {
-                callResult = mtd.invoke(svc, args);
-            } catch (InvocationTargetException e){
-                throw e.getTargetException();
-            } finally {
-                mtd.setAccessible(accessible);
+                return mtd.invoke(svc, args);
             }
+            catch (InvocationTargetException e) {
+                throw e.getTargetException();
+            }
+            finally {
+                mtd.setAccessible(accessible);
 
-            // The metric may be not activated.
-            if (invokeMetric != null)
-                invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
-
-            return callResult;
+                // The metric may be not activated.
+                if (invokeMetric != null)
+                    invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
+            }
         }
     }
 }
