@@ -179,29 +179,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--activate"));
 
         assertTrue(ignite.cluster().active());
-        assertFalse(ignite.cluster().readOnly());
-    }
-
-    /**
-     * Test enabling/disabling read-only mode works via control.sh
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReadOnlyEnableDisable() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        ignite.cluster().active(true);
-
-        assertFalse(ignite.cluster().readOnly());
-
-        assertEquals(EXIT_CODE_OK, execute("--read-only-on"));
-
-        assertTrue(ignite.cluster().readOnly());
-
-        assertEquals(EXIT_CODE_OK, execute("--read-only-off"));
-
-        assertFalse(ignite.cluster().readOnly());
     }
 
     /**
@@ -427,6 +404,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
@@ -450,6 +429,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testBaselineRemove() throws Exception {
         Ignite ignite = startGrids(1);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         Ignite other = startGrid("nodeToStop");
 
         assertFalse(ignite.cluster().active());
@@ -508,6 +490,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
@@ -529,6 +513,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         assertFalse(ignite.cluster().active());
 
@@ -1333,6 +1319,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
         IgniteEx ignite = startGrids(2);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         ignite.cluster().active(true);
 

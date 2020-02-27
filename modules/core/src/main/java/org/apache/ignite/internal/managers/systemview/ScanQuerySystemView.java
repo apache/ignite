@@ -42,7 +42,6 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * {@link SystemView} implementation providing data about cache queries.
  *
  * @see GridCacheQueryManager#queryIterators()
- * @see GridCacheQueryManager.ScanQueryIterator
  * @see ScanQueryView
  */
 public class ScanQuerySystemView<K, V> extends AbstractSystemView<ScanQueryView> {

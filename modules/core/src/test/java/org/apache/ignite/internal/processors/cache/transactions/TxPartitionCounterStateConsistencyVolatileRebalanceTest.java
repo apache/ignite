@@ -32,6 +32,11 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     }
 
     /** {@inheritDoc} */
+    @Override protected void configureBaselineAutoAdjust() {
+        // No-op, keep the baseline auto-adjust enabled.
+    }
+
+    /** {@inheritDoc} */
     @Ignore
     @Override public void testSingleThreadedUpdateOrder() throws Exception {
         // Not applicable for volatile mode.

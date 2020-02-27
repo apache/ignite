@@ -25,16 +25,17 @@ import java.util.Map;
 import java.util.Scanner;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 import static java.util.Arrays.binarySearch;
@@ -42,11 +43,15 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.INF;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * MBean for exporting values of metric registry.
  */
+@IgniteExperimental
 public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     /** Metric registry. */
-    MetricRegistry mreg;
+    ReadOnlyMetricRegistry mreg;
 
     /** Cached histogram metrics intervals names. */
     private final Map<String, T2<long[], String[]>> histogramNames = new HashMap<>();
@@ -54,7 +59,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
     /**
      * @param mreg Metric registry.
      */
-    public MetricRegistryMBean(MetricRegistry mreg) {
+    public MetricRegistryMBean(ReadOnlyMetricRegistry mreg) {
         this.mreg = mreg;
     }
 
@@ -119,7 +124,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         });
 
         return new MBeanInfo(
-            ReadOnlyMetricRegistry.class.getName(),
+            ReadOnlyMetricManager.class.getName(),
             mreg.name(),
             attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
             null,
@@ -154,7 +159,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
      * @return Specific bucket value or {@code null} if not found.
      * @see MetricUtils#histogramBucketNames(HistogramMetric, Map)
      */
-    public static Long searchHistogram(String name, MetricRegistry mreg) {
+    public static Long searchHistogram(String name, ReadOnlyMetricRegistry mreg) {
         Scanner sc = new Scanner(name).useDelimiter("_");
 
         if (!sc.hasNext())

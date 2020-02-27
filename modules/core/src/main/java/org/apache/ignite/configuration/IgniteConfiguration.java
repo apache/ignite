@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -3359,20 +3360,26 @@ public class IgniteConfiguration {
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Returns number of MVCC vacuum threads.
      *
      * @return Number of MVCC vacuum threads.
      */
+    @IgniteExperimental
     public int getMvccVacuumThreadCount() {
         return mvccVacuumThreadCnt;
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Sets number of MVCC vacuum threads.
      *
      * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
         this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
 
@@ -3380,20 +3387,26 @@ public class IgniteConfiguration {
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Returns time interval between MVCC vacuum runs in milliseconds.
      *
      * @return Time interval between MVCC vacuum runs in milliseconds.
      */
+    @IgniteExperimental
     public long getMvccVacuumFrequency() {
         return mvccVacuumFreq;
     }
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Sets time interval between MVCC vacuum runs in milliseconds.
      *
      * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
         this.mvccVacuumFreq = mvccVacuumFreq;
 

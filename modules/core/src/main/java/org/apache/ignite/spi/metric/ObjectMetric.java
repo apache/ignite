@@ -17,11 +17,16 @@
 
 package org.apache.ignite.spi.metric;
 
+import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * Interface for the metrics that holds typed value.
  */
+@IgniteExperimental
 public interface ObjectMetric<T> extends Metric {
     /** @return Value ot the metric. */
     public T value();

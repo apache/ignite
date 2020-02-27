@@ -39,22 +39,15 @@ public class StateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to print state.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)){
             GridClientClusterState state = client.state();
 
-            if (state.active()) {
-                if (state.readOnly())
-                    log.info("Cluster is active (read-only)");
-                else
-                    log.info("Cluster is active");
-            }
-            else
-                log.info("Cluster is inactive");
+            logger.info("Cluster is " + (state.active() ? "active" : "inactive"));
         }
         catch (Throwable e) {
             if (!CommandHandler.isAuthError(e))
-                log.severe("Failed to get cluster state.");
+                logger.severe("Failed to get cluster state.");
 
             throw e;
         }

@@ -18,17 +18,22 @@
 package org.apache.ignite.spi.metric.noop;
 
 import java.util.function.Predicate;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * <b>Metrics API currently has an experimental state. The API is stable enough but can be changed in future releases. </b>
+ * <p>
+ *
  * No-op implementation of metric exporter SPI.
  */
+@IgniteExperimental
 @IgniteSpiNoop
 public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** {@inheritDoc} */
@@ -42,12 +47,12 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(ReadOnlyMetricRegistry registry) {
+    @Override public void setMetricRegistry(ReadOnlyMetricManager registry) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
+    @Override public void setExportFilter(Predicate<ReadOnlyMetricRegistry> filter) {
         // No-op.
     }
 }

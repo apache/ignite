@@ -158,7 +158,6 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -3872,7 +3871,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         Ignition.stop(igniteInstanceName, true);
     }
 
-    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         CU.validateCacheName(cacheName);
         checkClusterState();
@@ -4599,36 +4597,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public void clearNodeLocalMap() {
         ctx.cluster().get().clearNodeMap();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics(String registry) {
-        assert registry != null;
-
-        MetricRegistry mreg = ctx.metric().registry(registry);
-
-        if (mreg != null)
-            mreg.reset();
-        else if (log.isInfoEnabled())
-            log.info("\"" + registry + "\" not found.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readOnlyMode() {
-        return ctx.state().publicApiReadOnlyMode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readOnlyMode(boolean readOnly) {
-        ctx.state().changeGlobalState(readOnly);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getReadOnlyModeDuration() {
-        if (ctx.state().publicApiReadOnlyMode())
-            return U.currentTimeMillis() - ctx.state().readOnlyModeStateChangeTime();
-        else
-            return 0;
     }
 
     /** {@inheritDoc} */
