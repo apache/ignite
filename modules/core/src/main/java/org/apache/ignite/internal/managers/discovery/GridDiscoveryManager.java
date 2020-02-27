@@ -2612,7 +2612,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param nodeId Node id.
      * @return resolved node, or <code>null</code> if node not found.
      */
-    public ClusterNode historicalNode(UUID nodeId) {
+    @Nullable public ClusterNode historicalNode(UUID nodeId) {
         for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
             ClusterNode node = discoCache.node(nodeId);
 
