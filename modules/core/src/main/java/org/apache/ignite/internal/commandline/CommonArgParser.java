@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
