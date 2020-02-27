@@ -971,7 +971,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             return (Service)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
                 interfaces.toArray(new Class<?>[0]),
-                new LocalInvocationHandler(srvc, invocationHistograms.get(srvcName)));
+                new TimingInvocationHandler(srvc, invocationHistograms.get(srvcName)));
         }
         else
             return srvc;
@@ -1957,7 +1957,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** Invocation proxy handler for service to measure durations of its methods. */
-    private static class LocalInvocationHandler implements InvocationHandler {
+    private static class TimingInvocationHandler implements InvocationHandler {
         /** The service to call. */
         private final Service svc;
 
@@ -1968,7 +1968,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
          * @param svc The service to call.
          * @param invocationHistograms Histogram map for service method timings.
          */
-        private LocalInvocationHandler(Service svc, Map<Method, HistogramMetricImpl> invocationHistograms) {
+        private TimingInvocationHandler(Service svc, Map<Method, HistogramMetricImpl> invocationHistograms) {
             this.svc = svc;
             this.invocationHistograms = invocationHistograms;
         }
@@ -1980,25 +1980,27 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             HistogramMetricImpl invokeMetric = invocationHistograms.get(mtd);
 
+            assert invokeMetric != null;
+
             boolean accessible = mtd.isAccessible();
 
             // Support not-public invocations like of package level interfaces.
             mtd.setAccessible(true);
 
-            long time = invokeMetric == null ? 0 : System.nanoTime();
+            long time = System.nanoTime();
 
             try {
-                return mtd.invoke(svc, args);
+                Object res = mtd.invoke(svc, args);
+
+                invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
+
+                return res;
             }
             catch (InvocationTargetException e) {
                 throw e.getTargetException();
             }
             finally {
                 mtd.setAccessible(accessible);
-
-                // The metric may be not activated.
-                if (invokeMetric != null)
-                    invokeMetric.value(U.nanosToMillis(System.nanoTime() - time));
             }
         }
     }
