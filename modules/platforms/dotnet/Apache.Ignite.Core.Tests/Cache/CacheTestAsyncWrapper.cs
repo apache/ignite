@@ -587,6 +587,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public void EnableStatistics(bool enabled)
+        {
+            _cache.EnableStatistics(enabled);
+        }
+
+        /** <inheritDoc /> */
         public Task Rebalance()
         {
             return _cache.Rebalance();

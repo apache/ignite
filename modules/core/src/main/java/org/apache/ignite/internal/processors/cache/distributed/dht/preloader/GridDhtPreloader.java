@@ -158,7 +158,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
             assert rebTopVer.compareTo(grp.localStartVersion()) <= 0 :
-                "Empty hisroty allowed only for newly started cache group [rebTopVer=" + rebTopVer +
+                "Empty history allowed only for newly started cache group [rebTopVer=" + rebTopVer +
                     ", localStartTopVer=" + grp.localStartVersion() + ']';
 
             return true; // Required, since no history info available.

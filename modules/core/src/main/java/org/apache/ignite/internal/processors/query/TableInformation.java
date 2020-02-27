@@ -61,7 +61,6 @@ public class TableInformation {
     /** Table type. */
     private final String tblType;
 
-
     /**
      * @param schemaName Schema name.
      * @param tblName Table name.
