@@ -14,17 +14,17 @@ public class NamingServiceImpl implements NamingService {
         return param.value();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
 
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) throws Exception {
 
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) throws Exception {
 
     }

@@ -128,7 +128,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Base name domain for invocation metrics. */
     public static final String SERVICE_METRIC_REGISTRY = "services";
 
-    /** */
+    /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Method duration in milliseconds.";
 
     /** Default bounds of invocation histogramm in milliseconds. See {@link #invocationsMetric(String, Method)}. */
@@ -1967,13 +1967,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** Invocation proxy handler for service to measure durations of its methods. */
     private class LocalInvocationHandler implements InvocationHandler {
-        /** */
+        /** The service to call. */
         private final Service svc;
 
-        /** */
+        /** Context of the service. */
         private final ServiceContextImpl svcCtx;
 
-        /** */
+        /**
+         * @param svc The service to call.
+         * @param srvc Context of the service {@code svc}.
+         */
         private LocalInvocationHandler(Service svc, ServiceContextImpl srvc) {
             this.svc = svc;
             this.svcCtx = srvc;

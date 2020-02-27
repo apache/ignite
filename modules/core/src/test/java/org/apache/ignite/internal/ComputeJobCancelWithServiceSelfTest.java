@@ -70,7 +70,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
         public int hello();
     }
 
-    /** */
+    /** {@inheritDoc} */
     private static class MyServiceImpl implements Service, MyService {
         /** */
         private volatile boolean cancelled;
@@ -90,9 +90,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
             cancelled = true;
         }
 
-        /**
-         * @return Response.
-         */
+        /** {@inheritDoc} */
         @Override public int hello() {
             assertFalse("Service already cancelled!", cancelled);
 
