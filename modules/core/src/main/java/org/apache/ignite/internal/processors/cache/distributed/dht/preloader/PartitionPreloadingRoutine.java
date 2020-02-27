@@ -23,11 +23,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -77,34 +74,34 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Checkpoint listener. */
+    private final CheckpointListener checkpointLsnr = new CheckpointListener();
+
     /** Exchange ID. */
     private final GridDhtPartitionExchangeId exchId;
 
     /** Assignments ordered by cache rebalance priority and node. */
     private final Iterable<T2<UUID, Map<Integer, Set<Integer>>>> orderedAssgnments;
 
-    /** Unique partition identifier with node identifier. */
-    private final Map<Long, UUID> partsToNodes;
-
-    /** The remaining groups with the number of partitions. */
-    @GridToStringInclude
-    private final Map<Integer, Integer> remaining = new ConcurrentHashMap<>();
-
-    /** */
-    private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpRoutines;
-
     /** Count of partition snapshots received. */
     private final AtomicInteger receivedCnt = new AtomicInteger();
 
-    /** Cache group with restored partition snapshots and HWM value of update counter. */
+    /** The remaining groups with the number of partitions. */
     @GridToStringInclude
-    private final Map<Integer, Map<Integer, Long>> restored = new ConcurrentHashMap<>();
+    private final Map<Integer, AtomicInteger> remaining = new ConcurrentHashMap<>();
+
+    /** Cache group with restored partition snapshots and HWM value of update counter mapped to node identifier. */
+    @GridToStringInclude
+    private final Map<Integer, Map<UUID, Map<Integer, Long>>> restored = new ConcurrentHashMap<>();
+
+    /** Cache group identifiers with futures that will be completed when partition files are preloaded. */
+    private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpRoutines;
+
+    /** Total number of partitions. */
+    private final int totalPartitionsCnt;
 
     /** Snapshot future. */
     private IgniteInternalFuture<Boolean> snapshotFut;
-
-    /** Checkpoint listener. */
-    private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
     /**
      * @param assigns Assigns.
@@ -129,33 +126,23 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         log = cctx.kernalContext().log(getClass());
 
         // initialize
-        Map<DataRegion, Set<Long>> regionToParts = new HashMap<>();
-        Map<Long, UUID> partsToNodes0 = new HashMap<>();
-
         Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpRoutines0 = new HashMap<>();
+        int totalParts = 0;
 
         for (T2<UUID, Map<Integer, Set<Integer>>> nodeAssigns : assigns) {
             for (Map.Entry<Integer, Set<Integer>> grpAssigns : nodeAssigns.getValue().entrySet()) {
                 int grpId = grpAssigns.getKey();
-                Set<Integer> parts = grpAssigns.getValue();
-                DataRegion region = cctx.cache().cacheGroup(grpId).dataRegion();
+                int partsCnt = grpAssigns.getValue().size();
 
-                Set<Long> regionParts = regionToParts.computeIfAbsent(region, v -> new LinkedHashSet<>());
+                remaining.computeIfAbsent(grpId, v -> new AtomicInteger()).addAndGet(partsCnt);
 
-                for (Integer partId : parts) {
-                    long uniquePartId = uniquePartId(grpId, partId);
-
-                    regionParts.add(uniquePartId);
-
-                    partsToNodes0.put(uniquePartId, nodeAssigns.getKey());
-                }
-
-                remaining.put(grpId, remaining.getOrDefault(grpId, 0) + parts.size());
                 grpRoutines0.put(grpId, new GridFutureAdapter<>());
+
+                totalParts += partsCnt;
             }
         }
 
-        partsToNodes = partsToNodes0;
+        totalPartitionsCnt = totalParts;
         grpRoutines = grpRoutines0;
     }
 
@@ -266,7 +253,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 .listen(f -> {
                     try {
                         if (!f.isCancelled())
-                            onPartitionSnapshotRestored(grpId, partId, f.get());
+                            onPartitionSnapshotRestored(nodeId, grpId, partId, f.get());
                     }
                     catch (IgniteCheckedException e) {
                         log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
@@ -275,7 +262,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                     }
                 });
 
-            if (receivedCnt.incrementAndGet() == partsToNodes.size()) {
+            if (receivedCnt.incrementAndGet() == totalPartitionsCnt) {
                 if (log.isInfoEnabled())
                     log.info("All partition files are received - triggering checkpoint to complete rebalancing.");
 
@@ -294,24 +281,24 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param partId Partition ID.
      * @param cntr The highest value of the update counter before this partition began to process updates.
      */
-    private void onPartitionSnapshotRestored(int grpId, int partId, long cntr) {
-        Integer partsCnt = remaining.get(grpId);
+    private void onPartitionSnapshotRestored(UUID nodeId, int grpId, int partId, long cntr) {
+        AtomicInteger partsCnt = remaining.get(grpId);
 
         assert partsCnt != null;
 
-        Map<Integer, Long> cntrs = restored.computeIfAbsent(grpId, v -> new ConcurrentHashMap<>());
+        Map<UUID, Map<Integer, Long>> grpCntrs = restored.computeIfAbsent(grpId, v -> new ConcurrentHashMap<>());
 
-        cntrs.put(partId, cntr);
+        grpCntrs.computeIfAbsent(nodeId, v -> new ConcurrentHashMap<>()).put(partId, cntr);
 
-        if (partsCnt == cntrs.size() && remaining.remove(grpId) != null)
-            onCacheGroupDone(grpId, cntrs);
+        if (partsCnt.decrementAndGet() == 0 && remaining.remove(grpId) != null)
+            onCacheGroupDone(grpId, grpCntrs);
     }
 
     /**
      * @param grpId Group ID.
      * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
      */
-    private void onCacheGroupDone(int grpId, Map<Integer, Long> maxCntrs) {
+    private void onCacheGroupDone(int grpId, Map<UUID, Map<Integer, Long>> maxCntrs) {
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
         String grpName = grp.cacheOrGroupName();
 
@@ -340,7 +327,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         assert fut != null : "Duplicate remove [grp=" + grp.cacheOrGroupName() + "]";
 
-        GridDhtPreloaderAssignments histAssignments = makeHistAssignments(grp, new TreeMap<>(maxCntrs));
+        GridDhtPreloaderAssignments histAssignments = makeHistAssignments(grp, maxCntrs);
 
         fut.onDone(histAssignments);
 
@@ -418,31 +405,34 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * Prepare assignments for historical rebalancing.
      *
      * @param grp Cache group.
-     * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
+     * @param cntrs Partition set with HWM update counter value for hstorical rebalance.
      * @return Partition to node assignments.
      */
-    private GridDhtPreloaderAssignments makeHistAssignments(CacheGroupContext grp, SortedMap<Integer, Long> maxCntrs) {
+    private GridDhtPreloaderAssignments makeHistAssignments(CacheGroupContext grp, Map<UUID, Map<Integer, Long>> cntrs) {
         GridDhtPreloaderAssignments histAssigns = new GridDhtPreloaderAssignments(exchId, topVer);
 
         int parts = grp.topology().partitions();
 
-        for (Map.Entry<Integer, Long> e : maxCntrs.entrySet()) {
-            int partId = e.getKey();
+        for (Map.Entry<UUID, Map<Integer, Long>> e : cntrs.entrySet()) {
+            ClusterNode node = cctx.discovery().node(e.getKey());
 
-            long from = grp.topology().localPartition(partId).initialUpdateCounter();
-            long to = e.getValue();
+            assert node != null : e.getKey();
 
-            assert to >= from : "from=" + from + ", to=" + to;
+            Map<Integer, Long> orderedCntrs = new TreeMap<>(e.getValue());
 
-            if (from != to) {
-                ClusterNode node = cctx.discovery().node(partsToNodes.get(uniquePartId(grp.groupId(), partId)));
+            for (Map.Entry<Integer, Long> partCntr : orderedCntrs.entrySet()) {
+                int partId = partCntr.getKey();
 
-                assert node != null;
+                long from = grp.topology().localPartition(partId).initialUpdateCounter();
+                long to = partCntr.getValue();
 
-                GridDhtPartitionDemandMessage msg = histAssigns.get(node);
+                if (from == to)
+                    continue;
 
-                if (msg == null)
-                    histAssigns.put(node, msg = new GridDhtPartitionDemandMessage(rebalanceId, topVer, grp.groupId()));
+                assert to > from : "from=" + from + ", to=" + to;
+
+                GridDhtPartitionDemandMessage msg = histAssigns.
+                    computeIfAbsent(node, v -> new GridDhtPartitionDemandMessage(rebalanceId, topVer, grp.groupId()));
 
                 msg.partitions().addHistorical(partId, from, to, parts);
             }
@@ -517,15 +507,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         });
 
         return endFut;
-    }
-
-    /**
-     * @param grpId Cache group ID.
-     * @param partId Partition ID.
-     * @return Unique compound partition identifier.
-     */
-    private static long uniquePartId(int grpId, int partId) {
-        return ((long)grpId << 32) + partId;
     }
 
     /** {@inheritDoc} */
