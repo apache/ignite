@@ -120,7 +120,7 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
 
         cache0.put(1, 2);
 
-        blockRebalanceSupplyMessages(ign0, GridAbstractTest.DEFAULT_CACHE_NAME, getTestIgniteInstanceName(1));
+        blockRebalanceSupplyMessages(ign0, DEFAULT_CACHE_NAME, getTestIgniteInstanceName(1));
 
         startGrid(1);
 
@@ -128,12 +128,14 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
 
         startGrid(10);
 
+        int part = ign0.affinity(DEFAULT_CACHE_NAME).partition(1);
+
         for (int i = 0; i < 100; i++) {
             for (Ignite ign : G.allGrids()) {
-                IgniteCache<Object, Object> cache = ign.cache(GridAbstractTest.DEFAULT_CACHE_NAME);
+                IgniteCache<Object, Object> cache = ign.cache(DEFAULT_CACHE_NAME);
 
-                List<Cache.Entry<Object, Object>> res = cache
-                        .query(new ScanQuery<>()).getAll();
+                //check scan query
+                List<Cache.Entry<Object, Object>> res = cache.query(new ScanQuery<>()).getAll();
 
                 assertEquals(1, res.size());
                 assertEquals(1, res.get(0).getKey());
@@ -141,9 +143,17 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
 
                 res = new ArrayList<>();
 
+                //check iterator
                 for (Cache.Entry<Object, Object> entry : cache) {
                     res.add(entry);
                 }
+
+                assertEquals(1, res.size());
+                assertEquals(1, res.get(0).getKey());
+                assertEquals(2, res.get(0).getValue());
+
+                // check scan query by partition
+                res = cache.query(new ScanQuery<>(part)).getAll();
 
                 assertEquals(1, res.size());
                 assertEquals(1, res.get(0).getKey());
@@ -153,7 +163,7 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
             ScanQuery<Object, Object> qry = new ScanQuery<>().setLocal(true);
 
             {
-                List<Cache.Entry<Object, Object>> res0 = grid(0).cache(GridAbstractTest.DEFAULT_CACHE_NAME).query(qry).getAll();
+                List<Cache.Entry<Object, Object>> res0 = grid(0).cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
                 assertEquals(1, res0.size());
                 assertEquals(1, res0.get(0).getKey());
@@ -161,13 +171,13 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
             }
 
             {
-                List<Cache.Entry<Object, Object>> res1 = grid(1).cache(GridAbstractTest.DEFAULT_CACHE_NAME).query(qry).getAll();
+                List<Cache.Entry<Object, Object>> res1 = grid(1).cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
                 assertTrue(res1.isEmpty());
             }
 
             {
-                List<Cache.Entry<Object, Object>> res1 = grid(10).cache(GridAbstractTest.DEFAULT_CACHE_NAME).query(qry).getAll();
+                List<Cache.Entry<Object, Object>> res1 = grid(10).cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
                 assertTrue(res1.isEmpty());
             }
@@ -191,12 +201,13 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
 
         startGrid(10);
 
+        int part = ign0.affinity(DEFAULT_CACHE_NAME).partition(1);
+
         for (int i = 0; i < 100; i++) {
             for (Ignite ign : G.allGrids()) {
                 IgniteCache<Object, Object> cache = ign.cache(GridAbstractTest.DEFAULT_CACHE_NAME);
 
-                List<Cache.Entry<Object, Object>> res = cache
-                        .query(new ScanQuery<>()).getAll();
+                List<Cache.Entry<Object, Object>> res = cache.query(new ScanQuery<>()).getAll();
 
                 assertEquals(1, res.size());
                 assertEquals(1, res.get(0).getKey());
@@ -207,6 +218,12 @@ public class ScanQueriesTopologyMappingTest extends GridCommonAbstractTest {
                 for (Cache.Entry<Object, Object> entry : cache) {
                     res.add(entry);
                 }
+
+                assertEquals(1, res.size());
+                assertEquals(1, res.get(0).getKey());
+                assertEquals(2, res.get(0).getValue());
+
+                res = cache.query(new ScanQuery<>(part)).getAll();
 
                 assertEquals(1, res.size());
                 assertEquals(1, res.get(0).getKey());
