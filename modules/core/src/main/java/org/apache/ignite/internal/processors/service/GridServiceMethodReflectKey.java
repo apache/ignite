@@ -40,7 +40,7 @@ class GridServiceMethodReflectKey {
         assert mtdName != null;
 
         this.mtdName = mtdName;
-        this.argTypes = argTypes == null || argTypes.length == 0 ? null : argTypes;
+        this.argTypes = argTypes;
     }
 
     /**

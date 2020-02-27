@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -101,6 +102,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.abbreviateName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -123,13 +125,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** */
     public static final String SVCS_VIEW_DESC = "Services";
 
-    /** Base name domain for invocation metrics. @see {@link #invocationsMetric(String, Method)}. */
-    public static final String METRIC_REGISTRY_INVOCATIONS = metricName("services", "invocations");
+    /** Base name domain for invocation metrics. */
+    public static final String SERVICE_METRIC_REGISTRY = "services";
 
     /** */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Method duration in milliseconds.";
 
-    /** Default bounds of invocation histogramm in milliseconds. @see {@link #invocationsMetric(String, Method)}. */
+    /** Default bounds of invocation histogramm in milliseconds. See {@link #invocationsMetric(String, Method)}. */
     private static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {1, 10, 50, 200, 1000};
 
     /** Local service instances. */
@@ -211,20 +213,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private volatile boolean disconnected;
 
     /**
-     * @param srvcName     Name of the method's service.
      * @param method       Method for the invocation timings.
-     * @param pkgNameDepth Level of package name abbreviation. @see #abbreviatePgkName(Class, int).
+     * @param pkgNameDepth Level of package name abbreviation. See {@link MetricUtils#abbreviateName(Class, int)}.
      * @return Metric name for {@code method}. Doesn't guaratee same name with same {@code pkgNameDepth} is used for
      * real metric registry.
      */
-    static String methodMetricName(String srvcName, Method method, int pkgNameDepth) {
+    static String methodMetricName(Method method, int pkgNameDepth) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(srvcName);
-        sb.append("#");
+        sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
+        sb.append("_");
         sb.append(method.getName());
         sb.append("(");
-        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviatePgkName(t, pkgNameDepth))
+        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
             .collect(Collectors.joining(", ")));
         sb.append(")");
 
@@ -232,45 +233,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider:
-     *                     <pre>
-     *                         0 - wont add package name;
-     *                         1 - add only first char of each name in java package;
-     *                         2 - add first and last char of each name in java package;
-     *                         Any other - add full java package name.
-     *                     </pre>
-     * @return Abbreviated name of the type {@code cl}.
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
      */
-    private static String abbreviatePgkName(Class<?> cl, int pkgNameDepth) {
-        if (pkgNameDepth == 0)
-            return cl.getSimpleName();
-
-        if (pkgNameDepth < 0 || pkgNameDepth > 2)
-            return cl.getName();
-
-        String[] pkgNameParts = cl.getName().split("\\.");
-
-        // No package like of 'void' or 'int'.
-        if (pkgNameParts.length == 1)
-            return pkgNameParts[0];
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < pkgNameParts.length - 1; ++i) {
-            // For {@code pkgNameDepth} == 1 add the first char.
-            sb.append(pkgNameParts[i].charAt(0));
-
-            // For {@code pkgNameDepth} == 2 add the last char.
-            if (pkgNameDepth > 1 && pkgNameParts[i].length() > 1)
-                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
-
-            sb.append(".");
-        }
-
-        // Add name to the class.
-        sb.append(pkgNameParts[pkgNameParts.length - 1]);
-
-        return sb.toString();
+    public static String metricRegistryName(String srvcName) {
+        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 
     /**
@@ -391,7 +360,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         deployedServices.clear();
 
         if (metricsEnabled)
-            ctx.metric().remove(METRIC_REGISTRY_INVOCATIONS);
+            ctx.metric().remove(SERVICE_METRIC_REGISTRY);
 
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
@@ -1095,22 +1064,22 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Creates metric for service method. If the metric exists then considers one or several argument types has same
      * name but different packages. Then skips existing metric and tries to extend metric name with abbreviation of
-     * java package name. @see {@link #abbreviatePgkName(Class, int)}.
+     * java package name. See {@link MetricUtils#abbreviateName(Class, int)}.
      *
      * @param srvcName Service name.
      * @param method Method to measure.
-     * @return Histogramm of service method timings.
+     * @return Histogram of service method timings.
      */
     HistogramMetricImpl invocationsMetric(String srvcName, Method method) {
         MetricRegistry metricRegistry = null;
 
-        metricRegistry = ctx.metric().registry(METRIC_REGISTRY_INVOCATIONS);
+        metricRegistry = ctx.metric().registry(metricRegistryName(srvcName));
 
         HistogramMetricImpl histogram = null;
 
         // Find/create histogramm. For the counter @see #methodMetricName(Method, int).
         for (int i = 0; i < 4; ++i) {
-            String methodMetricName = methodMetricName(srvcName, method, i);
+            String methodMetricName = methodMetricName(method, i);
 
             synchronized (metricRegistry) {
                 // If the metric exists skip and try extending metric name in next cycle.
@@ -1932,14 +1901,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         for (Class<?> iface : srvc.getClass().getInterfaces()) {
             for (Method m : iface.getMethods()) {
                 if (!m.getDeclaringClass().equals(Service.class)) {
-
-                    GridServiceMethodReflectKey mtdKey =
-                        new GridServiceMethodReflectKey(m.getName(), m.getParameterTypes());
-
-                    // Create metric for the methd or take the same one from the previous service context.
-                    srvcCtx.invokeHistogramm(mtdKey, () -> previousSrvcCtx == null ?
+                    // Create metric for the method or take the same one from the previous service context.
+                    srvcCtx.invokeHistogram(m, () -> previousSrvcCtx == null ?
                         invocationsMetric(srvcCtx.name(), m) :
-                        previousSrvcCtx.invokeHistogramm(mtdKey, null));
+                        previousSrvcCtx.invokeHistogram(m, null));
                 }
             }
         }
@@ -1951,7 +1916,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcCtx Service context.
      */
     private void unregisterMetrics(ServiceContext srvcCtx) {
-        ctx.metric().remove(METRIC_REGISTRY_INVOCATIONS);
+        ctx.metric().remove(metricRegistryName(srvcCtx.name()));
     }
 
     /**
@@ -2019,9 +1984,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (mtd.getDeclaringClass().equals(Service.class))
                 return mtd.invoke(svc, args);
 
-            HistogramMetricImpl invokeMetric = svcCtx.invokeHistogramm(
-                new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes()),
-                () -> invocationsMetric(svcCtx.name(), mtd));
+            HistogramMetricImpl invokeMetric = svcCtx.invokeHistogram(mtd, null);
 
             long time = invokeMetric == null ? 0 : System.nanoTime();
 

@@ -55,6 +55,50 @@ public class MetricUtils {
     }
 
     /**
+     * Abbreviates package + class name for metric naming purposes.
+     *
+     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider:
+     *                     <pre>
+     *                         0 - wont add package name;
+     *                         1 - add only first char of each name in java package;
+     *                         2 - add first and last char of each name in java package;
+     *                         Any other - add full java package name.
+     *                     </pre>
+     * @return Abbreviated name of the type {@code cl}.
+     */
+    public static String abbreviateName(Class<?> cl, int pkgNameDepth) {
+        if (pkgNameDepth == 0)
+            return cl.getSimpleName();
+
+        if (pkgNameDepth < 0 || pkgNameDepth > 2)
+            return cl.getName();
+
+        String[] pkgNameParts = cl.getName().split("\\.");
+
+        // No package like of 'void' or 'int'.
+        if (pkgNameParts.length == 1)
+            return pkgNameParts[0];
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < pkgNameParts.length - 1; ++i) {
+            // For {@code pkgNameDepth} == 1 add the first char.
+            sb.append(pkgNameParts[i].charAt(0));
+
+            // For {@code pkgNameDepth} == 2 add the last char.
+            if (pkgNameDepth > 1 && pkgNameParts[i].length() > 1)
+                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+
+            sb.append(".");
+        }
+
+        // Add name to the class.
+        sb.append(pkgNameParts[pkgNameParts.length - 1]);
+
+        return sb.toString();
+    }
+
+    /**
      * Splits full metric name to registry name and metric name.
      *
      * @param name Full metric name.

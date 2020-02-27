@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
@@ -59,9 +58,11 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private final ExecutorService exe;
 
-    /** Keeps cached data bound to service method. */
-    private final ConcurrentMap<GridServiceMethodReflectKey, IgniteBiTuple<Method, HistogramMetricImpl>> mtds =
-        new ConcurrentHashMap<>();
+    /** Methods reflection cache. */
+    private final ConcurrentMap<GridServiceMethodReflectKey, Method> mtds = new ConcurrentHashMap<>();
+
+    /** Keeps metrics data bound to service method. */
+    private final ConcurrentMap<Method, HistogramMetricImpl> metrics = new ConcurrentHashMap<>();
 
     /** Service. */
     @GridToStringExclude
@@ -140,68 +141,37 @@ public class ServiceContextImpl implements ServiceContext {
      * @return Method.
      */
     @Nullable Method method(GridServiceMethodReflectKey key) {
-        IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = methodRecord(key);
-
-        Method mtd = mtdRecord.get1();
+        Method mtd = mtds.get(key);
 
         if (mtd == null) {
-            synchronized (mtdRecord) {
-                mtd = mtdRecord.get1();
+            try {
+                mtd = svc.getClass().getMethod(key.methodName(), key.argTypes());
 
-                if (mtd == null) {
-                    try {
-                        mtd = svc.getClass().getMethod(key.methodName(), key.argTypes());
-
-                        mtd.setAccessible(true);
-                    }
-                    catch (NoSuchMethodException ignored) {
-                        mtd = NULL_METHOD;
-                    }
-
-                    mtdRecord.set1(mtd);
-                }
+                mtd.setAccessible(true);
             }
+            catch (NoSuchMethodException ignored) {
+                mtd = NULL_METHOD;
+            }
+
+            mtds.put(key, mtd);
         }
 
         return mtd == NULL_METHOD ? null : mtd;
     }
 
     /**
-     * @param key Method key.
-     * @param histogrammInitiator Histogramm supplier if the histogramm isn't initialized yet.
+     * @param mtd The method.
+     * @param histogramInitiator Histogram supplier if the histogramm isn't initialized yet.
      * @return Service method performance histogramm.
      */
-    @Nullable HistogramMetricImpl invokeHistogramm(GridServiceMethodReflectKey key,
-        Supplier<HistogramMetricImpl> histogrammInitiator) {
-        IgniteBiTuple<Method, HistogramMetricImpl> mtdRecord = methodRecord(key);
+    @Nullable HistogramMetricImpl invokeHistogram(Method mtd,
+        @Nullable Supplier<HistogramMetricImpl> histogramInitiator) {
+        HistogramMetricImpl histogram = metrics.computeIfAbsent(mtd, k ->
+            histogramInitiator == null ? null : histogramInitiator.get());
 
-        HistogramMetricImpl histogramm = mtdRecord.get2();
+        assert histogramInitiator == null || histogram != null;
 
-        if (histogramm == null) {
-            synchronized (mtdRecord) {
-                histogramm = mtdRecord.get2();
-
-                if (histogramm == null) {
-                    histogramm = histogrammInitiator.get();
-
-                    assert histogramm != null;
-
-                    mtdRecord.set2(histogramm);
-                }
-            }
-        }
-
-        return histogramm;
-    }
-
-    /** Creates utility recod by method key {@code key}. Thread-safe.  */
-    private IgniteBiTuple<Method, HistogramMetricImpl> methodRecord(GridServiceMethodReflectKey key) {
-        return mtds.compute(key, (k, v) -> {
-            if (v == null)
-                v = new IgniteBiTuple<>();
-
-            return v;
-        });
+        return histogram;
     }
 
     /**
