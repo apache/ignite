@@ -29,6 +29,7 @@ import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
 import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
@@ -49,6 +50,7 @@ import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
+import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
@@ -164,6 +166,10 @@ public class IgniteMBeansManager {
         // Metrics configuration
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);
         registerMBean("Metrics", metricsMxBean.getClass().getSimpleName(), metricsMxBean, MetricsMxBean.class);
+
+        // Queries management
+        QueryMXBean qryMXBean = new QueryMXBeanImpl(ctx);
+        registerMBean("Query", qryMXBean.getClass().getSimpleName(), qryMXBean, QueryMXBean.class);
 
         // Executors
         registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);

@@ -298,21 +298,11 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionMetricsMxBean txMetricsMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(igniteInt),
+        return getMxBean(getTestIgniteInstanceName(igniteInt),
             "TransactionMetrics",
-            TransactionMetricsMxBeanImpl.class.getSimpleName()
-        );
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TransactionMetricsMxBean.class, true);
+            TransactionMetricsMxBeanImpl.class.getSimpleName(),
+            TransactionMetricsMxBean.class);
     }
 }

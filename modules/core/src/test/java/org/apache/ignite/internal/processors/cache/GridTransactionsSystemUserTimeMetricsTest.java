@@ -241,9 +241,8 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         TransactionsMXBean tmMxBean = getMxBean(
             CLIENT,
             "Transactions",
-            TransactionsMXBean.class,
-            TransactionsMXBeanImpl.class
-        );
+            TransactionsMXBeanImpl.class.getSimpleName(),
+            TransactionsMXBean.class);
 
         if (threshold != null)
             tmMxBean.setLongTransactionTimeDumpThreshold(threshold);
@@ -496,16 +495,14 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             TransactionsMXBean tmMxBean = getMxBean(
                 CLIENT,
                 "Transactions",
-                TransactionsMXBean.class,
-                TransactionsMXBeanImpl.class
-            );
+                TransactionsMXBeanImpl.class.getSimpleName(),
+                TransactionsMXBean.class);
 
             TransactionsMXBean tmMxBean2 = getMxBean(
                 CLIENT_2,
                 "Transactions",
-                TransactionsMXBean.class,
-                TransactionsMXBeanImpl.class
-            );
+                TransactionsMXBeanImpl.class.getSimpleName(),
+                TransactionsMXBean.class);
 
             int oldLimit = tmMxBean.getTransactionTimeDumpSamplesPerSecondLimit();
             long oldThreshold = tmMxBean.getLongTransactionTimeDumpThreshold();

@@ -285,7 +285,8 @@ public class CommandHandlerParsingTest {
         return cmd == CommandList.CACHE ||
             cmd == CommandList.WAL ||
             cmd == CommandList.SET_STATE ||
-            cmd == CommandList.ENCRYPTION;
+            cmd == CommandList.ENCRYPTION ||
+            cmd == CommandList.KILL_QUERY;
     }
 
     /**
@@ -457,7 +458,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * test parsing dump transaction arguments
+     * Test parsing dump transaction arguments.
      */
     @Test
     public void testTransactionArguments() {
@@ -502,6 +503,33 @@ public class CommandHandlerParsingTest {
         assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
+
+    /**
+     * Test parsing kill arguments.
+     */
+    @Test
+    public void testKillArguments() {
+        assertParseArgsThrows("Expected type of resource to kill.", "--kill");
+        assertParseArgsThrows("Expected scan query id.", "--kill", "scan");
+        assertParseArgsThrows("Expected continuous query id.", "--kill", "continuous");
+        assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
+        assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
+        assertParseArgsThrows("Expected transaction id.", "--kill", "tx");
+
+        assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
+            "--kill", "scan", "not_a_number");
+        assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
+            "--kill", "scan", "not_a_number");
+
+        ConnectionAndSslParameters args = parseArgs(asList("--kill", "scan", "1"));
+
+        assertEquals(1L, ((Long)args.command().arg()).longValue());
+
+        args = parseArgs(asList("--kill", "sql", "1"));
+
+        assertEquals(1L, ((Long)args.command().arg()).longValue());
+    }
+
     /**
      * @param args Raw arg list.
      * @return Common parameters container object.
@@ -533,6 +561,17 @@ public class CommandHandlerParsingTest {
      * @param args Incoming arguments.
      */
     private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
-        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
+        assertParseArgsThrows(failMsg, IllegalArgumentException.class, args);
+    }
+
+    /**
+     * Checks that parse arguments fails with {@code exception} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param exception Exception class.
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> exception, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), exception, failMsg);
     }
 }

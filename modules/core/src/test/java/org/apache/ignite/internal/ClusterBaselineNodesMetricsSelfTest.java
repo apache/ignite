@@ -152,19 +152,9 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
      * @param clazz Class of ClusterMetricsMXBean implementation.
      * @return MBean instance.
      */
-    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz)
-        throws MalformedObjectNameException {
-
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(nodeIdx),
+    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz) {
+        return getMxBean(getTestIgniteInstanceName(nodeIdx),
             "Kernal",
-            clazz.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, ClusterMetricsMXBean.class, true);
+            clazz.getSimpleName(), ClusterMetricsMXBean.class);
     }
 }

@@ -504,14 +504,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
+        return getMxBean(g.name(), grp, name, DynamicMBean.class);
     }
 
     /** */

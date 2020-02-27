@@ -2353,34 +2353,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * Returns MX bean by specified group name and class.
-     *
-     * @param igniteInstanceName Ignite instance name.
-     * @param grp Name of the group.
-     * @param cls Bean class.
-     * @param implCls Bean implementation class.
-     * @param <T> Type parameter for bean class.
-     * @param <I> Type parameter for bean implementation class.
-     * @return MX bean.
-     * @throws Exception If failed.
-     */
-    protected <T, I> T getMxBean(
-        String igniteInstanceName,
-        String grp,
-        Class<T> cls,
-        Class<I> implCls
-    ) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, implCls.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, cls, true);
-    }
-
-    /**
      * Checks that return types of all registered ignite metrics methods are correct.
      * Also checks that all classes from {@code namesToCheck} are registered as mbeans.
      *

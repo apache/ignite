@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
@@ -32,16 +33,21 @@ public class QueryMXBeanImpl implements QueryMXBean {
     /** */
     private final GridKernalContext ctx;
 
+    private final IgniteLogger log;
+
     /**
      * @param ctx Context.
      */
     public QueryMXBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
+        this.log = ctx.log(QueryMXBeanImpl.class);
     }
 
     /** {@inheritDoc} */
     @Override public void cancelContinuous(String id) {
         A.notNull(id, "id");
+
+        log.info("Killing continuous query[id=" + id + ']');
 
         ctx.continuous().stopRoutine(UUID.fromString(id));
     }
@@ -49,6 +55,8 @@ public class QueryMXBeanImpl implements QueryMXBean {
     /** {@inheritDoc} */
     @Override public void cancelSQL(Long id) {
         A.notNull(id, "id");
+
+        log.info("Killing sql query[id=" + id + ']');
 
         VisorQueryCancelTaskArg arg = new VisorQueryCancelTaskArg(id);
 
@@ -67,5 +75,6 @@ public class QueryMXBeanImpl implements QueryMXBean {
     @Override public void cancelScan(Long id) {
         A.notNull(id, "id");
 
+        log.info("Killing scan query[id=" + id + ']');
     }
 }
