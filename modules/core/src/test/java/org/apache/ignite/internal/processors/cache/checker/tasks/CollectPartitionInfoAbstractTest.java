@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.checker.objects.ExecutionResult;
-import org.apache.ignite.internal.processors.cache.checker.objects.PartitionKeyVersion;
+import org.apache.ignite.internal.processors.cache.checker.objects.VersionedKey;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,7 +87,7 @@ public class CollectPartitionInfoAbstractTest extends GridCommonAbstractTest {
         GridCacheVersion ver = new GridCacheVersion();
 
         for (int[] partKeys : keys) {
-            List<PartitionKeyVersion> partKeyVer = new ArrayList<>();
+            List<VersionedKey> partKeyVer = new ArrayList<>();
             UUID uuid = UUID.randomUUID();
 
             for (int key : partKeys) {
@@ -95,7 +95,7 @@ public class CollectPartitionInfoAbstractTest extends GridCommonAbstractTest {
                     ver = new GridCacheVersion(1, 1, COUNTER.incrementAndGet());
 
                 if (key != EMPTY) {
-                    partKeyVer.add(new PartitionKeyVersion(
+                    partKeyVer.add(new VersionedKey(
                         uuid,
                         key(key, ctxo),
                         ver

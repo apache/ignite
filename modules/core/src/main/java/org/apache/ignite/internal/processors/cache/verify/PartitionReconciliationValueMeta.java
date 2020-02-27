@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.checker.objects.PartitionReconciliationResult.HIDDEN_DATA;
+import static org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationAffectedEntries.HIDDEN_DATA;
 
 /**
  * Value container for result.

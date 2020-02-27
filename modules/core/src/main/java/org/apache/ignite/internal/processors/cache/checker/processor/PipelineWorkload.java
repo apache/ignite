@@ -21,14 +21,33 @@ import java.util.UUID;
 /**
  * Abstract workload.
  */
-public interface PipelineWorkload {
+public abstract class PipelineWorkload {
+    /** Session id. */
+    protected final long sesId;
+
+    /** Workload chain id. */
+    protected final UUID workloadChainId;
+
+    /**
+     * @param sesId Session id.
+     * @param workloadChainId Workload chain id.
+     */
+    public PipelineWorkload(long sesId, UUID workloadChainId) {
+        this.sesId = sesId;
+        this.workloadChainId = workloadChainId;
+    }
+
     /**
      * @return ID of global workload session.
      */
-    long sessionId();
+    public long sessionId() {
+        return sesId;
+    }
 
     /**
      * @return Unique ID of workload chain.
      */
-    UUID workloadChainId();
+    public UUID workloadChainId() {
+        return workloadChainId;
+    }
 }

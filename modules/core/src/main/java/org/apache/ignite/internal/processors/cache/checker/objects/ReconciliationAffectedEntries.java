@@ -38,63 +38,63 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Result with lists of broken and fixed, skipped entries.
  */
-public class PartitionReconciliationResult extends IgniteDataTransferObject {
+public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
     /**
      *
      */
     private static final long serialVersionUID = 0L;
 
-    /** A sequence of characters that is used to hide sensitive data in case of non-verbose mode. */
+    /** A sequence of characters that is used to hide sensitive data in case of non-includeSensitive mode. */
     public static final String HIDDEN_DATA = "*****";
 
     /** Map of node ids to node consistent ids. */
-    private Map<UUID, String> nodesIdsToConsistenceIdsMap = new HashMap<>();
+    private Map<UUID, String> nodesIdsToConsistentIdsMap = new HashMap<>();
 
     /** Inconsistent keys. */
-    private Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> inconsistentKeys = new HashMap<>();
+    private Map<String/*Cache name*/, Map<Integer /*Partition ID*/, List<PartitionReconciliationDataRowMeta>>> inconsistentKeys = new HashMap<>();
 
     /** Skipped caches. */
     private Set<PartitionReconciliationSkippedEntityHolder<String>> skippedCaches = new HashSet<>();
 
     /** Skipped entries. */
-    private Map<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>>
+    private Map<String/*Cache name*/, Map<Integer /*Partition ID*/, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>>
         skippedEntries = new HashMap<>();
 
     /**
      * Default constructor for externalization.
      */
-    public PartitionReconciliationResult() {
+    public ReconciliationAffectedEntries() {
     }
 
     /**
-     * @param nodesIdsToConsistenceIdsMap Nodes ids to consistence ids map.
+     * @param nodesIdsToConsistentIdsMap Nodes ids to consistent ids map.
      * @param inconsistentKeys Inconsistent keys.
      * @param skippedEntries Skipped entries.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public PartitionReconciliationResult(
-        Map<UUID, String> nodesIdsToConsistenceIdsMap,
+    public ReconciliationAffectedEntries(
+        Map<UUID, String> nodesIdsToConsistentIdsMap,
         Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> inconsistentKeys,
         Map<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>>
             skippedEntries) {
-        this.nodesIdsToConsistenceIdsMap = nodesIdsToConsistenceIdsMap;
+        this.nodesIdsToConsistentIdsMap = nodesIdsToConsistentIdsMap;
         this.inconsistentKeys = inconsistentKeys;
         this.skippedEntries = skippedEntries;
     }
 
     /**
-     * @param nodesIdsToConsistenceIdsMap Nodes ids to consistence ids map.
+     * @param nodesIdsToConsistentIdsMap Nodes ids to consistent ids map.
      * @param inconsistentKeys Inconsistent keys.
      * @param skippedCaches Skipped caches.
      * @param skippedEntries Skipped entries.
      */
-    public PartitionReconciliationResult(
-        Map<UUID, String> nodesIdsToConsistenceIdsMap,
+    public ReconciliationAffectedEntries(
+        Map<UUID, String> nodesIdsToConsistentIdsMap,
         Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> inconsistentKeys,
         Set<PartitionReconciliationSkippedEntityHolder<String>> skippedCaches,
         Map<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>>
             skippedEntries) {
-        this.nodesIdsToConsistenceIdsMap = nodesIdsToConsistenceIdsMap;
+        this.nodesIdsToConsistentIdsMap = nodesIdsToConsistentIdsMap;
         this.inconsistentKeys = inconsistentKeys;
         this.skippedCaches = skippedCaches;
         this.skippedEntries = skippedEntries;
@@ -102,7 +102,7 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, nodesIdsToConsistenceIdsMap);
+        U.writeMap(out, nodesIdsToConsistentIdsMap);
 
         U.writeMap(out, inconsistentKeys);
 
@@ -114,7 +114,7 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in)
         throws IOException, ClassNotFoundException {
-        nodesIdsToConsistenceIdsMap = U.readMap(in);
+        nodesIdsToConsistentIdsMap = U.readMap(in);
 
         inconsistentKeys = U.readMap(in);
 
@@ -126,7 +126,7 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
     /**
      * Fills printer {@code Consumer<String>} by string view of this class.
      */
-    public void print(Consumer<String> printer, boolean verbose) {
+    public void print(Consumer<String> printer, boolean includeSensitive) {
         if (inconsistentKeys != null && !inconsistentKeys.isEmpty()) {
             printer.accept("\nINCONSISTENT KEYS: " + inconsistentKeysCount() + "\n\n");
 
@@ -136,38 +136,7 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
             printer.accept("\t\t\t<nodeConsistentId>, <nodeId>: <value> <version>\n");
             printer.accept("\t\t\t...\n");
             printer.accept("\t\t\t<info on whether confilct is fixed>\n\n");
-
-            for (Map.Entry<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>>
-                cacheBoundedInconsistentKeysEntry : inconsistentKeys.entrySet()) {
-
-                String cacheName = cacheBoundedInconsistentKeysEntry.getKey();
-
-                printer.accept(cacheName + "\n");
-
-                for (Map.Entry<Integer, List<PartitionReconciliationDataRowMeta>> partitionBoundedInconsistentKeysEntry
-                    : cacheBoundedInconsistentKeysEntry.getValue().entrySet()) {
-                    Integer part = partitionBoundedInconsistentKeysEntry.getKey();
-
-                    printer.accept("\t" + part + "\n");
-
-                    for (PartitionReconciliationDataRowMeta inconsistentDataRow :
-                        partitionBoundedInconsistentKeysEntry.getValue()) {
-                        printer.accept("\t\t" + inconsistentDataRow.keyMeta().stringView(verbose) + "\n");
-
-                        for (Map.Entry<UUID, PartitionReconciliationValueMeta> valMap :
-                            inconsistentDataRow.valueMeta().entrySet()) {
-                            printer.accept("\t\t\t" + nodesIdsToConsistenceIdsMap.get(valMap.getKey()) + " " +
-                                U.id8(valMap.getKey()) +
-                                (valMap.getValue() != null ? ": " + valMap.getValue().stringView(verbose) : "") + "\n");
-                        }
-
-                        if (inconsistentDataRow.repairMeta() != null) {
-                            printer.accept("\n\t\t\t" +
-                                inconsistentDataRow.repairMeta().stringView(verbose) + "\n\n");
-                        }
-                    }
-                }
-            }
+            printer.accept(conflicts(inconsistentKeys, includeSensitive));
         }
 
         if (skippedCaches != null && !skippedCaches.isEmpty()) {
@@ -182,43 +151,108 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
         if (skippedEntries != null && !skippedEntries.isEmpty()) {
             printer.accept("\nSKIPPED ENTRIES: " + skippedEntriesCount() + "\n\n");
 
-            for (Map.Entry<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>>
-                cacheBoundedSkippedEntries : skippedEntries.entrySet()) {
-                String cacheName = cacheBoundedSkippedEntries.getKey();
+            printer.accept(skippedEntries(skippedEntries));
+        }
+    }
 
-                for (Map.Entry<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>
-                    partitionBoundedSkippedEntries
-                    : cacheBoundedSkippedEntries.getValue().entrySet()) {
-                    StringBuilder recordBuilder = new StringBuilder();
 
-                    Integer part = partitionBoundedSkippedEntries.getKey();
+    /**
+     * @param skippedEntries Skipped entries.
+     */
+    private String skippedEntries(Map<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>> skippedEntries) {
+        StringBuilder res = new StringBuilder();
 
-                    recordBuilder.append("Following entry was skipped [cache='").append(cacheName).append("'");
+        for (Map.Entry<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>>
+            cacheBoundedSkippedEntries : skippedEntries.entrySet()) {
+            String cacheName = cacheBoundedSkippedEntries.getKey();
 
-                    recordBuilder.append(", partition=").append(part);
+            for (Map.Entry<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>
+                partitionBoundedSkippedEntries
+                : cacheBoundedSkippedEntries.getValue().entrySet()) {
+                StringBuilder recordBuilder = new StringBuilder();
 
-                    for (PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta> skippedEntry
-                        : partitionBoundedSkippedEntries.getValue()) {
+                Integer part = partitionBoundedSkippedEntries.getKey();
 
-                        recordBuilder.append(", entry=").append(skippedEntry.skippedEntity());
+                recordBuilder.append("Following entry was skipped [cache='").append(cacheName).append("'");
 
-                        recordBuilder.append(", reason=").append(skippedEntry.skippingReason());
+                recordBuilder.append(", partition=").append(part);
+
+                for (PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta> skippedEntry
+                    : partitionBoundedSkippedEntries.getValue()) {
+
+                    recordBuilder.append(", entry=").append(skippedEntry.skippedEntity());
+
+                    recordBuilder.append(", reason=").append(skippedEntry.skippingReason());
+                }
+                recordBuilder.append("]\n");
+
+                res.append(recordBuilder.toString());
+            }
+        }
+
+        return res.toString();
+    }
+
+    /**
+     * @param keys Keys.
+     * @param includeSensitive Include sensitive.
+     */
+    private String conflicts(
+        Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> keys,
+        boolean includeSensitive
+    ) {
+        StringBuilder res = new StringBuilder();
+
+        for (Map.Entry<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>>
+            cacheBoundedInconsistentKeysEntry : keys.entrySet()) {
+
+            String cacheName = cacheBoundedInconsistentKeysEntry.getKey();
+
+            res.append(cacheName).append("\n");
+
+            for (Map.Entry<Integer, List<PartitionReconciliationDataRowMeta>> partitionBoundedInconsistentKeysEntry
+                : cacheBoundedInconsistentKeysEntry.getValue().entrySet()) {
+                Integer part = partitionBoundedInconsistentKeysEntry.getKey();
+
+                res.append("\t")
+                    .append(part)
+                    .append("\n");
+
+                for (PartitionReconciliationDataRowMeta inconsistentDataRow :
+                    partitionBoundedInconsistentKeysEntry.getValue()) {
+                    res.append("\t\t")
+                        .append(inconsistentDataRow.keyMeta().stringView(includeSensitive))
+                        .append("\n");
+
+                    for (Map.Entry<UUID, PartitionReconciliationValueMeta> valMap :
+                        inconsistentDataRow.valueMeta().entrySet()) {
+                        res.append("\t\t\t")
+                            .append(nodesIdsToConsistentIdsMap.get(valMap.getKey()))
+                            .append(" ")
+                            .append(U.id8(valMap.getKey()))
+                            .append(valMap.getValue() != null ? ": " + valMap.getValue().stringView(includeSensitive) : "")
+                            .append("\n");
                     }
-                    recordBuilder.append("]\n");
 
-                    printer.accept(recordBuilder.toString());
+                    if (inconsistentDataRow.repairMeta() != null) {
+                        res.append("\n\t\t\t")
+                            .append(inconsistentDataRow.repairMeta().stringView(includeSensitive))
+                            .append("\n\n");
+                    }
                 }
             }
         }
+
+        return res.toString();
     }
 
     /**
      * Added outer value to this class.
      */
-    public void merge(PartitionReconciliationResult outer) {
-        assert outer instanceof PartitionReconciliationResult;
+    public void merge(ReconciliationAffectedEntries outer) {
+        assert outer != null;
 
-        this.nodesIdsToConsistenceIdsMap.putAll(outer.nodesIdsToConsistenceIdsMap);
+        this.nodesIdsToConsistentIdsMap.putAll(outer.nodesIdsToConsistentIdsMap);
 
         for (Map.Entry<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> entry : outer.inconsistentKeys.entrySet()) {
             Map<Integer, List<PartitionReconciliationDataRowMeta>> map = this.inconsistentKeys.computeIfAbsent(entry.getKey(), key -> new HashMap<>());
@@ -248,7 +282,7 @@ public class PartitionReconciliationResult extends IgniteDataTransferObject {
      * Mapping node ids to consistence ids.
      */
     public Map<UUID, String> nodesIdsToConsistenceIdsMap() {
-        return nodesIdsToConsistenceIdsMap;
+        return nodesIdsToConsistentIdsMap;
     }
 
     /**

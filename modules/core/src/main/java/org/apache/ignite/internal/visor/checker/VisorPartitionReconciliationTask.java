@@ -27,8 +27,8 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Visor partition reconciliation task.
  */
 @GridInternal
-public class VisorPartitionReconciliationTask extends VisorOneNodeTask<VisorPartitionReconciliationTaskArg,
-    ReconciliationResult> {
+public class VisorPartitionReconciliationTask
+    extends VisorOneNodeTask<VisorPartitionReconciliationTaskArg, ReconciliationResult> {
     /** */
     private static final long serialVersionUID = 0L;
 

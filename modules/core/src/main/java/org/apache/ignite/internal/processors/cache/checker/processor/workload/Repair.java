@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.checker.processor.PipelineWor
 /**
  * Work container for repair stage.
  */
-public class Repair implements PipelineWorkload {
+public class Repair extends PipelineWorkload {
     /**
      * Cache name.
      */
@@ -40,35 +40,30 @@ public class Repair implements PipelineWorkload {
     /** Attempt number. */
     private int repairAttempt;
 
-    /** Session id. */
-    private long sessionId;
-
-    /** Workload chain id. */
-    private final UUID workloadChainId;
-
     /**
      * Per-node values from recheck phase.
      */
     private Map<KeyCacheObject, Map<UUID, VersionedValue>> data;
 
     /**
-     * @param sessionId Session id.
+     * @param sesId Session id.
      * @param workloadChainId Workload chain id.
      * @param cacheName Cache name.
      * @param partId Partition id.
      * @param data Data.
      * @param repairAttempt Repair attempt.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") public Repair(
-        long sessionId,
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public Repair(
+        long sesId,
         UUID workloadChainId,
         String cacheName,
         int partId,
         Map<KeyCacheObject, Map<UUID, VersionedValue>> data,
         int repairAttempt
     ) {
-        this.sessionId = sessionId;
-        this.workloadChainId = workloadChainId;
+        super(sesId, workloadChainId);
+
         this.cacheName = cacheName;
         this.partId = partId;
         this.data = data;
@@ -102,15 +97,5 @@ public class Repair implements PipelineWorkload {
      */
     public int repairAttempt() {
         return repairAttempt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long sessionId() {
-        return sessionId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID workloadChainId() {
-        return workloadChainId;
     }
 }

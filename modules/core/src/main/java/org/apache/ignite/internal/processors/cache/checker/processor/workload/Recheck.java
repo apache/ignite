@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Work container for recheck stage.
  */
-public class Recheck implements PipelineWorkload {
+public class Recheck extends PipelineWorkload {
     /** Recheck keys. */
     private final Map<KeyCacheObject, Map<UUID, GridCacheVersion>> recheckKeys;
 
@@ -36,20 +36,14 @@ public class Recheck implements PipelineWorkload {
     /** Partition id. */
     private final int partId;
 
-    /** Attempt number. */
+    /** Serial number of recheck attempt. */
     private final int recheckAttempt;
 
-    /** Repair attempt. */
+    /** Serial number of repair attempt. */
     private final int repairAttempt;
 
-    /** Session id. */
-    private final long sessionId;
-
-    /** Workload chain id. */
-    private final UUID workloadChainId;
-
     /**
-     * @param sessionId Session id.
+     * @param sesId Session id.
      * @param workloadChainId Workload chain id.
      * @param recheckKeys Recheck keys.
      * @param cacheName Cache name.
@@ -57,11 +51,17 @@ public class Recheck implements PipelineWorkload {
      * @param recheckAttempt Recheck attempt.
      * @param repairAttempt Repair attempt.
      */
-    public Recheck(long sessionId, UUID workloadChainId,
-        Map<KeyCacheObject, Map<UUID, GridCacheVersion>> recheckKeys, String cacheName,
-        int partId, int recheckAttempt, int repairAttempt) {
-        this.sessionId = sessionId;
-        this.workloadChainId = workloadChainId;
+    public Recheck(
+        long sesId,
+        UUID workloadChainId,
+        Map<KeyCacheObject, Map<UUID, GridCacheVersion>> recheckKeys,
+        String cacheName,
+        int partId,
+        int recheckAttempt,
+        int repairAttempt
+    ) {
+        super(sesId, workloadChainId);
+
         this.recheckKeys = recheckKeys;
         this.cacheName = cacheName;
         this.partId = partId;
@@ -102,15 +102,5 @@ public class Recheck implements PipelineWorkload {
      */
     public int repairAttempt() {
         return repairAttempt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long sessionId() {
-        return sessionId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID workloadChainId() {
-        return workloadChainId;
     }
 }

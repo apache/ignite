@@ -34,7 +34,7 @@ public class VisorPartitionReconciliationCancelTask extends VisorOneNodeTask<Voi
     private static final long serialVersionUID = 0L;
 
     /**
-     *
+     * If the session is set to zero value, reconciliation is interrupted.
      */
     private static final long STOP_SESSION_ID = 0;
 
@@ -46,7 +46,7 @@ public class VisorPartitionReconciliationCancelTask extends VisorOneNodeTask<Voi
     /**
      * Job that cancels the ongoing partition reconciliation task.
      */
-    public class VisorPartitionReconciliationCancelJob extends VisorJob<Void, Void> {
+    public static class VisorPartitionReconciliationCancelJob extends VisorJob<Void, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 

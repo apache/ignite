@@ -35,12 +35,12 @@ public enum CacheCommandList {
     IDLE_VERIFY("idle_verify", new IdleVerify()),
 
     /**
-     * Check consistency of primary and backup partitions assuming that there might be concurrent updated.
+     * Checks consistency of primary and backup partitions assuming that there might be concurrently updated.
      */
     PARTITION_RECONCILIATION("partition-reconciliation", new PartitionReconciliation()),
 
     /**
-     * Does cancel of partition reconciliation command.
+     * Cancels partition reconciliation command.
      */
     PARTITION_RECONCILIATION_CANCEL("partition-reconciliation-cancel", new PartitionReconciliationCancel()),
 

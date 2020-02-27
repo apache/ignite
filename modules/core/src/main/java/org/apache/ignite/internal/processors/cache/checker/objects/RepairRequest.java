@@ -45,11 +45,11 @@ public class RepairRequest extends CachePartitionRequest {
     /** Start topology version. */
     private AffinityTopologyVersion startTopVer;
 
-    /** Repair attempt. */
+    /** Serial number of attempt. */
     private int repairAttempt;
 
     /**
-     * @param sessionId Session id.
+     * @param sesId Session id.
      * @param workloadChainId Workload chain id.
      * @param data Data.
      * @param cacheName Cache name.
@@ -59,11 +59,11 @@ public class RepairRequest extends CachePartitionRequest {
      * @param repairAttempt Repair attempt.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public RepairRequest(long sessionId, UUID workloadChainId,
+    public RepairRequest(long sesId, UUID workloadChainId,
         Map<KeyCacheObject, Map<UUID, VersionedValue>> data, String cacheName, int partId,
         AffinityTopologyVersion startTopVer, RepairAlgorithm repairAlg,
         int repairAttempt) {
-        super(sessionId, workloadChainId);
+        super(sesId, workloadChainId);
         this.data = data;
         this.cacheName = cacheName;
         this.partId = partId;

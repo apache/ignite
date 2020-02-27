@@ -32,7 +32,7 @@ public interface ReconciliationEventListener {
         /**
          * It means that a compute result fetched and ready to process.
          */
-        STARTING,
+        RESULT_READY,
         /**
          * It means that processing finished.
          */
@@ -42,5 +42,5 @@ public interface ReconciliationEventListener {
     /**
      * Process event.
      */
-    void registerEvent(WorkLoadStage stage, PipelineWorkload workload);
+    void onEvent(WorkLoadStage stage, PipelineWorkload workload);
 }

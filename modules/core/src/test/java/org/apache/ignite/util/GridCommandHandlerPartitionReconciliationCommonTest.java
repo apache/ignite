@@ -34,7 +34,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.processors.cache.checker.objects.PartitionReconciliationResult;
+import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationAffectedEntries;
 import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationResult;
 import org.apache.ignite.internal.processors.cache.verify.checker.tasks.PartitionReconciliationProcessorTask;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -193,7 +193,7 @@ public class GridCommandHandlerPartitionReconciliationCommonTest
     }
 
     /**
-     * Checks that -verbose parameter raises a warining requiring consent from user to print sensitive data to output.
+     * Checks that -includeSensitive parameter raises a warining requiring consent from user to print sensitive data to output.
      * <b>Preconditions:</b>
      * <ul>
      *     <li>Grid with 4 nodes is started, cache with 3 backups with some data is up and running</li>
@@ -220,7 +220,7 @@ public class GridCommandHandlerPartitionReconciliationCommonTest
     }
 
     /**
-     * Checks that sensitive information is hidden when -verbose parameter is not specified.
+     * Checks that sensitive information is hidden when -includeSensitive parameter is not specified.
      * <b>Preconditions:</b>
      * <ul>
      *     <li>Grid with 4 nodes is started, cache with 3 backups with some data is up and running</li>
@@ -262,7 +262,7 @@ public class GridCommandHandlerPartitionReconciliationCommonTest
         assertContains(log, testOut.toString(), "INCONSISTENT KEYS: 1");
 
         // Check console output.
-        assertContains(log, testOut.toString(), PartitionReconciliationResult.HIDDEN_DATA + " ver=[topVer=");
+        assertContains(log, testOut.toString(), ReconciliationAffectedEntries.HIDDEN_DATA + " ver=[topVer=");
 
         ClusterNode primaryNode = ignite(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode(INVALID_KEY);
 
@@ -277,7 +277,7 @@ public class GridCommandHandlerPartitionReconciliationCommonTest
         String inconsistencyReport = new String(Files.readAllBytes(Paths.get(pathToReport)));
 
         // Check inconsistency report.
-        assertContains(log, inconsistencyReport, PartitionReconciliationResult.HIDDEN_DATA + " ver=[topVer=");
+        assertContains(log, inconsistencyReport, ReconciliationAffectedEntries.HIDDEN_DATA + " ver=[topVer=");
     }
 
     /**

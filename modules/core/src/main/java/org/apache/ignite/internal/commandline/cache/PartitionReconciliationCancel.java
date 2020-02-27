@@ -22,7 +22,6 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.visor.checker.VisorPartitionReconciliationCancelTask;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
@@ -35,7 +34,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.PART
 public class PartitionReconciliationCancel implements Command<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        String desc = "Does cancel of partition reconciliation command.";
+        String desc = "Cancels partition reconciliation command.";
 
         usageCache(log, PARTITION_RECONCILIATION_CANCEL, desc, new HashMap<>());
     }
@@ -51,15 +50,11 @@ public class PartitionReconciliationCancel implements Command<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Void execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             executeTask(client, VisorPartitionReconciliationCancelTask.class, null, clientCfg);
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void parseArguments(CommandArgIterator argIter) {
     }
 }

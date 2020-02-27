@@ -266,7 +266,7 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
         waitInTask = new CountDownLatch(1);
         waitOnProcessingBeforeAction = new CountDownLatch(1);
 
-        ReconciliationEventListenerFactory.defaultListenerInstance((stage, workload) -> {
+        ReconciliationEventListenerProvider.defaultListenerInstance((stage, workload) -> {
             if (firstRecheckFinished.getCount() == 0) {
                 try {
                     waitInTask.await();
@@ -298,11 +298,11 @@ public class PartitionReconciliationInterruptionRecheckTest extends PartitionRec
         }
 
         VisorPartitionReconciliationTaskArg.Builder builder = new VisorPartitionReconciliationTaskArg.Builder();
-        builder.fixMode(false);
+        builder.repair(false);
         builder.batchSize(batchSize);
         builder.parallelism(1);
         builder.caches(Collections.singleton(DEFAULT_CACHE_NAME));
-        builder.console(true);
+        builder.locOutput(true);
         builder.recheckAttempts(0);
 
         final AtomicReference<ReconciliationResult> res = new AtomicReference<>();

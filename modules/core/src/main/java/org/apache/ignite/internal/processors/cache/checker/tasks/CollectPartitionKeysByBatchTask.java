@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.checker.objects.ExecutionResult;
 import org.apache.ignite.internal.processors.cache.checker.objects.PartitionBatchRequest;
-import org.apache.ignite.internal.processors.cache.checker.objects.PartitionKeyVersion;
+import org.apache.ignite.internal.processors.cache.checker.objects.VersionedKey;
 import org.apache.ignite.internal.processors.cache.checker.util.KeyComparator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -125,20 +125,20 @@ public class CollectPartitionKeysByBatchTask extends ComputeTaskAdapter<Partitio
             if (exc != null)
                 return new ExecutionResult<>(exc.getMessage());
 
-            ExecutionResult<List<PartitionKeyVersion>> nodeRes = results.get(i).getData();
+            ExecutionResult<List<VersionedKey>> nodeRes = results.get(i).getData();
 
-            if (nodeRes.getErrorMessage() != null)
-                return new ExecutionResult<>(nodeRes.getErrorMessage());
+            if (nodeRes.errorMessage() != null)
+                return new ExecutionResult<>(nodeRes.errorMessage());
 
-            for (PartitionKeyVersion partKeyVer : nodeRes.getResult()) {
+            for (VersionedKey partKeyVer : nodeRes.result()) {
                 try {
-                    KeyCacheObject key = unmarshalKey(partKeyVer.getKey(), ctx);
+                    KeyCacheObject key = unmarshalKey(partKeyVer.key(), ctx);
 
                     if (lastKey == null || KEY_COMPARATOR.compare(lastKey, key) < 0)
                         lastKey = key;
 
                     Map<UUID, GridCacheVersion> map = totalRes.computeIfAbsent(key, k -> new HashMap<>());
-                    map.put(partKeyVer.getNodeId(), partKeyVer.getVersion());
+                    map.put(partKeyVer.nodeId(), partKeyVer.ver());
 
                     if (i == (results.size() - 1) && map.size() == results.size() && !hasConflict(map.values()))
                         totalRes.remove(key);
@@ -196,7 +196,7 @@ public class CollectPartitionKeysByBatchTask extends ComputeTaskAdapter<Partitio
         }
 
         /** {@inheritDoc} */
-        @Override protected ExecutionResult<List<PartitionKeyVersion>> execute0() {
+        @Override protected ExecutionResult<List<VersionedKey>> execute0() {
             GridCacheContext<Object, Object> cctx = ignite.context().cache().cache(partBatch.cacheName()).context();
 
             CacheGroupContext grpCtx = cctx.group();
@@ -225,17 +225,18 @@ public class CollectPartitionKeysByBatchTask extends ComputeTaskAdapter<Partitio
                 grpCtx.offheap().dataStore(part).cursor(cctx.cacheId()) :
                 grpCtx.offheap().dataStore(part).cursor(cctx.cacheId(), lowerKey, null)) {
 
-                List<PartitionKeyVersion> partEntryHashRecords = new ArrayList<>();
+                List<VersionedKey> partEntryHashRecords = new ArrayList<>();
 
                 for (int i = 0; i < batchSize && cursor.next(); i++) {
                     CacheDataRow row = cursor.get();
 
-                    if (lowerKey == null || KEY_COMPARATOR.compare(lowerKey, row.key()) != 0)
-                        partEntryHashRecords.add(new PartitionKeyVersion(
+                    if (lowerKey == null || KEY_COMPARATOR.compare(lowerKey, row.key()) != 0) {
+                        partEntryHashRecords.add(new VersionedKey(
                             ignite.localNode().id(),
                             row.key(),
                             row.version()
                         ));
+                    }
                     else
                         i--;
                 }

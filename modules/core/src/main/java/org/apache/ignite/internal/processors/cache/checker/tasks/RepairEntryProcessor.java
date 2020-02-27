@@ -135,7 +135,7 @@ public class RepairEntryProcessor implements EntryProcessor {
 
                 boolean inDeferredDelQueueBounds = ((currUpdateCntr - minUpdateCntr) < rmvQueueMaxSize);
 
-                // Remove it after fixes: https://ggsystems.atlassian.net/browse/GG-27419
+                //TODO Remove it after fixes: https://ggsystems.atlassian.net/browse/GG-27419
                 if (cctx.config().getAtomicityMode() != CacheAtomicityMode.ATOMIC || inEntryTTLBounds && inDeferredDelQueueBounds) {
                     if (val == null)
                         entry.remove();

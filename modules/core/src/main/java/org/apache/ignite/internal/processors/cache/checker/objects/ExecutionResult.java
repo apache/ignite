@@ -32,17 +32,17 @@ public class ExecutionResult<T> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Result. */
-    protected T result;
+    protected T res;
 
     /** Error message. */
-    protected String errorMessage;
+    protected String errorMsg;
 
     /**
      *
      */
     public ExecutionResult(T res, String errorMsg) {
-        this.result = res;
-        this.errorMessage = errorMsg;
+        this.res = res;
+        this.errorMsg = errorMsg;
     }
 
     /**
@@ -54,41 +54,41 @@ public class ExecutionResult<T> extends IgniteDataTransferObject {
     /**
      *
      */
-    public ExecutionResult(T result) {
-        this.result = result;
+    public ExecutionResult(T res) {
+        this.res = res;
     }
 
     /**
      *
      */
-    public ExecutionResult(String errorMessage) {
-        this.errorMessage = errorMessage;
+    public ExecutionResult(String errorMsg) {
+        this.errorMsg = errorMsg;
     }
 
     /**
      *
      */
-    public String getErrorMessage() {
-        return errorMessage;
+    public String errorMessage() {
+        return errorMsg;
     }
 
     /**
      *
      */
-    public T getResult() {
-        return result;
+    public T result() {
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(result);
-        out.writeObject(errorMessage);
+        out.writeObject(res);
+        out.writeObject(errorMsg);
 
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        result = (T)in.readObject();
-        errorMessage = (String)in.readObject();
+        res = (T)in.readObject();
+        errorMsg = (String)in.readObject();
     }
 }

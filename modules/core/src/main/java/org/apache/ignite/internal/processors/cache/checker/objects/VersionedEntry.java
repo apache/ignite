@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -28,29 +29,23 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Representation of cache data row with partition states.
  */
-public class PartitionDataRow extends PartitionKeyVersion {
+public class VersionedEntry extends IgniteDataTransferObject {
     /**
      *
      */
     private static final long serialVersionUID = 0L;
 
+    /** Key. */
+    private VersionedKey key;
+
     /** Value. */
-    private CacheObject val;
-
-    /**
-     * Partition update counter for the moment of read from data store.
-     */
-    private long updateCounter;
-
-    /**
-     * Recheck start time.
-     */
-    private long recheckStartTime;
+    private VersionedValue val;
 
     /**
      * Default constructor.
      */
-    public PartitionDataRow() {
+    public VersionedEntry() {
+        // No-op
     }
 
     /**
@@ -58,52 +53,67 @@ public class PartitionDataRow extends PartitionKeyVersion {
      * @param key Key.
      * @param ver Version.
      * @param val Value.
-     * @param updateCounter Update counter.
+     * @param updateCntr Update counter.
      * @param recheckStartTime Recheck start time.
      */
-    public PartitionDataRow(UUID nodeId, KeyCacheObject key, GridCacheVersion ver, CacheObject val, long updateCounter,
+    public VersionedEntry(UUID nodeId, KeyCacheObject key, GridCacheVersion ver, CacheObject val, long updateCntr,
         long recheckStartTime) {
-        super(nodeId, key, ver);
-        this.val = val;
-        this.updateCounter = updateCounter;
-        this.recheckStartTime = recheckStartTime;
+        this.key = new VersionedKey(nodeId, key, ver);
+        this.val = new VersionedValue(val, ver, updateCntr, recheckStartTime);
     }
 
     /**
      * @return Entry value.
      */
-    public CacheObject getVal() {
-        return val;
+    public CacheObject val() {
+        return val.value();
     }
 
     /**
      * @return Partition update counter for the moment of read from data store.
      */
-    public long getUpdateCounter() {
-        return updateCounter;
+    public long updateCntr() {
+        return val.updateCounter();
     }
 
     /**
      * @return Recheck start time.
      */
-    public long getRecheckStartTime() {
-        return recheckStartTime;
+    public long recheckStartTime() {
+        return val.recheckStartTime();
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
+        out.writeObject(key);
         out.writeObject(val);
-        out.writeLong(updateCounter);
-        out.writeLong(recheckStartTime);
-
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
-        val = (CacheObject)in.readObject();
-        updateCounter = in.readLong();
-        recheckStartTime = in.readLong();
+    @Override protected void readExternalData(byte protoVer,
+        ObjectInput in) throws IOException, ClassNotFoundException {
+        key = (VersionedKey)in.readObject();
+        val = (VersionedValue)in.readObject();
+    }
+
+    /**
+     * @return Key of this entry.
+     */
+    public KeyCacheObject key() {
+        return key.key();
+    }
+
+    /**
+     * @return Node ID.
+     */
+    public UUID nodeId() {
+        return key.nodeId();
+    }
+
+    /**
+     * @return Write version of current entry.
+     */
+    public GridCacheVersion ver() {
+        return key.ver();
     }
 }

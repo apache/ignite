@@ -51,7 +51,7 @@ public class PartitionBatchRequest extends CachePartitionRequest {
     private final AffinityTopologyVersion startTopVer;
 
     /**
-     * @param sessionId Session id.
+     * @param sesId Session id.
      * @param workloadChainId Workload chain id.
      * @param cacheName Cache name.
      * @param partId Partition id.
@@ -60,7 +60,7 @@ public class PartitionBatchRequest extends CachePartitionRequest {
      * @param startTopVer Start topology version.
      */
     public PartitionBatchRequest(
-        long sessionId,
+        long sesId,
         UUID workloadChainId,
         String cacheName,
         int partId,
@@ -68,7 +68,7 @@ public class PartitionBatchRequest extends CachePartitionRequest {
         KeyCacheObject lowerKey,
         AffinityTopologyVersion startTopVer
     ) {
-        super(sessionId, workloadChainId);
+        super(sesId, workloadChainId);
         this.cacheName = cacheName;
         this.partId = partId;
         this.batchSize = batchSize;

@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHING;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.STARTING;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.RESULT_READY;
 
 /**
  * Tests count of calls the recheck process with different inputs.
@@ -122,8 +122,8 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         waitToStartFirstLastRecheck = new CountDownLatch(1);
         waitKeyReporation = new CountDownLatch(1);
 
-        ReconciliationEventListenerFactory.defaultListenerInstance((stage, workload) -> {
-            if (stage.equals(STARTING) && workload instanceof RecheckRequest) {
+        ReconciliationEventListenerProvider.defaultListenerInstance((stage, workload) -> {
+            if (stage.equals(RESULT_READY) && workload instanceof RecheckRequest) {
                 int attempt = recheckAttempts.computeIfAbsent(workload.workloadChainId(), (key) -> new AtomicInteger(0)).incrementAndGet();
 
                 if (attempt == 2)
@@ -146,10 +146,10 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         }
 
         VisorPartitionReconciliationTaskArg.Builder builder = new VisorPartitionReconciliationTaskArg.Builder();
-        builder.fixMode(false);
+        builder.repair(false);
         builder.parallelism(1);
         builder.caches(Collections.singleton(DEFAULT_CACHE_NAME));
-        builder.console(true);
+        builder.locOutput(true);
         builder.recheckAttempts(3);
         builder.recheckDelay(0);
 
@@ -175,7 +175,7 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
     private void testRecheckCount(int attempts) {
         final ConcurrentMap<UUID, AtomicInteger> recheckAttempts = new ConcurrentHashMap<>();
 
-        ReconciliationEventListenerFactory.defaultListenerInstance((stage, workload) -> {
+        ReconciliationEventListenerProvider.defaultListenerInstance((stage, workload) -> {
             if (stage.equals(FINISHING) && workload instanceof RecheckRequest)
                 recheckAttempts.computeIfAbsent(workload.workloadChainId(), (key) -> new AtomicInteger(0)).incrementAndGet();
         });
@@ -187,10 +187,10 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         }
 
         VisorPartitionReconciliationTaskArg.Builder builder = new VisorPartitionReconciliationTaskArg.Builder();
-        builder.fixMode(false);
+        builder.repair(false);
         builder.parallelism(1);
         builder.caches(Collections.singleton(DEFAULT_CACHE_NAME));
-        builder.console(true);
+        builder.locOutput(true);
         builder.recheckAttempts(attempts);
         builder.recheckDelay(0);
 

@@ -25,7 +25,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,10 +39,9 @@ import org.apache.ignite.internal.processors.cache.checker.util.DelayedHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHING;
 import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.PLANNED;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.STARTING;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.RESULT_READY;
 
 /**
  * Abstraction for the control unit of work.
@@ -71,7 +69,7 @@ public class AbstractPipelineProcessor {
     protected final GridKernalContext ctx;
 
     /** Event listener that allows to track the execution of workload. */
-    protected volatile ReconciliationEventListener evtLsnr = ReconciliationEventListenerFactory.defaultListenerInstance();
+    protected volatile ReconciliationEventListener evtLsnr = ReconciliationEventListenerProvider.defaultListenerInstance();
 
     /** Error. */
     protected final AtomicReference<String> error = new AtomicReference<>();
@@ -153,6 +151,7 @@ public class AbstractPipelineProcessor {
                 Thread.sleep(100);
             }
             catch (InterruptedException ignore) {
+                // No-op
             }
         }
     }
@@ -185,12 +184,12 @@ public class AbstractPipelineProcessor {
     ) throws InterruptedException {
         liveListeners.acquire();
 
-        ignite.compute(partOwners(arg.cacheName(), arg.partitionId())).executeAsync(taskCls, arg).listen(futRes -> {
+        ignite.compute(partOwners(arg.cacheName(), arg.partitionId())).executeAsync(taskCls, arg).listen(fut -> {
             try {
                 ExecutionResult<R> res;
 
                 try {
-                    res = futRes.get();
+                    res = fut.get();
                 }
                 catch (RuntimeException e) {
                     log.error("Failed to execute the task " + taskCls.getName(), e);
@@ -200,17 +199,17 @@ public class AbstractPipelineProcessor {
                     return;
                 }
 
-                if (res.getErrorMessage() != null) {
-                    error.compareAndSet(null, res.getErrorMessage());
+                if (res.errorMessage() != null) {
+                    error.compareAndSet(null, res.errorMessage());
 
                     return;
                 }
 
-                evtLsnr.registerEvent(STARTING, arg);
+                evtLsnr.onEvent(RESULT_READY, arg);
 
-                lsnr.apply(res.getResult());
+                lsnr.apply(res.result());
 
-                evtLsnr.registerEvent(FINISHING, arg);
+                evtLsnr.onEvent(FINISHING, arg);
             }
             finally {
                 liveListeners.release();
@@ -228,17 +227,12 @@ public class AbstractPipelineProcessor {
     }
 
     /**
-     * Schedule with duration -1;
+     * Schedules with minimal finish time -1;
      */
     protected void scheduleHighPriority(PipelineWorkload task) {
-        try {
-            evtLsnr.registerEvent(PLANNED, task);
+        evtLsnr.onEvent(PLANNED, task);
 
-            highPriorityQueue.put(new DelayedHolder<>(-1, task));
-        }
-        catch (InterruptedException e) { // This queue unbounded as result the exception isn't reachable.
-            throw new IgniteException(e);
-        }
+        highPriorityQueue.offer(new DelayedHolder<>(-1, task));
     }
 
     /**
@@ -249,16 +243,11 @@ public class AbstractPipelineProcessor {
      * @param timeUnit Time unit.
      */
     protected void schedule(PipelineWorkload task, long duration, TimeUnit timeUnit) {
-        try {
-            long finishTime = U.currentTimeMillis() + timeUnit.toMillis(duration);
+        long finishTime = U.currentTimeMillis() + timeUnit.toMillis(duration);
 
-            evtLsnr.registerEvent(PLANNED, task);
+        evtLsnr.onEvent(PLANNED, task);
 
-            queue.put(new DelayedHolder<>(finishTime, task));
-        }
-        catch (InterruptedException e) { // This queue unbounded as result the exception isn't reachable.
-            throw new IgniteException(e);
-        }
+        queue.offer(new DelayedHolder<>(finishTime, task));
     }
 
     /**
@@ -267,6 +256,6 @@ public class AbstractPipelineProcessor {
     private ClusterGroup partOwners(String cacheName, int partId) {
         Collection<ClusterNode> nodes = ignite.cachex(cacheName).context().topology().owners(partId, startTopVer);
 
-        return ignite.cluster().forNodeIds(nodes.stream().map(ClusterNode::id).collect(toList()));
+        return ignite.cluster().forNodes(nodes);
     }
 }

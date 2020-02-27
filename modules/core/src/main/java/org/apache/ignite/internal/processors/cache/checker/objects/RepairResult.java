@@ -25,15 +25,16 @@ import org.apache.ignite.internal.processors.cache.verify.RepairMeta;
 /** Result of {@code RepairResultTask}. */
 public class RepairResult {
     /** Keys to repair with corresponding values and versions per nodes. */
-    private Map<PartitionKeyVersion, Map<UUID, VersionedValue>> keysToRepair = new HashMap<>();
+    private Map<VersionedKey, Map<UUID, VersionedValue>> keysToRepair = new HashMap<>();
 
     /** Repaired keys. */
-    private Map<PartitionKeyVersion, RepairMeta> repairedKeys = new HashMap<>();
+    private Map<VersionedKey, RepairMeta> repairedKeys = new HashMap<>();
 
     /**
      * Default constructor.
      */
     public RepairResult() {
+        // No-op
     }
 
     /**
@@ -42,9 +43,10 @@ public class RepairResult {
      * @param keysToRepair Keys to repair within next recheck-repair iteration.
      * @param repairedKeys Repaired keys.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType") public RepairResult(
-        Map<PartitionKeyVersion, Map<UUID, VersionedValue>> keysToRepair,
-        Map<PartitionKeyVersion, RepairMeta> repairedKeys) {
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public RepairResult(
+        Map<VersionedKey, Map<UUID, VersionedValue>> keysToRepair,
+        Map<VersionedKey, RepairMeta> repairedKeys) {
         this.keysToRepair = keysToRepair;
         this.repairedKeys = repairedKeys;
     }
@@ -53,7 +55,7 @@ public class RepairResult {
      * @return Keys to repair.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public Map<PartitionKeyVersion, Map<UUID, VersionedValue>> keysToRepair() {
+    public Map<VersionedKey, Map<UUID, VersionedValue>> keysToRepair() {
         return keysToRepair;
     }
 
@@ -61,7 +63,7 @@ public class RepairResult {
      * @return Repaired keys.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public Map<PartitionKeyVersion, RepairMeta> repairedKeys() {
+    public Map<VersionedKey, RepairMeta> repairedKeys() {
         return repairedKeys;
     }
 }

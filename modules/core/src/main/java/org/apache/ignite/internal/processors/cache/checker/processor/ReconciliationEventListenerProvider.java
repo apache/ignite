@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.checker.processor;
 
+import org.jetbrains.annotations.TestOnly;
+
 /**
  * Event listener factory for testing purposes.
  */
-public class ReconciliationEventListenerFactory {
+public class ReconciliationEventListenerProvider {
     /** Default instance. */
     private static volatile ReconciliationEventListener dfltInstance = (stage, workload) -> {
     };
@@ -37,7 +39,8 @@ public class ReconciliationEventListenerFactory {
      *
      * @param dfltInstance New instance of ReconciliationEventListener.
      */
+    @TestOnly
     public static void defaultListenerInstance(ReconciliationEventListener dfltInstance) {
-        ReconciliationEventListenerFactory.dfltInstance = dfltInstance;
+        ReconciliationEventListenerProvider.dfltInstance = dfltInstance;
     }
 }

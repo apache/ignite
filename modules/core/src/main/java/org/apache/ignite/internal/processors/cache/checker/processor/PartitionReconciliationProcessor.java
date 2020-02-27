@@ -40,8 +40,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.checker.objects.ExecutionResult;
 import org.apache.ignite.internal.processors.cache.checker.objects.PartitionBatchRequest;
-import org.apache.ignite.internal.processors.cache.checker.objects.PartitionKeyVersion;
-import org.apache.ignite.internal.processors.cache.checker.objects.PartitionReconciliationResult;
+import org.apache.ignite.internal.processors.cache.checker.objects.VersionedKey;
+import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationAffectedEntries;
 import org.apache.ignite.internal.processors.cache.checker.objects.RecheckRequest;
 import org.apache.ignite.internal.processors.cache.checker.objects.RepairRequest;
 import org.apache.ignite.internal.processors.cache.checker.objects.VersionedValue;
@@ -73,16 +73,16 @@ import static org.apache.ignite.internal.processors.cache.verify.PartitionReconc
  */
 public class PartitionReconciliationProcessor extends AbstractPipelineProcessor {
     /** Session change message. */
-    public static final String SESSION_CHANGE_MSG = "Reconciliation session was changed.";
+    public static final String SESSION_CHANGE_MSG = "Reconciliation session has changed.";
 
     /** Topology change message. */
-    public static final String TOPOLOGY_CHANGE_MSG = "Topology was changed. Partition reconciliation task was stopped.";
+    public static final String TOPOLOGY_CHANGE_MSG = "Topology has changed. Partition reconciliation task was stopped.";
 
     /** Work progress message. */
     public static final String WORK_PROGRESS_MSG = "Partition reconciliation task [sesId=%s, total=%s, remaining=%s]";
 
     /** Start execution message. */
-    public static final String START_EXECUTION_MSG = "Partition reconciliation started [fixMode: %s, repairAlg: %s, " +
+    public static final String START_EXECUTION_MSG = "Partition reconciliation has started [repair: %s, repairAlg: %s, " +
         "batchSize: %s, recheckAttempts: %s, parallelismLevel: %s, caches: %s].";
 
     /** Error reason. */
@@ -162,16 +162,16 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     /**
      * @return Partition reconciliation result
      */
-    public ExecutionResult<PartitionReconciliationResult> execute() {
+    public ExecutionResult<ReconciliationAffectedEntries> execute() {
         log.info(String.format(START_EXECUTION_MSG, fixMode, repairAlg, batchSize, recheckAttempts, parallelismLevel, caches));
 
         try {
             for (String cache : caches) {
                 IgniteInternalCache<Object, Object> cachex = ignite.cachex(cache);
 
-                Factory expiryPlcFactory = cachex.configuration().getExpiryPolicyFactory();
+                Factory<?> expiryPlcFactory = cachex.configuration().getExpiryPolicyFactory();
                 if (expiryPlcFactory != null && !(expiryPlcFactory.create() instanceof EternalExpiryPolicy)) {
-                    log.warning("The cache '" + cache + "' was skipped because CacheConfiguration#setExpiryPolicyFactory exists.");
+                    log.warning("The cache '" + cache + "' was skipped because CacheConfiguration#setExpiryPolicyFactory is set.");
 
                     continue;
                 }
@@ -198,7 +198,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                     throw new IgniteException(error.get());
 
                 if (isEmpty() && live) {
-                    Thread.sleep(100);
+                    U.sleep(100);
 
                     continue;
                 }
@@ -213,8 +213,13 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                     handle((Recheck)workload);
                 else if (workload instanceof Repair)
                     handle((Repair)workload);
-                else
-                    log.error("Unsupported workload type: " + workload);
+                else {
+                    String err = "Unsupported workload type: " + workload;
+
+                    log.error(err);
+
+                    throw new IgniteException(err);
+                }
             }
 
             return new ExecutionResult<>(prepareResult());
@@ -226,14 +231,14 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
 
             log.warning(errMsg, e);
 
-            return new ExecutionResult<>(prepareResult(), errMsg + " " + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
+            return new ExecutionResult<>(prepareResult(), errMsg + ' ' + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
         }
         catch (Exception e) {
             String errMsg = "Unexpected error.";
 
             log.error(errMsg, e);
 
-            return new ExecutionResult<>(prepareResult(), errMsg + " " + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
+            return new ExecutionResult<>(prepareResult(), errMsg + ' ' + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
         }
     }
 
@@ -254,13 +259,14 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                 if (nextBatchKey != null)
                     schedule(new Batch(workload.sessionId(), workload.workloadChainId(), workload.cacheName(), workload.partitionId(), nextBatchKey));
 
-                if (!recheckKeys.isEmpty())
+                if (!recheckKeys.isEmpty()) {
                     schedule(
                         new Recheck(workload.sessionId(), workload.workloadChainId(), recheckKeys,
                             workload.cacheName(), workload.partitionId(), 0, 0),
                         recheckDelay,
                         TimeUnit.SECONDS
                     );
+                }
             }
         );
     }
@@ -274,16 +280,16 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
             new RecheckRequest(workload.sessionId(), workload.workloadChainId(), new ArrayList<>(workload.recheckKeys().keySet()), workload.cacheName(),
                 workload.partitionId(), startTopVer),
             actualKeys -> {
-                Map<KeyCacheObject, Map<UUID, GridCacheVersion>> notResolvingConflicts
+                Map<KeyCacheObject, Map<UUID, GridCacheVersion>> conflicts
                     = checkConflicts(workload.recheckKeys(), actualKeys,
                     ignite.cachex(workload.cacheName()).context(), startTopVer);
 
-                if (!notResolvingConflicts.isEmpty()) {
+                if (!conflicts.isEmpty()) {
                     if (workload.recheckAttempt() < recheckAttempts) {
                         schedule(new Recheck(
                                 workload.sessionId(),
                                 workload.workloadChainId(),
-                                notResolvingConflicts,
+                                conflicts,
                                 workload.cacheName(),
                                 workload.partitionId(),
                                 workload.recheckAttempt() + 1,
@@ -294,11 +300,11 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                         );
                     }
                     else if (fixMode) {
-                        scheduleHighPriority(repair(workload.sessionId(), workload.workloadChainId(), workload.cacheName(), workload.partitionId(), notResolvingConflicts,
+                        scheduleHighPriority(repair(workload.sessionId(), workload.workloadChainId(), workload.cacheName(), workload.partitionId(), conflicts,
                             actualKeys, workload.repairAttempt()));
                     }
                     else {
-                        addToPrintResult(workload.cacheName(), workload.partitionId(), notResolvingConflicts, actualKeys);
+                        addToPrintResult(workload.cacheName(), workload.partitionId(), conflicts, actualKeys);
 
                         workProgress.completeWork();
                     }
@@ -322,17 +328,17 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                     // Repack recheck keys.
                     Map<KeyCacheObject, Map<UUID, GridCacheVersion>> recheckKeys = new HashMap<>();
 
-                    for (Map.Entry<PartitionKeyVersion, Map<UUID, VersionedValue>> dataEntry :
+                    for (Map.Entry<VersionedKey, Map<UUID, VersionedValue>> dataEntry :
                         repairRes.keysToRepair().entrySet()) {
                         KeyCacheObject keyCacheObj;
 
                         try {
                             keyCacheObj = unmarshalKey(
-                                dataEntry.getKey().getKey(),
+                                dataEntry.getKey().key(),
                                 ignite.cachex(workload.cacheName()).context());
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Unable to unmarshal key=[" + dataEntry.getKey().getKey() +
+                            U.error(log, "Unable to unmarshal key=[" + dataEntry.getKey().key() +
                                 "], key is skipped.");
 
                             continue;
@@ -368,17 +374,17 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     private void addToPrintSkippedEntriesResult(
         String cacheName,
         int partId,
-        Map<PartitionKeyVersion, Map<UUID, VersionedValue>> skippedKeys
+        Map<VersionedKey, Map<UUID, VersionedValue>> skippedKeys
     ) {
         CacheObjectContext ctx = ignite.cachex(cacheName).context().cacheObjectContext();
 
         synchronized (skippedEntries) {
             Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>> data = new HashSet<>();
 
-            for (PartitionKeyVersion keyVersion : skippedKeys.keySet()) {
+            for (VersionedKey keyVersion : skippedKeys.keySet()) {
                 try {
-                    byte[] bytes = keyVersion.getKey().valueBytes(ctx);
-                    String strVal = ConsistencyCheckUtils.objectStringView(ctx, keyVersion.getKey().value(ctx, false));
+                    byte[] bytes = keyVersion.key().valueBytes(ctx);
+                    String strVal = ConsistencyCheckUtils.objectStringView(ctx, keyVersion.key().value(ctx, false));
 
                     PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta> holder
                         = new PartitionReconciliationSkippedEntityHolder<>(
@@ -456,7 +462,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     private void addToPrintResult(
         String cacheName,
         int partId,
-        Map<PartitionKeyVersion, RepairMeta> repairedKeys
+        Map<VersionedKey, RepairMeta> repairedKeys
     ) {
         CacheObjectContext ctx = ignite.cachex(cacheName).context().cacheObjectContext();
 
@@ -464,7 +470,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
             try {
                 List<PartitionReconciliationDataRowMeta> res = new ArrayList<>();
 
-                for (Map.Entry<PartitionKeyVersion, RepairMeta> entry : repairedKeys.entrySet()) {
+                for (Map.Entry<VersionedKey, RepairMeta> entry : repairedKeys.entrySet()) {
                     Map<UUID, PartitionReconciliationValueMeta> valMap = new HashMap<>();
 
                     for (Map.Entry<UUID, VersionedValue> uuidBasedEntry : entry.getValue().getPreviousValue().entrySet()) {
@@ -481,7 +487,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                                 null);
                     }
 
-                    KeyCacheObject key = entry.getKey().getKey();
+                    KeyCacheObject key = entry.getKey().key();
 
                     key.finishUnmarshal(ctx, null);
 
@@ -520,10 +526,10 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     /**
      *
      */
-    private PartitionReconciliationResult prepareResult() {
+    private ReconciliationAffectedEntries prepareResult() {
         synchronized (inconsistentKeys) {
             synchronized (skippedEntries) {
-                return new PartitionReconciliationResult(
+                return new ReconciliationAffectedEntries(
                     ignite.cluster().nodes().stream().collect(Collectors.toMap(
                         ClusterNode::id,
                         n -> n.consistentId().toString())),
@@ -539,38 +545,38 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
      */
     private class WorkProgress {
         /** Work progress print interval. */
-        private final long WORK_PROGRESS_PRINT_INTERVAL = getLong("WORK_PROGRESS_PRINT_INTERVAL", 1000 * 60 * 3);
+        private final long workProgressPrintInterval = getLong("WORK_PROGRESS_PRINT_INTERVAL", 1000 * 60 * 3);
 
         /**
-         *
+         * The full amount of work.
          */
         private long total;
 
         /**
-         *
+         * The remaining amount of work.
          */
         private long remaining;
 
         /**
-         *
+         * Last print time.
          */
         private long printedTime;
 
         /**
-         *
+         * Prints progress to log.
          */
         public void printWorkProgress() {
             long currTimeMillis = System.currentTimeMillis();
 
-            if (currTimeMillis >= printedTime + WORK_PROGRESS_PRINT_INTERVAL) {
-                log.info(String.format(WORK_PROGRESS_MSG, sesId, workProgress.getTotal(), workProgress.getRemaining()));
+            if (currTimeMillis >= printedTime + workProgressPrintInterval) {
+                log.info(String.format(WORK_PROGRESS_MSG, sesId, workProgress.total(), workProgress.remaining()));
 
                 printedTime = currTimeMillis;
             }
         }
 
         /**
-         *
+         * Add additional work.
          */
         public void assignWork() {
             total++;
@@ -578,23 +584,23 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
         }
 
         /**
-         *
+         * Accept a unit of work.
          */
         public void completeWork() {
             remaining--;
         }
 
         /**
-         *
+         * The full amount of work.
          */
-        public long getTotal() {
+        public long total() {
             return total;
         }
 
         /**
-         *
+         * The remaining amount of work.
          */
-        public long getRemaining() {
+        public long remaining() {
             return remaining;
         }
     }

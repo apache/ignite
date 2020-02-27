@@ -48,15 +48,20 @@ public class PartitionReconciliationAbstractTest extends GridCommonAbstractTest 
     /**
      *
      */
-    public static ReconciliationResult partitionReconciliation(Ignite ig, boolean fixMode,
-        @Nullable RepairAlgorithm repairAlgorithm, int parallelism, String... caches) {
+    public static ReconciliationResult partitionReconciliation(
+        Ignite ig,
+        boolean repair,
+        @Nullable RepairAlgorithm repairAlgorithm,
+        int parallelism,
+        String... caches
+    ) {
         return partitionReconciliation(
             ig,
             new VisorPartitionReconciliationTaskArg.Builder()
                 .caches(new HashSet<>(Arrays.asList(caches)))
                 .recheckDelay(1)
                 .parallelism(parallelism)
-                .fixMode(fixMode)
+                .repair(repair)
                 .repairAlg(repairAlgorithm)
         );
     }

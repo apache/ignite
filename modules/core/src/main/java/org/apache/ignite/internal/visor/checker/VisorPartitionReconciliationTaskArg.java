@@ -38,13 +38,13 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
     private Set<String> caches;
 
     /** If {@code true} - Partition Reconciliation&Fix: update from Primary partition. */
-    private boolean fixMode;
+    private boolean repair;
 
-    /** Print result to console. */
-    private boolean console;
+    /** Print result to locOutput. */
+    private boolean locOutput;
 
     /** If {@code true} - print data to result with sensitive information: keys and values. */
-    private boolean verbose;
+    private boolean includeSensitive;
 
     /** Maximum number of threads that can be involved in reconciliation activities. */
     private int parallelism;
@@ -75,12 +75,12 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
      * Constructor.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public VisorPartitionReconciliationTaskArg(Set<String> caches, boolean fixMode, boolean verbose, boolean console,
+    public VisorPartitionReconciliationTaskArg(Set<String> caches, boolean repair, boolean includeSensitive, boolean locOutput,
         int parallelism, int batchSize, int recheckAttempts, RepairAlgorithm repairAlg, int recheckDelay) {
         this.caches = caches;
-        this.verbose = verbose;
-        this.console = console;
-        this.fixMode = fixMode;
+        this.includeSensitive = includeSensitive;
+        this.locOutput = locOutput;
+        this.repair = repair;
         this.parallelism = parallelism;
         this.batchSize = batchSize;
         this.recheckAttempts = recheckAttempts;
@@ -92,11 +92,11 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
 
-        out.writeBoolean(fixMode);
+        out.writeBoolean(repair);
 
-        out.writeBoolean(verbose);
+        out.writeBoolean(includeSensitive);
 
-        out.writeBoolean(console);
+        out.writeBoolean(locOutput);
 
         out.writeInt(parallelism);
 
@@ -115,11 +115,11 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
 
         caches = U.readSet(in);
 
-        fixMode = in.readBoolean();
+        repair = in.readBoolean();
 
-        verbose = in.readBoolean();
+        includeSensitive = in.readBoolean();
 
-        console = in.readBoolean();
+        locOutput = in.readBoolean();
 
         parallelism = in.readInt();
 
@@ -142,8 +142,8 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
     /**
      * @return If  - Partition Reconciliation&Fix: update from Primary partition.
      */
-    public boolean fixMode() {
-        return fixMode;
+    public boolean repair() {
+        return repair;
     }
 
     /**
@@ -163,15 +163,15 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
     /**
      * @return If  - print data to result with sensitive information: keys and values.
      */
-    public boolean verbose() {
-        return verbose;
+    public boolean includeSensitive() {
+        return includeSensitive;
     }
 
     /**
-     * @return {@code true} if print result to console.
+     * @return {@code true} if print result to locOutput.
      */
-    public boolean console() {
-        return console;
+    public boolean locOutput() {
+        return locOutput;
     }
 
     /**
@@ -203,13 +203,13 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
         private Set<String> caches;
 
         /** If {@code true} - Partition Reconciliation&Fix: update from Primary partition. */
-        private boolean fixMode;
+        private boolean repair;
 
-        /** Print result to console. */
-        private boolean console;
+        /** Print result to locOutput. */
+        private boolean locOutput;
 
         /** If {@code true} - print data to result with sensitive information: keys and values. */
-        private boolean verbose;
+        private boolean includeSensitive;
 
         /** Maximum number of threads that can be involved in reconciliation activities. */
         private int parallelism;
@@ -234,9 +234,9 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
          */
         public Builder() {
             caches = null;
-            fixMode = false;
-            console = true;
-            verbose = true;
+            repair = false;
+            locOutput = true;
+            includeSensitive = true;
             parallelism = 4;
             batchSize = 100;
             recheckAttempts = 2;
@@ -251,9 +251,9 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
          */
         public Builder(VisorPartitionReconciliationTaskArg cpFrom) {
             caches = cpFrom.caches;
-            fixMode = cpFrom.fixMode;
-            console = cpFrom.console;
-            verbose = cpFrom.verbose;
+            repair = cpFrom.repair;
+            locOutput = cpFrom.locOutput;
+            includeSensitive = cpFrom.includeSensitive;
             parallelism = cpFrom.parallelism;
             batchSize = cpFrom.batchSize;
             recheckAttempts = cpFrom.batchSize;
@@ -267,7 +267,7 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
          */
         public VisorPartitionReconciliationTaskArg build() {
             return new VisorPartitionReconciliationTaskArg(
-                caches, fixMode, verbose, console, parallelism, batchSize, recheckAttempts, repairAlg, recheckDelay);
+                caches, repair, includeSensitive, locOutput, parallelism, batchSize, recheckAttempts, repairAlg, recheckDelay);
         }
 
         /**
@@ -280,28 +280,28 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
         }
 
         /**
-         * @param fixMode New if  - Partition Reconciliation&Fix: update from Primary partition.
+         * @param repair New if  - Partition Reconciliation&Fix: update from Primary partition.
          */
-        public Builder fixMode(boolean fixMode) {
-            this.fixMode = fixMode;
+        public Builder repair(boolean repair) {
+            this.repair = repair;
 
             return this;
         }
 
         /**
-         * @param console New print result to console.
+         * @param console New print result to locOutput.
          */
-        public Builder console(boolean console) {
-            this.console = console;
+        public Builder locOutput(boolean locOutput) {
+            this.locOutput = locOutput;
 
             return this;
         }
 
         /**
-         * @param verbose New if  - print data to result with sensitive information: keys and values.
+         * @param includeSensitive New if  - print data to result with sensitive information: keys and values.
          */
-        public Builder verbose(boolean verbose) {
-            this.verbose = verbose;
+        public Builder includeSensitive(boolean includeSensitive) {
+            this.includeSensitive = includeSensitive;
 
             return this;
         }
