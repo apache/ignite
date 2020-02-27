@@ -25,14 +25,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,6 +45,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -101,7 +104,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private IgniteInternalFuture<Boolean> snapshotFut;
 
     /** Checkpoint listener. */
-    private final Consumer<Runnable> cpLsnr;
+    private final CheckpointListener checkpointLsnr = new CheckpointListener();
 
     /**
      * @param assigns Assigns.
@@ -109,20 +112,17 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param cctx Cache shared context.
      * @param exchId Exchange ID.
      * @param rebalanceId Rebalance ID
-     * @param cpLsnr Checkpoint listener.
      */
     public PartitionPreloadingRoutine(
         Iterable<T2<UUID, Map<Integer, Set<Integer>>>> assigns,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
-        long rebalanceId,
-        Consumer<Runnable> cpLsnr
+        long rebalanceId
     ) {
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
         this.exchId = exchId;
-        this.cpLsnr = cpLsnr;
 
         orderedAssgnments = assigns;
         topVer = startVer;
@@ -165,6 +165,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> startPartitionsPreloading() {
+        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
+
         requestPartitionsSnapshot(orderedAssgnments.iterator(), new GridConcurrentHashSet<>(remaining.size()));
 
         return Collections.unmodifiableMap(grpRoutines);
@@ -349,7 +351,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         if (log.isInfoEnabled()) {
             log.info("Completed" + (remainGroupsCnt == 0 ? " (final)" : "") +
-                " partition files preloading [grp=" + grpName + ", remain=" + remainGroupsCnt + "]");
+                " partition files preloading [grp=" + grpName + ", remaining=" + remainGroupsCnt + "]");
         }
 
         if (remainGroupsCnt == 0)
@@ -368,6 +370,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         try {
             if (!super.onDone(res, err, cancel))
                 return false;
+
+            ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
             // Dummy routine - no additional actions required.
             if (orderedAssgnments == null)
@@ -461,7 +465,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             }
         };
 
-        cpLsnr.accept(() -> {
+        checkpointLsnr.schedule(() -> {
             lock.lock();
 
             try {
@@ -527,5 +531,36 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionPreloadingRoutine.class, this);
+    }
+
+    /** */
+    private static class CheckpointListener implements DbCheckpointListener {
+        /** Checkpoint requests queue. */
+        private final Queue<Runnable> requests = new ConcurrentLinkedQueue<>();
+
+        /** {@inheritDoc} */
+        @Override public void onMarkCheckpointBegin(Context ctx) {
+            Runnable r;
+
+            while ((r = requests.poll()) != null)
+                r.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCheckpointBegin(Context ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            // No-op.
+        }
+
+        /**
+         * @param task Task to execute.
+         */
+        public void schedule(Runnable task) {
+            requests.offer(task);
+        }
     }
 }
