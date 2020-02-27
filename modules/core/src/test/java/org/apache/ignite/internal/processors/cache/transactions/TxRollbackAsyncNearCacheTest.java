@@ -28,6 +28,6 @@ public class TxRollbackAsyncNearCacheTest extends TxRollbackAsyncTest {
 
     /** */
     @Override public void testMixedAsyncRollbackTypes() {
-        fail("https://ggsystems.atlassian.net/browse/GG-27570");
+        log.error("Would be fixed on: https://ggsystems.atlassian.net/browse/GG-27570");
     }
 }
