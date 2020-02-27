@@ -21,9 +21,11 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,6 +55,16 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * objects that were added but should not be counted along with keys defined in tests.
      */
     private static final int INITIAL_UPDATES_COUNT = 2;
+
+    /** String exceeding max length of metastorage key. */
+    private static final String LONG_KEY;
+
+    static {
+        String template = "012345678901234567890123456789";
+
+        // Two templates - 60 bytes. Key is considered as long if it is longer than 62 bytes.
+        LONG_KEY = template + template + "01";
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -471,6 +483,94 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         for (int i = 1; i < cnt; i++)
             assertDistributedMetastoragesAreEqual(grid(0), grid(i));
+    }
+
+    /**
+     * Verifies that DistributedMetastorage doesn't allow writes of too long keys (exceeding 64 bytes limit).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLongKeyOnWrite() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
+
+        GridTestUtils.assertThrows(null,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    metastorage.write(LONG_KEY, "randomValue");
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Key is too long."
+        );
+
+        GridTestUtils.assertThrows(null,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    metastorage.writeAsync(LONG_KEY, "randomValue");
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Key is too long."
+        );
+    }
+
+    /**
+     * Verifies that DistributedMetastorage doesn't allow writes of too long keys (exceeding 64 bytes limit).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLongKeyOnCas() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        DistributedMetaStorage metastorage = ignite.context().distributedMetastorage();
+
+        GridTestUtils.assertThrows(null,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    metastorage.compareAndSet(LONG_KEY, "randomValue", "newRandomValue");
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Key is too long."
+        );
+
+        GridTestUtils.assertThrows(null,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    metastorage.compareAndSetAsync(LONG_KEY, "randomValue", "newRandomValue");
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Key is too long."
+        );
+
+        GridTestUtils.assertThrows(null,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    metastorage.compareAndRemove(LONG_KEY, "randomValue");
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Key is too long."
+        );
     }
 
     /**
