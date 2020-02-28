@@ -422,7 +422,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     throw new IgniteException(e);
                 }
                 finally {
-                    if (ex == null && snpTrans.partsLeft.decrementAndGet() == 0) {
+                    if (snpTrans.partsLeft.decrementAndGet() == 0 && ex == null) {
                         snpTrans.onDone(true);
 
                         log.info("Requested snapshot from remote node has been fully received " +
