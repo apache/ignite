@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -65,6 +66,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.LongOperationsDumpSettingsClosure;
+import org.apache.ignite.internal.processors.cache.LongRunningTxTimeDumpSettingsClosure;
+import org.apache.ignite.internal.processors.cache.TxOwnerDumpRequestAllowedSettingClosure;
+import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -96,14 +100,17 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -126,6 +133,8 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.IgniteFeatures.LONG_OPERATIONS_DUMP_TIMEOUT;
+import static org.apache.ignite.internal.IgniteFeatures.LRT_SYSTEM_USER_TIME_DUMP_SETTINGS;
+import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
 import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -274,9 +283,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     private volatile boolean suspendResumeForPessimisticSupported;
 
+    /** The futures for changing transaction timeout on partition map exchange. */
+    private ConcurrentMap<UUID, TxTimeoutOnPartitionMapExchangeChangeFuture> txTimeoutOnPartitionMapExchangeFuts =
+        new ConcurrentHashMap<>();
+
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_TX);
+
+        Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
+
+        for (TxTimeoutOnPartitionMapExchangeChangeFuture fut : txTimeoutOnPartitionMapExchangeFuts.values())
+            fut.onDone(err);
     }
 
     /** {@inheritDoc} */
@@ -492,6 +510,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
 
         for (TxDeadlockFuture fut : deadlockDetectFuts.values())
+            fut.onDone(err);
+
+        for (TxTimeoutOnPartitionMapExchangeChangeFuture fut : txTimeoutOnPartitionMapExchangeFuts.values())
             fut.onDone(err);
     }
 
@@ -2761,6 +2782,143 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Sets transaction timeout on partition map exchange.
+     *
+     * @param timeout Transaction timeout on partition map exchange in milliseconds.
+     */
+    public void setTxTimeoutOnPartitionMapExchange(long timeout) throws IgniteCheckedException {
+        UUID reqId = UUID.randomUUID();
+
+        TxTimeoutOnPartitionMapExchangeChangeFuture fut = new TxTimeoutOnPartitionMapExchangeChangeFuture(reqId);
+
+        txTimeoutOnPartitionMapExchangeFuts.put(reqId, fut);
+
+        TxTimeoutOnPartitionMapExchangeChangeMessage msg = new TxTimeoutOnPartitionMapExchangeChangeMessage(
+            reqId, timeout);
+
+        cctx.discovery().sendCustomEvent(msg);
+
+        fut.get();
+    }
+
+    /**
+     * Callback invoked from discovery thread when discovery custom message is received.
+     *
+     * @param msg Discovery message for changing transaction timeout on partition map exchange.
+     */
+    public void onTxTimeoutOnPartitionMapExchangeChange(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+        assert msg != null;
+
+        if (msg.isInit()) {
+            TransactionConfiguration cfg = cctx.kernalContext().config().getTransactionConfiguration();
+
+            if (cfg.getTxTimeoutOnPartitionMapExchange() != msg.getTimeout())
+                cfg.setTxTimeoutOnPartitionMapExchange(msg.getTimeout());
+        }
+        else {
+            TxTimeoutOnPartitionMapExchangeChangeFuture fut = txTimeoutOnPartitionMapExchangeFuts.get(
+                msg.getRequestId());
+
+            if (fut != null)
+                fut.onDone();
+        }
+    }
+
+    /**
+     * The task for changing transaction timeout on partition map exchange processed by exchange worker.
+     *
+     * @param msg Message.
+     */
+    public void processTxTimeoutOnPartitionMapExchangeChange(TxTimeoutOnPartitionMapExchangeChangeMessage msg) {
+        assert msg != null;
+
+        long timeout = cctx.kernalContext().config().getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+
+        if (timeout != msg.getTimeout())
+            cctx.kernalContext().config().getTransactionConfiguration().setTxTimeoutOnPartitionMapExchange(msg.getTimeout());
+    }
+
+    /**
+     * Method checks that current thread does not have active transactions.
+     *
+     * If transaction or topology lock is hold by current thread
+     * exception {@link IgniteException} with given {@code errMsgConstructor} message will be thrown.
+     *
+     * @param errMsgConstructor Error message constructor.
+     */
+    public void checkEmptyTransactions(@NotNull IgniteOutClosure<String> errMsgConstructor) {
+        if (userTx() != null || cctx.lockedTopologyVersion(null) != null)
+            throw new IgniteException(errMsgConstructor.apply());
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread. Also broadcasts this setting on other server nodes in cluster.
+     *
+     * @param allowed whether allowed
+     */
+    public void setTxOwnerDumpRequestsAllowedDistributed(boolean allowed) {
+        ClusterGroup grp = cctx.kernalContext().grid()
+            .cluster()
+            .forServers()
+            .forPredicate(node -> IgniteFeatures.nodeSupports(node, TRANSACTION_OWNER_THREAD_DUMP_PROVIDING));
+
+        IgniteCompute compute = cctx.kernalContext().grid().compute(grp);
+
+        compute.broadcast(new TxOwnerDumpRequestAllowedSettingClosure(allowed));
+    }
+
+    /**
+     * Sets threshold timeout in milliseconds for long transactions, if transaction exceeds it,
+     * it will be dumped in log with information about how much time did
+     * it spent in system time (time while aquiring locks, preparing, commiting, etc.)
+     * and user time (time when client node runs some code while holding transaction).
+     * Can be set to 0 - no transactions will be dumped in log in this case.
+     *
+     * @param threshold Threshold timeout in milliseconds.
+     */
+    public void longTransactionTimeDumpThresholdDistributed(long threshold) {
+        assert threshold >= 0 : "Threshold timeout must be greater than or equal to 0.";
+
+        broadcastToNodesSupportingFeature(
+            new LongRunningTxTimeDumpSettingsClosure(threshold, null, null),
+            LRT_SYSTEM_USER_TIME_DUMP_SETTINGS
+        );
+    }
+
+    /**
+     * Sets the coefficient for samples of long running transactions that will be dumped in log, if
+     * {@link #longTransactionTimeDumpThreshold} is set to non-zero value."
+     *
+     * @param coefficient Coefficient, must be value between 0.0 and 1.0 inclusively.
+     */
+    public void transactionTimeDumpSamplesCoefficientDistributed(double coefficient) {
+        assert coefficient >= 0.0 && coefficient <= 1.0 : "Percentage value must be between 0.0 and 1.0 inclusively.";
+
+        broadcastToNodesSupportingFeature(
+            new LongRunningTxTimeDumpSettingsClosure(null, coefficient, null),
+            LRT_SYSTEM_USER_TIME_DUMP_SETTINGS
+        );
+    }
+
+    /**
+     * Sets the limit of samples of completed transactions that will be dumped in log per second,
+     * if {@link #transactionTimeDumpSamplesCoefficient} is above <code>0.0</code>.
+     * Must be integer value greater than <code>0</code>.
+     *
+     * @param limit Limit value.
+     */
+    public void longTransactionTimeDumpSamplesPerSecondLimit(int limit) {
+        assert limit > 0 : "Limit value must be greater than 0.";
+
+        broadcastToNodesSupportingFeature(
+            new LongRunningTxTimeDumpSettingsClosure(null, null, limit),
+            LRT_SYSTEM_USER_TIME_DUMP_SETTINGS
+        );
+    }
+
+    /**
      * Broadcasts given job to nodes that support ignite feature.
      *
      * @param job Ignite job.
@@ -3199,6 +3357,32 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          */
         public void skip() {
             skippedTxCntr.incrementAndGet();
+        }
+    }
+
+    /**
+     * The future for changing transaction timeout on partition map exchange.
+     */
+    private class TxTimeoutOnPartitionMapExchangeChangeFuture extends GridFutureAdapter<Void> {
+        /** */
+        private UUID id;
+
+        /**
+         * @param id Future ID.
+         */
+        private TxTimeoutOnPartitionMapExchangeChangeFuture(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+            txTimeoutOnPartitionMapExchangeFuts.remove(id, this);
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TxTimeoutOnPartitionMapExchangeChangeFuture.class, this);
         }
     }
 }
