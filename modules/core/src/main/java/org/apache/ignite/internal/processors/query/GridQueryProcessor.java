@@ -889,6 +889,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Initialize query infrastructure for not started cache.
+     *
+     * @param cacheDesc Cache descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+        QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
+
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
+
+        onCacheStart(cacheInfo, schema, cacheDesc.sql());
+    }
+
+    /**
      * Handle cache start. Invoked either from GridCacheProcessor.onKernalStart() method or from exchange worker.
      * When called for the first time, we initialize topology thus understanding whether current node is coordinator
      * or not.

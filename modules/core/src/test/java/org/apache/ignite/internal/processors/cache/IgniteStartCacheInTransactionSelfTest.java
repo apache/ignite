@@ -41,7 +41,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String EXPECTED_MSG = "Cannot start/stop cache within lock or transaction.";
+    private static final String EXPECTED_MSG = "Cannot start/stop cache within lock or transaction";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
