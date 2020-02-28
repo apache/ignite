@@ -23,6 +23,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.junit.Before;
 import org.junit.Test;
@@ -115,9 +121,9 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             MailboxRegistry registry = mailboxRegistry(localNodeId);
 
             Outbox<Object[]> outbox = new Outbox<>(
-                exchangeService(localNodeId),
+                ectx, exchangeService(localNodeId),
                 registry,
-                ectx, 1,0, filter, new AllNodes(nodes.subList(0, 1)));
+                filter, 0, 1, new AllNodes(nodes.subList(0, 1)));
 
             registry.register(outbox);
 
@@ -131,11 +137,11 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
         MailboxRegistry registry = mailboxRegistry(localNodeId);
 
         Inbox<Object[]> inbox = (Inbox<Object[]>) registry.register(
-            new Inbox<Object[]>(exchangeService(localNodeId), registry, ectx, 0, 0));
+            new Inbox<Object[]>(ectx, exchangeService(localNodeId), registry, 0, 0));
 
         inbox.init(ectx, nodes.subList(1, nodes.size()), null);
 
-        ConsumerNode node = new ConsumerNode(ectx, inbox);
+        RootNode node = new RootNode(ectx, inbox);
 
         while (node.hasNext()) {
             Object[] row = node.next();

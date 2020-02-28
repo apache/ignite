@@ -20,6 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.JoinNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
 import org.junit.Before;
@@ -62,10 +67,10 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[]{3, 0, "Core"}
         ));
 
-        JoinNode join = new JoinNode(ctx, persons, projects, (r1, r2) -> r1[0] != r2[1] ? null : new Object[]{r1[0], r1[1], r1[2], r2[0], r2[1], r2[2]});
+        JoinNode join = new JoinNode(ctx, persons, projects, r -> r[0] == r[4]);
         ProjectNode project = new ProjectNode(ctx, join, r -> new Object[]{r[0], r[1], r[5]});
         FilterNode filter = new FilterNode(ctx, project, r -> (Integer) r[0] >= 2);
-        ConsumerNode node = new ConsumerNode(ctx, filter, 1);
+        RootNode node = new RootNode(ctx, filter, 1);
 
         assert node.hasNext();
 

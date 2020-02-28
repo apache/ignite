@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp.type;
 
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+import java.nio.charset.Charset;
+import org.apache.calcite.sql.SqlCollation;
 
 /**
- * Ignite type factory.
+ *
  */
-public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+public interface CharacterDataType extends DataType {
     /** */
-    public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
-    }
+    Charset charset();
 
-    /**
-     * @param typeSystem Type system.
-     */
-    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
-        super(typeSystem);
-    }
+    /** */
+    SqlCollation collation();
 }

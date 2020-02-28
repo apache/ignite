@@ -100,8 +100,8 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
         BitSet virtualFlags = new BitSet();
 
-        descriptors.add(new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, true));
-        descriptors.add(new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), true, false));
+        descriptors.add(new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true));
+        descriptors.add(new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), false));
 
         for (String field : fields) {
             if (Objects.equals(field, typeDesc.affinityKey()))
@@ -115,12 +115,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
                 virtualFlags.set(0);
 
-                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), false, true));
+                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true));
             }
             else if (Objects.equals(field, typeDesc.valueFieldAlias())) {
                 valField = descriptors.size();
 
-                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, false));
+                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false));
 
                 virtualFlags.set(1);
             }
@@ -426,16 +426,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         private final Class<?> type;
 
         /** */
-        private final boolean isSystem;
-
-        /** */
         private final boolean isKey;
 
         /** */
-        private KeyValDescriptor(String name, Class<?> type, boolean isSystem, boolean isKey) {
+        private KeyValDescriptor(String name, Class<?> type, boolean isKey) {
             this.name = name;
             this.type = type;
-            this.isSystem = isSystem;
             this.isKey = isKey;
         }
 
@@ -466,7 +462,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            return isSystem ? f.createSystemType(javaType()) : f.createJavaType(javaType());
+            return f.createJavaType(javaType());
         }
 
         /** {@inheritDoc} */

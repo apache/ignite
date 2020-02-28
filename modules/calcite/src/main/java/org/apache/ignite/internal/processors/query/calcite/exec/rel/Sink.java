@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
-
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 /**
- * Ignite type factory.
+ * Represents an abstract data consumer.
+ *
+ * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request()}, {@link Node#cancel()},
+ * {@link Node#reset()}, {@link Sink#push(Object)} and {@link Sink#end()} methods should be used from one single thread.
  */
-public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /** */
-    public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
-    }
+public interface Sink<T> {
+    /**
+     * Pushes a row to consumer.
+     * @param row Data row.
+     * @return {@code True} if a row consumes and processed, {@code false} otherwise. In case the row was not consumed,
+     *      the row has to be send once again as soon as a target consumer become able to process data.
+     */
+    boolean push(T row);
 
     /**
-     * @param typeSystem Type system.
+     * Signals that data is over.
      */
-    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
-        super(typeSystem);
-    }
+    void end();
 }

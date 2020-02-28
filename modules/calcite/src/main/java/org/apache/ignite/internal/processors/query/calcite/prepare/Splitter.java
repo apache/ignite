@@ -34,17 +34,16 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 
 /**
  * Splits a query into a list of query fragments.
  */
-public class Splitter implements IgniteRelVisitor<IgniteRel>, RelOp<IgniteRel, List<Fragment>> {
+public class Splitter implements IgniteRelVisitor<IgniteRel> {
     /** */
     private List<Fragment> fragments;
 
-    /** {@inheritDoc} */
-    @Override public List<Fragment> go(IgniteRel root) {
+    /** */
+    public List<Fragment> go(IgniteRel root) {
         fragments = new ArrayList<>();
 
         try {

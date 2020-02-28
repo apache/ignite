@@ -25,10 +25,11 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.SqlAccessEnum;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -40,12 +41,13 @@ import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorNamespace;
+import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.SystemType;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -122,20 +124,27 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public void validateCall(SqlCall call, SqlValidatorScope scope) {
+        if (call.getKind() == SqlKind.AS) {
+            final String alias = deriveAlias(call, 0);
+
+            if (isSystemFieldName(alias))
+                throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
+        }
+
+        super.validateCall(call, scope);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void addToSelectList(List<SqlNode> list, Set<String> aliases,
         List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
-        if (includeSystemVars || !isSystemType(deriveType(scope, exp)))
+        if (includeSystemVars || exp.getKind() != SqlKind.IDENTIFIER || !isSystemFieldName(deriveAlias(exp, 0)))
             super.addToSelectList(list, aliases, fieldList, exp, scope, includeSystemVars);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
-        return isSystemType(field.getType());
-    }
-
-    /** */
-    private boolean isSystemType(RelDataType type) {
-        return type instanceof SystemType;
+        return isSystemFieldName(field.getName());
     }
 
     /** */
@@ -190,7 +199,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
             if (!desc.isUpdateAllowed(relOptTable, target.getIndex()))
                 throw newValidationError(id,
-                    RESOURCE.accessNotAllowed(SqlAccessEnum.UPDATE.name(), id.toString()));
+                    IgniteResource.INSTANCE.cannotUpdateField(id.toString()));
         }
     }
 
@@ -220,5 +229,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private IgniteTypeFactory typeFactory() {
         return (IgniteTypeFactory) typeFactory;
+    }
+
+    /** */
+    private boolean isSystemFieldName(String alias) {
+        return QueryUtils.KEY_FIELD_NAME.equalsIgnoreCase(alias)
+            || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(alias);
     }
 }

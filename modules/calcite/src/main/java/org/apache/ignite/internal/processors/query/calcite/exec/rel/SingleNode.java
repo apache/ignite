@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+import java.util.Objects;
 
 /**
- * Ignite type factory.
+ * A node with a single input
  */
-public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /** */
-    public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
+public interface SingleNode<T> extends Node<T> {
+    /**
+     * @return Single sink object.
+     */
+    default Sink<T> sink() {
+        return Objects.requireNonNull(sink(0));
     }
 
     /**
-     * @param typeSystem Type system.
+     * @return Single input.
      */
-    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
-        super(typeSystem);
+    default Node<T> input() {
+        return Objects.requireNonNull(input(0));
     }
 }

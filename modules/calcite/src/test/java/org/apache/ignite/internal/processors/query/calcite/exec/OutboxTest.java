@@ -22,6 +22,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Sink;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
@@ -70,7 +74,7 @@ public class OutboxTest extends GridCommonAbstractTest {
         ExecutionContext ectx = new ExecutionContext(null, ctx, UUID.randomUUID(), 0, null, ImmutableMap.of());
 
         input = new TestNode(ectx);
-        outbox = new Outbox<>(exch, new MailboxRegistryImpl(newContext()), ectx, 0, ectx.fragmentId(), input, destination);
+        outbox = new Outbox<>(ectx, exch, new MailboxRegistryImpl(newContext()), input, ectx.fragmentId(), 0, destination);
     }
 
     /**

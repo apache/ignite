@@ -24,6 +24,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCancelMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -181,7 +183,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
         if (inbox == null && msg.batchId() == 0)
             // first message sent before a fragment is built
             // note that an inbox source fragment id is also used as an exchange id
-            inbox = mailboxRegistry().register(new Inbox<>(this, mailboxRegistry(), baseInboxContext(msg.queryId(), msg.fragmentId()), msg.exchangeId(), msg.exchangeId()));
+            inbox = mailboxRegistry().register(new Inbox<>(baseInboxContext(msg.queryId(), msg.fragmentId()), this, mailboxRegistry(), msg.exchangeId(), msg.exchangeId()));
 
         if (inbox != null)
             inbox.onBatchReceived(nodeId, msg.batchId(), msg.rows());

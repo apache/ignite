@@ -15,24 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query.calcite.serialize;
 
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+import java.io.Externalizable;
 
 /**
- * Ignite type factory.
+ * A superclass of all relational nodes representations.
  */
-public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /** */
-    public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
-    }
-
+public interface PhysicalRel extends Externalizable {
     /**
-     * @param typeSystem Type system.
+     * Accepts a visit from a visitor.
+     *
+     * @param visitor Visitor.
+     * @return Visit result.
      */
-    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
-        super(typeSystem);
-    }
+    <T> T accept(PhysicalRelVisitor<T> visitor);
 }

@@ -29,6 +29,8 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
@@ -169,6 +171,20 @@ public final class PlanningContext implements Context {
     }
 
     // Helper methods
+
+    /**
+     * @return Sql operators table.
+     */
+    public SqlOperatorTable opTable() {
+        return config().getOperatorTable();
+    }
+
+    /**
+     * @return Sql conformance.
+     */
+    public SqlConformance conformance() {
+        return config.getParserConfig().conformance();
+    }
 
     /**
      * @return Planner.

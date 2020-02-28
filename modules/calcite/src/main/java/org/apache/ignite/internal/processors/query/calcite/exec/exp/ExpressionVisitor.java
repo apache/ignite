@@ -15,24 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
-
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 /**
- * Ignite type factory.
+ * Visitor pattern for traversing a tree of {@link Expression} objects.
  */
-public class IgniteTypeFactory extends JavaTypeFactoryImpl {
-    /** */
-    public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
-    }
+public interface ExpressionVisitor<T> {
+    /**
+     * See {@link ExpressionVisitor#visit(Expression)}
+     */
+    T visit(InputRef exp);
 
     /**
-     * @param typeSystem Type system.
+     * See {@link ExpressionVisitor#visit(Expression)}
      */
-    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
-        super(typeSystem);
-    }
+    T visit(Literal exp);
+
+    /**
+     * See {@link ExpressionVisitor#visit(Expression)}
+     */
+    T visit(DynamicParam exp);
+
+    /**
+     * See {@link ExpressionVisitor#visit(Expression)}
+     */
+    T visit(Call exp);
+
+    /**
+     * Implements given expression.
+     *
+     * @param exp Expression.
+     * @return Implementation result.
+     */
+    T visit(Expression exp);
 }

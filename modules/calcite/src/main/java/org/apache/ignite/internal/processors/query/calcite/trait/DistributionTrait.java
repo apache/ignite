@@ -18,11 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import com.google.common.collect.Ordering;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamException;
-import java.io.Serializable;
 import java.util.Objects;
 import org.apache.calcite.plan.RelMultipleTrait;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -40,7 +35,7 @@ import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 /**
  * Description of the physical distribution of a relational expression.
  */
-public final class DistributionTrait implements IgniteDistribution, Serializable {
+public final class DistributionTrait implements IgniteDistribution {
     /** */
     private static final Ordering<Iterable<Integer>> ORDERING =
         Ordering.<Integer>natural().lexicographical();
@@ -142,6 +137,7 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
         return other.getType() == SINGLETON && getType() == BROADCAST_DISTRIBUTED;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {
         if (keys.isEmpty())
             return this;
@@ -153,10 +149,12 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
         return newKeys.isEmpty() ? IgniteDistributions.random() : IgniteDistributions.hash(newKeys, function);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isTop() {
         return getType() == Type.ANY;
     }
 
+    /** {@inheritDoc} */
     @Override public int compareTo(RelMultipleTrait o) {
         // TODO is this method really needed??
 
@@ -172,22 +170,5 @@ public final class DistributionTrait implements IgniteDistribution, Serializable
         }
 
         return getType().compareTo(distribution.getType());
-    }
-
-    /** */
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.writeObject(keys.toIntArray());
-        out.writeObject(function);
-    }
-
-    /** */
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        keys = ImmutableIntList.of((int[])in.readObject());
-        function = (DistributionFunction) in.readObject();
-    }
-
-    /** */
-    private Object readResolve() throws ObjectStreamException {
-        return IgniteDistributions.canonize(this);
     }
 }

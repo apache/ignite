@@ -15,24 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.type;
+package org.apache.ignite.internal.processors.query.calcite.util;
 
-import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
+import org.apache.calcite.runtime.Resources;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 
 /**
- * Ignite type factory.
+ *
  */
-public class IgniteTypeFactory extends JavaTypeFactoryImpl {
+public interface IgniteResource {
     /** */
-    public IgniteTypeFactory() {
-        super(IgniteTypeSystem.INSTANCE);
-    }
+    IgniteResource INSTANCE = Resources.create(IgniteResource.class);
 
-    /**
-     * @param typeSystem Type system.
-     */
-    public IgniteTypeFactory(RelDataTypeSystem typeSystem) {
-        super(typeSystem);
-    }
+    /** */
+    @Resources.BaseMessage("Illegal alias. {0} is reserved name.")
+    Resources.ExInst<SqlValidatorException> illegalAlias(String a0);
+
+    /** */
+    @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update key, key fields or val field in case the val is a complex type.")
+    Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
 }
