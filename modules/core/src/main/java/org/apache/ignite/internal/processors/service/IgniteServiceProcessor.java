@@ -1989,6 +1989,22 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 throw e.getTargetException();
             }
             finally {
+                /**
+                 * TODO : research purposes. Chashes at the paltrof service invocation
+                 * TODO : remove me.
+                 *
+                 * Caused by: java.lang.NullPointerException
+                 * 	at org.apache.ignite.internal.processors.service.IgniteServiceProcessor$TimingInvocationHandler.invoke(IgniteServiceProcessor.java:1993)
+                 * 	at org.apache.ignite.internal.processors.service.GridServiceProxy.invokeMethod(GridServiceProxy.java:180)
+                 * 	at org.apache.ignite.internal.processors.platform.services.PlatformServices$ServiceProxyHolder.invoke(PlatformServices.java:585)
+                 * 	... 2 more
+                  */
+
+                if(invocationHistograms.get(mtd)==null){
+                    System.err.println("Empty method: '" + mtd.getName()+"' of class '"+mtd.getDeclaringClass().getName()+": " + mtd);
+                    System.out.println("Empty method: '" + mtd.getName()+"' of class '"+mtd.getDeclaringClass().getName()+": " + mtd);
+                }
+
                 invocationHistograms.get(mtd).value(U.nanosToMillis(System.nanoTime() - startTime));
 
                 mtd.setAccessible(accessible);
