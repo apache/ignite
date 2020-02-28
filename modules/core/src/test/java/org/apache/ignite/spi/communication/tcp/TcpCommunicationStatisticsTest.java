@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
@@ -41,7 +40,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -60,10 +65,6 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
-
-    static {
-        IgniteMessageFactoryImpl.registerCustom(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
-    }
 
     /**
      * CommunicationSPI synchronized by {@code mux}.
@@ -102,6 +103,8 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         TcpCommunicationSpi spi = new SynchronizedCommunicationSpi();
 
         cfg.setCommunicationSpi(spi);
+
+        cfg.setPluginProviders(new TestPluginProvider());
 
         return cfg;
     }
@@ -219,6 +222,23 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /** */
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_PLUGIN";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                }
+            });
         }
     }
 }
