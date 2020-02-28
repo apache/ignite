@@ -506,6 +506,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
              */
             private void finishRecover(RemoteSnapshotFuture snpTrans, GroupPartitionId grpPartId) {
                 FilePageStore pageStore = null;
+                Exception ex = null;
 
                 try {
                     pageStore = snpTrans.stores.remove(grpPartId);
@@ -515,11 +516,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     snpTrans.partConsumer.accept(new File(pageStore.getFileAbsolutePath()), grpPartId);
                 }
                 catch (StorageException e) {
+                    ex = e;
+
                     throw new IgniteException(e);
                 }
                 finally {
-                    if (snpTrans.partsLeft.decrementAndGet() == 0)
+                    if (snpTrans.partsLeft.decrementAndGet() == 0 && ex == null) {
                         snpTrans.onDone(true);
+
+                        log.info("Requested snapshot from remote node has been fully received " +
+                            "[snpName=" + snpTrans.snpName + ", rmtNodeId=" + snpTrans.rmtNodeId + ']');
+                    }
 
                     U.closeQuiet(pageStore);
                 }
