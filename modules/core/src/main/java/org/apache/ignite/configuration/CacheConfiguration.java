@@ -1193,14 +1193,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets cache rebalance order. Rebalance order can be set to non-zero value for caches with
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
+     * Note that caches with {@link CacheRebalanceMode#SYNC SYNC} rebalancing mode are always rebalanced prior to caches
+     * with {@link CacheRebalanceMode#ASYNC ASYNC} rebalancing mode when rebalancing order is the same.
      * <p/>
      * The rebalance order guarantees that rebalancing for this cache will start only when rebalancing for
      * all caches with smaller rebalance order will be completed.
-     * <p/>
-     * Note that a cache with {@link CacheRebalanceMode#SYNC SYNC} rebalancing mode always takes precedence
-     * over caches with {@link CacheRebalanceMode#ASYNC ASYNC} rebalancing mode
-     * in the group of caches with the same rebalance order. This means caches with {@link CacheRebalanceMode#SYNC SYNC}
-     * rebalancing mode will be rebalanced in the first place.
      * <p/>
      * If not set, cache order is 0.
      *
