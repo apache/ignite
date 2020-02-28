@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.Map;
+import java.util.stream.LongStream;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -39,6 +40,9 @@ public class MetricUtils {
     /** Histogram metric last interval high bound. */
     public static final String INF = "inf";
 
+    /** Max depth of type name in {@link #abbreviateName(Class, int)}. */
+    public static final int MAX_ABBREVIATE_NAME_LVL = 2;
+
     /**
      * Builds metric name. Each parameter will separated by '.' char.
      *
@@ -58,14 +62,15 @@ public class MetricUtils {
     /**
      * Abbreviates package + class name for metric naming purposes.
      *
-     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider:
+     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
+     *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
      *                     <pre>
      *                         0 - wont add package name;
      *                         1 - add only first char of each name in java package;
      *                         2 - add first and last char of each name in java package;
-     *                         Any other - add full java package name.
+     *                         Any other - add full name of java package.
      *                     </pre>
-     * @return Abbreviated name of the type {@code cl}.
+     * @return Abbreviated name of {@code cl}.
      */
     public static String abbreviateName(Class<?> cl, int pkgNameDepth) {
         if (pkgNameDepth == 0)
@@ -223,5 +228,15 @@ public class MetricUtils {
         cache.put(name, new T2<>(bounds, names));
 
         return names;
+    }
+
+    /**
+     * Count total of histogram values.
+     *
+     * @param histogram Historgam to traverse.
+     * @return Summ of all entries of {@code histogram} buckets.
+     */
+    public static long sumHistogramEntries(HistogramMetric histogram) {
+        return LongStream.of(histogram.value()).reduce(Long::sum).orElse(0);
     }
 }

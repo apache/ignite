@@ -83,7 +83,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -102,8 +101,10 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.abbreviateName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
+import static org.apache.ignite.internal.util.IgniteUtils.getInterfaces;
 
 /**
  * Ignite service processor.
@@ -129,7 +130,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SERVICE_METRIC_REGISTRY = "service";
 
     /** Description for the service method invocation metric. */
-    private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Method duration in milliseconds.";
+    private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Duration of service in milliseconds.";
 
     /** Default bounds of invocation histogramm in milliseconds. See {@link #invocationsMetric(String, Method)}. */
     private static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {1, 10, 50, 200, 1000};
@@ -247,7 +248,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             ServiceView::new);
 
         if (metricsEnabled = getBoolean(IGNITE_SERVICE_METRICS_ENABLED, true))
-            invocationHistograms = new HashMap<>(0);
+            invocationHistograms = new HashMap<>(1);
     }
 
     /** {@inheritDoc} */
@@ -353,8 +354,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         deployedServices.clear();
 
-        if (metricsEnabled)
+        if (metricsEnabled) {
+            invocationHistograms.clear();
+
             ctx.metric().remove(SERVICE_METRIC_REGISTRY);
+        }
 
         locServices.values().stream().flatMap(Collection::stream).forEach(srvcCtx -> {
             cancel(srvcCtx);
@@ -950,33 +954,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
     }
 
-    /**
-     * @param srvc The serive to wrap into invocation proxy.
-     * @param srvcName Name of service {@code srvc}.
-     *
-     * @return Local service proxy allowing timing of service method if {@code metricsEnabled} is {@code True}.
-     * If {@code metricsEnabled} is {@code False}, returns the service instance {@code srvc}.
-     */
-    private Service localServiceProxy(Service srvc, String srvcName) {
-        if (metricsEnabled) {
-            Set<Class<?>> interfaces = new HashSet<>();
-
-            Class<?> cur = srvc.getClass();
-
-            while (cur != null) {
-                interfaces.addAll(Arrays.asList(cur.getInterfaces()));
-
-                cur = cur.getSuperclass();
-            }
-
-            return (Service)Proxy.newProxyInstance(srvc.getClass().getClassLoader(),
-                interfaces.toArray(new Class<?>[0]),
-                new TimingInvocationHandler(srvc, invocationHistograms.get(srvcName)));
-        }
-        else
-            return srvc;
-    }
-
     /** {@inheritDoc} */
     @Override public ServiceContextImpl serviceContext(String name) {
         if (!enterBusy())
@@ -1058,11 +1035,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /**
      * Creates metric for service method. If the metric exists then considers one or several argument types has same
-     * name but different packages. Then skips existing metric and tries to extend metric name with abbreviation of
-     * java package name. See {@link MetricUtils#abbreviateName(Class, int)}.
+     * name but different packages. Then skips existing metric and tries to extend metric name with abbreviation of java
+     * package name. See {@link MetricUtils#abbreviateName(Class, int)}.
      *
      * @param srvcName Service name.
-     * @param method Method to measure.
+     * @param method   Method to measure.
      * @return Histogram of service method timings.
      */
     HistogramMetricImpl invocationsMetric(String srvcName, Method method) {
@@ -1070,8 +1047,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         HistogramMetricImpl histogram = null;
 
-        // Find/create histogramm. For the counter @see #methodMetricName(Method, int).
-        for (int i = 0; i < 4; ++i) {
+        // Find/create histogramm.
+        for (int i = 0; i < MAX_ABBREVIATE_NAME_LVL; ++i) {
             String methodMetricName = methodMetricName(method, i);
 
             synchronized (metricRegistry) {
@@ -1084,6 +1061,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
         }
+
+        assert histogram != null;
 
         return histogram;
     }
@@ -1273,7 +1252,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 int cancelCnt = ctxs.size() - assignCnt;
 
                 if (metricsEnabled && cancelCnt >= ctxs.size())
-                    ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
+                    unregisterMetrics(cfg.getName());
 
                 cancel(ctxs, cancelCnt);
             }
@@ -1302,11 +1281,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 // Initialize service.
                 srvc.init(srvcCtx);
-
-                if (metricsEnabled)
-                    registerMetrics(srvc, srvcCtx.name());
-
-                srvcCtx.service(localServiceProxy(srvc, srvcCtx.name()));
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
@@ -1322,6 +1296,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
+
+            if (metricsEnabled)
+                registerMetrics(srvc, srvcCtx.name());
+
+            srvcCtx.service(serviceInvocationProxy(srvc, srvcCtx.name()));
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1474,8 +1453,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (ctxs != null) {
             synchronized (ctxs) {
-                if (metricsEnabled)
-                    ctxs.stream().findFirst().ifPresent(this::unregisterMetrics);
+                if (metricsEnabled && !ctxs.isEmpty())
+                    unregisterMetrics(ctxs.iterator().next().name());
 
                 cancel(ctxs, ctxs.size());
             }
@@ -1880,7 +1859,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Registers metrics for timings of service. Traverces all methods of service-related interfaces.
      *
-     * @param srvc Service for ivocations measurement.
+     * @param srvc     Service for ivocations measurement.
      * @param srvcName Name of {@code srvc}.
      */
     private void registerMetrics(Service srvc, String srvcName) {
@@ -1891,23 +1870,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 Map<Method, HistogramMetricImpl> srvcHistograms = invocationHistograms.computeIfAbsent(srvcName,
                     name -> new HashMap<>(1));
 
-                srvcHistograms.computeIfAbsent(mtd, key -> {
-                    HistogramMetricImpl histogram = invocationsMetric(srvcName, mtd);
-
-                    assert histogram != null;
-
-                    return histogram;
-                });
+                srvcHistograms.computeIfAbsent(mtd, mtdKey -> invocationsMetric(srvcName, mtdKey));
             });
     }
 
     /**
-     * Removes metrics for service {@code srvcCtx}
+     * Removes metrics for service {@code srvcName}
      *
-     * @param srvcCtx Service context.
+     * @param srvcName Service name.
      */
-    private void unregisterMetrics(ServiceContext srvcCtx) {
-        ctx.metric().remove(serviceMetricRegistryName(srvcCtx.name()));
+    private void unregisterMetrics(String srvcName) {
+        ctx.metric().remove(serviceMetricRegistryName(srvcName));
+
+        invocationHistograms.remove(srvcName);
     }
 
     /**
@@ -1956,6 +1931,27 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         opsLock.readLock().unlock();
     }
 
+    /**
+     * Creates a proxy or direct link to the service depending on {@link #metricsEnabled}. If {@link #metricsEnabled} is
+     * {@code True} requires metrics registered for service {@code srvcName}.
+     *
+     * @param srvc     The serive to wrap into invocation proxy.
+     * @param srvcName Name of service {@code srvc}.
+     * @return Local service proxy allowing timing of service method if {@code metricsEnabled} is {@code True}. If
+     * {@code metricsEnabled} is {@code False}, returns the service instance {@code srvc}.
+     */
+    private Service serviceInvocationProxy(Service srvc, String srvcName) {
+        if (metricsEnabled) {
+            return (Service)Proxy.newProxyInstance(
+                srvc.getClass().getClassLoader(),
+                getInterfaces(srvc.getClass()).toArray(new Class<?>[0]),
+                new TimingInvocationHandler(srvc, invocationHistograms.get(srvcName))
+            );
+        }
+        else
+            return srvc;
+    }
+
     /** Invocation proxy handler for service to measure durations of its methods. */
     private static class TimingInvocationHandler implements InvocationHandler {
         /** The service to call. */
@@ -1975,7 +1971,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) throws Throwable {
-            if (mtd.getDeclaringClass().equals(Service.class))
+            // Skip Service invokes like Service#execute(ServiceContext) and Object invokes like Object#toString().
+            if (mtd.getDeclaringClass().equals(Service.class) || mtd.getDeclaringClass().equals(Object.class))
                 return mtd.invoke(svc, args);
 
             boolean accessible = mtd.isAccessible();
@@ -1983,21 +1980,17 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             // Support not-public invocations like of package level interfaces.
             mtd.setAccessible(true);
 
-            long time = System.nanoTime();
+            long startTime = System.nanoTime();
 
             try {
-                Object res = mtd.invoke(svc, args);
-
-                time = U.nanosToMillis(System.nanoTime() - time);
-
-                invocationHistograms.get(mtd).value(time);
-
-                return res;
+                return mtd.invoke(svc, args);
             }
             catch (InvocationTargetException e) {
                 throw e.getTargetException();
             }
             finally {
+                invocationHistograms.get(mtd).value(U.nanosToMillis(System.nanoTime() - startTime));
+
                 mtd.setAccessible(accessible);
             }
         }

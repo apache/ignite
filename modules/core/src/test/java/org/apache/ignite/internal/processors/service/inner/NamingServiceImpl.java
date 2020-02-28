@@ -16,16 +16,16 @@ public class NamingServiceImpl implements NamingService {
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) throws Exception {
-
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) throws Exception {
-
+        // No-op.
     }
 }
