@@ -62,7 +62,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
 
     /** */
     private static final String IDX_ISSUE_STR = "IndexValidationIssue \\[key=[0-9]*, cacheName=" + CACHE_NAME +
-        ", idxName=null], class java.lang.RuntimeException: " + EXCEPTION_MSG;
+        ", idxName=bad_index], class java.lang.RuntimeException: " + EXCEPTION_MSG;
 
     /** */
     private List<LogListener> lsnrs = new ArrayList<>();
