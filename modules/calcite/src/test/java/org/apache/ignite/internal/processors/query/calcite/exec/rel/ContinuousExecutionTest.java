@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
+package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Iterator;
@@ -23,12 +23,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.trait.AllNodes;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,7 +56,8 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             new Object[]{100, 10},
             new Object[]{100_000, 1},
             new Object[]{100_000, 5},
-            new Object[]{100_000, 10});
+            new Object[]{100_000, 10}
+        );
     }
 
     /**
@@ -115,19 +112,22 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
             ExecutionContext ectx = executionContext(localNodeId, queryId, 0);
 
             ScanNode scan = new ScanNode(ectx, iterable);
-            ProjectNode project = new ProjectNode(ectx, scan, r -> new Object[]{r[0], r[1], r[5]});
-            FilterNode filter = new FilterNode(ectx, project, r -> (Integer) r[0] >= 2);
+
+            ProjectNode project = new ProjectNode(ectx, r -> new Object[]{r[0], r[1], r[5]});
+            project.register(scan);
+
+            FilterNode filter = new FilterNode(ectx, r -> (Integer) r[0] >= 2);
+            filter.register(project);
 
             MailboxRegistry registry = mailboxRegistry(localNodeId);
 
-            Outbox<Object[]> outbox = new Outbox<>(
-                ectx, exchangeService(localNodeId),
-                registry,
-                filter, 0, 1, new AllNodes(nodes.subList(0, 1)));
+            Outbox<Object[]> outbox = new Outbox<>(ectx, exchangeService(localNodeId), registry,
+                0, 1, new AllNodes(nodes.subList(0, 1)));
 
+            outbox.register(filter);
             registry.register(outbox);
 
-            outbox.context().execute(outbox::request);
+            outbox.context().execute(outbox::init);
         }
 
         UUID localNodeId = nodes.get(0);
@@ -141,7 +141,9 @@ public class ContinuousExecutionTest extends AbstractExecutionTest {
 
         inbox.init(ectx, nodes.subList(1, nodes.size()), null);
 
-        RootNode node = new RootNode(ectx, inbox);
+        RootNode node = new RootNode(ectx, r -> {});
+
+        node.register(inbox);
 
         while (node.hasNext()) {
             Object[] row = node.next();

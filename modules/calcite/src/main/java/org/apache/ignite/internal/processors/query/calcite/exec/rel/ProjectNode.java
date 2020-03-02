@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.function.Function;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-12449
+ *
  */
-public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]> {
+public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Upstream<Object[]> {
     /** */
     private final Function<Object[], Object[]> projection;
 
@@ -31,29 +32,58 @@ public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Ob
      * @param ctx Execution context.
      * @param projection Projection.
      */
-    public ProjectNode(ExecutionContext ctx, Node<Object[]> input, Function<Object[], Object[]> projection) {
-        super(ctx, input);
+    public ProjectNode(ExecutionContext ctx, Function<Object[], Object[]> projection) {
+        super(ctx);
 
         this.projection = projection;
-
-        link();
     }
 
     /** {@inheritDoc} */
-    @Override public Sink<Object[]> sink(int idx) {
-        if (idx != 0)
-            throw new IndexOutOfBoundsException();
+    @Override public void request(int rowsCount) {
+        checkThread();
 
-        return this;
+        assert !F.isEmpty(sources) && sources.size() == 1;
+
+        F.first(sources).request(rowsCount);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean push(Object[] row) {
-        return target().push(projection.apply(row));
+    @Override public void push(Object[] row) {
+        checkThread();
+
+        assert upstream != null;
+
+        try {
+            upstream.push(projection.apply(row));
+        }
+        catch (Throwable e) {
+            upstream.onError(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        target().end();
+        checkThread();
+
+        assert upstream != null;
+
+        upstream.end();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onError(Throwable e) {
+        checkThread();
+
+        assert upstream != null;
+
+        upstream.onError(e);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+        if (idx != 0)
+            throw new IndexOutOfBoundsException();
+
+        return this;
     }
 }

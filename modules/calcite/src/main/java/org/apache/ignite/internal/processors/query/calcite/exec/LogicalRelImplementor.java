@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Implements a query plan.
@@ -101,7 +102,8 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         Destination destination = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, visit(rel.getInput()), ctx.fragmentId(), targetFragmentId, destination);
+        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, ctx.fragmentId(), targetFragmentId, destination);
+        outbox.register(visit(rel.getInput()));
 
         mailboxRegistry.register(outbox);
 
@@ -111,20 +113,29 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
         Predicate<Object[]> predicate = expressionFactory.predicate(ctx, rel.getCondition(), rel.getRowType());
-        return new FilterNode(ctx, visit(rel.getInput()), predicate);
+        FilterNode node = new FilterNode(ctx, predicate);
+        node.register(visit(rel.getInput()));
+
+        return node;
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteProject rel) {
         Function<Object[], Object[]> projection = expressionFactory.project(ctx, rel.getProjects(), rel.getInput().getRowType());
-        return new ProjectNode(ctx, visit(rel.getInput()), projection);
+        ProjectNode node = new ProjectNode(ctx, projection);
+        node.register(visit(rel.getInput()));
+
+        return node;
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteJoin rel) {
         RelDataType rowType = Commons.combinedRowType(ctx.getTypeFactory(), rel.getLeft().getRowType(), rel.getRight().getRowType());
         Predicate<Object[]> condition = expressionFactory.predicate(ctx, rel.getCondition(), rowType);
-        return new JoinNode(ctx, visit(rel.getLeft()), visit(rel.getRight()), condition);
+        JoinNode node = new JoinNode(ctx, condition);
+        node.register(F.asList(visit(rel.getLeft()), visit(rel.getRight())));
+
+        return node;
     }
 
     /** {@inheritDoc} */
@@ -143,7 +154,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
             case INSERT:
             case UPDATE:
             case DELETE:
-                return new ModifyNode(ctx, rel.getTable().unwrap(TableDescriptor.class), rel.getOperation(), rel.getUpdateColumnList(), visit(rel.getInput()));
+                ModifyNode node = new ModifyNode(ctx, rel.getTable().unwrap(TableDescriptor.class), rel.getOperation(), rel.getUpdateColumnList());
+                node.register(visit(rel.getInput()));
+
+                return node;
             case MERGE:
                 throw new UnsupportedOperationException();
             default:

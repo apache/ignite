@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplem
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
@@ -891,7 +892,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode consumer = new RootNode(ectx, exec);
+            RootNode consumer = new RootNode(ectx, r -> {});
+            consumer.register(exec);
 
             //// Remote part
 
@@ -950,7 +952,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             //// Start execution
 
-            exec.context().execute(exec::request);
+            assert exec instanceof Outbox;
+
+            exec.context().execute(((Outbox<Object[]>) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -1111,7 +1115,8 @@ public class PlannerTest extends GridCommonAbstractTest {
             exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode consumer = new RootNode(ectx, exec);
+            RootNode consumer = new RootNode(ectx, r -> {});
+            consumer.register(exec);
 
             //// Remote part
 
@@ -1170,7 +1175,9 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             //// Start execution
 
-            exec.context().execute(exec::request);
+            assert exec instanceof Outbox;
+
+            exec.context().execute(((Outbox<Object[]>) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 

@@ -39,10 +39,7 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 /**
  *
  */
-public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]> {
-    /** */
-    private static final int BATCH_SIZE = 100;
-
+public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Upstream<Object[]> {
     /** */
     protected final TableDescriptor desc;
 
@@ -53,10 +50,19 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
     private final List<String> columns;
 
     /** */
-    private final Map<Object,Object> tuples = U.newLinkedHashMap(BATCH_SIZE);
+    private List<IgniteBiTuple<?, ?>> tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
     /** */
     private long updatedRows;
+
+    /** */
+    private int waiting;
+
+    /** */
+    private int requested;
+
+    /** */
+    private boolean inLoop;
 
     /** */
     private State state = State.UPDATING;
@@ -65,125 +71,168 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
      * @param ctx Execution context.
      * @param desc Table descriptor.
      * @param columns Update column list.
-     * @param input Input node.
      */
-    public ModifyNode(ExecutionContext ctx, TableDescriptor desc, TableModify.Operation op, List<String> columns, Node<Object[]> input) {
-        super(ctx, input);
+    public ModifyNode(ExecutionContext ctx, TableDescriptor desc, TableModify.Operation op, List<String> columns) {
+        super(ctx);
 
         this.desc = desc;
         this.op = op;
         this.columns = columns;
-
-        link();
     }
 
     /** {@inheritDoc} */
-    @Override public Sink<Object[]> sink(int idx) {
+    @Override public void request(int rowsCount) {
+        checkThread();
+
+        assert !F.isEmpty(sources) && sources.size() == 1;
+        assert requested == 0 && rowsCount > 0;
+
+        requested = rowsCount;
+
+        if (state == State.UPDATING && waiting == 0)
+            F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
+
+        if (!inLoop)
+            tryEnd();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void push(Object[] row) {
+        checkThread();
+
+        assert upstream != null;
+        assert waiting > 0;
+        assert state == State.UPDATING;
+
+        waiting--;
+
+        try {
+            switch (op) {
+                case DELETE:
+                case UPDATE:
+                case INSERT:
+                    addToBatch(row);
+
+                    break;
+                default:
+                    throw new UnsupportedOperationException(op.name());
+            }
+
+            if (waiting == 0)
+                F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
+        }
+        catch (Exception e) {
+            upstream.onError(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void end() {
+        checkThread();
+
+        assert upstream != null;
+
+        state = State.UPDATED;
+        waiting = 0;
+
+        tryEnd();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onError(Throwable e) {
+        checkThread();
+
+        assert upstream != null;
+
+        upstream.onError(e);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Upstream<Object[]> requestUpstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public void request() {
-        checkThread();
+    /** */
+    private void addToBatch(Object[] row) throws IgniteCheckedException {
+        tuples.add(desc.toTuple(context(), row, op, columns));
 
-        if (state == State.UPDATING)
-            input().request();
-        else if (state == State.UPDATED)
-            endInternal();
-        else
-            assert state == State.END;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean push(Object[] row) {
-        if (state != State.UPDATING)
-            return false;
-
-        switch (op) {
-            case DELETE:
-            case UPDATE:
-            case INSERT:
-                addToBatch(row);
-
-                break;
-            default:
-                throw new UnsupportedOperationException(op.name());
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void end() {
-        state = State.UPDATED;
-
-        endInternal();
+        flush(false);
     }
 
     /** */
-    private void addToBatch(Object[] row) {
+    private void tryEnd() {
+        assert upstream != null;
+
+        inLoop = true;
         try {
-            IgniteBiTuple<?, ?> t = desc.toTuple(context(), row, op, columns);
-            tuples.put(t.getKey(), t.getValue());
-            flush(false);
+            if (requested > 0 && state == State.UPDATED) {
+                flush(true);
+
+                state = State.END;
+
+                requested--;
+                upstream.push(new Object[]{updatedRows});
+
+                upstream.end();
+                requested = 0;
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (Exception e) {
+            upstream.onError(e);
+        }
+        finally {
+            inLoop = false;
         }
     }
 
     /** */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private void flush(boolean force) {
-        if (F.isEmpty(tuples) || !force && tuples.size() < BATCH_SIZE)
+    private void flush(boolean force) throws IgniteCheckedException {
+        if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
 
-        try {
-            Map<Object, EntryProcessorResult<Long>> res =
-                ((GridCacheAdapter) desc.cacheContext().cache()).invokeAll(invokeMap());
+        List<IgniteBiTuple<?, ?>> tuples = this.tuples;
+        this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
-            long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
+        Map<Object, EntryProcessorResult<Long>> res =
+            ((GridCacheAdapter) desc.cacheContext().cache()).invokeAll(invokeMap(tuples));
 
-            if (op == TableModify.Operation.INSERT && updated != res.size()) {
-                List<Object> duplicates = new ArrayList<>(res.size());
+        long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 
-                for (Map.Entry<Object, EntryProcessorResult<Long>> e : res.entrySet()) {
-                    if (e.getValue().get() == 0)
-                        duplicates.add(e.getKey());
-                }
+        if (op == TableModify.Operation.INSERT && updated != res.size()) {
+            List<Object> duplicates = new ArrayList<>(res.size());
 
-                throw duplicateKeysException(duplicates);
+            for (Map.Entry<Object, EntryProcessorResult<Long>> e : res.entrySet()) {
+                if (e.getValue().get() == 0)
+                    duplicates.add(e.getKey());
             }
 
-            updatedRows += updated;
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+            throw duplicateKeysException(duplicates);
         }
 
-        tuples.clear();
+        updatedRows += updated;
     }
 
     /** */
-    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap() {
-        Map<Object, EntryProcessor<Object, Object, Long>> procMap = U.newLinkedHashMap(BATCH_SIZE);
+    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<IgniteBiTuple<?,?>> tuples) {
+        Map<Object, EntryProcessor<Object, Object, Long>> procMap = U.newLinkedHashMap(tuples.size());
 
         switch (op) {
             case INSERT:
-                for (Map.Entry<Object, Object> entry : tuples.entrySet())
+                for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new InsertOperation(entry.getValue()));
 
                 break;
             case UPDATE:
-                for (Map.Entry<Object, Object> entry : tuples.entrySet())
+                for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new UpdateOperation(entry.getValue()));
 
                 break;
             case DELETE:
-                for (Map.Entry<Object, Object> entry : tuples.entrySet())
+                for (IgniteBiTuple<?, ?> entry : tuples)
                     procMap.put(entry.getKey(), new DeleteOperation());
 
                 break;
@@ -198,16 +247,6 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
     private IgniteSQLException duplicateKeysException(List<Object> keys) {
         return new IgniteSQLException("Failed to INSERT some keys because they are already in cache [keys=" +
             keys + ']', DUPLICATE_KEY);
-    }
-
-    /** */
-    private void endInternal() {
-        flush(true);
-
-        if (target().push(new Object[]{updatedRows})) {
-            state = State.END;
-            target().end();
-        }
     }
 
     /** */

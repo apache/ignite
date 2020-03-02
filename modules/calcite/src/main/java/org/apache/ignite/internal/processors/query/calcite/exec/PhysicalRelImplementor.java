@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.TableScanPh
 import org.apache.ignite.internal.processors.query.calcite.serialize.ValuesPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Converts RelGraph to logical or physical tree.
@@ -92,17 +93,26 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(FilterPhysicalRel rel) {
-        return new FilterNode(ctx, visit(rel.input()), expressionFactory.predicate(ctx, rel.condition(), rel.rowType()));
+        FilterNode node = new FilterNode(ctx, expressionFactory.predicate(ctx, rel.condition(), rel.rowType()));
+        node.register(visit(rel.input()));
+
+        return node;
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(ProjectPhysicalRel rel) {
-        return new ProjectNode(ctx, visit(rel.input()), expressionFactory.project(ctx, rel.projects(), rel.rowType()));
+        ProjectNode node = new ProjectNode(ctx, expressionFactory.project(ctx, rel.projects(), rel.rowType()));
+        node.register(visit(rel.input()));
+
+        return node;
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(JoinPhysicalRel rel) {
-        return new JoinNode(ctx, visit(rel.left()), visit(rel.right()), expressionFactory.predicate(ctx, rel.condition(), rel.rowType()));
+        JoinNode node = new JoinNode(ctx, expressionFactory.predicate(ctx, rel.condition(), rel.rowType()));
+        node.register(F.asList(visit(rel.left()), visit(rel.right())));
+
+        return node;
     }
 
     /** {@inheritDoc} */
@@ -111,7 +121,8 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
             .destination(partitionService, rel.mapping(), rel.distributionKeys());
 
         Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry,
-            visit(rel.input()), ctx.fragmentId(), rel.targetFragmentId(), destination);
+            ctx.fragmentId(), rel.targetFragmentId(), destination);
+        outbox.register(visit(rel.input()));
 
         mailboxRegistry.register(outbox);
 
@@ -141,7 +152,10 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
             case UPDATE:
             case DELETE:
                 TableDescriptor desc = ctx.parent().catalogReader().getTable(rel.tableName()).unwrap(TableDescriptor.class);
-                return new ModifyNode(ctx, desc, rel.operation(), rel.updateColumnList(), visit(rel.input()));
+                ModifyNode node = new ModifyNode(ctx, desc, rel.operation(), rel.updateColumnList());
+                node.register(visit(rel.input()));
+
+                return node;
             case MERGE:
                 throw new UnsupportedOperationException();
             default:

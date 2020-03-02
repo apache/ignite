@@ -625,9 +625,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         // register query
         register(info);
 
-        // start local execution
-        info.consumer.request();
-
         // start remote execution
         if (fragments.size() > 1) {
             RelToPhysicalConverter converter = new RelToPhysicalConverter(ectx.getTypeFactory());
@@ -749,7 +746,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             assert node instanceof Outbox : node;
 
-            node.context().execute(node::request);
+            node.context().execute(((Outbox<Object[]>) node)::init);
 
             messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId()));
         }
@@ -894,7 +891,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private QueryInfo(ExecutionContext ctx, List<Fragment> fragments, Node<Object[]> root) {
             this.ctx = ctx;
 
-            consumer = new RootNode(ctx, root, ExecutionServiceImpl.this::onCursorClose);
+            RootNode consumer = new RootNode(ctx, ExecutionServiceImpl.this::onCursorClose);
+            consumer.register(root);
+
+            this.consumer = consumer;
 
             remotes = new HashSet<>();
             waiting = new HashSet<>();

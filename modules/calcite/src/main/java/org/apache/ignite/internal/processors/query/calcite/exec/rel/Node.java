@@ -23,8 +23,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 /**
  * Represents a node of execution tree.
  *
- * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request()}, {@link Node#cancel()},
- * {@link Node#reset()}, {@link Sink#push(Object)} and {@link Sink#end()} methods should be used from one single thread.
+ * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#cancel()},
+ * {@link Upstream#push(Object)} and {@link Upstream#end()} methods should be used from one single thread.
  */
 public interface Node<T> {
     /**
@@ -35,51 +35,26 @@ public interface Node<T> {
     ExecutionContext context();
 
     /**
-     * Requests a sink of the node. The sink is used to push data into the node by its children.
+     * Registers node sources.
      *
-     * @param idx Sink index.
-     * @return Sink object.
-     * @throws IndexOutOfBoundsException in case there is no Sink object associated with given index.
+     * @param sources Sources collection.
      */
-    Sink<T> sink(int idx);
+    void register(List<Node<T>> sources);
 
     /**
      * Registers target sink.
      *
-     * @param sink Target sink.
+     * @param upstream Target sink.
      */
-    void target(Sink<T> sink);
+    void onRegister(Upstream<T> upstream);
 
     /**
-     * @return Registered target.
+     * Requests next bunch of rows.
      */
-    Sink<T> target();
-
-    /**
-     * @return Node inputs collection.
-     */
-    List<Node<T>> inputs();
-
-    /**
-     * @param idx Input index.
-     * @return Node input.
-     */
-    default Node<T> input(int idx) {
-        return inputs().get(idx);
-    }
-
-    /**
-     * Signals that consumer is ready to consume data.
-     */
-    void request();
+    void request(int rowsCount);
 
     /**
      * Cancels execution.
      */
     void cancel();
-
-    /**
-     * Resets execution sub-tree to initial state.
-     */
-    void reset();
 }

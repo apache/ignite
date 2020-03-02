@@ -17,23 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.Objects;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * A node with a single input
  */
 public interface SingleNode<T> extends Node<T> {
-    /**
-     * @return Single sink object.
-     */
-    default Sink<T> sink() {
-        return Objects.requireNonNull(sink(0));
-    }
-
-    /**
-     * @return Single input.
-     */
-    default Node<T> input() {
-        return Objects.requireNonNull(input(0));
+    /** */
+    default void register(Node<T> source) {
+        register(F.asList(source));
     }
 }

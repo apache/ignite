@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
@@ -27,12 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
  *
  */
 public interface ExchangeService extends Service {
-    /** A number of rows in a single batch. */
-    int BATCH_SIZE = 200;
-
-    /** A maximum allowed unprocessed batches count per node. */
-    int PER_NODE_BATCH_COUNT = 10;
-
     /**
      * Sends a batch of data to remote node.
      *
@@ -56,7 +51,7 @@ public interface ExchangeService extends Service {
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void acknowledge(Inbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
+    void acknowledge(Inbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 
     /**
      * Sends cancel request.

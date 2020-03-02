@@ -25,21 +25,16 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Client iterator.
  */
-public class RootNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Sink<Object[]>, Iterator<Object[]>, AutoCloseable {
-    /** */
-    public static final Consumer<RootNode> NO_OP = c -> {};
-
-    /** */
-    private static final int DEFAULT_BUFFER_SIZE = 1000;
-
+public class RootNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Upstream<Object[]>, Iterator<Object[]>, AutoCloseable {
     /** */
     public enum State {
         RUNNING, CANCELLED, END
@@ -52,86 +47,39 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     private final Condition cond;
 
     /** */
-    private final int bufferSize;
-
-    /** */
     private final ArrayDeque<Object> buff;
 
     /** */
     private final Consumer<RootNode> onClose;
 
     /** */
-    private Object cur;
-
-    /** */
-    private boolean requested;
-
-    /** */
     private volatile State state = State.RUNNING;
 
-    /**
-     * @param ctx Execution context.
-     */
-    public RootNode(ExecutionContext ctx, Node<Object[]> input) {
-        this(ctx, input, DEFAULT_BUFFER_SIZE);
-    }
+    /** */
+    private volatile IgniteSQLException ex;
+
+    /** */
+    private Object row;
+
+    /** */
+    private int waiting;
 
     /**
      * @param ctx Execution context.
      */
-    public RootNode(ExecutionContext ctx, Node<Object[]> input, Consumer<RootNode> onClose) {
-        this(ctx, input, DEFAULT_BUFFER_SIZE, onClose);
-    }
+    public RootNode(ExecutionContext ctx, Consumer<RootNode> onClose) {
+        super(ctx);
 
-    /**
-     * @param ctx        Execution context.
-     * @param input      Input node.
-     * @param bufferSize Buffer size.
-     */
-    public RootNode(ExecutionContext ctx, Node<Object[]> input, int bufferSize) {
-        this(ctx, input, bufferSize, NO_OP);
-    }
-
-    /**
-     * @param ctx Execution context.
-     */
-    public RootNode(ExecutionContext ctx, Node<Object[]> input, int bufferSize, Consumer<RootNode> onClose) {
-        super(ctx, input);
-
-        this.bufferSize = bufferSize;
         this.onClose = onClose;
 
         // extra space for possible END marker
-        buff = new ArrayDeque<>(bufferSize + 1);
+        buff = new ArrayDeque<>(IN_BUFFER_SIZE + 1);
         lock = new ReentrantLock();
         cond = lock.newCondition();
-
-        link();
     }
     
     public UUID queryId() {
         return context().queryId();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Sink<Object[]> sink(int idx) {
-        if (idx != 0)
-            throw new IndexOutOfBoundsException();
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void request() {
-        context().execute(this::requestInternal);
-    }
-
-    /** */
-    private void requestInternal() {
-        checkThread();
-
-        if (state == State.RUNNING)
-            input().request();
     }
 
     /** {@inheritDoc} */
@@ -144,7 +92,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
             if (state != State.RUNNING)
                 return;
 
-            context().setCancelled();
+            context().markCancelled();
             state = State.CANCELLED;
             buff.clear();
             cond.signalAll();
@@ -153,7 +101,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
             lock.unlock();
         }
         
-        context().execute(input()::cancel);
+        context().execute(F.first(sources)::cancel);
         onClose.accept(this);
     }
 
@@ -170,37 +118,41 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public boolean push(Object[] row) {
-        if (state != State.RUNNING)
-            return false;
+    @Override public void push(Object[] row) {
+        checkThread();
+
+        int request = 0;
 
         lock.lock();
         try {
-            if (state != State.RUNNING)
-                return false;
+            assert waiting > 0;
 
-            if (buff.size() == bufferSize) {
-                requested = false;
-                return false;
-            }
+            waiting--;
+
+            if (state != State.RUNNING)
+                return;
 
             buff.offer(row);
+
+            if (waiting == 0)
+                waiting = request = IN_BUFFER_SIZE - buff.size();
+
             cond.signalAll();
         }
         finally {
             lock.unlock();
         }
 
-        return true;
+        if (request > 0)
+            F.first(sources).request(request);
     }
 
     /** {@inheritDoc} */
     @Override public void end() {
-        if (state != State.RUNNING)
-            return;
-
         lock.lock();
         try {
+            waiting = 0;
+
             if (state != State.RUNNING)
                 return;
 
@@ -213,13 +165,22 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
+    @Override public void onError(Throwable e) {
+        checkThread();
+
+        ex = new IgniteSQLException("An error occurred while query executing.", IgniteQueryErrorCode.UNKNOWN, e);
+
+        cancel();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        if (cur != null)
+        if (row != null)
             return true;
         else if (state == State.END)
             return false;
         else
-            return (cur = take()) != null;
+            return (row = take()) != null;
     }
 
     /** {@inheritDoc} */
@@ -227,21 +188,35 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
         if (!hasNext())
             throw new NoSuchElementException();
 
-        Object cur0 = cur;
-        cur = null;
+        Object cur0 = row;
+        row = null;
 
         return (Object[]) cur0;
     }
 
+    /** {@inheritDoc} */
+    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+        if (idx != 0)
+            throw new IndexOutOfBoundsException();
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onRegister(Upstream<Object[]> upstream) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void request(int rowsCount) {
+        throw new UnsupportedOperationException();
+    }
+
     /** */
     private Object take() {
-        if (state == State.CANCELLED)
-            throw U.convertException(new QueryCancelledException());
-
         lock.lock();
         try {
-            if (state == State.CANCELLED)
-                throw U.convertException(new QueryCancelledException());
+            checkCancelled();
 
             assert state == State.RUNNING;
 
@@ -250,8 +225,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
                 cond.await();
 
-                if (state == State.CANCELLED)
-                    throw U.convertException(new QueryCancelledException());
+                checkCancelled();
 
                 assert state == State.RUNNING;
             }
@@ -278,11 +252,25 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** */
+    private void checkCancelled() {
+        if (state == State.CANCELLED) {
+            if (ex != null)
+                throw ex;
+
+            throw new IgniteSQLException("The query was cancelled while executing.", IgniteQueryErrorCode.QUERY_CANCELED);
+        }
+    }
+
+    /** */
     private void requestIfNeeded() {
-        if (requested)
+        assert lock.isHeldByCurrentThread();
+
+        if (waiting != 0)
             return;
 
-        request();
-        requested = true;
+        int request = waiting = IN_BUFFER_SIZE - buff.size();
+
+        if (request > 0)
+            context().execute(() -> F.first(sources).request(request));
     }
 }

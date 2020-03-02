@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Iterator;
-import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
+import java.util.List;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -33,7 +34,10 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
     private Iterator<Object[]> it;
 
     /** */
-    private Object row;
+    private int requested;
+
+    /** */
+    private boolean inLoop;
 
     /**
      * @param ctx Execution context.
@@ -46,70 +50,76 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void request() {
-        try {
-            requestInternal();
-        }
-        catch (Exception e) {
-            Commons.closeQuiet(it, e);
-
-            throw e;
-        }
-    }
-
-    /** */
-    private void requestInternal() {
+    @Override public void request(int rowsCount) {
         checkThread();
 
-        if (context().cancelled()
-            || row == EndMarker.INSTANCE
-            || row != null && !target().push((Object[]) row))
-            return;
+        assert requested == 0;
+        assert rowsCount > 0;
 
-        if (it == null)
-            it = source.iterator();
+        requested = rowsCount;
 
-        Thread thread = Thread.currentThread();
+        if (!inLoop)
+            context().execute(this::pushInternal);
+    }
 
-        while (it.hasNext()) {
-            if (context().cancelled() || thread.isInterrupted()) {
-                row = null;
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        checkThread();
 
-                close();
+        context().markCancelled();
 
-                return;
-            }
-
-            row = it.next();
-
-            // TODO load balancing - resubmit this::request() in case of long execution
-
-            if (!target().push((Object[]) row))
-                return;
-        }
-
-        try {
-            row = EndMarker.INSTANCE;
-
-            target().end();
-        }
-        finally {
-            close();
-        }
+        close();
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
         Commons.closeQuiet(it);
-
-        it = null;
-
-        if (row != EndMarker.INSTANCE)
-            row = null;
     }
 
     /** {@inheritDoc} */
-    @Override public Sink<Object[]> sink(int idx) {
-        throw new AssertionError();
+    @Override public void register(List<Node<Object[]>> sources) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** */
+    private void pushInternal() {
+        inLoop = true;
+        try {
+            if (it == null)
+                it = source.iterator();
+
+            Thread thread = Thread.currentThread();
+
+            while (requested > 0 && it.hasNext()) {
+                if (context().cancelled())
+                    return;
+
+                if (thread.isInterrupted())
+                    throw new IgniteInterruptedCheckedException("Thread was interrupted.");
+
+                requested--;
+                upstream.push(it.next());
+            }
+
+            if (!it.hasNext()) {
+                upstream.end();
+                requested = 0;
+
+                close();
+            }
+        }
+        catch (Throwable e) {
+            close();
+
+            upstream.onError(e);
+        }
+        finally {
+            inLoop = false;
+        }
     }
 }

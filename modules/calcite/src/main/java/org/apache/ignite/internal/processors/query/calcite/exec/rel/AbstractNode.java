@@ -17,73 +17,50 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Abstract node of execution tree.
  */
 public abstract class AbstractNode<T> implements Node<T> {
+    /** */
+    protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE", 512);
+
+    /** */
+    protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_BATCH_SIZE", 100);
+
+    /** */
+    protected static final int IO_BATCH_SIZE = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_SIZE", 200);
+
+    /** */
+    protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 50);
+
     /** for debug purpose */
     private volatile Thread thread;
-
-    /** */
-    private final ImmutableList<Node<T>> inputs;
-
-    /** */
-    private Sink<T> target;
 
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
      * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
      */
-    private ExecutionContext ctx;
+    protected ExecutionContext ctx;
+
+    /** */
+    protected Upstream<T> upstream;
+
+    /** */
+    protected List<Node<T>> sources;
 
     /**
      * @param ctx Execution context.
      */
     protected AbstractNode(ExecutionContext ctx) {
-        this(ctx, ImmutableList.of());
-    }
-
-    /**
-     * @param ctx Execution context.
-     */
-    protected AbstractNode(ExecutionContext ctx, @NotNull Node<T> input) {
-        this(ctx, ImmutableList.of(input));
-    }
-
-    /**
-     * @param ctx Execution context.
-     */
-    protected AbstractNode(ExecutionContext ctx, @NotNull List<Node<T>> inputs) {
-        this.ctx = ctx;
-        this.inputs = ImmutableList.copyOf(inputs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void target(Sink<T> sink) {
-        target = sink;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Sink<T> target() {
-        return target;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Node<T>> inputs() {
-        return inputs;
-    }
-
-    /** */
-    protected void context(ExecutionContext ctx) {
         this.ctx = ctx;
     }
 
@@ -93,34 +70,30 @@ public abstract class AbstractNode<T> implements Node<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public void request() {
-        checkThread();
+    @Override public void register(List<Node<T>> sources) {
+        this.sources = sources;
 
-        inputs().forEach(Node::request);
+        for (int i = 0; i < sources.size(); i++)
+            sources.get(i).onRegister(requestUpstream(i));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onRegister(Upstream<T> upstream) {
+        this.upstream = upstream;
     }
 
     /** {@inheritDoc} */
     @Override public void cancel() {
         checkThread();
 
-        context().setCancelled();
-        inputs().forEach(Node::cancel);
+        context().markCancelled();
+
+        if (!F.isEmpty(sources))
+            sources.forEach(Node::cancel);
     }
 
-    /** {@inheritDoc} */
-    @Override public void reset() {
-        checkThread();
-
-        inputs().forEach(Node::reset);
-    }
-
-    /**
-     * Links the node inputs to the node sinks.
-     */
-    protected void link() {
-        for (int i = 0; i < inputs.size(); i++)
-            inputs.get(i).target(sink(i));
-    }
+    /** */
+    protected abstract Upstream<T> requestUpstream(int idx);
 
     /** */
     protected void checkThread() {

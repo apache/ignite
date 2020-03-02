@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -31,102 +33,191 @@ public class JoinNode extends AbstractNode<Object[]> {
     private final Predicate<Object[]> condition;
 
     /** */
-    private final ArraySink<Object[]> left;
+    private int requested;
 
     /** */
-    private final ArraySink<Object[]> right;
+    private int waitingLeft;
 
     /** */
-    private int leftIdx;
+    private int waitingRight;
+
+    /** */
+    private List<Object[]> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
+
+    /** */
+    private Deque<Object[]> leftInBuffer = new ArrayDeque<>(IN_BUFFER_SIZE);
+
+    /** */
+    private boolean inLoop;
+
+    /** */
+    private Object[] left;
 
     /** */
     private int rightIdx;
-
-    /** */
-    private boolean end;
 
     /**
      * @param ctx Execution context.
      * @param condition Join expression.
      */
-    public JoinNode(ExecutionContext ctx, Node<Object[]> left, Node<Object[]> right, Predicate<Object[]> condition) {
-        super(ctx, ImmutableList.of(left, right));
+    public JoinNode(ExecutionContext ctx, Predicate<Object[]> condition) {
+        super(ctx);
 
         this.condition = condition;
-        this.left = new ArraySink<>();
-        this.right = new ArraySink<>();
-
-        link();
     }
 
     /** {@inheritDoc} */
-    @Override public Sink<Object[]> sink(int idx) {
-        switch (idx) {
-            case 0:
-                return left;
-            case 1:
-                return right;
-            default:
-                throw new IndexOutOfBoundsException();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void request() {
+    @Override public void request(int rowsCount) {
         checkThread();
 
-        if (context().cancelled() || end)
-            return;
+        assert !F.isEmpty(sources) && sources.size() == 2;
+        assert rowsCount > 0 && requested == 0;
 
-        if (!left.end)
-            input(0).request();
-        if (!right.end)
-            input(1).request();
-        if (!end)
-            tryFlush();
+        requested = rowsCount;
+
+        if (!inLoop)
+            context().execute(this::flushFromBuffer);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+        if (idx == 0)
+            return new Upstream<Object[]>() {
+                /** {@inheritDoc} */
+                @Override public void push(Object[] row) {
+                    pushLeft(row);
+                }
+
+                /** {@inheritDoc} */
+                @Override public void end() {
+                    endLeft();
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onError(Throwable e) {
+                    JoinNode.this.onError(e);
+                }
+            };
+        else if (idx == 1)
+            return new Upstream<Object[]>() {
+                /** {@inheritDoc} */
+                @Override public void push(Object[] row) {
+                    pushRight(row);
+                }
+
+                /** {@inheritDoc} */
+                @Override public void end() {
+                    endRight();
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onError(Throwable e) {
+                    JoinNode.this.onError(e);
+                }
+            };
+
+        throw new IndexOutOfBoundsException();
     }
 
     /** */
-    public void tryFlush() {
-        assert !end;
+    private void pushLeft(Object[] row) {
+        checkThread();
 
-        if (left.end && right.end) {
-            for (int i = leftIdx; i < left.size(); i++) {
-                for (int j = rightIdx; j < right.size(); j++) {
-                    if (context().cancelled())
-                        return;
+        assert upstream != null;
 
-                    Object[] row = F.concat(left.get(i), right.get(j));
+        assert waitingLeft > 0;
 
-                    if (condition.test(row) && !target().push(row)) {
-                        leftIdx = i;
-                        rightIdx = j;
+        leftInBuffer.add(row);
 
-                        return;
+        flushFromBuffer();
+    }
+
+    /** */
+    private void pushRight(Object[] row) {
+        checkThread();
+
+        assert waitingRight > 0;
+
+        waitingRight--;
+
+        rightMaterialized.add(row);
+
+        if (waitingRight == 0)
+            sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+    }
+
+    /** */
+    private void endLeft() {
+        checkThread();
+
+        assert upstream != null;
+
+        waitingLeft = -1;
+
+        flushFromBuffer();
+    }
+
+    /** */
+    private void endRight() {
+        checkThread();
+
+        assert upstream != null;
+
+        waitingRight = -1;
+    }
+
+    /** */
+    private void onError(Throwable e) {
+        checkThread();
+
+        assert upstream != null;
+
+        upstream.onError(e);
+    }
+
+    /** */
+    private void flushFromBuffer() {
+        inLoop = true;
+        try {
+            if (waitingRight == 0)
+                sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+            else if (waitingRight == -1) {
+                while (requested > 0 && (left != null || !leftInBuffer.isEmpty())) {
+                    if (left == null)
+                        left = leftInBuffer.remove();
+
+                    while (requested > 0 && rightIdx < rightMaterialized.size()) {
+                        Object[] row = F.concat(left, rightMaterialized.get(rightIdx++));
+
+                        if (!condition.test(row))
+                            continue;
+
+                        requested--;
+                        upstream.push(row);
+                    }
+
+                    if (rightIdx == rightMaterialized.size()) {
+                        left = null;
+                        rightIdx = 0;
                     }
                 }
             }
 
-            end = true;
-            target().end();
+            if (leftInBuffer.isEmpty() && waitingLeft == 0)
+                sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
+
+            if (waitingLeft == -1 && waitingRight == -1 && requested > 0) {
+                assert leftInBuffer.isEmpty();
+
+                upstream.end();
+                requested = 0;
+            }
         }
-    }
-
-    /** */
-    private final class ArraySink<T> extends ArrayList<T> implements Sink<T> {
-        /** */
-        private boolean end;
-
-        /** {@inheritDoc} */
-        @Override public boolean push(T row) {
-            return add(row);
+        catch (Exception e) {
+            upstream.onError(e);
         }
-
-        /** {@inheritDoc} */
-        @Override public void end() {
-            end = true;
-
-            tryFlush();
+        finally {
+            inLoop = false;
         }
     }
 }
