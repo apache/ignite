@@ -1961,7 +1961,7 @@ public class IgnitionEx {
                 buildIdxExecSvc = new IgniteThreadPoolExecutor(
                     "build-idx-runner",
                     cfg.getIgniteInstanceName(),
-                    0,
+                    buildIdxThreadPoolSize,
                     buildIdxThreadPoolSize,
                     0,
                     new LinkedBlockingQueue<>(),

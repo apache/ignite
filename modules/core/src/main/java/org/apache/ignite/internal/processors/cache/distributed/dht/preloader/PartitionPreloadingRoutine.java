@@ -193,6 +193,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             if (log.isInfoEnabled())
                 log.info("Preloading partition files [supplier=" + nodeId + ", groups=" + currGroups + "]");
 
+            assert snapshotFut == null || snapshotFut.isDone() : snapshotFut;
+
             (snapshotFut = cctx.snapshotMgr()
                 .createRemoteSnapshot(nodeId,
                     assigns,
