@@ -313,7 +313,7 @@ public abstract class GridClientConnection {
      * Changes grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * After cluster deactivation all data from in-memory cache (including the system cache) will be lost.
+     * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
      * @see ClusterState#INACTIVE
      *
      * @param state New cluster state.

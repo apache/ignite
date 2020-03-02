@@ -36,7 +36,7 @@ public interface GridClientClusterState {
 
     /**
      * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
-     * @deprecated Use {@link #state(ClusterState)} instead.
+     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
     @Deprecated
     public boolean active() throws GridClientException;
@@ -48,23 +48,11 @@ public interface GridClientClusterState {
     public ClusterState state() throws GridClientException;
 
     /**
-     * Changes cluster state to {@code newState}.
-     * Fails if the operation is not safe.
-     * @see ClusterState#INACTIVE
-     *
-     * @param newState New cluster state.
-     * @throws GridClientException If the request to change the cluster state failed.
-     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
-     */
-    @Deprecated
-    public void state(ClusterState newState) throws GridClientException;
-
-    /**
      * Changes cluster state to {@code newState}. Fails if the operation is not safe and {@code force}
      * is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * After cluster deactivation all data from in-memory cache (including the system cache) will be lost.
+     * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
      * @see ClusterState#INACTIVE
      *
      * @param newState New cluster state.

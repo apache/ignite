@@ -56,7 +56,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void active(final boolean active) throws GridClientException {
-        state(active ? ACTIVE : INACTIVE);
+        state(active ? ACTIVE : INACTIVE, true);
     }
 
     /** {@inheritDoc} */
@@ -67,11 +67,6 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     /** {@inheritDoc} */
     @Override public ClusterState state() throws GridClientException {
         return withReconnectHandling(GridClientConnection::state).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void state(ClusterState newState) throws GridClientException {
-        state(newState, true);
     }
 
     /** {@inheritDoc} */
