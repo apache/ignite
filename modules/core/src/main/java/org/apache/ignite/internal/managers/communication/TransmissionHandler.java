@@ -41,6 +41,13 @@ import java.util.function.Consumer;
  */
 public interface TransmissionHandler {
     /**
+     *
+     */
+    public default void onEnd(UUID nodeId) {
+        // No-op.
+    }
+
+    /**
      * @param nodeId Remote node id on which the error occurred.
      * @param err The err of fail handling process.
      */
