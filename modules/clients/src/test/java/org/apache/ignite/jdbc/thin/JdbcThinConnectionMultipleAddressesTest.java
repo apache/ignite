@@ -322,8 +322,8 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
      * @return MBean.
      */
     private ClientProcessorMXBean clientProcessorBean(int igniteInt) {
-        return getMxBean(getTestIgniteInstanceName(igniteInt), "Clients", ClientListenerProcessor.class.getSimpleName(),
-            ClientProcessorMXBean.class);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Clients",
+            ClientListenerProcessor.class, ClientProcessorMXBean.class);
     }
 
     /**

@@ -40,7 +40,6 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
-import javax.management.MalformedObjectNameException;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.IgniteCache;
@@ -217,13 +216,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         IgniteCache c = ignite.createCache(n);
 
-        DynamicMBean cacheBean = mbean(ignite, CACHE_METRICS, n);
+        DynamicMBean cacheBean = metricRegistry(ignite.name(), CACHE_METRICS, n);
 
         assertNotNull(cacheBean);
 
         ignite.destroyCache(n);
 
-        assertThrowsWithCause(() -> mbean(ignite, CACHE_METRICS, n), IgniteException.class);
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), CACHE_METRICS, n), IgniteException.class);
     }
 
     /** */
@@ -457,7 +456,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport systemView(IgniteEx g, String name) {
         try {
-            DynamicMBean caches = mbean(g, VIEWS, name);
+            DynamicMBean caches = metricRegistry(g.name(), VIEWS, name);
 
             MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
 
@@ -473,7 +472,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport filteredSystemView(IgniteEx g, String name, Map<String, Object> filter) {
         try {
-            DynamicMBean mbean = mbean(g, VIEWS, name);
+            DynamicMBean mbean = metricRegistry(g.name(), VIEWS, name);
 
             MBeanOperationInfo[] opers = mbean.getMBeanInfo().getOperations();
 
@@ -496,11 +495,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /** */
-    public static DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
-        return getMxBean(g.name(), grp, name, DynamicMBean.class);
     }
 
     /** */

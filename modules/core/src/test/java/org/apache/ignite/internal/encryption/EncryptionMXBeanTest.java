@@ -127,7 +127,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
      * @return Encryption MBean.
      */
     private EncryptionMXBean getMBean(String igniteInstanceName) throws Exception {
-        return getMxBean(igniteInstanceName, "Encryption", EncryptionMXBeanImpl.class.getSimpleName(),
+        return getMxBean(igniteInstanceName, "Encryption", EncryptionMXBeanImpl.class,
             EncryptionMXBean.class);
     }
 }

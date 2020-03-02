@@ -192,10 +192,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
 
     /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
-        return getMxBean(
-            getTestIgniteInstanceName(igniteInt),
-            "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName(),
-            TransactionsMXBean.class);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 }

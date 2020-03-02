@@ -123,7 +123,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
 
         // Drop all thin connections from the node.
         getMxBean(grid(disconnectNodeIdx).name(), "Clients",
-            ClientListenerProcessor.class.getSimpleName(), ClientProcessorMXBean.class).dropAllConnections();
+            ClientListenerProcessor.class, ClientProcessorMXBean.class).dropAllConnections();
 
         channels[disconnectNodeIdx] = null;
 

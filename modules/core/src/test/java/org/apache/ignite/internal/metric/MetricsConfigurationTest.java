@@ -333,7 +333,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     public static MetricsMxBean metricsBean(IgniteEx g) {
-        return getMxBean(g.name(), "Metrics", MetricsMxBeanImpl.class.getSimpleName(), MetricsMxBean.class);
+        return getMxBean(g.name(), "Metrics", MetricsMxBeanImpl.class, MetricsMxBean.class);
     }
 
     /** */

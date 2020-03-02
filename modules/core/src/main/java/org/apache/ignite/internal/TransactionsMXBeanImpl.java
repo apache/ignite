@@ -143,7 +143,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** {@inheritDoc} */
     @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
         try {
-            ctx.grid().context().cache().setTxTimeoutOnPartitionMapExchange(timeout);
+            ctx.cache().context().tm().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -157,7 +157,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
-        ctx.cache().setTxOwnerDumpRequestsAllowed(allowed);
+        ctx.cache().context().tm().setTxOwnerDumpRequestsAllowedDistributed(allowed);
     }
 
     /** {@inheritDoc} */
@@ -167,7 +167,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setLongTransactionTimeDumpThreshold(long threshold) {
-        ctx.cache().longTransactionTimeDumpThreshold(threshold);
+        ctx.cache().context().tm().longTransactionTimeDumpThresholdDistributed(threshold);
     }
 
     /** {@inheritDoc} */
@@ -177,7 +177,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setTransactionTimeDumpSamplesCoefficient(double coefficient) {
-        ctx.cache().transactionTimeDumpSamplesCoefficient(coefficient);
+        ctx.cache().context().tm().transactionTimeDumpSamplesCoefficientDistributed(coefficient);
     }
 
     /** {@inheritDoc} */
@@ -187,7 +187,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
     /** {@inheritDoc} */
     @Override public void setTransactionTimeDumpSamplesPerSecondLimit(int limit) {
-        ctx.cache().longTransactionTimeDumpSamplesPerSecondLimit(limit);
+        ctx.cache().context().tm().longTransactionTimeDumpSamplesPerSecondLimit(limit);
     }
 
     /** {@inheritDoc} */

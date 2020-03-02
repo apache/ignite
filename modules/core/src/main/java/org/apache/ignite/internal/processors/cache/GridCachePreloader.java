@@ -101,7 +101,7 @@ public interface GridCachePreloader {
     public IgniteInternalFuture<Object> startFuture();
 
     /**
-     * @return Future which will complete when preloading is finished.
+     * @return Future which will complete when initial preloading is finished.
      */
     public IgniteInternalFuture<?> syncFuture();
 

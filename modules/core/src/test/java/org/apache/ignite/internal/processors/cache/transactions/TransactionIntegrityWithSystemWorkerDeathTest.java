@@ -46,7 +46,8 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
             /** {@inheritDoc}. */
             @Override public void afterFirstTransaction() throws Exception {
                 // Terminate disco-event-worker thread on one node.
-                WorkersControlMXBean bean = workersMXBean(failedNodeIdx);
+                WorkersControlMXBean bean = getMxBean(getTestIgniteInstanceName(failedNodeIdx), "Kernal",
+                    WorkersControlMXBeanImpl.class, WorkersControlMXBean.class);
 
                 bean.terminateWorker(
                     bean.getWorkerNames().stream()
@@ -79,13 +80,5 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
                 awaitPartitionMapExchange();
             }
         }, true);
-    }
-
-    /**
-     * Configure workers mx bean.
-     */
-    private WorkersControlMXBean workersMXBean(int igniteInt) {
-        return getMxBean(getTestIgniteInstanceName(igniteInt), "Kernal", WorkersControlMXBeanImpl.class.getSimpleName(),
-            WorkersControlMXBean.class);
     }
 }

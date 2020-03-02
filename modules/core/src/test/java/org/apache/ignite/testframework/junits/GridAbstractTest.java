@@ -2817,13 +2817,26 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     public DynamicMBean metricRegistry(
         String igniteInstanceName,
         String grp,
-        String metrics
-    ) throws MalformedObjectNameException {
+        String metrics) {
         return getMxBean(igniteInstanceName, grp, metrics, DynamicMBean.class);
     }
 
     /**
-     * Return mbean.
+     * Return JMX bean.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param impl Implementation class.
+     * @param clazz Class of the mbean.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public static <T, I> T getMxBean(String igniteInstanceName, String grp, Class<I> impl, Class<T> clazz) {
+        return getMxBean(igniteInstanceName, grp, impl.getSimpleName(), clazz);
+    }
+
+    /**
+     * Return JMX bean.
      *
      * @param igniteInstanceName Ignite instance name.
      * @param grp Name of the group.
@@ -2845,8 +2858,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+            throw new IgniteException("MBean not registered.");
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, true);
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
     }
 }

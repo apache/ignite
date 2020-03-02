@@ -147,8 +147,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
      * @return MBean instance.
      */
     private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz) {
-        return getMxBean(getTestIgniteInstanceName(nodeIdx),
-            "Kernal",
-            clazz.getSimpleName(), ClusterMetricsMXBean.class);
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), "Kernal", clazz, ClusterMetricsMXBean.class);
     }
 }

@@ -111,7 +111,7 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
      */
     private TcpCommunicationSpiMBean mbean(int nodeIdx) {
         return getMxBean(getTestIgniteInstanceName(nodeIdx), "SPIs",
-            SynchronizedCommunicationSpi.class.getSimpleName(), TcpCommunicationSpiMBean.class);
+            SynchronizedCommunicationSpi.class, TcpCommunicationSpiMBean.class);
     }
 
     /**

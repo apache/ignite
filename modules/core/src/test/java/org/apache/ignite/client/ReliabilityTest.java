@@ -310,7 +310,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
      */
     private void dropAllThinClientConnections(Ignite ignite) throws Exception {
         ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-            ClientListenerProcessor.class.getSimpleName(), ClientProcessorMXBean.class);
+            ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
         mxBean.dropAllConnections();
     }

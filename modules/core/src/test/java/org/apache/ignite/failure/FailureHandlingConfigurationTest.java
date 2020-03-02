@@ -236,6 +236,6 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     /** */
     private FailureHandlingMxBean getMBean() throws Exception {
         return getMxBean(getTestIgniteInstanceName(0), "Kernal",
-            FailureHandlingMxBeanImpl.class.getSimpleName(), FailureHandlingMxBean.class);
+            FailureHandlingMxBeanImpl.class, FailureHandlingMxBean.class);
     }
 }

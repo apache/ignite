@@ -472,8 +472,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
      * @return MBean instance.
      */
     private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz) {
-        return getMxBean(getTestIgniteInstanceName(nodeIdx), cacheName,
-            clazz.getName(), CacheMetricsMXBean.class);
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), cacheName, clazz.getName(), CacheMetricsMXBean.class);
     }
 
     /** {@inheritDoc} */

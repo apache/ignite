@@ -100,7 +100,8 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        TransactionMetricsMxBean txMXBean = txMetricsMXBean(0);
+        TransactionMetricsMxBean txMXBean = getMxBean(getTestIgniteInstanceName(0), "TransactionMetrics",
+            TransactionMetricsMxBeanImpl.class, TransactionMetricsMxBean.class);
 
         MetricRegistry mreg = grid(0).context().metric().registry(TX_METRICS);
 
@@ -291,13 +292,5 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
                 e.printStackTrace();
             }
         }
-    }
-
-    /** */
-    private TransactionMetricsMxBean txMetricsMXBean(int igniteInt) throws Exception {
-        return getMxBean(getTestIgniteInstanceName(igniteInt),
-            "TransactionMetrics",
-            TransactionMetricsMxBeanImpl.class.getSimpleName(),
-            TransactionMetricsMxBean.class);
     }
 }

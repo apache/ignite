@@ -682,7 +682,7 @@ public class FunctionalTest {
 
             // Test failover.
             ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-                ClientListenerProcessor.class.getSimpleName(), ClientProcessorMXBean.class);
+                ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
             try (ClientTransaction tx = client.transactions().txStart()) {
                 cache.put(1, "value6");

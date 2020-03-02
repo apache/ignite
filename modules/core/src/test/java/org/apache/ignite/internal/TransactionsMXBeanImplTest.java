@@ -298,6 +298,6 @@ public class TransactionsMXBeanImplTest extends GridCommonAbstractTest {
     /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
         return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 }

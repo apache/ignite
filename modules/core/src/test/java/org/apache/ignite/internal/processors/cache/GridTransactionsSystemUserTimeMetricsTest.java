@@ -241,7 +241,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         TransactionsMXBean tmMxBean = getMxBean(
             CLIENT,
             "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName(),
+            TransactionsMXBeanImpl.class,
             TransactionsMXBean.class);
 
         if (threshold != null)
@@ -346,7 +346,8 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
         long completionTime = System.currentTimeMillis();
 
-        ClientTxTestResult res = new ClientTxTestResult(startTime, completionTime, metricRegistry(CLIENT, null, TX_METRICS));
+        ClientTxTestResult res = new ClientTxTestResult(startTime, completionTime,
+            metricRegistry(CLIENT, null, TX_METRICS));
 
         return res;
     }
@@ -495,13 +496,13 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             TransactionsMXBean tmMxBean = getMxBean(
                 CLIENT,
                 "Transactions",
-                TransactionsMXBeanImpl.class.getSimpleName(),
+                TransactionsMXBeanImpl.class,
                 TransactionsMXBean.class);
 
             TransactionsMXBean tmMxBean2 = getMxBean(
                 CLIENT_2,
                 "Transactions",
-                TransactionsMXBeanImpl.class.getSimpleName(),
+                TransactionsMXBeanImpl.class,
                 TransactionsMXBean.class);
 
             int oldLimit = tmMxBean.getTransactionTimeDumpSamplesPerSecondLimit();

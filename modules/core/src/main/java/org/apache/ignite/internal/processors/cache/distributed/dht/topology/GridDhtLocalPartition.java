@@ -395,7 +395,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * TODO FIXME Get rid of deferred delete queue https://issues.apache.org/jira/browse/IGNITE-11704
      */
-    public void cleanupRemoveQueue() {
+    void cleanupRemoveQueue() {
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize) {
                 LT.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +

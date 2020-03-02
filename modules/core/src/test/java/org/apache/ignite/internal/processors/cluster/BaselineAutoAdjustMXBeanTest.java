@@ -34,7 +34,7 @@ public class BaselineAutoAdjustMXBeanTest extends GridCommonAbstractTest {
             IgniteCluster cluster = ignite.cluster();
 
             BaselineAutoAdjustMXBean bltMxBean = getMxBean(getTestIgniteInstanceName(), "Baseline",
-                BaselineAutoAdjustMXBeanImpl.class.getSimpleName(), BaselineAutoAdjustMXBean.class);
+                BaselineAutoAdjustMXBeanImpl.class, BaselineAutoAdjustMXBean.class);
 
             assertTrue(cluster.isBaselineAutoAdjustEnabled());
             assertTrue(bltMxBean.isAutoAdjustmentEnabled());
