@@ -407,6 +407,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
              */
             private void finishRecover(RemoteSnapshotFuture snpTrans, GroupPartitionId grpPartId) {
                 FilePageStore pageStore = null;
+
                 try {
                     pageStore = snpTrans.stores.remove(grpPartId);
 
