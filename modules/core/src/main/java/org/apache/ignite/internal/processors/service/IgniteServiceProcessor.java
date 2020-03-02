@@ -1064,6 +1064,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         assert histogram != null;
 
+        // TODO : remove
+        log.info("Historgam " + histogram + " for method " + method);
+
         return histogram;
     }
 
@@ -1866,12 +1869,18 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         Stream.of(srvc.getClass().getInterfaces()).map(Class::getMethods).flatMap(Arrays::stream)
             .filter(mtd -> !mtd.getDeclaringClass().equals(Service.class))
             .forEach(mtd -> {
+                // TODO : remove
+                log.info("Registering histogram for method " + mtd);
+
                 // Create metric for the method or take the same one from the previous service context.
                 Map<Method, HistogramMetricImpl> srvcHistograms = invocationHistograms.computeIfAbsent(srvcName,
                     name -> new HashMap<>(1));
 
                 srvcHistograms.computeIfAbsent(mtd, mtdKey -> invocationsMetric(srvcName, mtdKey));
             });
+
+        // TODO : remove
+        log.info("Registered service " + srvcName + ". Total metrics : " + invocationHistograms.size());
     }
 
     /**
