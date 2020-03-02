@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -38,7 +33,8 @@ public class BaselineAutoAdjustMXBeanTest extends GridCommonAbstractTest {
         try {
             IgniteCluster cluster = ignite.cluster();
 
-            BaselineAutoAdjustMXBean bltMxBean = bltMxBean();
+            BaselineAutoAdjustMXBean bltMxBean = getMxBean(getTestIgniteInstanceName(), "Baseline",
+                BaselineAutoAdjustMXBeanImpl.class, BaselineAutoAdjustMXBean.class);
 
             assertTrue(cluster.isBaselineAutoAdjustEnabled());
             assertTrue(bltMxBean.isAutoAdjustmentEnabled());
@@ -75,21 +71,5 @@ public class BaselineAutoAdjustMXBeanTest extends GridCommonAbstractTest {
         finally {
             stopGrid();
         }
-    }
-
-    /**
-     *
-     */
-    private BaselineAutoAdjustMXBean bltMxBean() throws Exception {
-        ObjectName mBeanName = U.makeMBeanName(getTestIgniteInstanceName(), "Baseline",
-            BaselineAutoAdjustMXBeanImpl.class.getSimpleName());
-
-        MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        assertTrue(mBeanSrv.isRegistered(mBeanName));
-
-        Class<BaselineAutoAdjustMXBean> itfCls = BaselineAutoAdjustMXBean.class;
-
-        return MBeanServerInvocationHandler.newProxyInstance(mBeanSrv, mBeanName, itfCls, true);
     }
 }
