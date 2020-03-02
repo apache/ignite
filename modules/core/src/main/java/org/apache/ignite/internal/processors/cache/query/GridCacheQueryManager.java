@@ -1963,6 +1963,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Cancel scan query.
+     *
+     * @param origNodeId Originating node id.
+     * @param qryId Query id.
+     */
+    public void cancelScanQuery(UUID origNodeId, long qryId) {
+        RequestFutureMap futs = qryIters.get(origNodeId);
+
+        if (futs == null)
+            return;
+
+        futs.remove(qryId);
+    }
+
+    /**
      * Metadata job.
      */
     @GridInternal

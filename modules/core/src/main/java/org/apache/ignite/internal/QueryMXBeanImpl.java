@@ -17,19 +17,32 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.IgniteClusterImpl;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTaskArg;
+import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
 import org.apache.ignite.mxbean.QueryMXBean;
+
+import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
 /**
  * QueryMXBean implementation.
  */
 public class QueryMXBeanImpl implements QueryMXBean {
+    /** */
+    public static final String EXPECTED_GLOBAL_QRY_ID_FORMAT = "Global query id should have format " +
+        "'{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
+
     /** */
     private final GridKernalContext ctx;
 
@@ -47,24 +60,29 @@ public class QueryMXBeanImpl implements QueryMXBean {
     @Override public void cancelContinuous(String id) {
         A.notNull(id, "id");
 
-        log.info("Killing continuous query[id=" + id + ']');
+        if (log.isInfoEnabled())
+            log.info("Killing continuous query[id=" + id + ']');
 
         ctx.continuous().stopRoutine(UUID.fromString(id));
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelSQL(Long id) {
+    @Override public void cancelSQL(String id) {
         A.notNull(id, "id");
 
-        log.info("Killing sql query[id=" + id + ']');
-
-        VisorQueryCancelTaskArg arg = new VisorQueryCancelTaskArg(id);
+        if (log.isInfoEnabled())
+            log.info("Killing sql query[id=" + id + ']');
 
         try {
-            IgniteCompute compute = ctx.cluster().get().compute();
+            IgniteClusterImpl cluster = ctx.cluster().get();
 
-            compute.execute(new VisorQueryCancelTask(),
-                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
+            T2<UUID, Long> ids = parseGlobalQueryId(id);
+
+            if (ids == null)
+                throw new RuntimeException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
+
+            cluster.compute().execute(new VisorQueryCancelTask(),
+                new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get2()), false));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -72,9 +90,27 @@ public class QueryMXBeanImpl implements QueryMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelScan(Long id) {
+    @Override public void cancelScan(String originNodeId, String cacheName, Long id) {
+        A.notNullOrEmpty(originNodeId, "originNodeId");
+        A.notNullOrEmpty(cacheName, "cacheName");
         A.notNull(id, "id");
 
-        log.info("Killing scan query[id=" + id + ']');
+        if (log.isInfoEnabled())
+            log.info("Killing scan query[id=" + id + ",originNodeId=" + originNodeId + ']');
+
+        try {
+            IgniteClusterImpl cluster = ctx.cluster().get();
+
+            IgniteCompute compute = cluster.compute();
+
+            Collection<UUID> nids = cluster.forServers().nodes()
+                .stream().map(ClusterNode::id).collect(Collectors.toSet());
+
+            compute.execute(new VisorScanQueryCancelTask(),
+                new VisorTaskArgument<>(nids, new VisorScanQueryCancelTaskArg(UUID.fromString(originNodeId), cacheName, id), false));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

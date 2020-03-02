@@ -30,22 +30,26 @@ public interface QueryMXBean {
      * @see ContinuousQueryView#routineId()
      */
     @MXBeanDescription("Kills continuous query by the identifier.")
-    @MXBeanParametersNames("id")
-    @MXBeanParametersDescriptions("Continuous query id.")
-    public void cancelContinuous(String id);
+    void cancelContinuous(
+        @MXBeanParameter(name = "id", description = "Continuous query id.") String id
+    );
 
     /**
      * @param id SQL query id.
      * @see SqlQueryView#queryId()
      */
     @MXBeanDescription("Kills SQL query by the identifier.")
-    @MXBeanParametersNames("id")
-    @MXBeanParametersDescriptions("SQL query id.")
-    void cancelSQL(Long id);
+    void cancelSQL(
+        @MXBeanParameter(name = "id", description = "SQL query id.") String id);
 
     /**
+     * @param originNodeId Originating node id.
+     * @param cacheName Cache name.
      * @param id Scan query id.
      * @see ScanQueryView#queryId()
      */
-    void cancelScan(Long id);
+    void cancelScan(
+        @MXBeanParameter(name = "originNodeId", description = "Originating node ID.") String originNodeId,
+        @MXBeanParameter(name = "cacheName", description = "Cache name.") String cacheName,
+        @MXBeanParameter(name = "id", description = "SQL query id.") Long id);
 }
