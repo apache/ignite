@@ -109,47 +109,19 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     void cacheProcessorStarted();
 
     /**
-     * @param activate New cluster state.
-     * @param baselineNodes New baseline nodes.
-     * @param forceChangeBaselineTopology Force change baseline topology.
-     * @return State change future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, Collection, boolean)} instead.
-     */
-    @Deprecated
-    IgniteInternalFuture<?> changeGlobalState(
-        boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    );
-
-    /**
-     * @param state New cluster state.
-     * @param baselineNodes New baseline nodes.
-     * @param forceChangeBaselineTopology Force change baseline topology.
-     * @return State change future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean)}
-     */
-    @Deprecated
-    default IgniteInternalFuture<?> changeGlobalState(
-        ClusterState state,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(state, true, baselineNodes, forceChangeBaselineTopology);
-    }
-
-    /**
      * @param state New cluster state.
      * @param force If {@code True} skips checking of the operation safety.
      * @param baselineNodes New baseline nodes.
      * @param forceChangeBaselineTopology Force change baseline topology.
+     * @param isAutoAdjust Auto adjusting flag.
      * @return State change future.
      */
     IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean force,
         Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
+        boolean forceChangeBaselineTopology,
+        boolean isAutoAdjust
     );
 
     /**

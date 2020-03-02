@@ -382,7 +382,7 @@ public interface IgniteMXBean {
     );
 
     /**
-     * Changes grid state to active or inactive.
+     * Changes Ignite grid state to active or inactive.
      * <p>
      * <b>NOTE:</b>
      * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.

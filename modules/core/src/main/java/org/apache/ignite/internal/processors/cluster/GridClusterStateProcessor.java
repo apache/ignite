@@ -471,7 +471,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && !inMemoryMode
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
             )
-                changeGlobalState(targetState, state.baselineTopology().currentBaseline(), false);
+                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(),
+                    false, false);
         }
 
         return null;
@@ -944,51 +945,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
-        final boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(activate, baselineNodes, forceChangeBaselineTopology, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> changeGlobalState(
-        ClusterState state,
-        boolean force,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(state, force, baselineNodes, forceChangeBaselineTopology, false);
-    }
-
-    /**
-     * @param activate New activate state.
-     * @param baselineNodes New BLT nodes.
-     * @param forceChangeBaselineTopology Force change BLT.
-     * @param isAutoAdjust Auto adjusting flag.
-     * @return Global change state future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean, boolean)} instead.
-     */
-    @Deprecated
-    public IgniteInternalFuture<?> changeGlobalState(
-        final boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology,
-        boolean isAutoAdjust
-    ) {
-        return changeGlobalState(activate ? ACTIVE : INACTIVE, true, baselineNodes, forceChangeBaselineTopology,
-            isAutoAdjust);
-    }
-
-    /**
-     * @param state New activate state.
-     * @param force If {@code True}, skips checking of the operation safety.
-     * @param baselineNodes New BLT nodes.
-     * @param forceChangeBaselineTopology Force change BLT.
-     * @param isAutoAdjust Auto adjusting flag.
-     * @return Global change state future.
-     */
-    public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean force,
         Collection<? extends BaselineNode> baselineNodes,
@@ -2034,8 +1990,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             try {
                 ig.context().state().changeGlobalState(
                     state,
+                    true,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
-                    forceChangeBaselineTopology
+                    forceChangeBaselineTopology,
+                    false
                 ).get();
             }
             catch (IgniteCheckedException ex) {
