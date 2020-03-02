@@ -666,7 +666,7 @@ public interface Ignite extends AutoCloseable {
      * Changes Ignite grid state to active or inactive.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * After cluster deactivation all data from in-memory cache will be lost.
      * @see ClusterState#INACTIVE
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.

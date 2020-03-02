@@ -27,9 +27,7 @@ public enum ClusterState {
      * Cluster deactivated. Cache operations aren't allowed.
      * <p>
      * <b>NOTE:</b>
-     * Please be aware that deactivation can cause data loss.
-     * This process clears all in-memory caches including the system ones.
-     * Thus, all in-memory-only data and objects are erased.
+     * After cluster deactivation all data from in-memory cache will be lost.
      */
     INACTIVE,
 

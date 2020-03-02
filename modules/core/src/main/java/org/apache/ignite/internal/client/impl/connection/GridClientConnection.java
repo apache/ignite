@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDataMetrics;
@@ -310,50 +310,21 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Change grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
-     * <p>
-     * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
-     * @see ClusterState#INACTIVE
-     *
-     * @param active Active.
-     * @param force If {@code True} then skips checking of operation safety.
-     * @param destNodeId Destination node id.
-     * @deprecated Use {@link #changeState(ClusterState, boolean, UUID)} instead.
-     */
-    @Deprecated
-    public abstract GridClientFuture<?> changeState(boolean active, boolean force, UUID destNodeId)
-            throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
-     * Changes grid global state. Fails if the operation is not safe.
-     * Uses old version of change state request that guaranties comaptibility with old-version-servers.
-     * But cannot pass the force flag like {@link #changeState(ClusterState, boolean, UUID)}.
-     *
-     * @param state New cluster state.
-     * @param destNodeId Destination node id.
-     * @throws GridClientConnectionResetException In case of error.
-     * @throws GridClientClosedException If client was manually closed before request was sent over network.
-     * @deprecated Use {@link #changeState(ClusterState, boolean, UUID)} instead.
-     */
-    @Deprecated
-    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
      * Changes grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * After cluster deactivation all data from in-memory cache will be lost.
      * @see ClusterState#INACTIVE
      *
      * @param state New cluster state.
-     * @param force If {@code True} then skips checking of operation safety.
      * @param destNodeId Destination node id.
+     * @param force If not {@code null}, new version of state changing will be used.
+     *              See {@link IgniteFeatures#FORCED_CHANGE_OF_CLUSTER_STATE}.
+     *              If {@code True} then skips checking of operation safety.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFuture<?> changeState(ClusterState state, boolean force, UUID destNodeId)
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, @Nullable Boolean force)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**

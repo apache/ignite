@@ -64,7 +64,7 @@ public interface GridClientClusterState {
      * is {@code False}.
      * <p>
      * <b>NOTE:</b>
-     * Be aware that cluster deactivation leads to loss of in-memory data.
+     * After cluster deactivation all data from in-memory cache will be lost.
      * @see ClusterState#INACTIVE
      *
      * @param newState New cluster state.

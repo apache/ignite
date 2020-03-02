@@ -76,26 +76,19 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState, boolean force) throws GridClientException {
-        // Check compapability of new forced deactivation on all nodes.
-        UUID oldVerServerNode = checkFeatureSupportedByCluster(client, FORCED_CHANGE_OF_CLUSTER_STATE,
+        // When 'force' is false, check compapability of new forced deactivation on all nodes.
+        UUID oldVerNode = force ? null : checkFeatureSupportedByCluster(client, FORCED_CHANGE_OF_CLUSTER_STATE,
             false, false);
 
-        // Send new version of state change request supporting 'force' feature.
-        if (oldVerServerNode == null)
-            withReconnectHandling((con, nodeId) -> con.changeState(newState, force, nodeId)).get();
-        else {
-            if (!force) {
-                throw new GridClientException("Unable to change state of cluster on \""
-                    + newState.name() + "\". Found a node not supporting safe deactivation: "
-                    + oldVerServerNode + ". It can cause no checking of deactivation safety "
-                    + "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory"
-                    + " data.");
-            }
-            else {
-                // Send old version of the command not supporting 'force' feature.
-                withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
-            }
+        if (oldVerNode != null) {
+            throw new GridClientException("Unable to change state of cluster on \""
+                + newState.name() + "\". Found a node not supporting safe deactivation: "
+                + oldVerNode + ". It can cause no checking of deactivation safety "
+                + "will be performed. You can try with the flag 'force' Be aware that deactivation erases in-memory"
+                + " data.");
         }
+
+        withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, force ? null : false)).get();
     }
 
     /** {@inheritDoc} */

@@ -56,8 +56,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestBaselineReques
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
@@ -219,20 +219,13 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param params Parameters map.
      * @param dfltVal Default value.
      * @return Boolean value from parameters map or {@code dfltVal} if null or not exists.
-     * @throws IgniteCheckedException If parsing failed.
      */
-    private static boolean boolValue(String key, Map<String, Object> params, boolean dfltVal)
-        throws IgniteCheckedException {
+    private static boolean booleanValue(String key, Map<String, Object> params, boolean dfltVal) {
         assert key != null;
 
         String val = (String)params.get(key);
 
-        try {
-            return val == null ? dfltVal : Boolean.parseBoolean(val);
-        }
-        catch (NumberFormatException ignore) {
-            throw new IgniteCheckedException(format(FAILED_TO_PARSE_FORMAT, "Boolean", key, val));
-        }
+        return val == null ? dfltVal : Boolean.parseBoolean(val);
     }
 
     /**
@@ -813,7 +806,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 else
                     restReq0.active(false);
 
-                restReq0.force(boolValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+                restReq0.force(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
 
                 restReq = restReq0;
 
@@ -831,7 +824,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                     restReq0.state(newState);
 
-                    restReq0.force(boolValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+                    restReq0.force(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
                 }
 
                 restReq = restReq0;
