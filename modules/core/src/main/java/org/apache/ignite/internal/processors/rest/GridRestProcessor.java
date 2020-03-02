@@ -244,6 +244,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         boolean authenticationEnabled = ctx.authentication().enabled();
         boolean securityEnabled = ctx.security().enabled();
+        SecurityContext secCtx0 = null;
 
         if (authenticationEnabled || securityEnabled) {
             Session ses;
@@ -268,7 +269,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                     "[clientId=" + req.clientId() + ", sesTok=" + Arrays.toString(req.sessionToken()) + "]");
 
             if (securityEnabled) {
-                SecurityContext secCtx0 = ses.secCtx;
+                secCtx0 = ses.secCtx;
 
                 try {
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
@@ -322,7 +323,17 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         GridRestCommandHandler hnd = handlers.get(req.command());
 
-        IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> res = null;
+
+        if (hnd != null) {
+            if (secCtx0 != null) {
+                try (OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+                    res = hnd.handleAsync(req);
+                }
+            }
+            else
+                res = hnd.handleAsync(req);
+        }
 
         if (res == null)
             return new GridFinishedFuture<>(

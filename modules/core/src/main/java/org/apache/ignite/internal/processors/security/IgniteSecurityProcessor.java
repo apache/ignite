@@ -127,8 +127,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         ClusterNode node = Optional.ofNullable(ctx.discovery().node(nodeId))
             .orElseGet(() -> ctx.discovery().historicalNode(nodeId));
 
-        if (node == null)
-            throw new IllegalStateException("Failed to find node with given ID for security context setup: " + nodeId);
+        if (node == null) {
+            String msg = "Failed to find node with given ID for security context setup: " + nodeId;
+
+            ctx.log(IgniteSecurity.class).error(msg);
+
+            throw new IllegalStateException(msg);
+        }
 
         return node;
     }
