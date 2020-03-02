@@ -190,15 +190,9 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
         assertEquals(shouldRcvThreadDumpReq, dumpLsnr.check());
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
-        return getMxBean(
-            getTestIgniteInstanceName(igniteInt),
-            "Transactions",
-            TransactionsMXBean.class,
-            TransactionsMXBeanImpl.class
-        );
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 }
