@@ -423,10 +423,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 }
                 finally {
                     if (snpTrans.partsLeft.decrementAndGet() == 0 && ex == null) {
+                        assert snpTrans.stores.isEmpty() : snpTrans.stores.entrySet();
+
                         snpTrans.onDone(true);
 
                         log.info("Requested snapshot from remote node has been fully received " +
-                            "[snpName=" + snpTrans.snpName + ", rmtNodeId=" + snpTrans.rmtNodeId + ']');
+                            "[snpName=" + snpTrans.snpName + ", snpTrans=" + snpTrans + ']');
                     }
 
                     U.closeQuiet(pageStore);
