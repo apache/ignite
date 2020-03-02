@@ -289,7 +289,7 @@ public class VisorPartitionReconciliationTaskArg extends IgniteDataTransferObjec
         }
 
         /**
-         * @param console New print result to locOutput.
+         * @param locOutput New print result to locOutput.
          */
         public Builder locOutput(boolean locOutput) {
             this.locOutput = locOutput;

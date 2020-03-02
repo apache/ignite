@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
 public enum PartitionReconciliationCommandArg implements CommandArg {
     /**
      * If present - Partition Reconciliation&Fix: update from Primary partition. Specifies which fix algorithm to use
-     * while repairing doubtful keys: options {@link PartitionReconciliationRepairMeta.repairAlg}.
+     * while repairing doubtful keys: options {@link PartitionReconciliationRepairMeta#repairAlg()}.
      */
     REPAIR("--repair", RepairAlgorithm.defaultValue()),
 
