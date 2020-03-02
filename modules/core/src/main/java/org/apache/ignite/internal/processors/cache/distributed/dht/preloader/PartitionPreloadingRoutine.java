@@ -154,7 +154,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
 
-        return Collections.unmodifiableMap(grpRoutines);
+        return Collections.unmodifiableMap(new HashMap<>(grpRoutines));
     }
 
     /**
@@ -197,18 +197,17 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 .createRemoteSnapshot(nodeId,
                     assigns,
                     (file, pair) -> onPartitionSnapshotReceived(nodeId, file, pair.getGroupId(), pair.getPartitionId())))
-                .listen(f -> {
+                .chain(f -> {
                         try {
                             if (!f.isCancelled() && f.get())
                                 requestPartitionsSnapshot(iter, groups);
                         }
                         catch (IgniteCheckedException e) {
-                            if (onDone(e))
-                                return;
-
-                            if (log.isDebugEnabled())
+                            if (!onDone(e) && log.isDebugEnabled())
                                 log.debug("Stale error (ignored): " + e.getMessage());
                         }
+
+                        return null;
                     }
                 );
         }

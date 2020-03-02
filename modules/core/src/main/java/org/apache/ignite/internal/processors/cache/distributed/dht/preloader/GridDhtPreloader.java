@@ -453,13 +453,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 Runnable rebRunner = demander.addAssignments(assigns, forceRebalance, rebalanceId, next, forcedRebFut);
 
-                if (rebRunner == null) {
+                if (rebRunner != null)
+                    rebRunner.run();
+                else if (next != null)
                     next.run();
-
-                    return;
-                }
-
-                rebRunner.run();
             });
         };
     }
