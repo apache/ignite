@@ -17,9 +17,11 @@
 
 package org.apache.ignite.util;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -33,6 +35,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
@@ -40,6 +43,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.transactions.Transaction;
@@ -277,6 +283,40 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        //TODO: Implement me.
+        IgniteEx ignite0 = startGrids(1);
+        IgniteEx client = startClientGrid("client");
+
+        ignite0.cluster().state(ACTIVE);
+
+        IgniteFuture<Collection<Integer>> fut = client.compute().broadcastAsync(() -> {
+            System.out.println("KillCommandTest.testCancelComputeTask");
+            Thread.sleep(60_000L);
+
+            return 1;
+        });
+
+        String[] id = new String[1];
+
+        boolean res = waitForCondition(() -> {
+            List<List<?>> tasks = SqlViewExporterSpiTest.execute(ignite0,
+                "SELECT JOB_ID FROM SYS.TASKS");
+
+            if (tasks.size() == 1) {
+                id[0] = ((IgniteUuid)tasks.get(0).get(0)).toString();
+
+                return true;
+            }
+
+            return false;
+        }, 10_000);
+
+        assertTrue(res);
+
+        ComputeMXBean computeMBean = getMxBean(client.name(), "Compute",
+            ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
+
+        computeMBean.cancel(id[0]);
+
+        assertThrowsWithCause((Callable<Collection<Integer>>)fut::get, IgniteException.class);
     }
 }

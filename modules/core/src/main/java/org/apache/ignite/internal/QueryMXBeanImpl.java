@@ -81,7 +81,6 @@ public class QueryMXBeanImpl implements QueryMXBean {
             if (ids == null)
                 throw new RuntimeException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
-            //TODO: add check that query was killed.
             cluster.compute().execute(new VisorQueryCancelTask(),
                 new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get2()), false));
         }
