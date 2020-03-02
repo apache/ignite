@@ -21,26 +21,37 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractTest {
@@ -104,7 +115,7 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
             assertNotNull(iter2.next());
 
         // Checking all server node objects cleared after cancel.
-        for (int i=0; i<NODES_CNT; i++) {
+        for (int i = 0; i < NODES_CNT; i++) {
             IgniteEx ignite = grid(i);
 
             int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
@@ -128,11 +139,12 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
     /** @throws Exception If failed. */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12732")
     public void testCancelSQLQuery() throws Exception {
-        IgniteEx ignite0 = startGrids(NODES_CNT);
+        startGrids(NODES_CNT);
         IgniteEx client = startClientGrid("client");
 
-        ignite0.cluster().state(ACTIVE);
+        client.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class));
@@ -140,35 +152,131 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT _KEY, _VAL FROM INTEGER")
-            .setSchema("default")
-            .setPageSize(PAGE_SZ);
-
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT _KEY, _VAL FROM INTEGER").setSchema("default").setPageSize(10);
         Iterator<List<?>> iter = queryProcessor(client).querySqlFields(qry, true).iterator();
 
-        List row = iter.next();
+        assertNotNull(iter.next());
 
-        assertNotNull(row);
-        assertFalse(isEmpty(row));
+        List<List<?>> sqlQries = SqlViewExporterSpiTest.execute(client,
+            "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME");
+        assertEquals(2, sqlQries.size());
 
-        List<List<?>> sqlQries0 = SqlViewExporterSpiTest.execute(ignite0, "SELECT QUERY_ID FROM SYS.SQL_QUERIES");
-
-        assertEquals(1, sqlQries0.size());
+        String qryId = (String)sqlQries.get(0).get(0);
+        assertEquals("SELECT _KEY, _VAL FROM INTEGER", sqlQries.get(0).get(1));
 
         QueryMXBean qryMBean = getMxBean(client.name(), "Query",
             QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
 
-        String qryId = (String)sqlQries0.get(0).get(0);
-        SqlViewExporterSpiTest.execute(ignite0, "KILL QUERY " + qryId);
+        qryMBean.cancelSQL(qryId);
 
-//        qryMBean.cancelSQL(qryId);
-
-        while(iter.hasNext()) {
-            row = iter.next();
-            assertNotNull(row);
-            assertFalse(isEmpty(row));
-        }
+        //TODO: this test should be done prior merge.
+        while(iter.hasNext())
+            assertNotNull(iter.next());
 
         fail("You shouldn't be here!");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelTx() throws Exception {
+        IgniteEx ignite0 = startGrids(NODES_CNT);
+        IgniteEx client = startClientGrid("client");
+
+        ignite0.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        for (TransactionConcurrency txConc : TransactionConcurrency.values()) {
+            for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
+                try (Transaction tx = client.transactions().txStart(txConc, txIsolation)) {
+                    cache.put(1, 1);
+
+                    List<List<?>> txs = SqlViewExporterSpiTest.execute(client, "SELECT xid FROM SYS.TRANSACTIONS");
+                    assertEquals(1, txs.size());
+
+                    String xid = (String)txs.get(0).get(0);
+
+                    TransactionsMXBean txMBean = getMxBean(client.name(), "Transactions",
+                        TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
+
+                    txMBean.cancel(xid);
+
+                    assertThrowsWithCause(tx::commit, IgniteException.class);
+
+                    for (int i = 0; i < NODES_CNT; i++) {
+                        txs = SqlViewExporterSpiTest.execute(grid(i), "SELECT xid FROM SYS.TRANSACTIONS");
+                        assertEquals(0, txs.size());
+                    }
+                }
+
+                assertNull(cache.get(1));
+            }
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelContinuousQuery() throws Exception {
+        IgniteEx ignite0 = startGrids(NODES_CNT);
+        IgniteEx client = startClientGrid("client");
+
+        ignite0.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
+
+        AtomicInteger cntr = new AtomicInteger();
+
+        cq.setInitialQuery(new ScanQuery<>());
+        cq.setTimeInterval(1_000L);
+        cq.setPageSize(PAGE_SZ);
+        cq.setLocalListener(events -> {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> e : events) {
+                assertNotNull(e);
+
+                cntr.incrementAndGet();
+            }
+        });
+
+        QueryCursor<Cache.Entry<Integer, Integer>> qry = cache.query(cq);
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
+
+        boolean res = waitForCondition(() -> cntr.get() == PAGE_SZ * PAGE_SZ, 10_000);
+        assertTrue(res);
+
+        List<List<?>> cqQries = SqlViewExporterSpiTest.execute(client,
+            "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
+        assertEquals(1, cqQries.size());
+
+        QueryMXBean qryMBean = getMxBean(client.name(), "Query",
+            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
+
+        qryMBean.cancelContinuous(((UUID)cqQries.get(0).get(0)).toString());
+
+        long cnt = cntr.get();
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
+
+        res = waitForCondition(() -> cntr.get() > cnt, 5_000);
+        assertFalse(res);
+
+        for (int i = 0; i < NODES_CNT; i++) {
+            cqQries = SqlViewExporterSpiTest.execute(grid(i),
+                "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
+
+            assertTrue(cqQries.isEmpty());
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelComputeTask() throws Exception {
+        //TODO: Implement me.
     }
 }

@@ -1968,13 +1968,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param origNodeId Originating node id.
      * @param qryId Query id.
      */
-    public void cancelScanQuery(UUID origNodeId, long qryId) {
+    public boolean cancelScanQuery(UUID origNodeId, long qryId) {
         RequestFutureMap futs = qryIters.get(origNodeId);
 
         if (futs == null)
-            return;
+            return false;
 
-        futs.remove(qryId);
+        return futs.remove(qryId) != null;
     }
 
     /**

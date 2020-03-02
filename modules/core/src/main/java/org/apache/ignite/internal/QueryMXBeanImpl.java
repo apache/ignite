@@ -81,6 +81,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
             if (ids == null)
                 throw new RuntimeException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
+            //TODO: add check that query was killed.
             cluster.compute().execute(new VisorQueryCancelTask(),
                 new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get2()), false));
         }
@@ -106,8 +107,13 @@ public class QueryMXBeanImpl implements QueryMXBean {
             Collection<UUID> nids = cluster.forServers().nodes()
                 .stream().map(ClusterNode::id).collect(Collectors.toSet());
 
-            compute.execute(new VisorScanQueryCancelTask(),
+            boolean res = compute.execute(new VisorScanQueryCancelTask(),
                 new VisorTaskArgument<>(nids, new VisorScanQueryCancelTaskArg(UUID.fromString(originNodeId), cacheName, id), false));
+
+            if (!res) {
+                throw new RuntimeException("Query not found[originNodeId=" + originNodeId +
+                    ",cacheName=" + cacheName + ",qryId=" + id + ']');
+            }
         }
         catch (Exception e) {
             throw new RuntimeException(e);

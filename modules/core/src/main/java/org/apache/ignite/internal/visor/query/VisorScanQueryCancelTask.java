@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCancelTaskArg, Void> {
+public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCancelTaskArg, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,14 +44,19 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteException {
+        for (ComputeJobResult res : results) {
+            if (res.getData() != null && ((Boolean)res.getData()))
+                return true;
+        }
+
+        return false;
     }
 
     /**
      * Job to cancel queries on node.
      */
-    private static class VisorCancelScanQueriesJob extends VisorJob<VisorScanQueryCancelTaskArg, Void> {
+    private static class VisorCancelScanQueriesJob extends VisorJob<VisorScanQueryCancelTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -66,7 +71,7 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
+        @Override protected Boolean run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
             IgniteLogger log = ignite.log().getLogger(VisorCancelScanQueriesJob.class);
 
             int cacheId = CU.cacheId(arg.getCacheName());
@@ -76,12 +81,10 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
             if (ctx == null) {
                 log.warning("Cache not found[cacheName=" + arg.getCacheName() + ']');
 
-                return null;
+                return false;
             }
 
-            ctx.queries().cancelScanQuery(arg.getOriginNodeId(), arg.getQueryId());
-
-            return null;
+            return ctx.queries().cancelScanQuery(arg.getOriginNodeId(), arg.getQueryId());
         }
     }
 }
