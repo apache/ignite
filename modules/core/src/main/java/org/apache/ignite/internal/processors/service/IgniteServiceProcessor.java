@@ -2028,6 +2028,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private static final class MethodHistogramHolder
         extends IgniteBiTuple<HistogramMetricImpl, Map<Collection<Class<?>>, HistogramMetricImpl>> {
 
+        private static final long serialVersionUID = 0L;
+
         /** Not overloaded method for the single histogramm. */
         private Method notOverloadedMtd;
 
