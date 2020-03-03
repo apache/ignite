@@ -3371,7 +3371,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
-                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> fileGrps =
+                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futAssigns =
                             cctx.preloader().preloadAsync(cnt, exchFut, assignsMap);
 
                         int size = assignsMap.size();
@@ -3395,8 +3395,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         List<String> rebList = new LinkedList<>();
 
-                        boolean assignsCancelled = false;
-
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
                         if (task instanceof ForceRebalanceExchangeTask)
@@ -3406,15 +3404,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                                GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
+                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = futAssigns.get(grpId);
 
-                                if (assigns != null)
-                                    assignsCancelled |= assigns.cancelled();
-
-                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = fileGrps.get(grpId);
-
-                                if (fut == null)
-                                    fut = new GridFinishedFuture<>(assigns);
+                                assert fut != null;
 
                                 Runnable cur = grp.preloader().addAssignments(fut,
                                     forcePreload,
@@ -3433,7 +3425,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled || hasPendingServerExchange()) {
+                        if (hasPendingServerExchange()) {
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');

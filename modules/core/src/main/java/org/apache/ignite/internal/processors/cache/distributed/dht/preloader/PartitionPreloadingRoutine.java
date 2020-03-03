@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,37 +101,51 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private IgniteInternalFuture<Boolean> snapshotFut;
 
     /**
-     * @param assigns Assigns.
+     * @param assignments Assignments.
      * @param startVer Topology version on which the rebalance started.
      * @param cctx Cache shared context.
      * @param exchId Exchange ID.
      * @param rebalanceId Rebalance ID
      */
     public PartitionPreloadingRoutine(
-        Map<UUID, Map<Integer, Set<Integer>>> assigns,
+        Map<Integer, GridDhtPreloaderAssignments> assignments,
         AffinityTopologyVersion startVer,
         GridCacheSharedContext cctx,
         GridDhtPartitionExchangeId exchId,
         long rebalanceId
     ) {
-        Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpRoutines0 = new HashMap<>();
-        Map<UUID, Map<Integer, Set<Integer>>> remaining0 = new ConcurrentHashMap<>(assigns.size());
+        // Re-map assignments by node.
+        Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = new ConcurrentHashMap<>();
+        Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> routines = new HashMap<>();
         int totalParts = 0;
 
-        for (Map.Entry<UUID, Map<Integer, Set<Integer>>> nodeAssigns : assigns.entrySet()) {
-            ConcurrentHashMap<Integer, Set<Integer>> nodeAssigns0 = new ConcurrentHashMap<>(nodeAssigns.getValue());
+        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignments.entrySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
+            GridDhtPreloaderAssignments assigns = e.getValue();
 
-            for (Map.Entry<Integer, Set<Integer>> grpAssigns : nodeAssigns.getValue().entrySet()) {
-                int grpId = grpAssigns.getKey();
-                Set<Integer> parts = grpAssigns.getValue();
+            GridDhtLocalPartition part = F.first(grp.topology().currentLocalPartitions());
 
-                nodeAssigns0.put(grpId, new GridConcurrentHashSet<>(parts));
-                grpRoutines0.put(grpId, new GridFutureAdapter<>());
+            if (part == null || part.active() || assigns.isEmpty()) {
+                GridFutureAdapter<GridDhtPreloaderAssignments> finished = new GridFutureAdapter<>();
 
-                totalParts += parts.size();
+                finished.onDone(assigns);
+
+                routines.put(grp.groupId(), finished);
+
+                continue;
             }
 
-            remaining0.put(nodeAssigns.getKey(), nodeAssigns0);
+            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
+                Map<Integer, Set<Integer>> grpAssigns =
+                    assignsByNode.computeIfAbsent(e0.getKey().id(), v -> new ConcurrentHashMap<>());
+
+                Set<Integer> parts = e0.getValue().partitions().fullSet();
+
+                grpAssigns.put(grp.groupId(), new GridConcurrentHashSet<>(parts));
+                routines.put(grp.groupId(), new GridFutureAdapter<>());
+
+                totalParts  += parts.size();
+            }
         }
 
         this.cctx = cctx;
@@ -140,8 +155,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         topVer = startVer;
         log = cctx.kernalContext().log(getClass());
         totalPartitionsCnt = totalParts;
-        grpRoutines = grpRoutines0;
-        remaining = remaining0;
+        grpRoutines = routines;
+        remaining = assignsByNode;
     }
 
     /**
@@ -151,6 +166,9 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> startPartitionsPreloading() {
         ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
+
+        if (remaining.isEmpty())
+            onDone(true);
 
         requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
 

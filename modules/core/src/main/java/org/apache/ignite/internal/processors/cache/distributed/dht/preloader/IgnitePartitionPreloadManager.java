@@ -19,10 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteSystemProperties;
@@ -92,14 +89,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         GridDhtPartitionsExchangeFuture exchFut,
         Map<Integer, GridDhtPreloaderAssignments> assignments
     ) {
-        Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = reorderAssignments(assignments);
-
-        if (assignsByNode.isEmpty()) {
-            if (log.isDebugEnabled())
-                log.debug("Skipping file rebalancing due to empty assignments.");
-
+        if (assignments.isEmpty())
             return Collections.emptyMap();
-        }
 
         if (!cctx.kernalContext().grid().isRebalanceEnabled()) {
             if (log.isDebugEnabled())
@@ -117,7 +108,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
 
             // Start new rebalance session.
-            partPreloadingRoutine = new PartitionPreloadingRoutine(assignsByNode,
+            partPreloadingRoutine = new PartitionPreloadingRoutine(assignments,
                 exchFut.topologyVersion(), cctx, exchFut.exchangeId(), rebalanceId);
 
             return partPreloadingRoutine.startPartitionsPreloading();
@@ -256,27 +247,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param grp Cache group.
-     * @return {@code True} if file partition preloading required for the specified group.
-     */
-    public boolean required(CacheGroupContext grp) {
-        if (!supports(grp))
-            return false;
-
-        boolean required = false;
-
-        // Partition file preloading should start only if all partitions are in inactive state.
-        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (part.active())
-                return false;
-
-            required = true;
-        }
-
-        return required;
-    }
-
-    /**
      * @param grp Group.
      * @return {@code True} If the last rebalance attempt was incomplete for specified cache group.
      */
@@ -343,31 +313,5 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         }
 
         return hasApplicablePart;
-    }
-
-    /**
-     * @param assignsMap The map of cache groups assignments to preload.
-     * @return Collection of cache assignments sorted by rebalance order and grouped by node.
-     */
-    private Map<UUID, Map<Integer, Set<Integer>>> reorderAssignments(
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap
-    ) {
-        Map<UUID, Map<Integer, Set<Integer>>> nodeAssigns = new HashMap<>();
-
-        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
-            GridDhtPreloaderAssignments assigns = e.getValue();
-
-            if (!required(grp) || assigns.isEmpty())
-                continue;
-
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
-                Map<Integer, Set<Integer>> grpAssigns = nodeAssigns.computeIfAbsent(e0.getKey().id(), v -> new HashMap<>());
-
-                grpAssigns.put(grp.groupId(), e0.getValue().partitions().fullSet());
-            }
-        }
-
-        return nodeAssigns;
     }
 }
