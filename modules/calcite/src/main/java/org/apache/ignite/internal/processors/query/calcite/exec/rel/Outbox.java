@@ -192,13 +192,13 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
 
     /** */
     private void sendBatch(UUID nodeId, int batchId, List<?> rows) throws IgniteCheckedException {
-        exchange.sendBatch(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
+        exchange.sendBatch(nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
     }
 
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
         try {
-            exchange.cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+            exchange.cancel(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
         }
         catch (IgniteCheckedException e) {
             U.warn(context().parent().logger(), "Failed to send cancel message.", e);

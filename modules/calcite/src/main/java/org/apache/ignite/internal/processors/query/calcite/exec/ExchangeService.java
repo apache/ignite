@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
 /**
@@ -30,8 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 public interface ExchangeService extends Service {
     /**
      * Sends a batch of data to remote node.
-     *
-     * @param caller Caller.
      * @param nodeId Target node ID.
      * @param queryId Query ID.
      * @param fragmentId Target fragment ID.
@@ -39,29 +35,25 @@ public interface ExchangeService extends Service {
      * @param batchId Batch ID.
      * @param rows Data rows.
      */
-    void sendBatch(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) throws IgniteCheckedException;
+    void sendBatch(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) throws IgniteCheckedException;
 
     /**
      * Acknowledges a batch with given ID is processed.
-     *
-     * @param caller Caller.
      * @param nodeId Node ID to notify.
      * @param queryId Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void acknowledge(Inbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+    void acknowledge(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 
     /**
      * Sends cancel request.
-     *
-     * @param caller Caller.
      * @param nodeId Target node ID.
      * @param queryId Query ID.
      * @param fragmentId Target fragment ID.
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void cancel(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
+    void cancel(UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 }

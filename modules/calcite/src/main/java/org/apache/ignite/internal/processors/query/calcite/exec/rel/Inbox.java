@@ -296,7 +296,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void acknowledge(UUID nodeId, int batchId) throws IgniteCheckedException {
-        exchange.acknowledge(this, nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
+        exchange.acknowledge(nodeId, queryId(), sourceFragmentId, exchangeId, batchId);
     }
 
     /** */
