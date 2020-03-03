@@ -20,13 +20,13 @@ package org.apache.ignite;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.Nullable;
 
@@ -564,7 +564,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *
      * @param name Service name.
      * @param <T> Service type
-     * @return Proxy over local service.
+     * @return Deployed service with specified name.
      */
     public <T> T service(String name);
 
@@ -586,7 +586,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param svcItf Interface for the service.
      * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
-     * @return Proxy over either remote service or local service if it is deployed locally.
+     * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
@@ -602,7 +602,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *      service or try to load-balance between services.
      * @param timeout If greater than 0 created proxy will wait for service availability only specified time,
      *  and will limit remote service invocation time.
-     * @return Proxy over either remote service or local service if it is deployed locally.
+     * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)

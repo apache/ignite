@@ -49,7 +49,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
     public void testJobCancel() throws Exception {
         Ignite server = startGrid("server");
 
-        server.services().deployNodeSingleton("my-service", new MyServiceImpl());
+        server.services().deployNodeSingleton("my-service", new MyService());
 
         Ignite client = startClientGrid("client");
 
@@ -63,15 +63,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
     }
 
     /** */
-    private static interface MyService {
-        /**
-         * @return Response.
-         */
-        public int hello();
-    }
-
-    /** {@inheritDoc} */
-    private static class MyServiceImpl implements Service, MyService {
+    private static class MyService implements Service {
         /** */
         private volatile boolean cancelled;
 
@@ -90,8 +82,10 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
             cancelled = true;
         }
 
-        /** {@inheritDoc} */
-        @Override public int hello() {
+        /**
+         * @return Response.
+         */
+        public int hello() {
             assertFalse("Service already cancelled!", cancelled);
 
             return 42;

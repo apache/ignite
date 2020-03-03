@@ -172,16 +172,8 @@ public class GridServiceProxy<T> implements Serializable {
                     if (node.isLocal()) {
                         ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
-                        if (svcCtx != null) {
-                            Service svc = svcCtx.service();
-
-                            if (svc != null) {
-                                if (Proxy.isProxyClass(svc.getClass()))
-                                    return Proxy.getInvocationHandler(svc).invoke(svc, mtd, args);
-
-                                return mtd.invoke(svc, args);
-                            }
-                        }
+                        if (svcCtx != null)
+                            return callServiceMtd(svcCtx.serviceOrProxy(), mtd, args);
                     }
                     else {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
@@ -416,7 +408,7 @@ public class GridServiceProxy<T> implements Serializable {
         @Override public Object call() throws Exception {
             ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
 
-            if (svcCtx == null || svcCtx.service() == null)
+            if (svcCtx == null || svcCtx.serviceOrProxy() == null)
                 throw new GridServiceNotFoundException(svcName);
 
             GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);
@@ -427,10 +419,13 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return mtd.invoke(svcCtx.service(), args);
+                return callServiceMtd(svcCtx.serviceOrProxy(), mtd, args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
+            }
+            catch (Throwable e) {
+                throw new ServiceProxyException(e);
             }
         }
 
@@ -454,6 +449,21 @@ public class GridServiceProxy<T> implements Serializable {
         @Override public String toString() {
             return S.toString(ServiceProxyCallable.class, this);
         }
+    }
+
+    /**
+     * Calls method of service whether it is a proxy or not.
+     *
+     * @param srvcOrProxy Service instance or proxy wrap.
+     * @param mtd         Service method to call.
+     * @param args        Arguments for method {@code mtd}.
+     * @return Value made of invocation of {@code mtd}.
+     */
+    private static Object callServiceMtd(Service srvcOrProxy, Method mtd, Object[] args)
+        throws InvocationTargetException, IllegalAccessException, Throwable {
+        return Proxy.isProxyClass(srvcOrProxy.getClass()) ?
+            Proxy.getInvocationHandler(srvcOrProxy).invoke(srvcOrProxy, mtd, args)
+            : mtd.invoke(srvcOrProxy, args);
     }
 
     /**

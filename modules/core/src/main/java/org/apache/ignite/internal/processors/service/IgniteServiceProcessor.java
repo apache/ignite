@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -213,14 +214,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Leverages collecting of service metrics. */
     private final boolean metricsEnabled;
 
-    /** Keeps metrics data bound to service method. */
-    private Map<String, Map<Method, HistogramMetricImpl>> invocationHistograms;
+    /** Keeps histograms to measure durations service method invocations. Guided by service name, then method name. */
+    Map<String, Map<String, MethodHistogramHolder>> invocationHistograms;
 
     /**
      * @param method       Method for the invocation timings.
      * @param pkgNameDepth Level of package name abbreviation. See {@link MetricUtils#abbreviateName(Class, int)}.
-     * @return Metric name for {@code method}. Doesn't guaratee same name with same {@code pkgNameDepth} is used for
-     * real metric registry.
+     * @return Metric name for {@code method}.
      */
     static String methodMetricName(Method method, int pkgNameDepth) {
         StringBuilder sb = new StringBuilder();
@@ -1064,9 +1064,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         assert histogram != null;
 
-        // TODO : remove
-        log.info("Historgam " + histogram + " for method " + method);
-
         return histogram;
     }
 
@@ -1284,6 +1281,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 // Initialize service.
                 srvc.init(srvcCtx);
+
+                srvcCtx.service(srvc);
             }
             catch (Throwable e) {
                 U.error(log, "Failed to initialize service (service will not be deployed): " + name, e);
@@ -1300,10 +1299,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            if (metricsEnabled)
+            if (metricsEnabled) {
                 registerMetrics(srvc, srvcCtx.name());
 
-            srvcCtx.service(serviceInvocationProxy(srvc, srvcCtx.name()));
+                srvcCtx.serviceProxy((Service)Proxy.newProxyInstance(
+                    srvc.getClass().getClassLoader(),
+                    getInterfaces(srvc.getClass()).toArray(new Class<?>[0]),
+                    new TimingInvocationHandler(srvc, invocationHistograms.get(srvcCtx.name()))
+                ));
+            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1869,18 +1873,36 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         Stream.of(srvc.getClass().getInterfaces()).map(Class::getMethods).flatMap(Arrays::stream)
             .filter(mtd -> !mtd.getDeclaringClass().equals(Service.class))
             .forEach(mtd -> {
-                // TODO : remove
-                log.info("Registering histogram for method " + mtd);
+                // All metrics for current service.
+                Map<String, MethodHistogramHolder> srvcHistograms =
+                    invocationHistograms.computeIfAbsent(srvcName, name -> new HashMap<>(1));
 
-                // Create metric for the method or take the same one from the previous service context.
-                Map<Method, HistogramMetricImpl> srvcHistograms = invocationHistograms.computeIfAbsent(srvcName,
-                    name -> new HashMap<>(1));
+                // Histograms for this method name.
+                MethodHistogramHolder mtdHistograms =
+                    srvcHistograms.computeIfAbsent(mtd.getName(), mdtName -> new MethodHistogramHolder());
 
-                srvcHistograms.computeIfAbsent(mtd, mtdKey -> invocationsMetric(srvcName, mtdKey));
+                synchronized (mtdHistograms) {
+                    // Assume method is not overloaded. Save single histogram.
+                    if (mtdHistograms.isEmpty())
+                        mtdHistograms.set1(invocationsMetric(srvcName, mtd), mtd);
+                    else if (!mtdHistograms.isSameNotOverloaded(mtd)) {
+                        if (mtdHistograms.get2() == null) {
+                            mtdHistograms.set2(new HashMap<>(2));
+
+                            //Save previous single histogram.
+                            mtdHistograms.get2().put(
+                                Arrays.asList(mtdHistograms.getNotOverloadedMtd().getParameterTypes()),
+                                mtdHistograms.get1());
+
+                            // Method is overloaded. Remove sigle histogram to hint usage of the map.
+                            mtdHistograms.set1(null, null);
+                        }
+
+                        mtdHistograms.get2().computeIfAbsent(Arrays.asList(mtd.getParameterTypes()),
+                            args -> invocationsMetric(srvcName, mtd));
+                    }
+                }
             });
-
-        // TODO : remove
-        log.info("Registered service " + srvcName + ". Total metrics : " + invocationHistograms.size());
     }
 
     /**
@@ -1940,42 +1962,22 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         opsLock.readLock().unlock();
     }
 
-    /**
-     * Creates a proxy or direct link to the service depending on {@link #metricsEnabled}. If {@link #metricsEnabled} is
-     * {@code True} requires metrics registered for service {@code srvcName}.
-     *
-     * @param srvc     The serive to wrap into invocation proxy.
-     * @param srvcName Name of service {@code srvc}.
-     * @return Local service proxy allowing timing of service method if {@code metricsEnabled} is {@code True}. If
-     * {@code metricsEnabled} is {@code False}, returns the service instance {@code srvc}.
-     */
-    private Service serviceInvocationProxy(Service srvc, String srvcName) {
-        if (metricsEnabled) {
-            return (Service)Proxy.newProxyInstance(
-                srvc.getClass().getClassLoader(),
-                getInterfaces(srvc.getClass()).toArray(new Class<?>[0]),
-                new TimingInvocationHandler(srvc, invocationHistograms.get(srvcName))
-            );
-        }
-        else
-            return srvc;
-    }
-
     /** Invocation proxy handler for service to measure durations of its methods. */
     private static class TimingInvocationHandler implements InvocationHandler {
         /** The service to call. */
         private final Service svc;
 
-        /** Histograms to measure durations of service method calls. */
-        private Map<Method, HistogramMetricImpl> invocationHistograms;
+        /** Histogram map guided by method name. */
+        private final Map<String, MethodHistogramHolder> histograms;
 
         /**
          * @param svc The service to call.
-         * @param invocationHistograms Histogram map for service method timings.
+         * @param histograms Histogram map for service method timings.
          */
-        private TimingInvocationHandler(Service svc, Map<Method, HistogramMetricImpl> invocationHistograms) {
+        private TimingInvocationHandler(Service svc, Map<String, MethodHistogramHolder> histograms) {
             this.svc = svc;
-            this.invocationHistograms = invocationHistograms;
+
+            this.histograms = histograms;
         }
 
         /** {@inheritDoc} */
@@ -1989,7 +1991,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             // Support not-public invocations like of package level interfaces.
             mtd.setAccessible(true);
 
-            long startTime = System.nanoTime();
+            long invocationTiming = System.nanoTime();
 
             try {
                 return mtd.invoke(svc, args);
@@ -1998,19 +2000,66 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 throw e.getTargetException();
             }
             finally {
-                // TODO : remove
-                if (invocationHistograms.get(mtd) == null) {
-                    System.err.println("Empty method: '" + mtd.getName() + "' of class '"
-                        + mtd.getDeclaringClass().getName() + ": " + mtd);
-
-                    System.out.println("Empty method: '" + mtd.getName() + "' of class '"
-                        + mtd.getDeclaringClass().getName() + ": " + mtd);
-                }
-
-                invocationHistograms.get(mtd).value(U.nanosToMillis(System.nanoTime() - startTime));
+                invocationTiming = U.nanosToMillis(System.nanoTime() - invocationTiming);
 
                 mtd.setAccessible(accessible);
+
+                MethodHistogramHolder mtdHistograms = histograms.get(mtd.getName());
+
+                assert mtdHistograms != null && !mtdHistograms.isEmpty();
+
+                if (mtdHistograms.get1() != null)
+                    mtdHistograms.get1().value(invocationTiming);
+                else {
+                    HistogramMetricImpl overloadedMtdHistogram
+                        = mtdHistograms.get2().get(Arrays.asList(mtd.getParameterTypes()));
+
+                    assert overloadedMtdHistogram != null;
+
+                    overloadedMtdHistogram.value(invocationTiming);
+                }
             }
+        }
+    }
+
+    /**
+     * Histogram holder for service metrics. Helps fasten invocation of not overloaded methods.
+     * Keeps either map of histograms for overloaded method or single histogram if the method is not overloaded.
+     */
+    private static final class MethodHistogramHolder
+        extends IgniteBiTuple<HistogramMetricImpl, Map<Collection<Class<?>>, HistogramMetricImpl>> {
+
+        /** Not overloaded method for the single histogramm. */
+        private Method notOverloadedMtd;
+
+        /** */
+        public MethodHistogramHolder() {
+        }
+
+        /**
+         * Saves single histogramm and its not overloaded method.
+         *
+         * @param histogram Histogram for single, not-overloaded method {@code notOverloadedMtd}.
+         */
+        public void set1(HistogramMetricImpl histogram, Method notOverloadedMtd) {
+            super.set1(histogram);
+
+            this.notOverloadedMtd = notOverloadedMtd;
+        }
+
+        /**
+         * @return Not-overloaded method or {@code Null} if method is overloaded.
+         */
+        public Method getNotOverloadedMtd() {
+            return notOverloadedMtd;
+        }
+
+        /**
+         * @return {@code True} if current not-overloaded method is not null and equals {@code mtd}.
+         */
+        public boolean isSameNotOverloaded(Method mtd) {
+            return notOverloadedMtd != null && notOverloadedMtd.getName().equals(mtd.getName())
+                && Arrays.equals(notOverloadedMtd.getParameterTypes(), mtd.getParameterTypes());
         }
     }
 }
