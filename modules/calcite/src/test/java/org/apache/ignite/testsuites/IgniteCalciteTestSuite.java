@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.PlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
@@ -32,6 +33,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     PlannerTest.class,
     ExecutionTest.class,
+    ClosableIteratorsHolderTest.class,
     ContinuousExecutionTest.class,
     CalciteQueryProcessorTest.class,
     JdbcQueryTest.class

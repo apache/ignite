@@ -246,7 +246,7 @@ public class ExpressionFactory {
             new RexToLixTranslator.InputGetterImpl(
                 ImmutableList.of(
                     Pair.of(inputValues_,
-                        PhysTypeImpl.of(typeFactory, type == null ? emptyType : type,
+                        PhysTypeImpl.of(typeFactory, type,
                             JavaRowFormat.ARRAY, false))));
 
         RexProgramBuilder programBuilder = new RexProgramBuilder(type, rexBuilder);
