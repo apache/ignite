@@ -63,6 +63,8 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.ComputeJobViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -87,6 +90,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -115,6 +120,12 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
  */
 @SkipDaemon
 public class GridJobProcessor extends GridProcessorAdapter {
+    /** */
+    public static final String JOB_VIEW = "jobs";
+
+    /** */
+    public static final String JOB_VIEW_DESC = "Running compute jobs, part of compute task started on remote host.";
+
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
 
@@ -322,6 +333,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
         totalExecutionTimeMetric = mreg.longMetric(EXECUTION_TIME, "Total execution time of jobs.");
 
         totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue.");
+
+        Collection<GridJobWorker> jobs;
+
+        if (passiveJobs == null)
+            jobs = new ReadOnlyCollectionView2X<>(activeJobs.values(), cancelledJobs.values());
+        else {
+            jobs = new ReadOnlyCollectionView2X<>(
+                new ReadOnlyCollectionView2X<>(activeJobs.values(), passiveJobs.values()),
+                cancelledJobs.values());
+        }
+
+        ctx.systemView().registerView(JOB_VIEW, JOB_VIEW_DESC,
+            new ComputeJobViewWalker(), jobs, ComputeJobView::new);
     }
 
     /** {@inheritDoc} */
@@ -1676,7 +1700,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class PartitionsReservation implements GridReservable {
+    public class PartitionsReservation implements GridReservable {
         /** Caches. */
         private final int[] cacheIds;
 
@@ -1700,6 +1724,16 @@ public class GridJobProcessor extends GridProcessorAdapter {
             this.partId = partId;
             this.topVer = topVer;
             partititons = new GridDhtLocalPartition[cacheIds.length];
+        }
+
+        /** @return Caches. */
+        public int[] getCacheIds() {
+            return cacheIds;
+        }
+
+        /** @return Partition id. */
+        public int getPartId() {
+            return partId;
         }
 
         /** {@inheritDoc} */

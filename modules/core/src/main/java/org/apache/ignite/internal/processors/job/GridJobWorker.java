@@ -271,15 +271,40 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      *
      * @return {@code True} if job was cancelled by the system.
      */
-    boolean isSystemCanceled() {
+    public boolean isSystemCanceled() {
         return sysCancelled;
     }
 
     /**
      * @return Create time.
      */
-    long getCreateTime() {
+    public long getCreateTime() {
         return createTime;
+    }
+
+    /** @return Start time. */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** @return Finish time. */
+    public long getFinishTime() {
+        return finishTime;
+    }
+
+    /** @return Sys stopping. */
+    public boolean isSysStopping() {
+        return sysStopping;
+    }
+
+    /** @return Is started. */
+    public boolean isStarted() {
+        return isStarted;
+    }
+
+    /** @return Grid reservable resource. */
+    public GridReservable getPartsReservation() {
+        return partsReservation;
     }
 
     /**
@@ -327,14 +352,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @return {@code true} if job is being finished after execution
      *      and {@code false} otherwise.
      */
-    boolean isFinishing() {
+    public boolean isFinishing() {
         return finishing.get();
     }
 
     /**
      * @return Parent task node ID.
      */
-    ClusterNode getTaskNode() {
+    public ClusterNode getTaskNode() {
         return taskNode;
     }
 
@@ -375,7 +400,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return {@code True} if job is timed out.
      */
-    boolean isTimedOut() {
+    public boolean isTimedOut() {
         return timedOut;
     }
 
