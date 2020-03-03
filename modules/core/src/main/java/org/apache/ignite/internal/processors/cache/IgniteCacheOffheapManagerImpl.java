@@ -2946,6 +2946,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void markDestroyed() throws IgniteCheckedException {
+            dataTree.markDestroyed();
+        }
+
+        /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 

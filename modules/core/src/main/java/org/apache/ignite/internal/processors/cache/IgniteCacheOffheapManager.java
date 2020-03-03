@@ -1040,6 +1040,11 @@ public interface IgniteCacheOffheapManager {
         public void destroy() throws IgniteCheckedException;
 
         /**
+         * Mark store as destroyed.
+         */
+        public void markDestroyed() throws IgniteCheckedException;
+
+        /**
          * Clears all the records associated with logical cache with given ID.
          *
          * @param cacheId Cache ID.
