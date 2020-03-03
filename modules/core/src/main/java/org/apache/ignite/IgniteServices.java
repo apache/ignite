@@ -565,7 +565,9 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param name Service name.
      * @param <T> Service type
      * @return Deployed service with specified name.
+     * @deprecated Use {@link #service(String, Class, boolean, long)}
      */
+    @Deprecated
     public <T> T service(String name);
 
     /**
@@ -574,7 +576,9 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param name Service name.
      * @param <T> Service type.
      * @return all deployed services with specified name.
+     * @deprecated Use {@link #service(String, Class, boolean, long)}
      */
+    @Deprecated
     public <T> Collection<T> services(String name);
 
     /**
@@ -588,7 +592,9 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
+     * @deprecated Use {@link #service(String, Class, boolean, long)}
      */
+    @Deprecated
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
 
     /**
@@ -604,9 +610,25 @@ public interface IgniteServices extends IgniteAsyncSupport {
      *  and will limit remote service invocation time.
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.
+     * @deprecated Use {@link #service(String, Class, boolean, long)}
      */
+    @Deprecated
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky, long timeout)
         throws IgniteException;
+
+    /**
+     * Gives a handle on the service.
+     *
+     * @param name Service name.
+     * @param svcItf Interface for the service. Not a class.
+     * @param sticky Whether or not Ignite should always contact the same remote
+     *      service or try to load-balance between services. Ignored for local instance if available.
+     * @param timeout If greater than 0 then created proxy will wait for service availability only specified time,
+     *  and will limit remote service invocation time. Ignored if local instance is available.
+     * @return Proxy over either remote service or local service if it is deployed locally.
+     * @throws IgniteException If failed to create service proxy.
+     */
+    public <T> T service(String name, Class<? super T> svcItf, boolean sticky, long timeout) throws IgniteException;
 
     /** {@inheritDoc} */
     @Deprecated

@@ -997,11 +997,10 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout)
-        throws IgniteException {
+        long timeout, boolean locProxied) throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
-        if (hasLocalNode(prj)) {
+        if (!locProxied && hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
 
             if (ctx != null) {
