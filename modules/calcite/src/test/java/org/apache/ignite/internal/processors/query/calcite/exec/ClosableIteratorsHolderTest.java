@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +63,8 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
             holder.iterator(newIterator());
 
         System.gc();
+
+        GridTestUtils.waitForCondition(() -> iterators.size() < GENERATED, 10_000);
 
         assertTrue(iterators.size() < GENERATED);
     }

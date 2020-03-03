@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.EndMarker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * A part of exchange.
@@ -107,12 +109,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
     public void init() {
         checkThread();
 
-        try {
-            flushFromBuffer();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flushFromBuffer();
     }
 
     /** {@inheritDoc} */
@@ -123,14 +120,9 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
 
         waiting--;
 
-        try {
-            inBuffer.add(row);
+        inBuffer.add(row);
 
-            flushFromBuffer();
-        }
-        catch (Exception e) {
-            onError(e);
-        }
+        flushFromBuffer();
     }
 
     /** {@inheritDoc} */
@@ -199,13 +191,18 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
     }
 
     /** */
-    private void sendBatch(UUID nodeId, int batchId, List<?> rows) {
+    private void sendBatch(UUID nodeId, int batchId, List<?> rows) throws IgniteCheckedException {
         exchange.sendBatch(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId, rows);
     }
 
     /** */
     private void sendCancel(UUID nodeId, int batchId) {
-        exchange.cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+        try {
+            exchange.cancel(this, nodeId, queryId(), targetFragmentId, exchangeId, batchId);
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(context().parent().logger(), "Failed to send cancel message.", e);
+        }
     }
 
     /** */
@@ -220,33 +217,38 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
 
     /** */
     private void flushFromBuffer() {
-        while (!inBuffer.isEmpty()) {
-            T row = inBuffer.remove();
+        try {
+            while (!inBuffer.isEmpty()) {
+                T row = inBuffer.remove();
 
-            List<UUID> nodes = destination.targets(row);
+                List<UUID> nodes = destination.targets(row);
 
-            assert !F.isEmpty(nodes);
+                assert !F.isEmpty(nodes);
 
-            List<Buffer> buffers = new ArrayList<>(nodes.size());
+                List<Buffer> buffers = new ArrayList<>(nodes.size());
 
-            for (UUID node : nodes) {
-                Buffer dest = getOrCreateBuffer(node);
+                for (UUID node : nodes) {
+                    Buffer dest = getOrCreateBuffer(node);
 
-                if (dest.ready())
-                    buffers.add(dest);
-                else {
-                    inBuffer.addFirst(row);
+                    if (dest.ready())
+                        buffers.add(dest);
+                    else {
+                        inBuffer.addFirst(row);
 
-                    return;
+                        return;
+                    }
                 }
+
+                for (Buffer dest : buffers)
+                    dest.add(row);
             }
 
-            for (Buffer dest : buffers)
-                dest.add(row);
+            if (waiting == 0)
+                F.first(sources).request(waiting = IN_BUFFER_SIZE);
         }
-
-        if (waiting == 0)
-            F.first(sources).request(waiting = IN_BUFFER_SIZE);
+        catch (Exception e) {
+            onError(e);
+        }
     }
 
     /** */
@@ -279,7 +281,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
          *
          * @param row Row.
          */
-        public void add(Object row) {
+        public void add(Object row) throws IgniteCheckedException {
             assert ready();
 
             if (curr.size() == IO_BATCH_SIZE) {
@@ -294,7 +296,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
         /**
          * Signals data is over.
          */
-        public void end() {
+        public void end() throws IgniteCheckedException {
             if (hwm == Integer.MAX_VALUE)
                 return;
 

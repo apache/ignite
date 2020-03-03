@@ -39,7 +39,7 @@ public interface ExchangeService extends Service {
      * @param batchId Batch ID.
      * @param rows Data rows.
      */
-    void sendBatch(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows);
+    void sendBatch(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId, List<?> rows) throws IgniteCheckedException;
 
     /**
      * Acknowledges a batch with given ID is processed.
@@ -63,5 +63,5 @@ public interface ExchangeService extends Service {
      * @param exchangeId Exchange ID.
      * @param batchId Batch ID.
      */
-    void cancel(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId);
+    void cancel(Outbox<?> caller, UUID nodeId, UUID queryId, long fragmentId, long exchangeId, int batchId) throws IgniteCheckedException;
 }
