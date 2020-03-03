@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.List;
-import java.util.function.Function;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -47,7 +46,7 @@ public class Call implements Expression {
     private List<Expression> operands;
 
     /** */
-    private transient Function<Object[], ?> fun;
+    private transient CallOperation opImpl;
 
     /**
      * @param type Result type.
@@ -103,9 +102,9 @@ public class Call implements Expression {
 
     /** {@inheritDoc} */
     @Override public <T> T evaluate(ExecutionContext ctx, Object... args) {
-        if (fun == null)
-            fun = new ExpressionFactory(ctx.parent().typeFactory(), ctx.parent().conformance(), ctx.parent().opTable()).implement(this);
+        if (opImpl == null)
+            opImpl = new ExpressionFactory(ctx.parent().typeFactory(), ctx.parent().conformance(), ctx.parent().opTable()).implement(this);
 
-        return (T) fun.apply(operands.stream().map(o -> o.evaluate(ctx, args)).toArray());
+        return (T) opImpl.apply(operands.stream().map(o -> o.evaluate(ctx, args)).toArray());
     }
 }
