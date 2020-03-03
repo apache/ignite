@@ -282,10 +282,10 @@ public class ConnectionManager {
      * @return Prepared statement or {@code null}.
      * @throws SQLException On error.
      */
-    @Nullable public PreparedStatement cachedPreparedStatement(Connection c, String sql) throws SQLException {
+    @Nullable public PreparedStatement cachedPreparedStatement(Connection c, String sql, byte stmtFlags) throws SQLException {
         H2StatementCache cache = statementCacheForThread();
 
-        H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+        H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql, stmtFlags);
 
         PreparedStatement stmt = cache.get(key);
 
@@ -318,13 +318,13 @@ public class ConnectionManager {
      * @return Prepared statement.
      * @throws SQLException If failed.
      */
-    public PreparedStatement prepareStatement(Connection c, String sql) throws SQLException {
-        PreparedStatement stmt = cachedPreparedStatement(c, sql);
+    public PreparedStatement prepareStatement(Connection c, String sql, byte stmtFlags) throws SQLException {
+        PreparedStatement stmt = cachedPreparedStatement(c, sql, stmtFlags);
 
         if (stmt == null) {
             H2StatementCache cache = statementCacheForThread();
 
-            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql, stmtFlags);
 
             stmt = prepareStatementNoCache(c, sql);
 

@@ -36,13 +36,16 @@ class H2CachedStatementKey {
     private final byte flags;
 
     /**
-     * Constructor.
+     * Full-fledged constructor.
      *
      * @param schemaName Schema name.
      * @param sql SQL.
+     * @param flags Query flags.
      */
-    H2CachedStatementKey(String schemaName, String sql) {
-        this(schemaName, sql, null, false);
+    public H2CachedStatementKey(String schemaName, String sql, byte flags) {
+        this.schemaName = schemaName;
+        this.sql = sql;
+        this.flags = flags;
     }
 
     /**
@@ -57,29 +60,7 @@ class H2CachedStatementKey {
      * @see DmlStatementsProcessor#getPlanForStatement
      */
     static H2CachedStatementKey forDmlStatement(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
-        return new H2CachedStatementKey(schemaName, sql, fieldsQry, loc);
-    }
-
-    /**
-     * Full-fledged constructor.
-     *
-     * @param schemaName Schema name.
-     * @param sql SQL.
-     * @param fieldsQry Query with flags.
-     * @param loc DML {@code SELECT} Locality flag.
-     */
-    private H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
-        this.schemaName = schemaName;
-        this.sql = sql;
-
-        if (fieldsQry == null || loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
-            this.flags = 0; // flags only relevant for server side updates.
-        else {
-            this.flags = (byte)(1 +
-                (fieldsQry.isDistributedJoins() ? 2 : 0) +
-                (fieldsQry.isEnforceJoinOrder() ? 4 : 0) +
-                (fieldsQry.isCollocated() ? 8 : 0));
-        }
+        return new H2CachedStatementKey(schemaName, sql, H2StatementCache.queryFlags(fieldsQry));
     }
 
     /** {@inheritDoc} */
