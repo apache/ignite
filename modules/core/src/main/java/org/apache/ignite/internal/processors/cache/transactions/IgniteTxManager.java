@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -812,7 +813,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param node Cluster node.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer, ClusterNode node) {
+    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer, ClusterNode node,
+        IgnitePredicate<IgniteInternalTx> filter) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "LocalTx",
@@ -832,7 +834,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (tx.originatingNodeId().equals(node.id())) {
                     assert needWaitTransaction(tx, topVer);
 
-                    res.add(tx.finishFuture());
+                    if (filter == null || filter.apply(tx))
+                        res.add(tx.finishFuture());
                 }
             }
             else if (needWaitTransaction(tx, topVer))

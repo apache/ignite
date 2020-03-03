@@ -18,14 +18,20 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -46,13 +52,19 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -284,10 +296,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
     /**
      * @param nodes Nodes.
-     * @param signleCnt Counter for GridDhtPartitionsSingleMessage.
+     * @param singleCnt Counter for GridDhtPartitionsSingleMessage.
      * @param fullCnt Counter for GridDhtPartitionsFullMessage.
      */
-    private void startPmeMessagesCounting(int nodes, AtomicLong signleCnt, AtomicLong fullCnt) {
+    private void startPmeMessagesCounting(int nodes, AtomicLong singleCnt, AtomicLong fullCnt) {
         for (int i = 0; i < nodes; i++) {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
@@ -296,7 +308,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 @Override public void apply(ClusterNode node, Message msg) {
                     if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        signleCnt.incrementAndGet();
+                        singleCnt.incrementAndGet();
 
                     if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
                         ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
@@ -337,7 +349,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     private void testNoTransactionsWaitAtNodeLeft(int backups, PartitionLossPolicy lossPlc) throws Exception {
         persistence = true;
 
-        String cacheName = "three-partitioned";
+        String cacheName = "partitioned";
 
         try {
             cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
@@ -555,6 +567,332 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      *
      */
     @Test
+    public void testOnlyAffectedNodesWaitsForRecovery() throws Exception {
+        persistence = true;
+
+        String partCacheName = "partitioned";
+        String replCacheName = "replicated";
+
+        try {
+            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+                @Override public CacheConfiguration[] apply(String igniteInstanceName) {
+                    CacheConfiguration partitionedCcfg = new CacheConfiguration();
+
+                    partitionedCcfg.setName(partCacheName);
+                    partitionedCcfg.setWriteSynchronizationMode(FULL_SYNC);
+                    partitionedCcfg.setBackups(2);
+                    partitionedCcfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+                    partitionedCcfg.setAffinity(new Map4PartitionsTo4NodesAffinityFunction());
+
+                    CacheConfiguration replicatedCcfg = new CacheConfiguration();
+
+                    replicatedCcfg.setName(replCacheName);
+                    replicatedCcfg.setWriteSynchronizationMode(FULL_SYNC);
+                    replicatedCcfg.setCacheMode(CacheMode.REPLICATED);
+                    replicatedCcfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+                    return new CacheConfiguration[] {partitionedCcfg, replicatedCcfg};
+                }
+            };
+
+            int nodes = 4;
+
+            startGridsMultiThreaded(nodes);
+
+            for (int i = 0; i < nodes; i++) {
+                TestRecordingCommunicationSpi spi =
+                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                    @Override public boolean apply(ClusterNode node, Message msg) {
+                        return msg.getClass().equals(GridCacheTxRecoveryRequest.class);
+                    }
+                });
+            }
+
+            CountDownLatch partLatch = new CountDownLatch(1);
+            CountDownLatch replLatch = new CountDownLatch(1);
+            CountDownLatch failedLatch = new CountDownLatch(1);
+
+            Random r = new Random();
+
+            Ignite failed = grid(r.nextInt(nodes));
+
+            IgniteCache<Integer, Integer> partCache = failed.getOrCreateCache(partCacheName);
+            IgniteCache<Integer, Integer> replCache = failed.getOrCreateCache(replCacheName);
+
+            Integer partKey = primaryKey(partCache);
+            Integer replKey = primaryKey(replCache);
+
+            Ignite primary = primaryNode(partKey, partCacheName);
+
+            List<Ignite> backupNodes = backupNodes(partKey, partCacheName);
+            List<Ignite> nearNodes = new ArrayList<>(G.allGrids());
+
+            nearNodes.remove(primary);
+            nearNodes.removeAll(backupNodes);
+
+            assertEquals(failed, primary);
+            assertFalse(backupNodes.isEmpty());
+            assertFalse(nearNodes.isEmpty());
+            assertTrue(Collections.disjoint(backupNodes, nearNodes));
+            assertEquals(nodes - 1, backupNodes.size() + nearNodes.size());
+
+            IgniteInternalFuture<?> partFut = multithreadedAsync(() -> {
+                try {
+                    checkActiveTransactionsCount(primary, 0, backupNodes, 0, nearNodes, 0);
+
+                    Transaction tx = primary.transactions().txStart();
+
+                    checkActiveTransactionsCount(primary, 1, backupNodes, 0, nearNodes, 0);
+
+                    partCache.put(partKey, 1);
+
+                    ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+                    checkActiveTransactionsCount(primary, 1, backupNodes, 1, nearNodes, 0);
+
+                    partLatch.countDown();
+                    failedLatch.await();
+                }
+                catch (Exception e) {
+                    fail("Should not happen [exception=" + e + "]");
+                }
+            }, 1);
+
+            IgniteInternalFuture<?> replFut = multithreadedAsync(() -> {
+                try {
+                    partLatch.await(); // Waiting for partitioned cache tx preparation.
+
+                    checkActiveTransactionsCount(primary, 1, backupNodes, 1, nearNodes, 0);
+
+                    Transaction tx = primary.transactions().txStart();
+
+                    checkActiveTransactionsCount(primary, 2, backupNodes, 1, nearNodes, 0);
+
+                    replCache.put(replKey, 1);
+
+                    ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+                    checkActiveTransactionsCount(primary, 2, backupNodes, 2, nearNodes, 1);
+
+                    replLatch.countDown();
+                    failedLatch.await();
+                }
+                catch (Exception e) {
+                    fail("Should not happen [exception=" + e + "]");
+                }
+            }, 1);
+
+            partLatch.await();
+            replLatch.await();
+
+            checkActiveTransactionsCount(null, 2, backupNodes, 2, nearNodes, 1);
+
+            failed.close(); // Stopping node.
+
+            assertTrue(GridTestUtils.waitForCondition( // Waiting for recovery start.
+                () -> {
+                    for (Ignite ignite : G.allGrids()) {
+                        TestRecordingCommunicationSpi spi =
+                            (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+                        if (!spi.hasBlockedMessages())
+                            return false;
+                    }
+
+                    return true;
+                }, 5000));
+
+            failedLatch.countDown();
+
+            partFut.get();
+            replFut.get();
+
+            checkActiveTransactionsCount(null, 0, backupNodes, 2, nearNodes, 1);
+
+            AtomicReference<IgniteInternalTx> replTx = new AtomicReference<>();
+
+            for (Ignite near : nearNodes) { // Contains only replicated txs.
+                Collection<IgniteInternalTx> txs =
+                    ((IgniteEx)near).context().cache().context().tm().activeTransactions();
+
+                IgniteInternalTx tx = txs.iterator().next();
+
+                assertEquals(1, txs.size());
+                assertTrue(tx.state() == TransactionState.PREPARED);
+                assertTrue(tx.writeEntries().stream().allMatch(
+                    entry -> entry.context().shared().cacheContext(entry.cacheId()).isReplicated()));
+                assertTrue(replTx.get() == null || replTx.get().nearXidVersion().equals(tx.nearXidVersion()));
+
+                replTx.set(tx);
+            }
+
+            CountDownLatch backupCreateLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch backupPutLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch backupCommitLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch nearCreateLatch = new CountDownLatch(nearNodes.size());
+            CountDownLatch nearPutLatch = new CountDownLatch(nearNodes.size());
+            CountDownLatch nearCommitLatch = new CountDownLatch(nearNodes.size());
+
+            BiConsumer<Ignite, T3<CountDownLatch, CountDownLatch, CountDownLatch>> txRun = // Counts tx's creations and preparations.
+                (Ignite ignite, T3</*create*/CountDownLatch, /*put*/CountDownLatch, /*commit*/CountDownLatch> latches) -> {
+                    try {
+                        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(replCacheName);
+
+                        try (Transaction tx = ignite.transactions().txStart()) {
+                            latches.get1().countDown(); // Create.
+
+                            cache.put(primaryKeys(cache, 100).get(99), 2);
+
+                            latches.get2().countDown(); // Put.
+
+                            tx.commit();
+
+                            latches.get3().countDown(); // Commit.
+                        }
+                    }
+                    catch (Exception e) {
+                        fail("Should not happen [exception=" + e + "]");
+                    }
+                };
+
+            List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+            for (Ignite backup : backupNodes)
+                futs.add(multithreadedAsync(() ->
+                    txRun.accept(backup, new T3<>(backupCreateLatch, backupPutLatch, backupCommitLatch)), 1));
+
+            for (Ignite near : nearNodes)
+                futs.add(multithreadedAsync(() ->
+                    txRun.accept(near, new T3<>(nearCreateLatch, nearPutLatch, nearCommitLatch)), 1));
+
+            checkUpcomingTransactionsState( // Switch in progress cluster-wide.
+                backupCreateLatch, 0, // Started.
+                backupPutLatch, backupNodes.size(),
+                backupCommitLatch, backupNodes.size(),
+                nearCreateLatch, 0, // Started.
+                nearPutLatch, nearNodes.size(),
+                nearCommitLatch, nearNodes.size());
+
+            checkActiveTransactionsCount(
+                null, 0,
+                backupNodes, 2 /* prepared replicated + prepard partitioned */ + 1 /* started txRun per node */,
+                nearNodes, 1 /* prepared replicated */ + 1 /* started txRun per node */);
+
+            for (Ignite ignite : G.allGrids()) {
+                TestRecordingCommunicationSpi spi =
+                    (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+                spi.stopBlock(true, t -> { // Replicated recovery.
+                    Message msg = t.get2().message();
+
+                    return ((GridCacheTxRecoveryRequest)msg).nearXidVersion().equals(replTx.get().nearXidVersion());
+                });
+            }
+
+            checkUpcomingTransactionsState(
+                backupCreateLatch, 0, // Started.
+                backupPutLatch, backupNodes.size(),
+                backupCommitLatch, backupNodes.size(),
+                nearCreateLatch, 0, // Started.
+                nearPutLatch, 0, // Near nodes able to start transactions once replicated caches restored,
+                nearCommitLatch, nearNodes.size()); // But not able to commit transactions since their backups still in switch.
+
+            checkActiveTransactionsCount(
+                null, 0,
+                backupNodes, 1 /* prepared partitioned */ + 1 /* started txRun per node */,
+                nearNodes, 1 /* started txRun per node */);
+
+            for (Ignite ignite : G.allGrids()) {
+                TestRecordingCommunicationSpi spi =
+                    (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+
+                spi.stopBlock(true, t -> { // Partitioned recovery.
+                    return true;
+                });
+            }
+
+            checkUpcomingTransactionsState( // Switches finished cluster-wide, all transactions can be committed.
+                backupCreateLatch, 0,
+                backupPutLatch, 0,
+                backupCommitLatch, 0,
+                nearCreateLatch, 0,
+                nearPutLatch, 0,
+                nearCommitLatch, 0);
+
+            // Final check that active transactions are absent.
+            checkActiveTransactionsCount(null, 0, backupNodes, 0, nearNodes, 0);
+
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.get();
+        }
+        finally {
+            persistence = false;
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkActiveTransactionsCount(
+        Ignite primary,
+        int primaryCnt,
+        List<Ignite> backupNodes,
+        int backupCnt,
+        List<Ignite> nearNodes,
+        int nearCnt) {
+        Function<Ignite, Collection<IgniteInternalTx>> txs =
+            ignite -> ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
+
+        if (primary != null)
+            assertEquals(primaryCnt, txs.apply(primary).size());
+
+        for (Ignite backup : backupNodes)
+            assertEquals(backupCnt, txs.apply(backup).size());
+
+        for (Ignite near : nearNodes)
+            assertEquals(nearCnt, txs.apply(near).size());
+    }
+
+    /**
+     *
+     */
+    private void checkUpcomingTransactionsState(
+        CountDownLatch backupCreateLatch,
+        int backupCreateCnt,
+        CountDownLatch backupPutLatch,
+        int backupPutCnt,
+        CountDownLatch backupCommitLatch,
+        int backupCommitCnt,
+        CountDownLatch nearCreateLatch,
+        int nearCreateCnt,
+        CountDownLatch nearPutLatch,
+        int nearPutCnt,
+        CountDownLatch nearCommitLatch,
+        int nearCommitCnt) throws InterruptedException {
+        checkTransactionsState(backupCreateLatch, backupCreateCnt);
+        checkTransactionsState(backupPutLatch, backupPutCnt);
+        checkTransactionsState(backupCommitLatch, backupCommitCnt);
+        checkTransactionsState(nearCreateLatch, nearCreateCnt);
+        checkTransactionsState(nearPutLatch, nearPutCnt);
+        checkTransactionsState(nearCommitLatch, nearCommitCnt);
+    }
+
+    /**
+     *
+     */
+    private void checkTransactionsState(CountDownLatch latch, int cnt) throws InterruptedException {
+        if (cnt > 0)
+            assertEquals(cnt, latch.getCount()); // Switch in progress.
+        else
+            latch.await(); // Switch finished (finishing).
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testLateAffinityAssignmentOnBackupLeftAndJoin() throws Exception {
         String cacheName = "single-partitioned";
 
@@ -563,7 +901,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 CacheConfiguration ccfg = new CacheConfiguration();
 
                 ccfg.setName(cacheName);
-                ccfg.setAffinity(new Map1PartitionsTo2NodesAffinityFunction());
+                ccfg.setAffinity(new Map1PartitionTo2NodesAffinityFunction());
 
                 return new CacheConfiguration[] {ccfg};
             }
@@ -642,11 +980,18 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 p2.add(affCtx.currentTopologySnapshot().get(2));
                 p3.add(affCtx.currentTopologySnapshot().get(3));
 
-                if (backups == 1) {
+                if (backups >= 1) {
                     p0.add(affCtx.currentTopologySnapshot().get(1));
                     p1.add(affCtx.currentTopologySnapshot().get(2));
                     p2.add(affCtx.currentTopologySnapshot().get(3));
                     p3.add(affCtx.currentTopologySnapshot().get(0));
+                }
+
+                if (backups == 2) {
+                    p0.add(affCtx.currentTopologySnapshot().get(2));
+                    p1.add(affCtx.currentTopologySnapshot().get(3));
+                    p2.add(affCtx.currentTopologySnapshot().get(0));
+                    p3.add(affCtx.currentTopologySnapshot().get(1));
                 }
 
                 res.add(p0);
@@ -662,11 +1007,11 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class Map1PartitionsTo2NodesAffinityFunction extends RendezvousAffinityFunction {
+    private static class Map1PartitionTo2NodesAffinityFunction extends RendezvousAffinityFunction {
         /**
          * Default constructor.
          */
-        public Map1PartitionsTo2NodesAffinityFunction() {
+        public Map1PartitionTo2NodesAffinityFunction() {
             super(false, 1);
         }
 
