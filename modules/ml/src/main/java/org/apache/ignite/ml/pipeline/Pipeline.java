@@ -43,7 +43,7 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class Pipeline<K, V, C extends Serializable, L> {
+public class Pipeline<K, V, C extends Serializable, L> implements Serializable {
     /** Final Feature extractor. */
     private Preprocessor<K, V> finalPreprocessor;
 
@@ -157,5 +157,12 @@ public class Pipeline<K, V, C extends Serializable, L> {
         return new PipelineMdl<K, V>()
             .withPreprocessor(finalPreprocessor)
             .withInternalMdl(internalMdl);
+    }
+
+    /**
+     * Returns the final preprocessor for evaluation needs.
+     */
+    public Preprocessor<K, V> getFinalPreprocessor() {
+        return finalPreprocessor;
     }
 }

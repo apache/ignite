@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.management.DynamicMBean;
@@ -824,7 +825,36 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return First started grid.
      * @throws Exception If failed.
      */
+    protected final Ignite startClientGridsMultiThreaded(int init, int cnt) throws Exception {
+        return startMultiThreaded(init, cnt, idx -> {
+            try {
+                startClientGrid(idx);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /**
+     * @param init Start grid index.
+     * @param cnt Grid count.
+     * @return First started grid.
+     * @throws Exception If failed.
+     */
     protected final Ignite startGridsMultiThreaded(int init, int cnt) throws Exception {
+        return startMultiThreaded(init, cnt, idx -> {
+            try {
+                startGrid(idx);
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    /** */
+    private final Ignite startMultiThreaded(int init, int cnt, Consumer<Integer> starter) throws Exception {
         assert init >= 0;
         assert cnt > 0;
 
@@ -835,7 +865,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         GridTestUtils.runMultiThreaded(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    startGrid(gridIdx.getAndIncrement());
+                    starter.accept(gridIdx.getAndIncrement());
 
                     return null;
                 }
@@ -892,7 +922,44 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startGrid(int idx) throws Exception {
-        return (IgniteEx)startGrid(getTestIgniteInstanceName(idx));
+        return startGrid(getTestIgniteInstanceName(idx));
+    }
+
+    /**
+     * Starts new client grid.
+     *
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid() throws Exception {
+        return startClientGrid(getTestIgniteInstanceName());
+    }
+
+    /**
+     * Starts new client grid with given configuration.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(IgniteConfiguration cfg) throws Exception {
+        cfg.setClientMode(true);
+
+        return (IgniteEx)startGrid(cfg.getIgniteInstanceName(), cfg, null);
+    }
+
+    /**
+     * Starts new client grid with given name and configuration.
+     *
+     * @param name Instance name.
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String name, IgniteConfiguration cfg) throws Exception {
+        cfg.setIgniteInstanceName(name);
+
+        return startClientGrid(cfg);
     }
 
     /**
@@ -903,13 +970,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
-        String igniteInstanceName = getTestIgniteInstanceName(idx);
+        return startClientGrid(getTestIgniteInstanceName(idx));
+    }
 
-        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+    /**
+     * Starts new client grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
+        IgnitionEx.setClientMode(true);
 
-        cfg.setClientMode(true);
-
-        return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
+        try {
+            return (IgniteEx)startGrid(igniteInstanceName, (GridSpringResourceContext)null);
+        }
+        finally {
+            IgnitionEx.setClientMode(false);
+        }
     }
 
     /**
@@ -1743,6 +1822,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
+        cfg.setClientMode(IgnitionEx.isClientMode());
 
         cfg.setConnectorConfiguration(null);
 
@@ -2737,15 +2817,49 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     public DynamicMBean metricRegistry(
         String igniteInstanceName,
         String grp,
-        String metrics
-    ) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(igniteInstanceName, grp, metrics);
+        String metrics) {
+        return getMxBean(igniteInstanceName, grp, metrics, DynamicMBean.class);
+    }
+
+    /**
+     * Return JMX bean.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param impl Implementation class.
+     * @param clazz Class of the mbean.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public static <T, I> T getMxBean(String igniteInstanceName, String grp, Class<I> impl, Class<T> clazz) {
+        return getMxBean(igniteInstanceName, grp, impl.getSimpleName(), clazz);
+    }
+
+    /**
+     * Return JMX bean.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param grp Name of the group.
+     * @param name Name of the bean.
+     * @param clazz Class of the mbean.
+     * @return MX bean.
+     * @throws Exception If failed.
+     */
+    public static <T> T getMxBean(String igniteInstanceName, String grp, String name, Class<T> clazz) {
+        ObjectName mbeanName = null;
+
+        try {
+            mbeanName = U.makeMBeanName(igniteInstanceName, grp, name);
+        }
+        catch (MalformedObjectNameException e) {
+            fail("Failed to register MBean.");
+        }
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         if (!mbeanSrv.isRegistered(mbeanName))
             throw new IgniteException("MBean not registered.");
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
     }
 }

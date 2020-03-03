@@ -48,9 +48,6 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
-
         return c;
     }
 
@@ -60,7 +57,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
         startGrids(NODE_COUNT);
 
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */

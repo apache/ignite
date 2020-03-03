@@ -64,9 +64,6 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         boolean isClient = "client".equals(igniteInstanceName);
-
-        cfg.setClientMode(isClient);
-
         if (!isClient) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -164,7 +161,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
 
         final int val = 0;
 
-        final IgniteEx client = startGrid("client");
+        final IgniteEx client = startClientGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 
@@ -193,15 +190,9 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
         assertEquals(shouldRcvThreadDumpReq, dumpLsnr.check());
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
-        return getMxBean(
-            getTestIgniteInstanceName(igniteInt),
-            "Transactions",
-            TransactionsMXBean.class,
-            TransactionsMXBeanImpl.class
-        );
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 }

@@ -17,19 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import java.lang.management.ManagementFactory;
 import java.util.Collection;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -68,9 +61,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         startGrid(2);
 
         // Start client node.
-        Ignition.setClientMode(true);
-        startGrid(3);
-        Ignition.setClientMode(false);
+        startClientGrid(3);
 
         Collection<BaselineNode> baselineNodes;
 
@@ -155,19 +146,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
      * @param clazz Class of ClusterMetricsMXBean implementation.
      * @return MBean instance.
      */
-    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz)
-        throws MalformedObjectNameException {
-
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(nodeIdx),
-            "Kernal",
-            clazz.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, ClusterMetricsMXBean.class, true);
+    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz) {
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), "Kernal", clazz, ClusterMetricsMXBean.class);
     }
 }

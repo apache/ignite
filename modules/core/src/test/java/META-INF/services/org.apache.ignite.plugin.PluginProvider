@@ -2,3 +2,4 @@ org.apache.ignite.internal.processors.cache.persistence.standbycluster.IgniteSta
 org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider
 org.apache.ignite.internal.processors.configuration.distributed.TestDistibutedConfigurationPlugin
 org.apache.ignite.plugin.NodeValidationPluginProvider
+

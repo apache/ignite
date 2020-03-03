@@ -22,11 +22,14 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -47,17 +50,11 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     /** */
     private static final short DIRECT_TYPE = 210;
 
-    static {
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridIoUserMessage();
-            }
-        });
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+
+        c.setPluginProviders(new TestPluginProvider());
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -180,7 +177,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
         private IgniteSpiContext spiCtx;
 
         /** Test message topic. **/
-        private String TEST_TOPIC = "test_topic";
+        private static final String TEST_TOPIC = "test_topic";
 
         /** {@inheritDoc} */
         @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
@@ -192,6 +189,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
             // No-op.
         }
 
+        /** {@inheritDoc} */
         @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
             this.spiCtx = spiCtx;
 
@@ -203,10 +201,28 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         }
 
+        /** {@inheritDoc} */
         @Override public void onContextDestroyed0() {
             spiCtx.removeLocalMessageListener(TEST_TOPIC, new IgniteBiPredicate<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {
                     return true;
+                }
+            });
+        }
+    }
+
+    /** */
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_PLUGIN";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(DIRECT_TYPE, GridIoUserMessage::new);
                 }
             });
         }

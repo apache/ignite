@@ -17,32 +17,30 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.util.typedef.CO;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -61,14 +59,6 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
-
-    static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
-    }
 
     /**
      * CommunicationSPI synchronized by {@code mux}.
@@ -108,6 +98,8 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(spi);
 
+        cfg.setPluginProviders(new TestPluginProvider());
+
         return cfg;
     }
 
@@ -117,19 +109,9 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
      * @param nodeIdx Node index.
      * @return MBean instance.
      */
-    private TcpCommunicationSpiMBean mbean(int nodeIdx) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "SPIs",
-            SynchronizedCommunicationSpi.class.getSimpleName());
-
-        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
-
-        if (mbeanServer.isRegistered(mbeanName))
-            return MBeanServerInvocationHandler.newProxyInstance(mbeanServer, mbeanName, TcpCommunicationSpiMBean.class,
-                true);
-        else
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return null;
+    private TcpCommunicationSpiMBean mbean(int nodeIdx) {
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), "SPIs",
+            SynchronizedCommunicationSpi.class, TcpCommunicationSpiMBean.class);
     }
 
     /**
@@ -159,10 +141,10 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
 
             latch.await(10, TimeUnit.SECONDS);
 
-            ClusterGroup clusterGroupNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
+            ClusterGroup clusterGrpNode1 = grid(0).cluster().forNodeId(grid(1).localNode().id());
 
             // Send job from node0 to node1.
-            grid(0).compute(clusterGroupNode1).call(new IgniteCallable<Boolean>() {
+            grid(0).compute(clusterGrpNode1).call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     return Boolean.TRUE;
                 }
@@ -224,6 +206,23 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /** */
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_PLUGIN";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                }
+            });
         }
     }
 }

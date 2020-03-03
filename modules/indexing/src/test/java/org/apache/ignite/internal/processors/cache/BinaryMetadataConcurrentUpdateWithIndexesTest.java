@@ -92,8 +92,6 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         cfg.setDiscoverySpi(spi.setIpFinder(sharedStaticIpFinder));
 
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
-
         QueryEntity qryEntity = new QueryEntity("java.lang.Integer", "Value");
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
@@ -145,7 +143,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
 
         Ignite node1 = startGrid("node1");
 
-        IgniteEx client0 = startGrid("client0");
+        IgniteEx client0 = startClientGrid("client0");
 
         CacheObjectBinaryProcessorImpl.TestBinaryContext clientCtx =
             (CacheObjectBinaryProcessorImpl.TestBinaryContext)((CacheObjectBinaryProcessorImpl)client0.context().
