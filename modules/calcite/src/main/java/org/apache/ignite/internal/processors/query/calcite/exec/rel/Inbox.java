@@ -117,9 +117,8 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     @Override public void request(int rowsCount) {
         checkThread();
 
-        assert upstream != null;
         assert nodes != null;
-        assert requested == 0 && rowsCount > 0;
+        assert rowsCount > 0 && requested == 0;
 
         requested = rowsCount;
 
@@ -152,7 +151,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override public void register(Node<T> source) {
+    @Override public void register(List<Node<T>> sources) {
         throw new UnsupportedOperationException();
     }
 
@@ -221,8 +220,8 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             }
         }
 
-        while (!heap.isEmpty()) {
-            if (requested == 0 || context().cancelled())
+        while (requested > 0 && !heap.isEmpty()) {
+            if (context().cancelled())
                 return;
 
             Buffer buffer = heap.poll().right;
@@ -245,20 +244,22 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             }
         }
 
-        assert buffers.isEmpty();
+        if (requested > 0 && heap.isEmpty()) {
+            assert buffers.isEmpty();
 
-        upstream.end();
-        requested = 0;
+            upstream.end();
+            requested = 0;
 
-        close();
+            close();
+        }
     }
 
     /** */
     private void pushUnordered() throws IgniteCheckedException {
         int idx = 0, noProgress = 0;
 
-        while (!buffers.isEmpty()) {
-            if (requested == 0 || context().cancelled())
+        while (requested > 0 && !buffers.isEmpty()) {
+            if (context().cancelled())
                 return;
 
             Buffer buffer = buffers.get(idx);
@@ -285,12 +286,12 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
                 idx = 0;
         }
 
-        assert buffers.isEmpty();
+        if (requested > 0 && buffers.isEmpty()) {
+            upstream.end();
+            requested = 0;
 
-        upstream.end();
-        requested = 0;
-
-        close();
+            close();
+        }
     }
 
     /** */

@@ -124,7 +124,6 @@ public class JoinNode extends AbstractNode<Object[]> {
         checkThread();
 
         assert upstream != null;
-
         assert waitingLeft > 0;
 
         leftInBuffer.add(row);
@@ -136,6 +135,7 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void pushRight(Object[] row) {
         checkThread();
 
+        assert upstream != null;
         assert waitingRight > 0;
 
         waitingRight--;
@@ -151,6 +151,7 @@ public class JoinNode extends AbstractNode<Object[]> {
         checkThread();
 
         assert upstream != null;
+        assert waitingLeft > 0;
 
         waitingLeft = -1;
 
@@ -162,8 +163,11 @@ public class JoinNode extends AbstractNode<Object[]> {
         checkThread();
 
         assert upstream != null;
+        assert waitingRight > 0;
 
         waitingRight = -1;
+
+        flushFromBuffer();
     }
 
     /** */
@@ -179,9 +183,7 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void flushFromBuffer() {
         inLoop = true;
         try {
-            if (waitingRight == 0)
-                sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
-            else if (waitingRight == -1) {
+            if (waitingRight == -1) {
                 while (requested > 0 && (left != null || !leftInBuffer.isEmpty())) {
                     if (left == null)
                         left = leftInBuffer.remove();
@@ -203,12 +205,13 @@ public class JoinNode extends AbstractNode<Object[]> {
                 }
             }
 
-            if (leftInBuffer.isEmpty() && waitingLeft == 0)
+            if (waitingRight == 0)
+                sources.get(1).request(waitingRight = IN_BUFFER_SIZE);
+
+            if (waitingLeft == 0 && leftInBuffer.isEmpty())
                 sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
-            if (waitingLeft == -1 && waitingRight == -1 && requested > 0) {
-                assert leftInBuffer.isEmpty();
-
+            if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuffer.isEmpty()) {
                 upstream.end();
                 requested = 0;
             }

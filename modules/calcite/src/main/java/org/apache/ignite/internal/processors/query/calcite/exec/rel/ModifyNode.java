@@ -85,12 +85,9 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 1;
-        assert requested == 0 && rowsCount > 0;
+        assert rowsCount > 0 && requested == 0;
 
         requested = rowsCount;
-
-        if (state == State.UPDATING && waiting == 0)
-            F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
 
         if (!inLoop)
             tryEnd();
@@ -131,9 +128,10 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
         checkThread();
 
         assert upstream != null;
+        assert waiting > 0;
 
+        waiting = -1;
         state = State.UPDATED;
-        waiting = 0;
 
         tryEnd();
     }
@@ -168,14 +166,19 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
 
         inLoop = true;
         try {
-            if (requested > 0 && state == State.UPDATED) {
+            if (state == State.UPDATING && waiting == 0)
+                F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
+
+            if (state == State.UPDATED && requested > 0) {
                 flush(true);
 
                 state = State.END;
 
                 requested--;
                 upstream.push(new Object[]{updatedRows});
+            }
 
+            if (state == State.END && requested > 0) {
                 upstream.end();
                 requested = 0;
             }

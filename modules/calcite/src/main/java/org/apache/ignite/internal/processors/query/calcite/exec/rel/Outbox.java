@@ -137,6 +137,8 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
     @Override public void end() {
         checkThread();
 
+        assert waiting > 0;
+
         waiting = -1;
 
         try {

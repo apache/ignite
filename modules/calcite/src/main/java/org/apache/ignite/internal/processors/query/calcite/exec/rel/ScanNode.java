@@ -53,8 +53,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
     @Override public void request(int rowsCount) {
         checkThread();
 
-        assert requested == 0;
-        assert rowsCount > 0;
+        assert rowsCount > 0 && requested == 0;
 
         requested = rowsCount;
 
@@ -65,9 +64,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
     /** {@inheritDoc} */
     @Override public void cancel() {
         checkThread();
-
         context().markCancelled();
-
         close();
     }
 
@@ -106,7 +103,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
                 upstream.push(it.next());
             }
 
-            if (!it.hasNext()) {
+            if (requested > 0 && !it.hasNext()) {
                 upstream.end();
                 requested = 0;
 

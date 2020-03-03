@@ -43,6 +43,7 @@ public class ProjectNode extends AbstractNode<Object[]> implements SingleNode<Ob
         checkThread();
 
         assert !F.isEmpty(sources) && sources.size() == 1;
+        assert rowsCount > 0;
 
         F.first(sources).request(rowsCount);
     }

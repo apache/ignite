@@ -151,7 +151,9 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     @Override public void end() {
         lock.lock();
         try {
-            waiting = 0;
+            assert waiting > 0;
+
+            waiting = -1;
 
             if (state != State.RUNNING)
                 return;
@@ -263,6 +265,8 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
     /** */
     private void requestIfNeeded() {
+        assert !F.isEmpty(sources) && sources.size() == 1;
+
         assert lock.isHeldByCurrentThread();
 
         if (waiting != 0)

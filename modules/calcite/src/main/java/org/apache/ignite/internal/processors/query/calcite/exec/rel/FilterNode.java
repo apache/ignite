@@ -56,7 +56,6 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void request(int rowsCount) {
         checkThread();
 
-        assert upstream != null;
         assert !F.isEmpty(sources) && sources.size() == 1;
         assert rowsCount > 0 && requested == 0;
 
@@ -91,6 +90,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
         checkThread();
 
         assert upstream != null;
+        assert waiting > 0;
 
         waiting = -1;
 
@@ -130,7 +130,8 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
 
             if (inBuffer.isEmpty() && waiting == 0)
                 F.first(sources).request(waiting = IN_BUFFER_SIZE);
-            else if (waiting == -1 && requested > 0) {
+
+            if (waiting == -1 && requested > 0) {
                 assert inBuffer.isEmpty();
 
                 upstream.end();
