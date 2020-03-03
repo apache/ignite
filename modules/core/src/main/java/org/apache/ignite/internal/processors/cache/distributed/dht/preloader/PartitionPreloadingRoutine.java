@@ -255,46 +255,63 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param partId Partition ID.
      */
     public void onPartitionSnapshotReceived(UUID nodeId, File file, int grpId, int partId) {
+        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+        if (grp == null) {
+            log.warning("Snapshot initialization skipped, cache group not found [grpId=" + grpId + "]");
+
+            return;
+        }
+
+        initPartitionSnapshot(grp.topology().localPartition(partId), file);
+
+        grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
+
+        activatePartition(grpId, partId)
+            .listen(f -> {
+                try {
+                    if (!f.isCancelled())
+                        onPartitionSnapshotRestored(nodeId, grpId, partId, f.get());
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
+
+                    onDone(e);
+                }
+            });
+
+        if (receivedCnt.incrementAndGet() == totalPartitionsCnt) {
+            if (log.isInfoEnabled())
+                log.info("All partition files are received - triggering checkpoint to complete rebalancing.");
+
+            cctx.database().wakeupForCheckpoint("Partition files preload complete.");
+        }
+    }
+
+    /**
+     * @param part Partition.
+     * @param file SNapshot file.
+     */
+    private void initPartitionSnapshot(GridDhtLocalPartition part, File file) {
+        lock.lock();
+
         try {
+            // Ensure that we are not stopping when getting checkpoint read lock.
             if (isDone())
                 return;
 
-            CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-            if (grp == null) {
-                log.warning("Snapshot initialization skipped, cache group not found [grpId=" + grpId + "]");
-
-                return;
-            }
-
-            grp.topology().localPartition(partId).initialize(file);
-
-            grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
-
-            activatePartition(grpId, partId)
-                .listen(f -> {
-                    try {
-                        if (!f.isCancelled())
-                            onPartitionSnapshotRestored(nodeId, grpId, partId, f.get());
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Unable to restore partition snapshot [grpId=" + grpId + ", p=" + partId + "]");
-
-                        onDone(e);
-                    }
-                });
-
-            if (receivedCnt.incrementAndGet() == totalPartitionsCnt) {
-                if (log.isInfoEnabled())
-                    log.info("All partition files are received - triggering checkpoint to complete rebalancing.");
-
-                cctx.database().wakeupForCheckpoint("Partition files preload complete.");
-            }
+            part.initialize(file);
         }
         catch (IOException | IgniteCheckedException e) {
-            log.error("Unable to handle partition snapshot", e);
+            log.error("Unable to initialize partition snapshot [" +
+                "grp=" + part.group().cacheOrGroupName() +
+                ", p=" + part.id() +
+                ", file=" + file + "]", e);
 
             onDone(e);
+        }
+        finally {
+            lock.unlock();
         }
     }
 
