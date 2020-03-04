@@ -28,8 +28,8 @@ public interface GridClientClusterState {
      * Fails if the operation is not safe.
      *
      * @param active {@code True} activate, {@code False} deactivate.
-     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      * @see ClusterState#INACTIVE
+     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
     @Deprecated
     public void active(boolean active) throws GridClientException;
