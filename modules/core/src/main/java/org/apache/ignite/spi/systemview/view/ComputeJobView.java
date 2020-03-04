@@ -80,7 +80,7 @@ public class ComputeJobView {
         return job.getSession().getTaskClassName();
     }
 
-    /** @return Affinity cache name or {@code null} for non affinity call. */
+    /** @return Comma separated list of cache identifiers or {@code null} for non affinity call. */
     @Order(5)
     public String affinityCacheIds() {
         GridReservable res = job.getPartsReservation();
