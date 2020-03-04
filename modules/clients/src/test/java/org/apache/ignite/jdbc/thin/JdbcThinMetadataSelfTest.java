@@ -901,11 +901,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10"
             ));
 
-            for (String col : actualSystemCols) {
-                if (!expectedCols.contains(col))
-                    System.out.println(col);
-            }
-
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
     }

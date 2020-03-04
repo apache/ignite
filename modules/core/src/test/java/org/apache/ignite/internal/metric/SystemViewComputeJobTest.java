@@ -261,7 +261,6 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
             SystemView<ComputeTaskView> tasks = client.context().systemView().view(TASKS_VIEW);
 
             client.compute().broadcastAsync(() -> {
-                System.out.println("SystemViewComputeJobTest.testComputeRunnableJobAndTask");
                 try {
                     barrier.await(TIMEOUT, MILLISECONDS);
                     barrier.await(TIMEOUT, MILLISECONDS);

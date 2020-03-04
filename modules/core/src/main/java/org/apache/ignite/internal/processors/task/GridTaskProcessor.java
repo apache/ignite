@@ -786,7 +786,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     map,
                     subjId);
 
-                System.out.println("sesId = " + sesId);
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;

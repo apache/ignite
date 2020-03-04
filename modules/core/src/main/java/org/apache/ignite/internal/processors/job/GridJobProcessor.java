@@ -1725,7 +1725,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             partititons = new GridDhtLocalPartition[cacheIds.length];
         }
 
-        /** @return Caches. */
+        /** @return Caches identifiers. */
         public int[] getCacheIds() {
             return cacheIds;
         }
