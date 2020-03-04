@@ -40,14 +40,12 @@ public class ComputeJobViewWalker implements SystemViewRowAttributeWalker<Comput
         v.accept(6, "affinityPartitionId", int.class);
         v.accept(7, "createTime", long.class);
         v.accept(8, "startTime", long.class);
-        v.accept(9, "fininshTime", long.class);
+        v.accept(9, "finishTime", long.class);
         v.accept(10, "executorName", String.class);
         v.accept(11, "isFinishing", boolean.class);
         v.accept(12, "isInternal", boolean.class);
         v.accept(13, "isStarted", boolean.class);
-        v.accept(14, "isSysCancelled", boolean.class);
-        v.accept(15, "isSysStopping", boolean.class);
-        v.accept(16, "isTimedOut", boolean.class);
+        v.accept(14, "isTimedOut", boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -61,18 +59,16 @@ public class ComputeJobViewWalker implements SystemViewRowAttributeWalker<Comput
         v.acceptInt(6, "affinityPartitionId", row.affinityPartitionId());
         v.acceptLong(7, "createTime", row.createTime());
         v.acceptLong(8, "startTime", row.startTime());
-        v.acceptLong(9, "fininshTime", row.finishTime());
+        v.acceptLong(9, "finishTime", row.finishTime());
         v.accept(10, "executorName", String.class, row.executorName());
         v.acceptBoolean(11, "isFinishing", row.isFinishing());
         v.acceptBoolean(12, "isInternal", row.isInternal());
         v.acceptBoolean(13, "isStarted", row.isStarted());
-        v.acceptBoolean(14, "isSysCancelled", row.isSysCancelled());
-        v.acceptBoolean(15, "isSysStopping", row.isSysStopping());
-        v.acceptBoolean(16, "isTimedOut", row.isTimedOut());
+        v.acceptBoolean(14, "isTimedOut", row.isTimedOut());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 17;
+        return 15;
     }
 }

@@ -145,16 +145,6 @@ public class ComputeJobView {
         return job.isTimedOut();
     }
 
-    /** @return {@code True} if ???. */
-    public boolean isSysCancelled() {
-        return job.isSystemCanceled();
-    }
-
-    /** @return {@code True} if ???. */
-    public boolean isSysStopping() {
-        return job.isSysStopping();
-    }
-
     /** @return {@code True} if job started. */
     public boolean isStarted() {
         return job.isStarted();
