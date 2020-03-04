@@ -48,6 +48,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState.ACTIVE;
 
 /** Tests for compute task {@link SystemView}. */
 public class SystemViewComputeJobTest extends GridCommonAbstractTest {
@@ -341,5 +342,6 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
         assertTrue(t.taskClassName().startsWith(getClass().getName()));
         assertTrue(t.taskName().startsWith(getClass().getName()));
         assertEquals(client.localNode().id(), t.originNodeId());
+        assertEquals(ACTIVE, t.state);
     }
 }

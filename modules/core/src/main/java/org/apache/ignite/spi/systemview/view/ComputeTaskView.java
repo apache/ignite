@@ -52,8 +52,8 @@ public class ComputeTaskView {
      * {@link ComputeTaskView#sessionId()} value equal to the value of {@link ComputeJobView#sessionId()}
      * if both records represents parts of the same computation.
      *
-     * @see ComputeJobView#sessionId()
      * @return Session id.
+     * @see ComputeJobView#sessionId()
      */
     @Order(1)
     public IgniteUuid sessionId() {

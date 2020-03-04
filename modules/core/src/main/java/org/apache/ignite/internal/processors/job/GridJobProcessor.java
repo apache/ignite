@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.job;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -77,7 +78,6 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -90,6 +90,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -332,19 +333,24 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue.");
 
-        Collection<Map.Entry<IgniteUuid, GridJobWorker>> jobs;
+        List<ConcurrentMap<IgniteUuid, GridJobWorker>> jobs;
 
         if (passiveJobs == null)
-            jobs = new ReadOnlyCollectionView2X<>(activeJobs.entrySet(), cancelledJobs.entrySet());
+            jobs = Arrays.asList(activeJobs, cancelledJobs);
         else {
-            jobs = new ReadOnlyCollectionView2X<>(
-                new ReadOnlyCollectionView2X<>(activeJobs.entrySet(), passiveJobs.entrySet()),
-                cancelledJobs.entrySet());
+            jobs = Arrays.asList(activeJobs, passiveJobs, cancelledJobs);
         }
 
-        ctx.systemView().registerView(JOBS_VIEW, JOBS_VIEW_DESC,
-            new ComputeJobViewWalker(), jobs,
-            e -> new ComputeJobView(e.getKey(), e.getValue()));
+        ctx.systemView().registerInnerCollectionView(JOBS_VIEW, JOBS_VIEW_DESC,
+            new ComputeJobViewWalker(),
+            jobs,
+            ConcurrentMap::entrySet,
+            (map, e) -> {
+                ComputeJobState state = map == activeJobs ? ComputeJobState.ACTIVE :
+                    (map == passiveJobs ? ComputeJobState.PASSIVE : ComputeJobState.CANCELED);
+
+                return new ComputeJobView(e.getKey(), e.getValue(), state);
+            });
     }
 
     /** {@inheritDoc} */

@@ -802,6 +802,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.JOBS.IS_FINISHING.null.1",
                 "SYS.JOBS.START_TIME.null.19",
                 "SYS.JOBS.AFFINITY_CACHE_IDS.null.2147483647",
+                "SYS.JOBS.STATE.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
                 "SYS.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",

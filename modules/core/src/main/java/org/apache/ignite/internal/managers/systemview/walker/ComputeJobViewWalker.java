@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.systemview.walker;
 
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -46,6 +47,7 @@ public class ComputeJobViewWalker implements SystemViewRowAttributeWalker<Comput
         v.accept(12, "isInternal", boolean.class);
         v.accept(13, "isStarted", boolean.class);
         v.accept(14, "isTimedOut", boolean.class);
+        v.accept(15, "state", ComputeJobState.class);
     }
 
     /** {@inheritDoc} */
@@ -65,10 +67,11 @@ public class ComputeJobViewWalker implements SystemViewRowAttributeWalker<Comput
         v.acceptBoolean(12, "isInternal", row.isInternal());
         v.acceptBoolean(13, "isStarted", row.isStarted());
         v.acceptBoolean(14, "isTimedOut", row.isTimedOut());
+        v.accept(15, "state", ComputeJobState.class, row.state());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 15;
+        return 16;
     }
 }

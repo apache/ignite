@@ -19,29 +19,63 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.StringJoiner;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.job.GridJobWorker;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.collision.CollisionSpi;
 
 /**
  * Compute job representation for a {@link SystemView}.
  */
 public class ComputeJobView {
+    /** Compute job state. */
+    public enum ComputeJobState {
+        /**
+         * Job scheduled for the execution.
+         * If collision not configured all jobs in this state by default.
+         *
+         * @see GridCollisionManager
+         * @see CollisionSpi
+         */
+        ACTIVE,
+
+        /**
+         * If collision configured jobs may be passivated before execution.
+         *
+         * @see GridCollisionManager
+         * @see CollisionSpi
+         */
+        PASSIVE,
+
+        /**
+         * Job execution canceled.
+         *
+         * @see GridJobProcessor#cancelJob(IgniteUuid, IgniteUuid, boolean)
+         */
+        CANCELED
+    }
+
     /** Job. */
     public final GridJobWorker job;
 
     /** Job id. */
     public final IgniteUuid id;
 
+    /** Job state. */
+    public final ComputeJobState state;
+
     /**
      * @param id Job id.
      * @param job Job.
+     * @param state Job state.
      */
-    public ComputeJobView(IgniteUuid id, GridJobWorker job) {
+    public ComputeJobView(IgniteUuid id, GridJobWorker job, ComputeJobState state) {
         this.id = id;
         this.job = job;
+        this.state = state;
     }
 
     /** @return Job id. */
@@ -54,8 +88,8 @@ public class ComputeJobView {
      * {@link ComputeJobView#sessionId()} value equal to the value of {@link ComputeTaskView#sessionId()}
      * if both records represents parts of the same computation.
      *
-     * @see ComputeTaskView#sessionId()
      * @return Session id.
+     * @see ComputeTaskView#sessionId()
      */
     @Order(1)
     public IgniteUuid sessionId() {
@@ -153,5 +187,10 @@ public class ComputeJobView {
     /** @return Executor name. */
     public String executorName() {
         return job.executorName();
+    }
+
+    /** @return Job state. */
+    public ComputeJobState state() {
+        return state;
     }
 }
