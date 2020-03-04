@@ -270,7 +270,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     protected JsonNode validateJsonResponse(String content, boolean errorExpected) throws IOException {
         assertNotNull(content);
-
         assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);
@@ -3214,7 +3213,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * Change cluster state and test new state.
      *
      * @param cmd Command.
-     * @param params Aruments for the <code>cmd</code>.
+     * @param params Aruments for the {@code cmd}.
      * @throws Exception If failed.
      */
     private void changeClusterState(GridRestCommand cmd, String... params) throws Exception {

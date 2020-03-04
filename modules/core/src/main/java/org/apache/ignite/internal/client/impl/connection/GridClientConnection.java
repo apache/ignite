@@ -310,22 +310,21 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Changes grid global state. Fails if the operation is not safe and {@code force} is {@code False}.
-     * <p>
-     * <b>NOTE:</b>
-     * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
+     * Changes grid global state.
+     * When deactivating, fails if deactivation is not safe and {@code forceDeactivation} is {@code False}.
+     * See {@link ClusterState#INACTIVE}.
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
-     * @param force If not {@code null}, new version of state changing will be used.
-     *              See {@link IgniteFeatures#FORCED_CHANGE_OF_CLUSTER_STATE}.
-     *              If {@code True} then skips checking of operation safety.
+     * @param forceDeactivation If not {@code null}, executes new version of cluster state changing.
+     *                          See {@link IgniteFeatures#SAFE_CLUSTER_DEACTIVATION}.
+     *                          If {@code True} then skips checking of deactivation safety.
+     *
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
-     * @see ClusterState#INACTIVE
      */
-    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, @Nullable Boolean force)
-        throws GridClientClosedException, GridClientConnectionResetException;
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId,
+        @Nullable Boolean forceDeactivation) throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
      * Get current grid state.

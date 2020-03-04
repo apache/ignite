@@ -36,11 +36,11 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
 
     /**
      * @param state New cluster state.
-     * @param force Forced change of cluster state.
+     * @param forceDeactivation Forced cluster deactivation.
      * @return Cluster state change request.
      */
-    public static GridClientClusterStateRequestV2 state(ClusterState state, boolean force) {
-        return new GridClientClusterStateRequestV2(GridClientClusterStateRequest.state(state), force);
+    public static GridClientClusterStateRequestV2 state(ClusterState state, boolean forceDeactivation) {
+        return new GridClientClusterStateRequestV2(GridClientClusterStateRequest.state(state), forceDeactivation);
     }
 
     /** Default constructor for the externalization. */

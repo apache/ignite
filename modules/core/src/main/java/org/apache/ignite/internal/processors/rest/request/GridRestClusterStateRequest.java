@@ -36,7 +36,7 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     private boolean forceDeactivation;
 
     /**
-     * Sets forced state change witout checking of operation safety.
+     * Sets forced deactivation witout checking of operation safety.
      *
      * @param forceDeactivation If {@code True}, indicates not to ensure deactivation is safe.
      */
@@ -55,7 +55,7 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     }
 
     /**
-     * @return {@code True} if there is no need to ensure deactivation is safe.
+     * @return {@code True} if there is no need to ensure the deactivation is safe.
      */
     public boolean forceDeactivation() {
         return forceDeactivation;

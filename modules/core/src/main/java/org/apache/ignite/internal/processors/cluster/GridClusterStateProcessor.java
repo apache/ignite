@@ -118,9 +118,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
-    /** Warning of unsafe deactivation. */
-    public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Cluster has in-memory caches " +
-        "(without persistence). During deactivation, in-memory data will be lost!";
+    /** Warning of unsafe cluster deactivation. */
+    public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Cluster has in-memory " +
+        "caches (without persistence). During deactivation, in-memory data will be lost!";
 
     /** */
     private boolean inMemoryMode;

@@ -76,8 +76,8 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
         if (newState == INACTIVE && oldVerNode != null && !forceDeactivation) {
             throw new GridClientException("Deactivation stopped. Found node not supporting safe deactivation: "
-                + oldVerNode + ". It causes no checking of deactivation safety will be performed. You can try with " +
-                "flag 'force'. After deactivation very in-memory cache (including system caches) will be cleared!");
+                + oldVerNode + ". It causes deactivation safety won't be ensured. You can try with flag 'force'. " +
+                "Deactivation clears in-memory caches (without persistence) including the system caches!");
         }
 
         withReconnectHandling((con, nodeId) ->

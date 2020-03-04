@@ -25,8 +25,7 @@ import org.apache.ignite.cluster.ClusterState;
 public interface GridClientClusterState {
     /**
      * Changes Ignite grid state to active or inactive.
-     * Fails if the operation is not safe.
-     * @see ClusterState#INACTIVE
+     * When deactivating, fails if deactivation is not safe. See {@link ClusterState#INACTIVE}.
      *
      * @param active {@code True} activate, {@code False} deactivate.
      * @deprecated Use {@link #state(ClusterState, boolean)} instead.
@@ -48,15 +47,12 @@ public interface GridClientClusterState {
     public ClusterState state() throws GridClientException;
 
     /**
-     * Changes cluster state to {@code newState}. Fails if the operation is not safe and {@code force}
-     * is {@code False}.
-     * <p>
-     * <b>NOTE:</b>
-     * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
-     * See {@link ClusterState#INACTIVE}
+     * Changes cluster state to {@code newState}.
+     * When deactivating, fails if deactivation is not safe and {@code forceDeactivation} is {@code False}.
+     * See {@link ClusterState#INACTIVE}.
      *
      * @param newState New cluster state.
-     * @param forceDeactivation If {@code True}, skips safety of deactivation.
+     * @param forceDeactivation If {@code True}, won't ensure deactivation is safe.
      * @throws GridClientException If the request to change the cluster state failed.
      */
     public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException;
