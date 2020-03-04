@@ -333,17 +333,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         totalWaitTimeMetric = mreg.longMetric(WAITING_TIME, "Total time jobs spent on waiting queue.");
 
-        List<ConcurrentMap<IgniteUuid, GridJobWorker>> jobs;
-
-        if (passiveJobs == null)
-            jobs = Arrays.asList(activeJobs, cancelledJobs);
-        else {
-            jobs = Arrays.asList(activeJobs, passiveJobs, cancelledJobs);
-        }
-
         ctx.systemView().registerInnerCollectionView(JOBS_VIEW, JOBS_VIEW_DESC,
             new ComputeJobViewWalker(),
-            jobs,
+            passiveJobs == null ?
+                Arrays.asList(activeJobs, cancelledJobs) :
+                Arrays.asList(activeJobs, passiveJobs, cancelledJobs),
             ConcurrentMap::entrySet,
             (map, e) -> {
                 ComputeJobState state = map == activeJobs ? ComputeJobState.ACTIVE :
