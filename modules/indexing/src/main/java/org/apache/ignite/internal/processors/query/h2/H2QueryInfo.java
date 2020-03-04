@@ -157,6 +157,23 @@ public class H2QueryInfo {
      * @return Query plan.
      */
     protected String queryPlan(IgniteLogger log, ConnectionManager connMgr) {
+//        Connection c = connMgr.connectionForThread().connection(schema);
+//
+//        H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder);
+//
+//        try (PreparedStatement pstmt = c.prepareStatement("EXPLAIN " + sql)) {
+//
+//            try (ResultSet plan = pstmt.executeQuery()) {
+//                plan.next();
+//
+//                return plan.getString(1) + U.nl();
+//            }
+//        }
+//        catch (Exception e) {
+//            log.warning("Cannot get plan for long query: " + sql, e);
+//
+//            return "[error on calculate plan: " + e.getMessage() + ']';
+//        }
         return GridSqlQueryParser.prepared(stmt).getPlanSQL();
     }
 
