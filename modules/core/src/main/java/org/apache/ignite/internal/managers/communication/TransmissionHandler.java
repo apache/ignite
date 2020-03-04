@@ -42,7 +42,7 @@ import java.util.function.Consumer;
 public interface TransmissionHandler {
     /**
      * The end of the handled transmission. This means that all resources associated with previously opened
-     * session are freed and can be reused. Generally, it means that transmission topic from now can
+     * session is freed and can be reused. Generally, it means that transmission topic from now can
      * safely accept new files.
      *
      * @param rmtNodeId Remote node id from which the source request comes from.
