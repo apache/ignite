@@ -32,7 +32,7 @@ public class ComputeJobView {
     /** Job. */
     public final GridJobWorker job;
 
-    /** Job id */
+    /** Job id. */
     public final IgniteUuid id;
 
     /**
@@ -50,6 +50,13 @@ public class ComputeJobView {
         return id;
     }
 
+    /**
+     * {@link ComputeJobView#sessionId()} value equal to the value of {@link ComputeTaskView#sessionId()}
+     * if both records represents parts of the same computation.
+     *
+     * @see ComputeTaskView#sessionId()
+     * @return Session id.
+     */
     @Order(1)
     public IgniteUuid sessionId() {
         return job.getSession().getId();
