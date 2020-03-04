@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDataMetrics;
@@ -320,8 +319,6 @@ public abstract class GridClientConnection {
      *                          forced.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
-     * @see ClusterState#INACTIVE
-     * @see IgniteFeatures#SAFE_CLUSTER_DEACTIVATION
      */
     public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId,
         @Nullable Boolean forceDeactivation) throws GridClientClosedException, GridClientConnectionResetException;
