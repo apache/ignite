@@ -783,6 +783,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TASKS.USER_VERSION.null.2147483647",
                 "SYS.TASKS.TASK_NAME.null.2147483647",
                 "SYS.TASKS.TASK_NODE_ID.null.2147483647",
+                "SYS.TASKS.JOB_ID.null.2147483647",
                 "SYS.TASKS.ID.null.2147483647",
                 "SYS.TASKS.SESSION_ID.null.2147483647",
                 "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
