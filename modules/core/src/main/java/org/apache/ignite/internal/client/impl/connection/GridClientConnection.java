@@ -314,7 +314,6 @@ public abstract class GridClientConnection {
      * <p>
      * <b>NOTE:</b>
      * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
-     * @see ClusterState#INACTIVE
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
@@ -323,6 +322,7 @@ public abstract class GridClientConnection {
      *              If {@code True} then skips checking of operation safety.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     * @see ClusterState#INACTIVE
      */
     public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, @Nullable Boolean force)
         throws GridClientClosedException, GridClientConnectionResetException;
