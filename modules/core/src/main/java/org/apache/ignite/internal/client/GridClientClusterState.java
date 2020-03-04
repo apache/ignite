@@ -26,10 +26,10 @@ public interface GridClientClusterState {
     /**
      * Changes Ignite grid state to active or inactive.
      * Fails if the operation is not safe.
-     * @see ClusterState#INACTIVE
      *
      * @param active {@code True} activate, {@code False} deactivate.
      * @deprecated Use {@link #state(ClusterState, boolean)} instead.
+     * @see ClusterState#INACTIVE
      */
     @Deprecated
     public void active(boolean active) throws GridClientException;
