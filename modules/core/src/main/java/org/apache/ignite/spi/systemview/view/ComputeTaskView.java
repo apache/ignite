@@ -112,6 +112,15 @@ public class ComputeTaskView {
         return worker.affPartId();
     }
 
+    /**
+     * @return Job id.
+     * @deprecated Use {@link #id()} or {@link #sessionId()} instead.
+     */
+    @Deprecated
+    public IgniteUuid jobId() {
+        return worker.getSession().getJobId();
+    }
+
     /** @return User provided version. */
     public String userVersion() {
         return worker.getSession().getUserVersion();

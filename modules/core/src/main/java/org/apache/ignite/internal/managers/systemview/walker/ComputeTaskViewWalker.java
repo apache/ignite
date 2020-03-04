@@ -42,7 +42,8 @@ public class ComputeTaskViewWalker implements SystemViewRowAttributeWalker<Compu
         v.accept(8, "endTime", long.class);
         v.accept(9, "execName", String.class);
         v.accept(10, "internal", boolean.class);
-        v.accept(11, "userVersion", String.class);
+        v.accept(11, "jobId", IgniteUuid.class);
+        v.accept(12, "userVersion", String.class);
     }
 
     /** {@inheritDoc} */
@@ -58,11 +59,12 @@ public class ComputeTaskViewWalker implements SystemViewRowAttributeWalker<Compu
         v.acceptLong(8, "endTime", row.endTime());
         v.accept(9, "execName", String.class, row.execName());
         v.acceptBoolean(10, "internal", row.internal());
-        v.accept(11, "userVersion", String.class, row.userVersion());
+        v.accept(11, "jobId", IgniteUuid.class, row.jobId());
+        v.accept(12, "userVersion", String.class, row.userVersion());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 12;
+        return 13;
     }
 }
