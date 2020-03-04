@@ -40,7 +40,8 @@ public interface QueryMXBean {
      */
     @MXBeanDescription("Kills SQL query by the identifier.")
     void cancelSQL(
-        @MXBeanParameter(name = "id", description = "SQL query id.") String id);
+        @MXBeanParameter(name = "id", description = "SQL query id.") String id
+    );
 
     /**
      * @param originNodeId Originating node id.
@@ -51,5 +52,6 @@ public interface QueryMXBean {
     void cancelScan(
         @MXBeanParameter(name = "originNodeId", description = "Originating node ID.") String originNodeId,
         @MXBeanParameter(name = "cacheName", description = "Cache name.") String cacheName,
-        @MXBeanParameter(name = "id", description = "SQL query id.") Long id);
+        @MXBeanParameter(name = "id", description = "SQL query id.") Long id
+    );
 }

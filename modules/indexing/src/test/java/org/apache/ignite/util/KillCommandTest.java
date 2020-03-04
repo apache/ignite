@@ -283,6 +283,12 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
+        // Здесь будет киляние таски
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelComputeJob() throws Exception {
         IgniteEx ignite0 = startGrids(1);
         IgniteEx client = startClientGrid("client");
 
@@ -290,7 +296,8 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
         IgniteFuture<Collection<Integer>> fut = client.compute().broadcastAsync(() -> {
             System.out.println("KillCommandTest.testCancelComputeTask");
-            Thread.sleep(60_000L);
+
+            Thread.sleep(10_000L);
 
             return 1;
         });
@@ -299,10 +306,10 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
         boolean res = waitForCondition(() -> {
             List<List<?>> tasks = SqlViewExporterSpiTest.execute(ignite0,
-                "SELECT JOB_ID FROM SYS.TASKS");
+                "SELECT ID FROM SYS.JOBS");
 
             if (tasks.size() == 1) {
-                id[0] = ((IgniteUuid)tasks.get(0).get(0)).toString();
+                id[0] = (String)tasks.get(0).get(0);
 
                 return true;
             }
