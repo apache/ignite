@@ -166,8 +166,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         ctx.systemView().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
             new ComputeTaskViewWalker(),
-            tasks.values(),
-            ComputeTaskView::new);
+            tasks.entrySet(),
+            e -> new ComputeTaskView(e.getKey(), e.getValue()));
     }
 
     /** {@inheritDoc} */
@@ -786,6 +786,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     map,
                     subjId);
 
+                System.out.println("sesId = " + sesId);
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;

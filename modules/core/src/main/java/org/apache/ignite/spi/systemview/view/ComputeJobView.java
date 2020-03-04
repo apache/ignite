@@ -19,6 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.StringJoiner;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.job.GridJobWorker;
@@ -29,38 +30,97 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class ComputeJobView {
     /** Job. */
-    private final GridJobWorker job;
+    public final GridJobWorker job;
+
+    /** Job id */
+    public final IgniteUuid id;
 
     /**
+     * @param id Job id.
      * @param job Job.
      */
-    public ComputeJobView(GridJobWorker job) {
+    public ComputeJobView(IgniteUuid id, GridJobWorker job) {
+        this.id = id;
         this.job = job;
     }
 
-    /** @return Task id. */
+    /** @return Job id. */
+    @Order
     public IgniteUuid id() {
-        return job.getJobId();
+        return id;
     }
 
-    /** @return Create time. */
+    @Order(1)
+    public IgniteUuid sessionId() {
+        return job.getSession().getId();
+    }
+
+    /** @return Origin node id. */
+    @Order(2)
+    public UUID originNodeId() {
+        return job.getTaskNode().id();
+    }
+
+    /** @return Task name. */
+    @Order(3)
+    public String taskName() {
+        return job.getSession().getTaskName();
+    }
+
+    /** @return Task class name. */
+    @Order(4)
+    public String taskClassName() {
+        return job.getSession().getTaskClassName();
+    }
+
+    /** @return Affinity cache name or {@code null} for non affinity call. */
+    @Order(5)
+    public String affinityCacheIds() {
+        GridReservable res = job.getPartsReservation();
+
+        if (!(res instanceof GridJobProcessor.PartitionsReservation))
+            return null;
+
+        int[] ids = ((GridJobProcessor.PartitionsReservation)res).getCacheIds();
+
+        if (ids == null || ids.length == 0)
+            return null;
+
+        StringJoiner joiner = new StringJoiner(",");
+
+        for (int id : ids)
+            joiner.add(Integer.toString(id));
+
+        return joiner.toString();
+    }
+
+    /** @return Affinity partition id or {@code -1} for non affinity call. */
+    @Order(6)
+    public int affinityPartitionId() {
+        GridReservable res = job.getPartsReservation();
+
+        if (!(res instanceof GridJobProcessor.PartitionsReservation))
+            return -1;
+
+        return ((GridJobProcessor.PartitionsReservation)res).getPartId();
+    }
+
+    /** @return Create time in milliseconds. */
+    @Order(7)
     public long createTime() {
         return job.getCreateTime();
     }
 
-    /** @return Start time. */
+    /** @return Start time in milliseconds. */
+    @Order(8)
     public long startTime() {
         return job.getStartTime();
     }
 
-    /** @return Finish time. */
-    public long fininshTime() {
+    /** @return Finish time in milliseconds. */
+    @Order(9)
+    public long finishTime() {
         return job.getFinishTime();
-    }
-
-    /** @return Origin node id. */
-    public UUID originNodeId() {
-        return job.getTaskNode().id();
     }
 
     /** @return {@code True} if job is internal. */
@@ -96,45 +156,5 @@ public class ComputeJobView {
     /** @return Executor name. */
     public String executorName() {
         return job.executorName();
-    }
-
-    /** @return Job class name. */
-    public String taskClassName() {
-        return job.getSession().getTaskClassName();
-    }
-
-    /** @return Task name. */
-    public String taskName() {
-        return job.getSession().getTaskName();
-    }
-
-    /** @return Affinity cache ids. */
-    public String affinityCacheIds() {
-        GridReservable res = job.getPartsReservation();
-
-        if (!(res instanceof GridJobProcessor.PartitionsReservation))
-            return null;
-
-        int[] ids = ((GridJobProcessor.PartitionsReservation)res).getCacheIds();
-
-        if (ids == null || ids.length == 0)
-            return null;
-
-        StringJoiner joiner = new StringJoiner(",");
-
-        for (int id : ids)
-            joiner.add(Integer.toString(id));
-
-        return joiner.toString();
-    }
-
-    /** @return Affinity partition id. */
-    public int affinityPartitionId() {
-        GridReservable res = job.getPartsReservation();
-
-        if (!(res instanceof GridJobProcessor.PartitionsReservation))
-            return -1;
-
-        return ((GridJobProcessor.PartitionsReservation)res).getPartId();
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -45,7 +46,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOB_VIEW;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 
 /** Tests for compute task {@link SystemView}. */
 public class SystemViewComputeJobTest extends GridCommonAbstractTest {
@@ -74,7 +76,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public void testComputeBroadcast() throws Exception {
         barrier = new CyclicBarrier(6);
 
-        SystemView<ComputeJobView> tasks = server.context().systemView().view(JOB_VIEW);
+        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOBS_VIEW);
 
         for (int i = 0; i < 5; i++) {
             client.compute().broadcastAsync(() -> {
@@ -90,9 +92,9 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
 
         barrier.await(TIMEOUT, MILLISECONDS);
 
-        assertEquals(5, tasks.size());
+        assertEquals(5, jobs.size());
 
-        ComputeJobView t = tasks.iterator().next();
+        ComputeJobView t = jobs.iterator().next();
 
         checkTask(t);
 
@@ -104,7 +106,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public void testComputeRunnable() throws Exception {
         barrier = new CyclicBarrier(2);
 
-        SystemView<ComputeJobView> tasks = server.context().systemView().view(JOB_VIEW);
+        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOBS_VIEW);
 
         client.compute().runAsync(() -> {
             try {
@@ -118,9 +120,9 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
 
         barrier.await(TIMEOUT, MILLISECONDS);
 
-        assertEquals(1, tasks.size());
+        assertEquals(1, jobs.size());
 
-        ComputeJobView t = tasks.iterator().next();
+        ComputeJobView t = jobs.iterator().next();
 
         checkTask(t);
 
@@ -132,7 +134,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public void testComputeApply() throws Exception {
         barrier = new CyclicBarrier(2);
 
-        SystemView<ComputeJobView> tasks = server.context().systemView().view(JOB_VIEW);
+        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOBS_VIEW);
 
         GridTestUtils.runAsync(() -> {
             client.compute().apply(x -> {
@@ -150,9 +152,9 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
 
         barrier.await(TIMEOUT, MILLISECONDS);
 
-        assertEquals(1, tasks.size());
+        assertEquals(1, jobs.size());
 
-        ComputeJobView t = tasks.iterator().next();
+        ComputeJobView t = jobs.iterator().next();
 
         checkTask(t);
 
@@ -167,7 +169,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public void testComputeAffinityCall() throws Exception {
         barrier = new CyclicBarrier(2);
 
-        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOB_VIEW);
+        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOBS_VIEW);
 
         client.compute().affinityCallAsync("test-cache", 1, () -> {
             try {
@@ -202,7 +204,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public void testComputeTask() throws Exception {
         barrier = new CyclicBarrier(2);
 
-        SystemView<ComputeJobView> tasks = server.context().systemView().view(JOB_VIEW);
+        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOBS_VIEW);
 
         client.compute().executeAsync(new ComputeTask<Object, Object>() {
             @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -239,13 +241,97 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
 
         barrier.await(TIMEOUT, MILLISECONDS);
 
-        assertEquals(1, tasks.size());
+        assertEquals(1, jobs.size());
 
-        ComputeJobView t = tasks.iterator().next();
+        ComputeJobView t = jobs.iterator().next();
 
         checkTask(t);
 
         barrier.await(TIMEOUT, MILLISECONDS);
+    }
+
+    /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#runAsync(IgniteRunnable)} call. */
+    @Test
+    public void testComputeRunnableJobAndTask() throws Exception {
+        try (IgniteEx server2 = startGrid(2)) {
+            barrier = new CyclicBarrier(3);
+
+            SystemView<ComputeJobView> jobs1 = server.context().systemView().view(JOBS_VIEW);
+            SystemView<ComputeJobView> jobs2 = server2.context().systemView().view(JOBS_VIEW);
+            SystemView<ComputeTaskView> tasks = client.context().systemView().view(TASKS_VIEW);
+
+            client.compute().broadcastAsync(() -> {
+                System.out.println("SystemViewComputeJobTest.testComputeRunnableJobAndTask");
+                try {
+                    barrier.await(TIMEOUT, MILLISECONDS);
+                    barrier.await(TIMEOUT, MILLISECONDS);
+                }
+                catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            barrier.await(TIMEOUT, MILLISECONDS);
+
+            assertEquals(1, tasks.size());
+            assertEquals(1, jobs1.size());
+            assertEquals(1, jobs2.size());
+
+            ComputeTaskView task = tasks.iterator().next();
+
+            checkJobAndTask(task, jobs1.iterator().next());
+            checkJobAndTask(task, jobs2.iterator().next());
+
+            barrier.await(TIMEOUT, MILLISECONDS);
+        }
+    }
+
+    /** Tests work of {@link SystemView} for compute grid {@link IgniteCompute#runAsync(IgniteRunnable)} call. */
+    @Test
+    public void testComputeAffinityCallJobAndTask() throws Exception {
+        barrier = new CyclicBarrier(2);
+
+        SystemView<ComputeJobView> jobs = server.context().systemView().view(JOBS_VIEW);
+        SystemView<ComputeTaskView> tasks = client.context().systemView().view(TASKS_VIEW);
+
+        client.compute().affinityCallAsync("test-cache", 1, () -> {
+            try {
+                barrier.await(TIMEOUT, MILLISECONDS);
+                barrier.await(TIMEOUT, MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return 0;
+        });
+
+        barrier.await(TIMEOUT, MILLISECONDS);
+
+        assertEquals(1, tasks.size());
+        assertEquals(1, jobs.size());
+
+        checkJobAndTask(tasks.iterator().next(), jobs.iterator().next());
+
+        barrier.await(TIMEOUT, MILLISECONDS);
+    }
+
+    /**
+     * Check fields for local {@link ComputeTaskView} and remote {@link ComputeJobView} info of the same computation.
+     */
+    private void checkJobAndTask(ComputeTaskView task, ComputeJobView job) {
+        assertNotSame(task.id(), job.id());
+        assertEquals(task.sessionId(), job.sessionId());
+        assertEquals(task.taskNodeId(), job.originNodeId());
+        assertEquals(task.taskName(), job.taskName());
+        assertEquals(task.taskClassName(), job.taskClassName());
+
+        if (task.affinityCacheName() != null)
+            assertEquals((Integer)CU.cacheId(task.affinityCacheName()), Integer.valueOf(job.affinityCacheIds()));
+        else
+            assertNull(job.affinityCacheIds());
+
+        assertEquals(task.affinityPartitionId(), job.affinityPartitionId());
     }
 
     /** Check tasks fields. */

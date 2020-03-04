@@ -783,10 +783,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.TASKS.USER_VERSION.null.2147483647",
                 "SYS.TASKS.TASK_NAME.null.2147483647",
                 "SYS.TASKS.TASK_NODE_ID.null.2147483647",
-                "SYS.TASKS.JOB_ID.null.2147483647",
+                "SYS.TASKS.ID.null.2147483647",
+                "SYS.TASKS.SESSION_ID.null.2147483647",
                 "SYS.TASKS.AFFINITY_PARTITION_ID.null.10",
                 "SYS.TASKS.TASK_CLASS_NAME.null.2147483647",
-                "SYS.TASKS.EXEC_NAME.null.2147483647",
                 "SYS.JOBS.IS_STARTED.null.1",
                 "SYS.JOBS.EXECUTOR_NAME.null.2147483647",
                 "SYS.JOBS.IS_TIMED_OUT.null.1",
@@ -799,10 +799,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.JOBS.ORIGIN_NODE_ID.null.2147483647",
                 "SYS.JOBS.TASK_NAME.null.2147483647",
                 "SYS.JOBS.TASK_CLASS_NAME.null.2147483647",
+                "SYS.JOBS.SESSION_ID.null.2147483647",
                 "SYS.JOBS.IS_FINISHING.null.1",
-                "SYS.JOBS.AFFINITY_CACHE_NAMES.null.2147483647",
                 "SYS.JOBS.IS_SYS_CANCELLED.null.1",
                 "SYS.JOBS.START_TIME.null.19",
+                "SYS.JOBS.AFFINITY_CACHE_IDS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.CONNECTION_ID.null.19",
                 "SYS.CLIENT_CONNECTIONS.LOCAL_ADDRESS.null.2147483647",
                 "SYS.CLIENT_CONNECTIONS.REMOTE_ADDRESS.null.2147483647",
@@ -899,6 +900,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DATA_REGION_PAGE_LISTS.STRIPES_COUNT.null.10",
                 "SYS.DATA_REGION_PAGE_LISTS.CACHED_PAGES_COUNT.null.10"
             ));
+
+            for (String col : actualSystemCols) {
+                if (!expectedCols.contains(col))
+                    System.out.println(col);
+            }
 
             Assert.assertEquals(expectedCols, actualSystemCols);
         }
