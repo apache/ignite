@@ -635,7 +635,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     if (stateFut != null) {
                         stateFut.onDone(new IgniteException(DATA_LOST_ON_DEACTIVATION_WARNING
-                            + " To change cluster state on '" + msg.state().name() + "' pass the force flag."));
+                            + " To deactivate cluster pass flag 'force'."));
                     }
 
                     return false;
