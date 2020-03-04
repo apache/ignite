@@ -109,19 +109,31 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     void cacheProcessorStarted();
 
     /**
-     * @param state New cluster state.
-     * @param forceDeactivation If {@code True}, skips checking of the deactivation safety.
+     * @param activate New cluster state.
      * @param baselineNodes New baseline nodes.
      * @param forceChangeBaselineTopology Force change baseline topology.
-     * @param isAutoAdjust Auto adjusting flag.
+     * @return State change future.
+     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean)} instead.
+     */
+    @Deprecated
+    IgniteInternalFuture<?> changeGlobalState(
+        boolean activate,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology
+    );
+
+    /**
+     * @param state New cluster state.
+     * @param baselineNodes New baseline nodes.
+     * @param forceDeactivation Forced cluster deactivation.
+     * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
      */
     IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
         Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology,
-        boolean isAutoAdjust
+        boolean forceChangeBaselineTopology
     );
 
     /**

@@ -73,8 +73,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -314,7 +312,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.state().changeGlobalState(active ? ACTIVE : INACTIVE, true, serverNodes(), false, false).get();
+            ctx.state().changeGlobalState(active, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -341,7 +339,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.state().changeGlobalState(newState, true, serverNodes(), false, false).get();
+            ctx.state().changeGlobalState(newState, true, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -377,7 +375,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         try {
             validateBeforeBaselineChange(baselineTop);
 
-            ctx.state().changeGlobalState(ACTIVE, true, baselineTop, true, false).get();
+            ctx.state().changeGlobalState(true, baselineTop, true).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -528,7 +526,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             validateBeforeBaselineChange(target);
 
-            ctx.state().changeGlobalState(ACTIVE, true, target, true, isBaselineAutoAdjust).get();
+            ctx.state().changeGlobalState(true, target, true, isBaselineAutoAdjust).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

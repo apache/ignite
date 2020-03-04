@@ -27,7 +27,7 @@ public enum ClusterState {
      * Cluster deactivated. Cache operations aren't allowed.
      * <p>
      * <b>NOTE:</b>
-     * Deactivation clears in-memory caches (without persistense) including the system caches.
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
      */
     INACTIVE,
 

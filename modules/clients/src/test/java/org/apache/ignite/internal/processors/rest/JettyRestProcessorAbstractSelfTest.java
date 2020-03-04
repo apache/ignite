@@ -3213,7 +3213,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * Change cluster state and test new state.
      *
      * @param cmd Command.
-     * @param params Aruments for the {@code cmd}.
+     * @param params Arguments for the {@code cmd}.
      * @throws Exception If failed.
      */
     private void changeClusterState(GridRestCommand cmd, String... params) throws Exception {
