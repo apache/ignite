@@ -265,7 +265,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      *
      * @param content Content to check.
      * @param errorExpected is error expected.
-     * @return REST result if {@code errorExpected} is {@code False}. Error instead.
+     * @return REST result if {@code errorExpected} is {@code false}. Error instead.
      * @throws IOException If parsing failed.
      */
     protected JsonNode validateJsonResponse(String content, boolean errorExpected) throws IOException {

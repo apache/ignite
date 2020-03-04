@@ -53,7 +53,7 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
      * Copying constructor.
      *
      * @param clusterStateReq Original request, of the previous version.
-     * @param forceDeactivation If {@code True}, indicates to skip checking of deactivation safety.
+     * @param forceDeactivation If {@code true}, indicates to skip checking of deactivation safety.
      */
     private GridClientClusterStateRequestV2(GridClientClusterStateRequest clusterStateReq, boolean forceDeactivation) {
         super(clusterStateReq);
@@ -62,7 +62,7 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
     }
 
     /**
-     * @return {@code True} if there is no need to ensure deactivation is safe.
+     * @return {@code True} if deactivation must not check safety of this operation. {@code False} otherwise.
      */
     public boolean forceDeactivation() {
         return forceDeactivation;

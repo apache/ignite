@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  * Command to change cluster state.
  */
 public class ClusterStateChangeCommand implements Command<ClusterState> {
-    /** Forces cluster deactivation without checking of safety of the operation. */
+    /** Forces cluster deactivation flag. */
     static final String FORCE_COMMAND = "--force";
 
     /** New cluster state */
@@ -45,7 +45,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     /** Cluster name. */
     private String clusterName;
 
-    /** Force cluster deactivation flag. */
+    /** Force cluster deactivation. */
     private boolean forceDeactivation;
 
     /** {@inheritDoc} */

@@ -186,9 +186,9 @@ public abstract class GridClientUtils {
      * @param client Client.
      * @param feature Feature.
      * @param validateClientNodes Whether client nodes should be checked as well.
-     * @param failIfUnsupportedFound If {@code True}, fails when found a node unsupporting {@code feature}.
+     * @param failIfUnsupportedFound If {@code true}, fails when found a node unsupporting {@code feature}.
      * unsupporting {@code feature}.
-     * @return Id of node unsupporting {@code feature}. {@code null} if all nodes support {@code feature} .
+     * @return Id of node unsupporting {@code feature}. {@code Null} if all nodes support {@code feature}.
      */
     public static UUID checkFeatureSupportedByCluster(
         GridClient client,

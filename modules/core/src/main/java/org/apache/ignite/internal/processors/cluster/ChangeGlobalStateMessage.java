@@ -71,7 +71,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
-    /** Forced deactivation. */
+    /** Force cluster deactivation. */
     private boolean forceDeactivation;
 
     /**

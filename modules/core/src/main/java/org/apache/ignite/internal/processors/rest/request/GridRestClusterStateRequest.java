@@ -32,13 +32,13 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     /** New state. */
     private ClusterState state;
 
-    /** Forced deactivation. */
+    /** Force deactivation flag. */
     private boolean forceDeactivation;
 
     /**
-     * Sets forced deactivation witout checking of operation safety.
+     * Sets forced deactivation without checking of operation safety.
      *
-     * @param forceDeactivation If {@code True}, indicates not to ensure deactivation is safe.
+     * @param forceDeactivation If {@code true}, indicates not to ensure deactivation is safe.
      */
     public void forceDeactivation(boolean forceDeactivation) {
         this.forceDeactivation = forceDeactivation;

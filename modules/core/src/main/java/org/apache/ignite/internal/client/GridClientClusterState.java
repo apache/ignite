@@ -48,11 +48,11 @@ public interface GridClientClusterState {
 
     /**
      * Changes cluster state to {@code newState}.
-     * When deactivating, fails if deactivation is not safe and {@code forceDeactivation} is {@code False}.
+     * When deactivating, fails if deactivation is not safe and {@code forceDeactivation} is {@code аalse}.
      * See {@link ClusterState#INACTIVE}.
      *
      * @param newState New cluster state.
-     * @param forceDeactivation If {@code True}, won't ensure deactivation is safe.
+     * @param forceDeactivation If {@code еrue}, won't ensure deactivation is safe.
      * @throws GridClientException If the request to change the cluster state failed.
      */
     public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException;
