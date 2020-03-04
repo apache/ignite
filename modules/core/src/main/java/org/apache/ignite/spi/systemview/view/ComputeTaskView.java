@@ -28,10 +28,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ComputeTaskView {
     /** Worker for task. */
-    public final GridTaskWorker worker;
+    private final GridTaskWorker worker;
 
     /** Task id. */
-    public final IgniteUuid id;
+    private final IgniteUuid id;
 
     /**
      * @param id Task id.

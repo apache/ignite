@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.job.GridJobWorker;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.collision.CollisionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Compute job representation for a {@link SystemView}.
@@ -59,13 +60,13 @@ public class ComputeJobView {
     }
 
     /** Job. */
-    public final GridJobWorker job;
+    private final GridJobWorker job;
 
     /** Job id. */
-    public final IgniteUuid id;
+    private final IgniteUuid id;
 
     /** Job state. */
-    public final ComputeJobState state;
+    private final ComputeJobState state;
 
     /**
      * @param id Job id.
@@ -184,8 +185,8 @@ public class ComputeJobView {
         return job.isStarted();
     }
 
-    /** @return Executor name. */
-    public String executorName() {
+    /** @return Executor name or {@code null} if not specified. */
+    @Nullable public String executorName() {
         return job.executorName();
     }
 
