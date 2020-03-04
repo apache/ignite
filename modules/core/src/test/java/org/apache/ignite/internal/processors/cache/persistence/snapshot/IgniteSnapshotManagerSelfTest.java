@@ -25,6 +25,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -912,7 +913,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendBinaryMeta0(Map<Integer, BinaryType> types) {
+        @Override public void sendBinaryMeta0(Collection<BinaryType> types) {
             delegate.sendBinaryMeta(types);
         }
 

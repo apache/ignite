@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +41,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -434,12 +436,14 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         if (log.isInfoEnabled())
             log.info("Submit partition processings tasks with partition allocated lengths: " + partFileLengths);
 
+        Collection<BinaryType> binTypesCopy = cctx.kernalContext()
+            .cacheObjects()
+            .metadata(Collections.emptyList())
+            .values();
+
         // Process binary meta.
         futs.add(CompletableFuture.runAsync(
-            wrapExceptionIfStarted(() ->
-                    snpSndr.sendBinaryMeta(cctx.kernalContext()
-                        .cacheObjects()
-                        .metadata(Collections.emptyList()))),
+            wrapExceptionIfStarted(() -> snpSndr.sendBinaryMeta(binTypesCopy)),
             snpSndr.executor()));
 
         // Process marshaller meta.

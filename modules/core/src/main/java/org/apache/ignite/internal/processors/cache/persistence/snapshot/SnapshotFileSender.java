@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -85,7 +86,7 @@ abstract class SnapshotFileSender {
     /**
      * @param types Collection of known binary types.
      */
-    public final void sendBinaryMeta(Map<Integer, BinaryType> types) {
+    public final void sendBinaryMeta(Collection<BinaryType> types) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -214,7 +215,7 @@ abstract class SnapshotFileSender {
     /**
      * @param types Collection of known binary types.
      */
-    protected void sendBinaryMeta0(Map<Integer, BinaryType> types) {
+    protected void sendBinaryMeta0(Collection<BinaryType> types) {
         // No-op by default.
     }
 
