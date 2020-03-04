@@ -1114,12 +1114,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             ctx.localNodeId(),
             storedCfgs,
             state,
+            forceDeactivation,
             blt,
             forceChangeBaselineTopology,
             System.currentTimeMillis()
         );
-
-        msg.force(forceDeactivation);
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
@@ -1558,6 +1557,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     nodeId,
                     null,
                     oldState.state(),
+                    true,
                     newBlt,
                     true,
                     System.currentTimeMillis()
@@ -1598,6 +1598,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ctx.localNodeId(),
                 null,
                 ClusterState.active(clusterState.state()) ? clusterState.state() : ACTIVE,
+                true,
                 blt,
                 true,
                 System.currentTimeMillis()

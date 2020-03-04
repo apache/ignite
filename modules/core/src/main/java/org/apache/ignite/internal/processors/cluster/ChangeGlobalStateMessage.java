@@ -72,13 +72,14 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
     /** Forced deactivation. */
-    private boolean forceDeactivation = true;
+    private boolean forceDeactivation;
 
     /**
      * @param reqId State change request ID.
      * @param initiatingNodeId Node initiated state change.
      * @param storedCfgs Configurations read from persistent store.
      * @param state New cluster state.
+     * @param forceDeactivation Forced cluster deactivation even if unsafe.
      * @param baselineTopology Baseline topology.
      * @param forceChangeBaselineTopology Force change baseline topology flag.
      * @param timestamp Timestamp.
@@ -88,6 +89,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         UUID initiatingNodeId,
         @Nullable List<StoredCacheData> storedCfgs,
         ClusterState state,
+        boolean forceDeactivation,
         BaselineTopology baselineTopology,
         boolean forceChangeBaselineTopology,
         long timestamp
@@ -99,6 +101,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.initiatingNodeId = initiatingNodeId;
         this.storedCfgs = storedCfgs;
         this.state = state;
+        this.forceDeactivation = forceDeactivation;
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
         this.timestamp = timestamp;
@@ -212,15 +215,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     boolean forceDeactivation() {
         return forceDeactivation;
-    }
-
-    /**
-     * Sets forced cluster deactivation.
-     *
-     *  @param forceDeactivation Flag of forced cluster deactivation.
-     */
-    void force(boolean forceDeactivation) {
-        this.forceDeactivation = forceDeactivation;
     }
 
     /**
