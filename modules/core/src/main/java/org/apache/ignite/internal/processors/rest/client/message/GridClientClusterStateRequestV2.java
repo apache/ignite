@@ -24,7 +24,7 @@ import java.io.ObjectOutput;
 import org.apache.ignite.cluster.ClusterState;
 
 /**
- * Enchanced version of {@link GridClientClusterStateRequest}.
+ * Enhanced version of {@link GridClientClusterStateRequest}.
  * Introduced to support forced version of the change state command and keep backward compatibility
  * with nodes of old version that may occur in cluster at the rolling updates.
  */
