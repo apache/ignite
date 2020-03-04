@@ -53,11 +53,11 @@ public interface GridClientClusterState {
      * <p>
      * <b>NOTE:</b>
      * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
-     * @see ClusterState#INACTIVE
      *
      * @param newState New cluster state.
      * @param force New cluster state.
      * @throws GridClientException If the request to change the cluster state failed.
+     * @see ClusterState#INACTIVE
      */
     public void state(ClusterState newState, boolean force) throws GridClientException;
 
