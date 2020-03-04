@@ -26,6 +26,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -808,9 +808,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             },
             ioFactory,
             storeFactory,
-            cctx.kernalContext()
+            types -> cctx.kernalContext()
                 .cacheObjects()
-                .createBinaryWriter(snpLocDir.getAbsolutePath()),
+                .saveMetadata(types, snpLocDir),
             cctx.kernalContext()
                 .marshallerContext()
                 .marshallerMappingWriter(cctx.kernalContext(), snpLocDir.getAbsolutePath()),
@@ -1193,7 +1193,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         private final BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory;
 
         /** Store binary files. */
-        private final BinaryTypeWriter binaryWriter;
+        private final Consumer<Collection<BinaryType>> binaryWriter;
 
         /** Marshaller mapping writer. */
         private final MarshallerMappingWriter mappingWriter;
@@ -1216,7 +1216,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             IgniteThrowableSupplier<File> initPath,
             FileIOFactory ioFactory,
             BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory,
-            BinaryTypeWriter binaryWriter,
+            Consumer<Collection<BinaryType>> binaryWriter,
             MarshallerMappingWriter mappingWriter,
             int pageSize
         ) {
@@ -1275,12 +1275,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendBinaryMeta0(Map<Integer, BinaryType> types) {
+        @Override public void sendBinaryMeta0(Collection<BinaryType> types) {
             if (types == null)
                 return;
 
-            for (Map.Entry<Integer, BinaryType> e : types.entrySet())
-                binaryWriter.writeMeta(e.getKey(), e.getValue());
+            binaryWriter.accept(types);
         }
 
         /** {@inheritDoc} */
