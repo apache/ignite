@@ -52,14 +52,19 @@ import static org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobSta
 
 /** Tests for compute task {@link SystemView}. */
 public class SystemViewComputeJobTest extends GridCommonAbstractTest {
+    /** */
     public static final long TIMEOUT = 5_000L;
 
+    /** */
     private static CyclicBarrier barrier;
 
+    /** */
     private static IgniteEx server;
 
+    /** */
     private static IgniteEx client;
 
+    /** */
     private static IgniteCache<Integer, Integer> cache;
 
     /** {@inheritDoc} */
