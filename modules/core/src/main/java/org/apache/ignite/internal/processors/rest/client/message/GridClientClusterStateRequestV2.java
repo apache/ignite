@@ -32,7 +32,7 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** If {@code True}, cluster deactivation will be forced. */
+    /** If {@code true}, cluster deactivation will be forced. */
     private boolean forceDeactivation;
 
     /**
