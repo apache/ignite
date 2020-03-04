@@ -311,7 +311,6 @@ public abstract class GridClientConnection {
 
     /**
      * Changes grid global state.
-     * See {@link ClusterState#INACTIVE} and {@link IgniteFeatures#SAFE_CLUSTER_DEACTIVATION}.
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
@@ -321,6 +320,8 @@ public abstract class GridClientConnection {
      *                          forced.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     * @see ClusterState#INACTIVE
+     * @see IgniteFeatures#SAFE_CLUSTER_DEACTIVATION
      */
     public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId,
         @Nullable Boolean forceDeactivation) throws GridClientClosedException, GridClientConnectionResetException;
