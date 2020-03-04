@@ -271,7 +271,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      *
      * @return {@code True} if job was cancelled by the system.
      */
-    public boolean isSystemCanceled() {
+    boolean isSystemCanceled() {
         return sysCancelled;
     }
 
@@ -290,11 +290,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** @return Finish time. */
     public long getFinishTime() {
         return finishTime;
-    }
-
-    /** @return Sys stopping. */
-    public boolean isSysStopping() {
-        return sysStopping;
     }
 
     /** @return Is started. */
