@@ -59,7 +59,7 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     }
 
     /**
-     * Sets forced deactivation, witout checking of operation safety.
+     * Sets forced deactivation, without checking of operation safety.
      *
      * @param forceDeactivation If {@code True}, indicates not to ensure deactivation is safe.
      */

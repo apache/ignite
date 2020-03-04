@@ -312,13 +312,13 @@ public abstract class GridClientConnection {
     /**
      * Changes grid global state.
      * When deactivating, fails if deactivation is not safe and {@code forceDeactivation} is {@code False}.
-     * See {@link ClusterState#INACTIVE}.
+     * See {@link ClusterState#INACTIVE} and {@link IgniteFeatures#SAFE_CLUSTER_DEACTIVATION}.
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
-     * @param forceDeactivation If not {@code null}, executes new version of cluster state changing.
-     *                          See {@link IgniteFeatures#SAFE_CLUSTER_DEACTIVATION}.
-     *                          If {@code True} then skips checking of deactivation safety.
+     * @param forceDeactivation If {@code True} then skips checking of deactivation safety.
+     *                          If {@code False}, checks if deactivation is safe.
+     *                          If {@code null}, executes old version of cluster state changing considering always forced
      *
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.

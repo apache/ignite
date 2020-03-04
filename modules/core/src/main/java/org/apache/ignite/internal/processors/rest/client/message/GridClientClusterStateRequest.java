@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -70,7 +71,7 @@ public class GridClientClusterStateRequest extends GridClientAbstractMessage {
         return msg;
     }
 
-    /** Default constructor for the externalization. */
+    /** Empty constructor required by {@link Externalizable}. */
     public GridClientClusterStateRequest() {
         // No op.
     }
