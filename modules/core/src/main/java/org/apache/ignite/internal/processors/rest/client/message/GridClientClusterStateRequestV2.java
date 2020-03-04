@@ -31,8 +31,8 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Forced change of cluster state. */
-    private boolean force;
+    /** If {@code True}, cluster deactivation will be forced. */
+    private boolean forceDeactivation;
 
     /**
      * @param state New cluster state.
@@ -43,7 +43,7 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
         return new GridClientClusterStateRequestV2(GridClientClusterStateRequest.state(state), force);
     }
 
-    /** Default constructor for the exernalization. */
+    /** Default constructor for the externalization. */
     public GridClientClusterStateRequestV2() {
         // No op.
     }
@@ -52,32 +52,32 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
      * Copying constructor.
      *
      * @param clusterStateReq Original request, of the previous version.
-     * @param force If {@code True}, indicates to skip checking of state change safety.
+     * @param forceDeactivation If {@code True}, indicates to skip checking of deactivation safety.
      */
-    private GridClientClusterStateRequestV2(GridClientClusterStateRequest clusterStateReq, boolean force) {
+    private GridClientClusterStateRequestV2(GridClientClusterStateRequest clusterStateReq, boolean forceDeactivation) {
         super(clusterStateReq);
 
-        this.force = force;
+        this.forceDeactivation = forceDeactivation;
     }
 
     /**
-     * @return {@code True} if there is no need to check if state change is safe.
+     * @return {@code True} if there is no need to ensure deactivation is safe.
      */
-    public boolean force() {
-        return force;
+    public boolean forceDeactivation() {
+        return forceDeactivation;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeBoolean(force);
+        out.writeBoolean(forceDeactivation);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        force = in.readBoolean();
+        forceDeactivation = in.readBoolean();
     }
 }

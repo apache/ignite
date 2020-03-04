@@ -25,8 +25,8 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -46,7 +46,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     private String clusterName;
 
     /** Force cluster deactivation even it might have in-memory caches. */
-    private boolean force;
+    private boolean forceDeactivation;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
@@ -75,7 +75,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            client.state().state(state, force);
+            client.state().state(state, forceDeactivation);
 
             log.info("Cluster state changed to " + state);
 
@@ -99,13 +99,13 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
             throw new IllegalArgumentException("Can't parse new cluster state. State: " + s, e);
         }
 
-        force = false;
+        forceDeactivation = false;
 
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
 
             if (FORCE_COMMAND.equalsIgnoreCase(arg)) {
-                force = true;
+                forceDeactivation = true;
 
                 argIter.nextArg("");
             }

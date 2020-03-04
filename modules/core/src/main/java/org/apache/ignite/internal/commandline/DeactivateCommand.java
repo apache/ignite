@@ -22,11 +22,11 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
+import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 
 /**
  * Command to deactivate cluster.
@@ -38,7 +38,7 @@ public class DeactivateCommand implements Command<Void> {
     private String clusterName;
 
     /** Force cluster deactivation even it might have in-memory caches. */
-    private boolean force;
+    private boolean forceDeactivation;
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
@@ -68,7 +68,7 @@ public class DeactivateCommand implements Command<Void> {
         logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            client.state().state(ClusterState.INACTIVE, force);
+            client.state().state(ClusterState.INACTIVE, forceDeactivation);
 
             logger.info("Cluster deactivated");
         }
@@ -83,13 +83,13 @@ public class DeactivateCommand implements Command<Void> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        force = false;
+        forceDeactivation = false;
 
         if (argIter.hasNextArg()) {
             String arg = argIter.peekNextArg();
 
             if (FORCE_COMMAND.equalsIgnoreCase(arg)) {
-                force = true;
+                forceDeactivation = true;
 
                 argIter.nextArg("");
             }

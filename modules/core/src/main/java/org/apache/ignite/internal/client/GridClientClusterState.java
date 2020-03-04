@@ -26,9 +26,9 @@ public interface GridClientClusterState {
     /**
      * Changes Ignite grid state to active or inactive.
      * Fails if the operation is not safe.
+     * @see ClusterState#INACTIVE
      *
      * @param active {@code True} activate, {@code False} deactivate.
-     * @see ClusterState#INACTIVE
      * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
     @Deprecated
@@ -53,13 +53,13 @@ public interface GridClientClusterState {
      * <p>
      * <b>NOTE:</b>
      * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
+     * See {@link ClusterState#INACTIVE}
      *
      * @param newState New cluster state.
-     * @param force New cluster state.
+     * @param forceDeactivation If {@code True}, skips safety of deactivation.
      * @throws GridClientException If the request to change the cluster state failed.
-     * @see ClusterState#INACTIVE
      */
-    public void state(ClusterState newState, boolean force) throws GridClientException;
+    public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException;
 
     /**
      * Get the cluster name.

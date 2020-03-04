@@ -32,16 +32,16 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     /** New state. */
     private ClusterState state;
 
-    /** Forced change of the state. */
-    private boolean force;
+    /** Forced deactivation. */
+    private boolean forceDeactivation;
 
     /**
      * Sets forced state change witout checking of operation safety.
      *
-     * @param force If {@code True}, indicates to skip checking of state change safety.
+     * @param forceDeactivation If {@code True}, indicates not to ensure deactivation is safe.
      */
-    public void force(boolean force) {
-        this.force = force;
+    public void forceDeactivation(boolean forceDeactivation) {
+        this.forceDeactivation = forceDeactivation;
     }
 
     /** */
@@ -55,10 +55,10 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     }
 
     /**
-     * @return {@code True} if there is no need to check if state change is safe.
+     * @return {@code True} if there is no need to ensure deactivation is safe.
      */
-    public boolean force() {
-        return force;
+    public boolean forceDeactivation() {
+        return forceDeactivation;
     }
 
     /** */

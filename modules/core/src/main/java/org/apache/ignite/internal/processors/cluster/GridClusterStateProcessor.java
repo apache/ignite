@@ -105,7 +105,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
 import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
-import static org.apache.ignite.internal.IgniteFeatures.FORCED_CHANGE_OF_CLUSTER_STATE;
+import static org.apache.ignite.internal.IgniteFeatures.SAFE_CLUSTER_DEACTIVATION;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
@@ -119,9 +119,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
     /** Warning of unsafe deactivation. */
-    public static final String DATA_LOST_ON_DEACTIVATION_WARNING =
-        "Cluster has caches configured without persistence. " +
-            "During deactivation in-memory data and objects can be lost!";
+    public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Cluster has in-memory caches " +
+        "(without persistence). During deactivation, in-memory data will be lost!";
 
     /** */
     private boolean inMemoryMode;
@@ -471,8 +470,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && !inMemoryMode
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
             )
-                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(),
-                    false, false);
+                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false, false);
         }
 
         return null;
@@ -631,8 +629,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
         else {
             if (isApplicable(msg, state)) {
-                if (msg.state() == INACTIVE && !msg.force() && !isDeactivationSafe() &&
-                    allNodesSupports(ctx.discovery().serverNodes(topVer), FORCED_CHANGE_OF_CLUSTER_STATE)) {
+                if (msg.state() == INACTIVE && !msg.forceDeactivation() && !isDeactivationSafe() &&
+                    allNodesSupports(ctx.discovery().serverNodes(topVer), SAFE_CLUSTER_DEACTIVATION)) {
                     GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
                     if (stateFut != null) {
@@ -946,7 +944,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
-        boolean force,
+        boolean forceDeactivation,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
@@ -955,7 +953,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             null :
             calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
 
-        return changeGlobalState0(state, force, newBlt, forceChangeBaselineTopology, isAutoAdjust);
+        return changeGlobalState0(state, forceDeactivation, newBlt, forceChangeBaselineTopology, isAutoAdjust);
     }
 
     /** */
@@ -1025,7 +1023,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(
         ClusterState state,
-        boolean force,
+        boolean forceDeactivation,
         BaselineTopology blt,
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
@@ -1121,7 +1119,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             System.currentTimeMillis()
         );
 
-        msg.force(force);
+        msg.force(forceDeactivation);
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 

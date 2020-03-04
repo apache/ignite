@@ -667,7 +667,7 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * <b>NOTE:</b>
      * After cluster deactivation all data from every in-memory cache (including the system caches) will be lost.
-     * @see ClusterState#INACTIVE
+     * See {@link  ClusterState#INACTIVE}
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.

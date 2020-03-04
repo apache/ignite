@@ -806,7 +806,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 else
                     restReq0.active(false);
 
-                restReq0.force(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+                restReq0.forceDeactivation(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
 
                 restReq = restReq0;
 
@@ -824,7 +824,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                     restReq0.state(newState);
 
-                    restReq0.force(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+                    restReq0.forceDeactivation(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
                 }
 
                 restReq = restReq0;

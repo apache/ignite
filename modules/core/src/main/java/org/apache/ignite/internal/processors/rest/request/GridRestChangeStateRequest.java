@@ -27,8 +27,8 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /** Request current state. */
     private boolean reqCurrentState;
 
-    /** Forced chage state without checking of operation safety. */
-    private boolean force;
+    /** Forced deactivation, without checking of operation safety. */
+    private boolean forceDeactivation;
 
     /**
      *
@@ -61,16 +61,16 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /**
      * Sets forced state change witout checking of operation safety.
      *
-     * @param force If {@code True}, indicates to skip checking of state change safety.
+     * @param forceDeactivation If {@code True}, indicates not to ensure deactivation is safe.
      */
-    public void force(boolean force) {
-        this.force = force;
+    public void forceDeactivation(boolean forceDeactivation) {
+        this.forceDeactivation = forceDeactivation;
     }
 
     /**
-     * @return {@code True} if there is no need to check if state change is safe.
+     * @return {@code True} if there is no need to ensure deactivation is safe.
      */
-    public boolean force() {
-        return force;
+    public boolean forceDeactivation() {
+        return forceDeactivation;
     }
 }

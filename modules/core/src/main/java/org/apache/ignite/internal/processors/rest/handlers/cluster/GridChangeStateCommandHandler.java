@@ -75,7 +75,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
                 case CLUSTER_INACTIVE:
                     log.warning(req.command().key() + " is deprecated. Use newer commands.");
                 default:
-                    ctx.state().changeGlobalState(req.active() ? ACTIVE : INACTIVE, req.force(),
+                    ctx.state().changeGlobalState(req.active() ? ACTIVE : INACTIVE, req.forceDeactivation(),
                         ctx.cluster().get().forServers().nodes(), false, false).get();
 
                     res.setResponse(req.command().key() + " started");
