@@ -198,7 +198,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
             .withConfig(sqlToRelConverterConfig)
             .withTrimUnusedFields(false)
-            .withConvertTableAccess(false)
+            .withConvertTableAccess(true)
             .build();
         SqlToRelConverter sqlToRelConverter =
             new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
