@@ -39,7 +39,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  */
@@ -222,6 +225,36 @@ public class IgniteCacheDistributedJoinTest extends AbstractIndexingCommonTest {
             checkSameResult(s, c, "select a.b, b.a, c.c from a.a, b.b, c.c where " +
                 i + " = b.c and a.c = b.c and b.b = c.b order by a.b, b.a, c.c");
         }
+    }
+
+    /** */
+    public void testManyTables() {
+        Ignite ignite = ignite(0);
+
+        queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
+            "CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100))"), true);
+        queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
+            "INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma')"), true);
+
+        SqlFieldsQuery selectQuery = new SqlFieldsQuery(
+            "SELECT P1.NAME " +
+            "FROM PERSON P1 " +
+            "JOIN PERSON P2 ON P1.ID = P2.ID " +
+            "JOIN PERSON P3 ON P1.ID = P3.ID " +
+            "JOIN PERSON P4 ON P1.ID = P4.ID " +
+            "JOIN PERSON P5 ON P1.ID = P5.ID " +
+            "JOIN PERSON P6 ON P1.ID = P6.ID " +
+            "JOIN PERSON P7 ON P1.ID = P7.ID " +
+            "JOIN PERSON P8 ON P1.ID = P8.ID " +
+            "JOIN PERSON P9 ON P1.ID = P9.ID " +
+            "ORDER BY P1.NAME")
+            .setDistributedJoins(true).setEnforceJoinOrder(false);
+        List<List<?>> res = queryProcessor(ignite).querySqlFields(selectQuery, true).getAll();
+
+        assertEquals(3, res.size());
+        assertThat(res.get(0).get(0), is("Ann"));
+        assertThat(res.get(1).get(0), is("Ed"));
+        assertThat(res.get(2).get(0), is("Emma"));
     }
 
     /** {@inheritDoc} */
