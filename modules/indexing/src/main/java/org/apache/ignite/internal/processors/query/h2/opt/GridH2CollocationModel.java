@@ -214,15 +214,13 @@ public final class GridH2CollocationModel {
         else if (Arrays.equals(this.childFilters, childFilters))
             return false;
 
-        if (this.childFilters == null) {
+        if (this.childFilters == null || this.childFilters.length != childFilters.length) {
             // We have to clone because H2 reuses array and reorders elements.
             this.childFilters = childFilters.clone();
 
             children = new GridH2CollocationModel[childFilters.length];
         }
         else {
-            assert this.childFilters.length == childFilters.length;
-
             // We have to copy because H2 reuses array and reorders elements.
             System.arraycopy(childFilters, 0, this.childFilters, 0, childFilters.length);
 
