@@ -189,7 +189,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode convert(SqlNode sql) {
-        return rel(sql).rel;
+        return rel(sql).project();
     }
 
     /** {@inheritDoc} */
