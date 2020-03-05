@@ -780,7 +780,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Utils.setupConnection(conn, false, enforceJoinOrder, lazy);
 
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true,
-            H2StatementCache.queryFlags(false, enforceJoinOrder));
+            H2StatementCache.queryFlags(false, enforceJoinOrder, false));
 
         if (GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for local queries");

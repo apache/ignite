@@ -554,7 +554,7 @@ public class GridMapQueryExecutor {
 
                         final PreparedStatement stmt = h2.preparedStatementWithParams(conn, qry.query(),
                             params0, true,
-                            H2StatementCache.queryFlags(distributedJoinMode != OFF, enforceJoinOrder));
+                            H2StatementCache.queryFlags(distributedJoinMode != OFF, enforceJoinOrder, false));
 
                         GridH2StatementCleaner stmtCleaner = GridH2StatementCleaner.fromPrepared(stmt);
                         qctx.addResource(stmtCleaner);

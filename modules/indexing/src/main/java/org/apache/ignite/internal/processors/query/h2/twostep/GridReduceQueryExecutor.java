@@ -854,7 +854,7 @@ public class GridReduceQueryExecutor {
                         try {
                             if (qry.explain()) {
                                 return explainPlan(r.connection(), qry, params,
-                                    H2StatementCache.queryFlags(false, enforceJoinOrder));
+                                    H2StatementCache.queryFlags(false, enforceJoinOrder, false));
                             }
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
@@ -862,7 +862,8 @@ public class GridReduceQueryExecutor {
                             Collection<Object> params0 = F.asList(rdc.parameters(params));
 
                             final PreparedStatement stmt = h2.preparedStatementWithParams(r.connection(), rdc.query(),
-                                params0, false, H2StatementCache.queryFlags(false, enforceJoinOrder));
+                                params0, false,
+                                H2StatementCache.queryFlags(false, enforceJoinOrder, false));
 
                             GridH2StatementCleaner stmtCleaner = GridH2StatementCleaner.fromPrepared(stmt);
                             qctx.addResource(stmtCleaner);
