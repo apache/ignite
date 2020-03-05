@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -109,7 +110,8 @@ public final class H2StatementCache {
         return qry == null ? 0 : (byte)(
             (qry.isDistributedJoins() ? 1 : 0)
                 + (qry.isEnforceJoinOrder() ? 2 : 0)
-                + (qry.isLocal() ? 4 : 0));
+                + (qry.isLocal() ? 4 : 0)
+                + (qry.getClass() == SqlFieldsQueryEx.class && ((SqlFieldsQueryEx)qry).isSkipReducerOnUpdate() ? 8 : 0));
     }
 
     /** */
