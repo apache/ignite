@@ -45,6 +45,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -147,14 +148,12 @@ public class GridServiceProxy<T> implements Serializable {
      */
     @SuppressWarnings("BusyWait")
     public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
-        if(mtd.getDeclaringClass().equals(Object.class)) {
-            if (U.isHashCodeMethod(mtd))
-                return System.identityHashCode(proxy);
-            else if (U.isEqualsMethod(mtd))
-                return proxy == args[0];
-            else if (U.isToStringMethod(mtd))
-                return GridServiceProxy.class.getSimpleName() + " [name=" + name + ", sticky=" + sticky + ']';
-        }
+        if (U.isHashCodeMethod(mtd))
+            return System.identityHashCode(proxy);
+        else if (U.isEqualsMethod(mtd))
+            return proxy == args[0];
+        else if (U.isToStringMethod(mtd))
+            return GridServiceProxy.class.getSimpleName() + " [name=" + name + ", sticky=" + sticky + ']';
 
         ctx.gateway().readLock();
 
@@ -174,8 +173,12 @@ public class GridServiceProxy<T> implements Serializable {
                     if (node.isLocal()) {
                         ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
-                        if (svcCtx != null)
-                            return callServiceMtd(svcCtx.serviceOrProxy(), mtd, args);
+                        if (svcCtx != null) {
+                            Service svc = svcCtx.service();
+
+                            if (svc != null)
+                                return callSrvcMtd(ctx.service(), svc, name, mtd, args);
+                        }
                     }
                     else {
                         ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
@@ -410,7 +413,7 @@ public class GridServiceProxy<T> implements Serializable {
         @Override public Object call() throws Exception {
             ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
 
-            if (svcCtx == null || svcCtx.serviceOrProxy() == null)
+            if (svcCtx == null || svcCtx.service() == null)
                 throw new GridServiceNotFoundException(svcName);
 
             GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);
@@ -421,13 +424,10 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return callServiceMtd(svcCtx.serviceOrProxy(), mtd, args);
+                return callSrvcMtd(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(), mtd, args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
-            }
-            catch (Throwable e) {
-                throw new ServiceProxyException(e);
             }
         }
 
@@ -454,18 +454,34 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Calls method of service whether it is a proxy or not.
+     * Calls service method, measures and registers its performance.
      *
-     * @param srvcOrProxy Service instance or proxy wrap.
-     * @param mtd         Service method to call.
-     * @param args        Arguments for method {@code mtd}.
-     * @return Value made of invocation of {@code mtd}.
+     * @param srvcProc Current service processor.
+     * @param srvc The service object.
+     * @param srvcName The service name.
+     * @param mtd Method to call.
+     * @param args Arguments for {@code mtd}.
      */
-    private static Object callServiceMtd(Service srvcOrProxy, Method mtd, Object[] args)
-        throws InvocationTargetException, IllegalAccessException, Throwable {
-        return Proxy.isProxyClass(srvcOrProxy.getClass()) ?
-            Proxy.getInvocationHandler(srvcOrProxy).invoke(srvcOrProxy, mtd, args)
-            : mtd.invoke(srvcOrProxy, args);
+    private static Object callSrvcMtd(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
+        Object[] args) throws InvocationTargetException, IllegalAccessException {
+
+        final long startTime = System.nanoTime();
+
+        try {
+            return mtd.invoke(srvc, args);
+        }
+        finally {
+            if (srvcProc instanceof IgniteServiceProcessor) {
+                IgniteServiceProcessor advancedSrvcProc = (IgniteServiceProcessor)srvcProc;
+
+                HistogramMetricImpl histogram = advancedSrvcProc.histogram(srvcName, mtd);
+
+                assert histogram != null;
+
+                if (histogram != null)
+                    histogram.value(U.nanosToMillis(System.nanoTime() - startTime));
+            }
+        }
     }
 
     /**

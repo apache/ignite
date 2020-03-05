@@ -40,7 +40,7 @@ public class MetricUtils {
     /** Histogram metric last interval high bound. */
     public static final String INF = "inf";
 
-    /** Max depth of type name in {@link #abbreviateName(Class, int)}. */
+    /** Max entirety of type name in {@link #abbreviateName(Class, int)}. */
     public static final int MAX_ABBREVIATE_NAME_LVL = 2;
 
     /**
@@ -60,7 +60,7 @@ public class MetricUtils {
     }
 
     /**
-     * Abbreviates package + class name for metric naming purposes.
+     * Abbreviates package name for metric naming purposes.
      *
      * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
      *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
@@ -70,18 +70,18 @@ public class MetricUtils {
      *                         2 - add first and last char of each name in java package;
      *                         Any other - add full name of java package.
      *                     </pre>
-     * @return Abbreviated name of {@code cl}.
+     * @return Abbreviated name of {@code cls}.
      */
-    public static String abbreviateName(Class<?> cl, int pkgNameDepth) {
+    public static String abbreviateName(Class<?> cls, int pkgNameDepth) {
         if (pkgNameDepth == 0)
-            return cl.getSimpleName();
+            return cls.getSimpleName();
 
         if (pkgNameDepth < 0 || pkgNameDepth > 2)
-            return cl.getName();
+            return cls.getName();
 
-        String[] pkgNameParts = cl.getName().split("\\.");
+        String[] pkgNameParts = cls.getName().split("\\.");
 
-        // No package like of 'void' or 'int'.
+        // No package like 'void' or 'int'.
         if (pkgNameParts.length == 1)
             return pkgNameParts[0];
 
@@ -233,8 +233,8 @@ public class MetricUtils {
     /**
      * Count total of histogram values.
      *
-     * @param histogram Historgam to traverse.
-     * @return Summ of all entries of {@code histogram} buckets.
+     * @param histogram Histogram to traverse.
+     * @return Sum of all entries of {@code histogram} buckets.
      */
     public static long sumHistogramEntries(HistogramMetric histogram) {
         return LongStream.of(histogram.value()).reduce(Long::sum).orElse(0);

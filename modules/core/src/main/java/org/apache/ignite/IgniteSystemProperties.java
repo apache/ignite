@@ -17,13 +17,13 @@
 
 package org.apache.ignite;
 
-import javax.net.ssl.HostnameVerifier;
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -1115,19 +1115,6 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED
         = "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED";
-
-    /**
-     * Manages service metrics collecting for a node. Works only if
-     * {@code IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED} is {@code true}. Note that Enabled service metrics can
-     * slightly hit service performance.
-     * <p/>
-     * If the property is {@code true} then service metrics are collected.
-     * <p/>
-     * If the property is {@code false} then service metrics are not collected.
-     * <p/>
-     * Default is {@code true}.
-     */
-    public static final String IGNITE_SERVICE_METRICS_ENABLED = "IGNITE_SERVICE_METRICS_ENABLED";
 
     /**
      * When set to {@code true}, cache metrics are not included into the discovery metrics update message (in this

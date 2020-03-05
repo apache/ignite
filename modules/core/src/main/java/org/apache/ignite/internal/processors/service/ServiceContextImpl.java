@@ -63,10 +63,6 @@ public class ServiceContextImpl implements ServiceContext {
     @GridToStringExclude
     private volatile Service svc;
 
-    /** Service proxy. */
-    @GridToStringExclude
-    private volatile Service svcProxy;
-
     /** Cancelled flag. */
     private volatile boolean isCancelled;
 
@@ -126,20 +122,6 @@ public class ServiceContextImpl implements ServiceContext {
      */
     @Nullable Service service() {
         return svc;
-    }
-
-    /**
-     * @param svcProxy Service proxy.
-     */
-    void serviceProxy(Service svcProxy) {
-        this.svcProxy = svcProxy;
-    }
-
-    /**
-     * @return Service or its proxy. Or {@code null} if service initialization is not finished yet.
-     */
-    @Nullable Service serviceOrProxy() {
-        return svc == null ? null : svcProxy == null ? svc : svcProxy;
     }
 
     /**

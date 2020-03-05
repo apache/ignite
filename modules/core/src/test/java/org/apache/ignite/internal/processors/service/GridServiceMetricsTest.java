@@ -27,7 +27,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_METRICS_ENABLED;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.sumHistogramEntries;
@@ -36,20 +35,17 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 
 /** Tests metrics of service invocations. */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
-    /** Number of service invcations. */
-    private static final int INVOKE_CNT = 1;
+    /** Number of service invocations. */
+    private static final int INVOKE_CNT = 20;
 
     /** Utility holder of current grid number. */
     private final AtomicInteger gridNum = new AtomicInteger();
 
     /** Service name used in the tests. */
-    private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName();
+    private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName()+"_service";
 
     /** Error message of created metrics. */
     private static final String METRICS_MUST_NOT_BE_CREATED = "Service metric registry must not be created.";
-
-    /** Error message of unexisting metrics. */
-    private static final String METRICS_MUST_BE_CREATED = "Service metric registry not found.";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -127,46 +123,6 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(deployedCnt, metricsCnt);
 
         assertEquals(metricsCnt, totalInstance);
-    }
-
-    /** Makes sure {@code IgniteSystemProperties#IGNITE_SERVICE_METRICS_ENABLED} works correctly. */
-    @Test
-    public void testMetricsEnabledDisabled() throws Throwable {
-        IgniteEx server = startGrid(0);
-
-        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(server.context().metric(), SRVC_NAME));
-
-        server.services().deploy(serviceCfg(SRVC_NAME, 1, 1));
-
-        awaitPartitionMapExchange();
-
-        assertNotNull(METRICS_MUST_BE_CREATED, findMetricRegistry(server.context().metric(), SRVC_NAME));
-
-        stopAllGrids();
-
-        String prevMetricsEnabled = System.getProperty(IGNITE_SERVICE_METRICS_ENABLED);
-
-        try {
-            System.setProperty(IGNITE_SERVICE_METRICS_ENABLED, "false");
-
-            server = startGrid(0);
-
-            assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(server.context().metric(), SRVC_NAME));
-
-            server.services().deploy(serviceCfg(SRVC_NAME, 1, 1));
-
-            awaitPartitionMapExchange();
-
-            callService(server, null, getTestMtd(), getTestMtdArgs());
-
-            assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(server.context().metric(), SRVC_NAME));
-        }
-        finally {
-            if (prevMetricsEnabled != null)
-                System.setProperty(IGNITE_SERVICE_METRICS_ENABLED, prevMetricsEnabled);
-            else
-                System.clearProperty(IGNITE_SERVICE_METRICS_ENABLED);
-        }
     }
 
     /** Ensures metric are created when service is deployed and removed when service is undeployed. */

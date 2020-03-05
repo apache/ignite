@@ -121,7 +121,7 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
      * @param sticky Whether multi-node request should be done.
      * @param timeout If greater than 0 limits service acquire time. Cannot be negative.
      * @param <T> Service interface type.
-     * @param locProxied If {@code True}, local service instance will be proxied too.
+     * @param locProxied If {@code true}, local service instance will be proxied.
      * @return The proxy of a service by its name and class.
      * @throws IgniteException If failed to create proxy.
      */

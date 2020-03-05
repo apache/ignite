@@ -390,7 +390,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
      * @param svcItf     Interface of the service.
      * @param sticky     Is stick proxy.
      * @param timeout    Timeout for service invocation.
-     * @param locProxied If {@code True}, local service instance will be also proxied.
+     * @param locProxied If {@code true}, local service instance will be also proxied.
      * @return Proxy over the service or its local instance if available and {@code proxiedService} is {@code True}.
      */
     private <T> T proxiedService(String name, Class<? super T> svcItf, boolean sticky, long timeout,
