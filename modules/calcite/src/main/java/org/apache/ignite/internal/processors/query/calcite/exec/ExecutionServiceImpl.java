@@ -873,7 +873,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private final ExecutionContext ctx;
 
         /** */
-        private final RootNode consumer;
+        private final RootNode root;
 
         /** remote nodes */
         private final Set<UUID> remotes;
@@ -891,10 +891,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private QueryInfo(ExecutionContext ctx, List<Fragment> fragments, Node<Object[]> root) {
             this.ctx = ctx;
 
-            RootNode consumer = new RootNode(ctx, ExecutionServiceImpl.this::onCursorClose);
-            consumer.register(root);
+            RootNode rootNode = new RootNode(ctx, ExecutionServiceImpl.this::onCursorClose);
+            rootNode.register(root);
 
-            this.consumer = consumer;
+            this.root = rootNode;
 
             remotes = new HashSet<>();
             waiting = new HashSet<>();
@@ -915,7 +915,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         /** */
         public Iterator<Object[]> iterator() {
-            return iteratorsHolder().iterator(consumer);
+            return iteratorsHolder().iterator(root);
         }
 
         /** {@inheritDoc} */
@@ -965,7 +965,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             }
 
             if (cancelLocal)
-                consumer.cancel();
+                root.cancel();
 
             if (cancelRemote) {
                 QueryCancelRequest msg = new QueryCancelRequest(ctx.queryId());

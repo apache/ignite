@@ -42,9 +42,9 @@ public interface Node<T> {
     void register(List<Node<T>> sources);
 
     /**
-     * Registers target sink.
+     * Registers downstream.
      *
-     * @param downstream Target sink.
+     * @param downstream Downstream.
      */
     void onRegister(Downstream<T> downstream);
 
