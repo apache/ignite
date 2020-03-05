@@ -259,7 +259,7 @@ public class ExpressionFactory {
         BlockBuilder builder = new BlockBuilder();
 
         List<org.apache.calcite.linq4j.tree.Expression> list = RexToLixTranslator.translateProjects(program,
-            typeFactory, conformance, builder, null, context_, inputGetter, a0 -> { throw new UnsupportedOperationException(); });
+            typeFactory, conformance, builder, null, context_, inputGetter, null);
 
         for (int i = 0; i < list.size(); i++) {
             builder.add(
