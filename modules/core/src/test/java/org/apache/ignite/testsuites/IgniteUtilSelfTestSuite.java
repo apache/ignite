@@ -24,6 +24,7 @@ import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
+import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -98,6 +99,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteExceptionRegistrySelfTest.class);
         suite.addTestSuite(GridMessageCollectionTest.class);
         suite.addTestSuite(WorkersControlMXBeanTest.class);
+        suite.addTestSuite(GridConcurrentMultiPairQueueTest.class);
 
         // Sensitive toString.
         suite.addTestSuite(IncludeSensitiveAtomicTest.class);
