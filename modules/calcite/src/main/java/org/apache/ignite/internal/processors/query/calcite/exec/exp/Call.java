@@ -23,9 +23,11 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlNameMatchers;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -102,8 +104,13 @@ public class Call implements Expression {
 
     /** {@inheritDoc} */
     @Override public <T> T evaluate(ExecutionContext ctx, Object... args) {
-        if (opImpl == null)
-            opImpl = new ExpressionFactory(ctx.parent().typeFactory(), ctx.parent().conformance(), ctx.parent().opTable()).implement(this);
+        if (opImpl == null) {
+            IgniteTypeFactory typeFactory = ctx.parent().typeFactory();
+            SqlConformance conformance = ctx.parent().conformance();
+            SqlOperatorTable opTable = ctx.parent().opTable();
+
+            opImpl = new ExpressionFactory(typeFactory, conformance, opTable).implement(this);
+        }
 
         return (T) opImpl.apply(operands.stream().map(o -> o.evaluate(ctx, args)).toArray());
     }
