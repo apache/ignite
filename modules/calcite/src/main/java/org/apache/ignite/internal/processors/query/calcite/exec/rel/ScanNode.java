@@ -79,7 +79,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
@@ -100,11 +100,11 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
                     throw new IgniteInterruptedCheckedException("Thread was interrupted.");
 
                 requested--;
-                upstream.push(it.next());
+                downstream.push(it.next());
             }
 
             if (requested > 0 && !it.hasNext()) {
-                upstream.end();
+                downstream.end();
                 requested = 0;
 
                 close();
@@ -113,7 +113,7 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
         catch (Throwable e) {
             close();
 
-            upstream.onError(e);
+            downstream.onError(e);
         }
         finally {
             inLoop = false;

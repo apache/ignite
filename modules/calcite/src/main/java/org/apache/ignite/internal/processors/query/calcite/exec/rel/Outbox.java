@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * A part of exchange.
  */
-public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstream<T>, AutoCloseable {
+public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstream<T>, AutoCloseable {
     /** */
     private final ExchangeService exchange;
 
@@ -178,12 +178,12 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Upstrea
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Upstream<T> upstream) {
+    @Override public void onRegister(Downstream<T> downstream) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<T> requestUpstream(int idx) {
+    @Override protected Downstream<T> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 

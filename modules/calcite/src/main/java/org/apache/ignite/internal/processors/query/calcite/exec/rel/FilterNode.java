@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Upstream<Object[]> {
+public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
     /** */
     private final Predicate<Object[]> predicate;
 
@@ -69,7 +69,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void push(Object[] row) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waiting > 0;
 
         waiting--;
@@ -81,7 +81,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
             flushFromBuffer();
         }
         catch (Exception e) {
-            upstream.onError(e);
+            downstream.onError(e);
         }
     }
 
@@ -89,7 +89,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void end() {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waiting > 0;
 
         waiting = -1;
@@ -98,7 +98,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
             flushFromBuffer();
         }
         catch (Exception e) {
-            upstream.onError(e);
+            downstream.onError(e);
         }
     }
 
@@ -106,13 +106,13 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void onError(Throwable e) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
 
-        upstream.onError(e);
+        downstream.onError(e);
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
@@ -125,7 +125,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
         try {
             while (requested > 0 && !inBuffer.isEmpty()) {
                 requested--;
-                upstream.push(inBuffer.remove());
+                downstream.push(inBuffer.remove());
             }
 
             if (inBuffer.isEmpty() && waiting == 0)
@@ -134,7 +134,7 @@ public class FilterNode extends AbstractNode<Object[]> implements SingleNode<Obj
             if (waiting == -1 && requested > 0) {
                 assert inBuffer.isEmpty();
 
-                upstream.end();
+                downstream.end();
                 requested = 0;
             }
         }

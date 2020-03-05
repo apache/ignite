@@ -146,7 +146,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<T> requestUpstream(int idx) {
+    @Override protected Downstream<T> requestDownstream(int idx) {
         throw new UnsupportedOperationException();
     }
 
@@ -177,7 +177,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
 
     /** */
     private void pushInternal() {
-        assert upstream != null;
+        assert downstream != null;
 
         inLoop = true;
         try {
@@ -187,7 +187,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
                 pushUnordered();
         }
         catch (Exception e) {
-            upstream.onError(e);
+            downstream.onError(e);
             close();
         }
         finally {
@@ -227,7 +227,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
             Buffer buffer = heap.poll().right;
 
             requested--;
-            upstream.push((T)buffer.remove());
+            downstream.push((T)buffer.remove());
 
             switch (buffer.check()) {
                 case END:
@@ -247,7 +247,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         if (requested > 0 && heap.isEmpty()) {
             assert buffers.isEmpty();
 
-            upstream.end();
+            downstream.end();
             requested = 0;
 
             close();
@@ -272,7 +272,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
                 case READY:
                     noProgress = 0;
                     requested--;
-                    upstream.push((T)buffer.remove());
+                    downstream.push((T)buffer.remove());
 
                     break;
                 case WAITING:
@@ -287,7 +287,7 @@ public class Inbox<T> extends AbstractNode<T> implements SingleNode<T>, AutoClos
         }
 
         if (requested > 0 && buffers.isEmpty()) {
-            upstream.end();
+            downstream.end();
             requested = 0;
 
             close();

@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Client iterator.
  */
-public class RootNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Upstream<Object[]>, Iterator<Object[]>, AutoCloseable {
+public class RootNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]>, Iterator<Object[]>, AutoCloseable {
     /** */
     public enum State {
         RUNNING, CANCELLED, END
@@ -197,7 +197,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
@@ -205,7 +205,7 @@ public class RootNode extends AbstractNode<Object[]> implements SingleNode<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Upstream<Object[]> upstream) {
+    @Override public void onRegister(Downstream<Object[]> downstream) {
         throw new UnsupportedOperationException();
     }
 

@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 /**
  *
  */
-public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Upstream<Object[]> {
+public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Object[]>, Downstream<Object[]> {
     /** */
     protected final TableDescriptor desc;
 
@@ -97,7 +97,7 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void push(Object[] row) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waiting > 0;
         assert state == State.UPDATING;
 
@@ -119,7 +119,7 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
                 F.first(sources).request(waiting = MODIFY_BATCH_SIZE);
         }
         catch (Exception e) {
-            upstream.onError(e);
+            downstream.onError(e);
         }
     }
 
@@ -127,7 +127,7 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void end() {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waiting > 0;
 
         waiting = -1;
@@ -140,13 +140,13 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
     @Override public void onError(Throwable e) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
 
-        upstream.onError(e);
+        downstream.onError(e);
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
@@ -162,7 +162,7 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
 
     /** */
     private void tryEnd() {
-        assert upstream != null;
+        assert downstream != null;
 
         inLoop = true;
         try {
@@ -175,16 +175,16 @@ public class ModifyNode extends AbstractNode<Object[]> implements SingleNode<Obj
                 state = State.END;
 
                 requested--;
-                upstream.push(new Object[]{updatedRows});
+                downstream.push(new Object[]{updatedRows});
             }
 
             if (state == State.END && requested > 0) {
-                upstream.end();
+                downstream.end();
                 requested = 0;
             }
         }
         catch (Exception e) {
-            upstream.onError(e);
+            downstream.onError(e);
         }
         finally {
             inLoop = false;

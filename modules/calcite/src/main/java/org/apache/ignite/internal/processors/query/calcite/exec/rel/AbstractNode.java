@@ -52,7 +52,7 @@ public abstract class AbstractNode<T> implements Node<T> {
     protected ExecutionContext ctx;
 
     /** */
-    protected Upstream<T> upstream;
+    protected Downstream<T> downstream;
 
     /** */
     protected List<Node<T>> sources;
@@ -74,12 +74,12 @@ public abstract class AbstractNode<T> implements Node<T> {
         this.sources = sources;
 
         for (int i = 0; i < sources.size(); i++)
-            sources.get(i).onRegister(requestUpstream(i));
+            sources.get(i).onRegister(requestDownstream(i));
     }
 
     /** {@inheritDoc} */
-    @Override public void onRegister(Upstream<T> upstream) {
-        this.upstream = upstream;
+    @Override public void onRegister(Downstream<T> downstream) {
+        this.downstream = downstream;
     }
 
     /** {@inheritDoc} */
@@ -93,7 +93,7 @@ public abstract class AbstractNode<T> implements Node<T> {
     }
 
     /** */
-    protected abstract Upstream<T> requestUpstream(int idx);
+    protected abstract Downstream<T> requestDownstream(int idx);
 
     /** */
     protected void checkThread() {

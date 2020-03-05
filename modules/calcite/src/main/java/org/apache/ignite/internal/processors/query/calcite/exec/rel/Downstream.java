@@ -21,9 +21,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
  * Represents an abstract data consumer.
  *
  * <p/><b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)}, {@link Node#cancel()},
- * {@link Upstream#push(Object)} and {@link Upstream#end()} methods should be used from one single thread.
+ * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
  */
-public interface Upstream<T> {
+public interface Downstream<T> {
     /**
      * Pushes a row to consumer.
      * @param row Data row.

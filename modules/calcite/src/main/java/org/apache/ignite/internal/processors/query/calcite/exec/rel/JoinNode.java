@@ -80,9 +80,9 @@ public class JoinNode extends AbstractNode<Object[]> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Upstream<Object[]> requestUpstream(int idx) {
+    @Override protected Downstream<Object[]> requestDownstream(int idx) {
         if (idx == 0)
-            return new Upstream<Object[]>() {
+            return new Downstream<Object[]>() {
                 /** {@inheritDoc} */
                 @Override public void push(Object[] row) {
                     pushLeft(row);
@@ -99,7 +99,7 @@ public class JoinNode extends AbstractNode<Object[]> {
                 }
             };
         else if (idx == 1)
-            return new Upstream<Object[]>() {
+            return new Downstream<Object[]>() {
                 /** {@inheritDoc} */
                 @Override public void push(Object[] row) {
                     pushRight(row);
@@ -123,7 +123,7 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void pushLeft(Object[] row) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waitingLeft > 0;
 
         leftInBuffer.add(row);
@@ -135,7 +135,7 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void pushRight(Object[] row) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waitingRight > 0;
 
         waitingRight--;
@@ -150,7 +150,7 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void endLeft() {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waitingLeft > 0;
 
         waitingLeft = -1;
@@ -162,7 +162,7 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void endRight() {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
         assert waitingRight > 0;
 
         waitingRight = -1;
@@ -174,9 +174,9 @@ public class JoinNode extends AbstractNode<Object[]> {
     private void onError(Throwable e) {
         checkThread();
 
-        assert upstream != null;
+        assert downstream != null;
 
-        upstream.onError(e);
+        downstream.onError(e);
     }
 
     /** */
@@ -195,7 +195,7 @@ public class JoinNode extends AbstractNode<Object[]> {
                             continue;
 
                         requested--;
-                        upstream.push(row);
+                        downstream.push(row);
                     }
 
                     if (rightIdx == rightMaterialized.size()) {
@@ -212,12 +212,12 @@ public class JoinNode extends AbstractNode<Object[]> {
                 sources.get(0).request(waitingLeft = IN_BUFFER_SIZE);
 
             if (requested > 0 && waitingLeft == -1 && waitingRight == -1 && left == null && leftInBuffer.isEmpty()) {
-                upstream.end();
+                downstream.end();
                 requested = 0;
             }
         }
         catch (Exception e) {
-            upstream.onError(e);
+            downstream.onError(e);
         }
         finally {
             inLoop = false;
