@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.management.ManagementFactory;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -274,19 +270,10 @@ public class SetTxTimeoutOnPartitionMapExchangeTest extends GridCommonAbstractTe
         U.sleep(5_000L);
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TransactionsMXBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 
     /**

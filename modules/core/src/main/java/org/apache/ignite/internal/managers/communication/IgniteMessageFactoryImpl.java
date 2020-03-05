@@ -20,8 +20,6 @@ package org.apache.ignite.internal.managers.communication;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
@@ -30,7 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 /**
  * Message factory implementation which is responsible for instantiation of all communication messages.
@@ -41,9 +38,6 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
 
     /** Array size. */
     private static final int ARR_SIZE = 1 << Short.SIZE;
-
-    /** Custom messages registry. Used for test purposes. */
-    private static final Map<Short, Supplier<Message>> CUSTOM = new ConcurrentHashMap<>();
 
     /** Message suppliers. */
     private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[]) Array.newInstance(Supplier.class, ARR_SIZE);
@@ -121,9 +115,6 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         Supplier<Message> supplier = msgSuppliers[directTypeToIndex(directType)];
 
         if (supplier == null)
-            supplier = CUSTOM.get(directType);
-
-        if (supplier == null)
             throw new IgniteException("Invalid message type: " + directType);
 
         return supplier.get();
@@ -145,22 +136,5 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         assert res >= Short.MIN_VALUE && res <= Short.MAX_VALUE;
 
         return (short)res;
-    }
-
-    /**
-     * Registers factory for custom message. Used for test purposes.
-     *
-     * @param type Message type.
-     * @param c Message producer.
-     *
-     * @deprecated Should be removed. Please don't use this method anymore.
-     * Consider using of plugin with own message types.
-     */
-    @TestOnly
-    @Deprecated
-    public static void registerCustom(short type, Supplier<Message> c) {
-        assert c != null;
-
-        CUSTOM.put(type, c);
     }
 }
