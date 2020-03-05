@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptCostImpl;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -62,6 +63,10 @@ import org.jetbrains.annotations.Nullable;
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
+            .sqlToRelConverterConfig(SqlToRelConverter.configBuilder()
+                .withConvertTableAccess(true)
+                .withTrimUnusedFields(false)
+                .build())
             .parserConfig(SqlParser.configBuilder()
                 // Lexical configuration defines how identifiers are quoted, whether they are converted to upper or lower
                 // case when they are read, and whether identifiers are matched case-sensitively.

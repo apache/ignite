@@ -194,14 +194,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
-        RelOptCluster cluster = createCluster();
-        SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-            .withConfig(sqlToRelConverterConfig)
-            .withTrimUnusedFields(false)
-            .withConvertTableAccess(true)
-            .build();
-        SqlToRelConverter sqlToRelConverter =
-            new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
+        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
+            validator, catalogReader, createCluster(), convertletTable, sqlToRelConverterConfig);
 
         return sqlToRelConverter.convertQuery(sql, false, true);
     }
@@ -222,15 +216,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlValidator validator = new IgniteSqlValidator(operatorTable, catalogReader, typeFactory, conformance);
         validator.setIdentifierExpansion(true);
 
-        RelOptCluster cluster = createCluster();
-        SqlToRelConverter.Config config = SqlToRelConverter
-            .configBuilder()
-            .withConfig(sqlToRelConverterConfig)
-            .withTrimUnusedFields(false)
-            .withConvertTableAccess(false)
-            .build();
-        SqlToRelConverter sqlToRelConverter =
-            new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
+        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
+            validator, catalogReader, createCluster(), convertletTable, sqlToRelConverterConfig);
 
         return sqlToRelConverter.convertQuery(sqlNode, true, false);
     }

@@ -90,6 +90,8 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
             if (it == null)
                 it = source.iterator();
 
+            int processed = 0;
+
             Thread thread = Thread.currentThread();
 
             while (requested > 0 && it.hasNext()) {
@@ -101,6 +103,13 @@ public class ScanNode extends AbstractNode<Object[]> implements SingleNode<Objec
 
                 requested--;
                 downstream.push(it.next());
+
+                if (++processed == IN_BUFFER_SIZE && requested > 0) {
+                    // allow others to do their job
+                    context().execute(this::pushInternal);
+
+                    return;
+                }
             }
 
             if (requested > 0 && !it.hasNext()) {
