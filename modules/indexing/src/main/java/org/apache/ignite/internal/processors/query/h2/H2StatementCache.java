@@ -106,7 +106,7 @@ public final class H2StatementCache {
 
     /** */
     public static byte queryFlags(SqlFieldsQuery qry) {
-        return (byte)((qry.isDistributedJoins() ? 1 : 0) + (qry.isEnforceJoinOrder() ? 2 : 0));
+        return qry == null ? 0 : (byte)((qry.isDistributedJoins() ? 1 : 0) + (qry.isEnforceJoinOrder() ? 2 : 0));
     }
 
     /** */
