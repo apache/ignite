@@ -3032,9 +3032,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     ? new GridCompoundFuture<>() : null;
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
-                    if (filter != null && !filter.apply(tx))
-                        continue;
-
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
@@ -3042,23 +3039,25 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-                            if (tx.state() == PREPARED)
-                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
-                            else {
-                                IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
+                            if (filter == null || filter.apply(tx)) {
+                                if (tx.state() == PREPARED)
+                                    commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                                else {
+                                    IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
-                                if (prepFut != null) {
-                                    prepFut.listen(fut -> {
-                                        if (tx.state() == PREPARED)
-                                            commitIfPrepared(tx, Collections.singleton(evtNodeId));
-                                            // If we could not mark tx as rollback, it means that transaction is being committed.
-                                        else if (tx.setRollbackOnly())
-                                            tx.rollbackAsync();
-                                    });
+                                    if (prepFut != null) {
+                                        prepFut.listen(fut -> {
+                                            if (tx.state() == PREPARED)
+                                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
+                                                // If we could not mark tx as rollback, it means that transaction is being committed.
+                                            else if (tx.setRollbackOnly())
+                                                tx.rollbackAsync();
+                                        });
+                                    }
+                                    // If we could not mark tx as rollback, it means that transaction is being committed.
+                                    else if (tx.setRollbackOnly())
+                                        tx.rollbackAsync();
                                 }
-                                // If we could not mark tx as rollback, it means that transaction is being committed.
-                                else if (tx.setRollbackOnly())
-                                    tx.rollbackAsync();
                             }
                         }
 
