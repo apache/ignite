@@ -1,5 +1,8 @@
 package org.apache.ignite.internal.benchmarks.jmh.service;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -19,13 +22,15 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
-public class ServiceBenchmark extends JmhAbstractBenchmark {
+public class ServiceBenchmark extends JmhAbstractBenchmark implements InvocationHandler {
 
-    protected IgniteEx ignite;
+    private IgniteEx ignite;
 
-    protected TestServiceImpl local;
+    private TestServiceImpl local;
 
-    protected TestService proxy;
+    private TestService proxy;
+
+    private TestService test;
 
     @Benchmark
     public void directReference() throws Exception {
@@ -33,7 +38,12 @@ public class ServiceBenchmark extends JmhAbstractBenchmark {
     }
 
     @Benchmark
-    public void localProxy() throws Exception {
+    public void testProxt() throws Exception {
+        test.handleVal(5);
+    }
+
+    @Benchmark
+    public void serviceProxy() throws Exception {
         proxy.handleVal(5);
     }
 
@@ -45,7 +55,10 @@ public class ServiceBenchmark extends JmhAbstractBenchmark {
 
         local = ignite.services().service("srv");
 
+        test = (TestService)Proxy.newProxyInstance(local.getClass().getClassLoader(), new Class<?>[]{TestService.class}, this);
+
         proxy = new GridServiceProxy<>(ignite.cluster(),"srv", TestService.class, true, 0, ignite.context()).proxy();
+//        proxy = ignite.services().serviceProxy("srv", TestService.class, true);
     }
 
     @TearDown
@@ -74,9 +87,14 @@ public class ServiceBenchmark extends JmhAbstractBenchmark {
             .forks(1)
             .warmupIterations(10)
             .measurementIterations(5)
+            .jvmArgs("-Xms1g", "-Xmx1g")
             .build();
 
         new Runner(opt).run();
+    }
+
+    @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        return method.invoke(local, args);
     }
 
     protected interface TestService {

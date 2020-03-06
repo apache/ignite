@@ -45,7 +45,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -93,6 +92,8 @@ public class GridServiceProxy<T> implements Serializable {
     /** Service availability wait timeout. */
     private final long waitTimeout;
 
+    T local;
+
     /**
      * @param prj Grid projection.
      * @param name Service name.
@@ -117,6 +118,8 @@ public class GridServiceProxy<T> implements Serializable {
         this.waitTimeout = timeout;
         hasLocNode = hasLocalNode(prj);
 
+        local = ctx.service().service(name);
+
         log = ctx.log(getClass());
 
         proxy = (T)Proxy.newProxyInstance(
@@ -124,6 +127,7 @@ public class GridServiceProxy<T> implements Serializable {
             new Class[] {svc},
             new ProxyInvocationHandler()
         );
+
     }
 
     /**
@@ -148,8 +152,6 @@ public class GridServiceProxy<T> implements Serializable {
      */
     @SuppressWarnings("BusyWait")
     public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
-
-
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -163,6 +165,8 @@ public class GridServiceProxy<T> implements Serializable {
             final long startTime = U.currentTimeMillis();
 
             while (true) {
+                if(true) return mtd.invoke(local, args);
+
                 ClusterNode node = null;
 
                 try {
@@ -171,12 +175,18 @@ public class GridServiceProxy<T> implements Serializable {
                     if (node == null)
                         throw new IgniteException("Failed to find deployed service: " + name);
 
+                    //if(true) return mtd.invoke(local, args);
+
                     // If service is deployed locally, then execute locally.
                     if (node.isLocal()) {
+                        //if(true) return mtd.invoke(local, args);
+
                         ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
+
+                            if(true) return mtd.invoke(local, args);
 
                             if (svc != null)
                                 return callSrvcMtd(ctx.service(), svc, name, mtd, args);
@@ -369,25 +379,22 @@ public class GridServiceProxy<T> implements Serializable {
     private static Object callSrvcMtd(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
         Object[] args) throws InvocationTargetException, IllegalAccessException {
 
-        if(true)
-            return mtd.invoke(srvc, args);
-
         long timing = System.currentTimeMillis();
 
         try {
             return mtd.invoke(srvc, args);
         }
         finally {
-            if (srvcProc instanceof IgniteServiceProcessor) {
-                timing = System.currentTimeMillis() - timing;
-
-                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
-
-                assert histogram != null;
-
-                if (histogram != null)
-                    histogram.value(timing);
-            }
+//            if (srvcProc instanceof IgniteServiceProcessor) {
+//                timing = System.currentTimeMillis() - timing;
+//
+//                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
+//
+//                assert histogram != null;
+//
+//                if (histogram != null)
+//                    histogram.value(timing);
+//            }
         }
     }
 

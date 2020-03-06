@@ -376,25 +376,6 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(final String name, final Class<? super T> svcItf, final boolean sticky,
         final long timeout) throws IgniteException {
-       return proxiedService(name, svcItf, sticky, timeout, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T service(String name, Class<? super T> svcItf, boolean sticky, long timeout)
-        throws IgniteException {
-        return proxiedService(name, svcItf, sticky, timeout, true);
-    }
-
-    /**
-     * @param name       Service name.
-     * @param svcItf     Interface of the service.
-     * @param sticky     Is stick proxy.
-     * @param timeout    Timeout for service invocation.
-     * @param locProxied If {@code true}, local service instance will be also proxied.
-     * @return Proxy over the service or its local instance if available and {@code proxiedService} is {@code True}.
-     */
-    private <T> T proxiedService(String name, Class<? super T> svcItf, boolean sticky, long timeout,
-        boolean locProxied) {
         A.notNull(name, "name");
         A.notNull(svcItf, "svcItf");
         A.ensure(svcItf.isInterface(), "Service class must be an interface: " + svcItf);
@@ -403,7 +384,7 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
         guard();
 
         try {
-            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout, locProxied);
+            return (T)ctx.service().serviceProxy(prj, name, svcItf, sticky, timeout);
         }
         finally {
             unguard();
