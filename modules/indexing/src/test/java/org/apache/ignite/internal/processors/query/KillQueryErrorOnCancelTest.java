@@ -129,7 +129,6 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
             .getAll(),
             IgniteException.class, "Fake network error");
 
-
         List<GridRunningQueryInfo> runningQueries =
             (List<GridRunningQueryInfo>)node.context().query().runningQueries(-1);
 
