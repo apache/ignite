@@ -1261,10 +1261,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         return new LocalSnapshotFileSender(log,
             snpRunner,
             () -> {
-                U.ensureDirectory(snpLocDir, "snapshot local directory", log);
-
                 // Write snapshot meta file
                 PdsFolderSettings settings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
+
+                File workDir = U.resolveWorkDirectory(snpLocDir.getAbsolutePath(), relativeNodePath(settings), false);
 
                 File metaFile = new File(snpLocDir,  settings.folderName() + SNAPSHOT_META_EXTENSION);
 
@@ -1285,7 +1285,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     throw new IgniteCheckedException(e);
                 }
 
-                return U.resolveWorkDirectory(snpLocDir.getAbsolutePath(), relativeNodePath(settings), false);
+                return workDir;
             },
             ioFactory,
             storeFactory,
