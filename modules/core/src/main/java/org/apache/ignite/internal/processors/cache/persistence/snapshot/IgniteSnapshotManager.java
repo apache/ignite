@@ -83,6 +83,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -133,7 +134,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
-import static org.apache.ignite.internal.MarshallerContextImpl.addPlatformMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -797,8 +797,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             cctx.kernalContext()
                 .pdsFolderResolver()
                 .resolveFolders()
-                .consistentId()
-                .toString() + SNAPSHOT_META_EXTENSION);
+                .folderName() + SNAPSHOT_META_EXTENSION);
 
         if (!metaFile.exists())
             throw new IgniteCheckedException("Snapshot meta doesn't exists on local node for a given snapshot: " + snpLocDir.getName());
@@ -823,7 +822,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param blt Current baseline topology.
      * @throws IgniteCheckedException If validation fails.
      */
-    private static void validateSnapshot(SnapshotMeta meta, BaselineTopology blt) throws IgniteCheckedException {
+    private static void validateSnapshotClusterTopology(SnapshotMeta meta, BaselineTopology blt) throws IgniteCheckedException {
         Set<String> currConsIds = blt.consistentIds()
             .stream()
             .map(Object::toString)
@@ -835,8 +834,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             .collect(Collectors.toSet());
 
         if (!currConsIds.equals(snpConsIds)) {
-            throw new IgniteCheckedException("Snapshot can be restored only on the same topology " +
+            throw new IgniteCheckedException("Snapshot can be restored only on the same cluster topology " +
                 "[currConsIds=" + currConsIds + ", snapshotConsIds=" + snpConsIds + ']');
+        }
+    }
+
+    /**
+     * @param cctx Shared cache context to validate.
+     */
+    private static void validateSnapshotCachesDestroyed(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+        Collection<String> userCaches = cctx.cache().publicCacheNames();
+
+        if (!userCaches.isEmpty()) {
+            throw new IgniteCheckedException("Snapshot can be restored only when cluster node doesn't contains " +
+                "any of user caches [userCaches=" + userCaches + ']');
         }
     }
 
@@ -856,7 +867,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             return new GridFinishedFuture<>();
 
         try {
-            validateSnapshot(readNodeSnaspshotMeta(snapshotLocalDir(snpName)), getBaselineTopology(cctx));
+            validateSnapshotClusterTopology(readNodeSnaspshotMeta(snapshotLocalDir(snpName)), getBaselineTopology(cctx));
+            validateSnapshotCachesDestroyed(cctx);
 
             restoringSnpName = snpName;
         }
@@ -945,7 +957,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         "The previous snapshot restore was not completed gracefully.");
                 }
 
-                validateSnapshot(readNodeSnaspshotMeta(snapshotLocalDir(name)), getBaselineTopology(cctx));
+                validateSnapshotClusterTopology(readNodeSnaspshotMeta(snapshotLocalDir(name)), getBaselineTopology(cctx));
+                validateSnapshotCachesDestroyed(cctx);
 
                 ClusterSnapshotFuture restoreFut0 = new ClusterSnapshotFuture(UUID.randomUUID());
 
@@ -1032,6 +1045,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             snpTask.awaitStarted();
         }
         catch (IgniteCheckedException e) {
+            snpTask.acceptException(e);
+
             U.error(log, "Fail to wait while cluster-wide snapshot operation started", e);
         }
     }
@@ -1246,13 +1261,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         return new LocalSnapshotFileSender(log,
             snpRunner,
             () -> {
+                U.ensureDirectory(snpLocDir, "snapshot local directory", log);
+
                 // Write snapshot meta file
                 PdsFolderSettings settings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-                File metaFile = new File(snpLocDir, settings.consistentId().toString() + SNAPSHOT_META_EXTENSION);
+                File metaFile = new File(snpLocDir,  settings.folderName() + SNAPSHOT_META_EXTENSION);
 
                 if (metaFile.exists())
-                    throw new IgniteCheckedException("Snapshot meta cannot be written: " + snpName);
+                    throw new IgniteCheckedException("Snapshot meta is already exist and cannot be written: " + snpName);
+
+                try {
+                    metaFile.createNewFile();
+                }
+                catch (IOException e) {
+                    throw new IgniteCheckedException(e);
+                }
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(metaFile))) {
                     U.marshal(marshaller, new SnapshotMeta(snpName, hist), out);
