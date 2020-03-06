@@ -307,7 +307,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                 }
                             });
 
-                        dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
+                        // todo investigate possible live lock in pagememory
+//                        dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
