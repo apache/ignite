@@ -988,6 +988,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param grp Cache group.
+     */
+    public void rebuildIndexes(CacheGroupContext grp) {
+        // No-op.
+    }
+
+    /**
      * Needed action before any cache will stop
      */
     public void prepareCachesStop() {

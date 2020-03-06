@@ -45,8 +45,6 @@ public class IndexedCacheFileRebalancingTest extends IgniteCacheFileRebalancingT
 
         assert node.cachex(name).context().isQueryEnabled();
 
-        log.info("Index validation");
-
         int cnt = cfg.entriesCnt();
         boolean removes = cfg.checkRemoves();
 
@@ -55,6 +53,8 @@ public class IndexedCacheFileRebalancingTest extends IgniteCacheFileRebalancingT
         String sql = "select COUNT(V1) from " + tbl + " where V1 >= 0 and V1 < 2147483647";
 
         for (Ignite g : G.allGrids()) {
+            log.info("Index validation [cache=" + name + ", node=" + g.cluster().localNode().id());
+
             g.cache(name).indexReadyFuture().get(15_000);
 
             UUID nodeId = g.cluster().localNode().id();

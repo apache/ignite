@@ -193,8 +193,8 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -1489,11 +1489,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param cacheId Cache ID.
      */
-    private void prepareIndexRebuildFuture(int cacheId) {
-        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
+    private GridFutureAdapter<Void> prepareIndexRebuildFuture(int cacheId) {
+        GridFutureAdapter<Void> newFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> oldFut = idxRebuildFuts.put(cacheId, newFut);
 
-        if (old != null)
-            old.onDone();
+        if (oldFut != null)
+            oldFut.onDone();
+
+        log.info("prepare idx usr future: " + cacheId);
+
+        return newFut;
     }
 
     /** {@inheritDoc} */
@@ -1554,6 +1559,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 usrFut.onDone();
 
                 rebuildIndexesCompleteCntr.countDown(false);
+            }
+        }
+    }
+
+    /**
+     * @param grp Cache group.
+     */
+    @Override public void rebuildIndexes(CacheGroupContext grp) {
+        if (!cctx.kernalContext().query().moduleEnabled())
+            return;
+
+        for (GridCacheContext ctx : grp.caches()) {
+            IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
+
+            if (fut != null) {
+                if (log.isInfoEnabled())
+                    log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
+
+                GridFutureAdapter<Void> usrFut =
+                    ((GridCacheDatabaseSharedManager)cctx.database()).prepareIndexRebuildFuture(ctx.cacheId());
+
+                fut.listen(f -> {
+                    log.info("Finished index rebuild [cache=" + ctx.cache().name() +
+                        ", success=" + (!f.isCancelled() && f.error() == null) + "]");
+
+                    usrFut.onDone();
+                });
             }
         }
     }

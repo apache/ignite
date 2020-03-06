@@ -173,19 +173,8 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 part.enable();
         }
 
-        if (hasIdleParttition && cctx.kernalContext().query().moduleEnabled()) {
-            for (GridCacheContext ctx : grp.caches()) {
-                IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
-
-                if (fut != null) {
-                    if (log.isInfoEnabled())
-                        log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
-
-                    fut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
-                        ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
-                }
-            }
-        }
+        if (hasIdleParttition)
+            cctx.database().rebuildIndexes(grp);
     }
 
     /**

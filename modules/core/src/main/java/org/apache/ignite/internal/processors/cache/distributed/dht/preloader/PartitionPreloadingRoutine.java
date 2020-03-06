@@ -38,14 +38,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -344,38 +342,22 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
      */
     private void onCacheGroupDone(int grpId, Map<UUID, Map<Integer, Long>> maxCntrs) {
-        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-        String grpName = grp.cacheOrGroupName();
-
-        GridFutureAdapter<GridDhtPreloaderAssignments> fut = grpRoutines.remove(grp.groupId());
+        GridFutureAdapter<GridDhtPreloaderAssignments> fut = grpRoutines.remove(grpId);
 
         if (fut == null)
             return;
 
+        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+        String grpName = grp.cacheOrGroupName();
+
         assert !grp.localWalEnabled() : "grp=" + grpName;
 
-        GridQueryProcessor qryProc = cctx.kernalContext().query();
-
-        if (qryProc.moduleEnabled()) {
-            for (GridCacheContext ctx : grp.caches()) {
-                IgniteInternalFuture<?> idxFut = qryProc.rebuildIndexesFromHash(ctx);
-
-                if (idxFut != null) {
-                    if (log.isInfoEnabled())
-                        log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
-
-                    idxFut.listen(f -> log.info("Finished index rebuild [cache=" + ctx.cache().name() +
-                        ", success=" + (!f.isCancelled() && f.error() == null) + "]"));
-                }
-            }
-        }
+        cctx.database().rebuildIndexes(grp);
 
         // Cache group File preloading is finished, historical rebalancing will send separate events.
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
-        assert fut != null : "Duplicate remove [grp=" + grp.cacheOrGroupName() + "]";
-
-        GridDhtPreloaderAssignments histAssignments = makeHistAssignments(grp, maxCntrs);
+        GridDhtPreloaderAssignments histAssignments = makeHistoricalAssignments(grp, maxCntrs);
 
         fut.onDone(histAssignments);
 
@@ -452,7 +434,10 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param cntrs Partition set with HWM update counter value for hstorical rebalance.
      * @return Partition to node assignments.
      */
-    private GridDhtPreloaderAssignments makeHistAssignments(CacheGroupContext grp, Map<UUID, Map<Integer, Long>> cntrs) {
+    private GridDhtPreloaderAssignments makeHistoricalAssignments(
+        CacheGroupContext grp,
+        Map<UUID, Map<Integer, Long>> cntrs
+    ) {
         GridDhtPreloaderAssignments histAssigns = new GridDhtPreloaderAssignments(exchId, topVer);
 
         int parts = grp.topology().partitions();
