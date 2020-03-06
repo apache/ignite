@@ -1,0 +1,93 @@
+package org.apache.ignite.internal.benchmarks.jmh.service;
+
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.processors.service.GridServiceProxy;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+@State(Scope.Benchmark)
+public class ServiceBenchmark extends JmhAbstractBenchmark {
+
+    protected IgniteEx ignite;
+
+    protected TestServiceImpl local;
+
+    protected TestService proxy;
+
+    @Benchmark
+    public void directReference() throws Exception {
+        local.handleVal(5);
+    }
+
+    @Benchmark
+    public void localProxy() throws Exception {
+        proxy.handleVal(5);
+    }
+
+    @Setup
+    public void setup() throws Exception {
+        ignite = (IgniteEx)Ignition.start(configuration("grid0"));
+
+        ignite.services().deployNodeSingleton("srv", new TestServiceImpl());
+
+        local = ignite.services().service("srv");
+
+        proxy = new GridServiceProxy<>(ignite.cluster(),"srv", TestService.class, true, 0, ignite.context()).proxy();
+    }
+
+    @TearDown
+    public void shutdown() {
+        Ignition.stopAll(true);
+    }
+
+    protected IgniteConfiguration configuration(String igniteInstanceName) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteInstanceName(igniteInstanceName);
+
+        cfg.setLocalHost("127.0.0.1");
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        cfg.setDiscoverySpi(discoSpi);
+
+        return cfg;
+    }
+
+    public static void main(String[] args) throws Exception {
+        Options opt = new OptionsBuilder()
+            .include(ServiceBenchmark.class.getSimpleName())
+            .threads(1)
+            .forks(1)
+            .warmupIterations(10)
+            .measurementIterations(5)
+            .build();
+
+        new Runner(opt).run();
+    }
+
+    protected interface TestService {
+        default int handleVal(int value){ return value; }
+    }
+
+    protected static class TestServiceImpl implements Service, TestService {
+        @Override public void cancel(ServiceContext ctx) {}
+
+        @Override public void init(ServiceContext ctx) throws Exception {}
+
+        @Override public void execute(ServiceContext ctx) throws Exception {}
+    }
+}

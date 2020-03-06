@@ -148,6 +148,8 @@ public class GridServiceProxy<T> implements Serializable {
      */
     @SuppressWarnings("BusyWait")
     public Object invokeMethod(final Method mtd, final Object[] args) throws Throwable {
+
+
         if (U.isHashCodeMethod(mtd))
             return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
@@ -351,8 +353,42 @@ public class GridServiceProxy<T> implements Serializable {
     /**
      * @return Proxy object for a given instance.
      */
-    T proxy() {
+    public T proxy() {
         return proxy;
+    }
+
+    /**
+     * Calls service method, measures and registers its performance.
+     *
+     * @param srvcProc Current service processor.
+     * @param srvc The service object.
+     * @param srvcName The service name.
+     * @param mtd Method to call.
+     * @param args Arguments for {@code mtd}.
+     */
+    private static Object callSrvcMtd(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
+        Object[] args) throws InvocationTargetException, IllegalAccessException {
+
+        if(true)
+            return mtd.invoke(srvc, args);
+
+        long timing = System.currentTimeMillis();
+
+        try {
+            return mtd.invoke(srvc, args);
+        }
+        finally {
+            if (srvcProc instanceof IgniteServiceProcessor) {
+                timing = System.currentTimeMillis() - timing;
+
+                HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
+
+                assert histogram != null;
+
+                if (histogram != null)
+                    histogram.value(timing);
+            }
+        }
     }
 
     /**
@@ -450,37 +486,6 @@ public class GridServiceProxy<T> implements Serializable {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ServiceProxyCallable.class, this);
-        }
-    }
-
-    /**
-     * Calls service method, measures and registers its performance.
-     *
-     * @param srvcProc Current service processor.
-     * @param srvc The service object.
-     * @param srvcName The service name.
-     * @param mtd Method to call.
-     * @param args Arguments for {@code mtd}.
-     */
-    private static Object callSrvcMtd(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
-        Object[] args) throws InvocationTargetException, IllegalAccessException {
-
-        final long startTime = System.nanoTime();
-
-        try {
-            return mtd.invoke(srvc, args);
-        }
-        finally {
-            if (srvcProc instanceof IgniteServiceProcessor) {
-                IgniteServiceProcessor advancedSrvcProc = (IgniteServiceProcessor)srvcProc;
-
-                HistogramMetricImpl histogram = advancedSrvcProc.histogram(srvcName, mtd);
-
-                assert histogram != null;
-
-                if (histogram != null)
-                    histogram.value(U.nanosToMillis(System.nanoTime() - startTime));
-            }
         }
     }
 

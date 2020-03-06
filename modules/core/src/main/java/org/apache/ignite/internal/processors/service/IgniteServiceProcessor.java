@@ -212,30 +212,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private final Map<String, Map<String, MethodHistogramHolder>> invocationHistograms = new HashMap<>(1);
 
     /**
-     * @param method       Method for the invocation timings.
-     * @param pkgNameDepth Level of package name abbreviation. See {@link MetricUtils#abbreviateName(Class, int)}.
-     * @return Metric name for {@code method}.
-     */
-    static String methodMetricName(Method method, int pkgNameDepth) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
-        sb.append("_");
-        sb.append(method.getName());
-        sb.append("(");
-        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
-            .collect(Collectors.joining(", ")));
-        sb.append(")");
-
-        return sb.toString();
-    }
-
-    /** TODO : comment. */
-    private static boolean isMetricIgnoredFor(Class<?> cls){
-        return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls);
-    }
-
-    /**
      * @param ctx Kernal context.
      */
     public IgniteServiceProcessor(GridKernalContext ctx) {
@@ -1927,13 +1903,39 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
+     * @param method       Method for the invocation timings.
+     * @param pkgNameDepth Level of package name abbreviation. See {@link MetricUtils#abbreviateName(Class, int)}.
+     * @return Metric name for {@code method}.
+     */
+    static String methodMetricName(Method method, int pkgNameDepth) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
+        sb.append("_");
+        sb.append(method.getName());
+        sb.append("(");
+        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
+            .collect(Collectors.joining(", ")));
+        sb.append(")");
+
+        return sb.toString();
+    }
+
+    /**
+     * @return {@code True} if metrics should not be created for this class of interface.
+     */
+    private static boolean isMetricIgnoredFor(Class<?> cls){
+        return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls);
+    }
+
+    /**
      * Searches histogram for service method.
      *
      * @param srvcName Service name.
-     * @param mtd Service method.
+     * @param mtd      Service method.
      * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
      */
-    HistogramMetricImpl histogram(String srvcName, Method mtd){
+    HistogramMetricImpl histogram(String srvcName, Method mtd) {
         MethodHistogramHolder histogramHolder = Optional.ofNullable(invocationHistograms.get(srvcName))
             .orElse(Collections.emptyMap()).get(mtd.getName());
 
