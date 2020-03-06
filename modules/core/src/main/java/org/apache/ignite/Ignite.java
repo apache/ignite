@@ -24,7 +24,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -666,7 +665,7 @@ public interface Ignite extends AutoCloseable {
      * Changes Ignite grid state to active or inactive.
      * <p>
      * <b>NOTE:</b>
-     * Deactivation is not safe for in-memory data. See {@link ClusterState#INACTIVE}.
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.

@@ -71,7 +71,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException {
-        // Check compapability of new forced deactivation on all nodes.
+        // Check compatibility of new forced deactivation on all nodes.
         UUID oldVerNode = checkFeatureSupportedByCluster(client, IgniteFeatures.SAFE_CLUSTER_DEACTIVATION, false, false);
 
         if (newState == INACTIVE && oldVerNode != null && !forceDeactivation) {
