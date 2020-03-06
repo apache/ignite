@@ -190,11 +190,40 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
+     * @param ctx Kernal context.
+     * @param mappings Marshaller mappings to save.
+     * @param dir Directory to save given mappings to.
+     */
+    public static void saveMappings(GridKernalContext ctx, List<Map<Integer, MappedName>> mappings, File dir) {
+        if (mappings == null)
+            return;
+
+        MarshallerMappingFileStore writer = new MarshallerMappingFileStore(ctx,
+            mappingFileStoreWorkDir(dir.getAbsolutePath()));
+
+        for (int platformId = 0; platformId < mappings.size(); platformId++) {
+            Map<Integer, MappedName> cached = mappings.get(platformId);
+
+            try {
+                addPlatformMappings((byte)platformId,
+                    cached,
+                    (typeId, clsName) -> true,
+                    (typeId, mapping) -> {
+                    },
+                    writer);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
      * @param platformId Platform id to add mappings to.
      * @param mappings Map of marshaller mappings.
      * @param mappedPred Check mapping can be added.
      * @param mappedAdder Add mapping to local cache map.
-     * @param mappedWriter Persistence mapping writer.
+     * @param writer Persistence mapping writer.
      * @throws IgniteCheckedException If fails.
      */
     public static void addPlatformMappings(
@@ -202,7 +231,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         Map<Integer, MappedName> mappings,
         BiPredicate<Integer, String> mappedPred,
         BiConsumer<Integer, MappedName> mappedAdder,
-        MarshallerMappingWriter mappedWriter
+        MarshallerMappingFileStore writer
     ) throws IgniteCheckedException {
         if (mappings == null)
             return;
@@ -212,7 +241,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             String clsName = e.getValue().className();
 
             if (mappedPred.test(typeId, clsName)) {
-                mappedWriter.write(platformId, typeId, clsName);
+                writer.mergeAndWriteMapping(platformId, typeId, clsName);
 
                 mappedAdder.accept(typeId, new MappedName(clsName, true));
             }
@@ -530,7 +559,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
 
         fileStore = marshallerMappingFileStoreDir == null ?
-            (MarshallerMappingFileStore) marshallerMappingWriter(ctx, workDir) :
+            new MarshallerMappingFileStore(ctx, mappingFileStoreWorkDir(workDir)) :
             new MarshallerMappingFileStore(ctx, marshallerMappingFileStoreDir);
 
         this.transport = transport;
@@ -542,16 +571,16 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * @param ctx Grid kernal context.
-     * @param igniteWorkDir Ignite working directory.
-     * @return Marshaller store writer.
-     * @throws IgniteCheckedException If fails.
+     * @param igniteWorkDir Base ignite working directory.
+     * @return Resolved directory.
      */
-    public MarshallerMappingWriter marshallerMappingWriter(
-        GridKernalContext ctx,
-        String igniteWorkDir
-    ) throws IgniteCheckedException {
-        return new MarshallerMappingFileStore(ctx, igniteWorkDir);
+    private static File mappingFileStoreWorkDir(String igniteWorkDir) {
+        try {
+            return U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
