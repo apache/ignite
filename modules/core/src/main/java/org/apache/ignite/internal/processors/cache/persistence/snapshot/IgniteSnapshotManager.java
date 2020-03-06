@@ -1266,20 +1266,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
                 File workDir = U.resolveWorkDirectory(snpLocDir.getAbsolutePath(), relativeNodePath(settings), false);
 
-                File metaFile = new File(snpLocDir,  settings.folderName() + SNAPSHOT_META_EXTENSION);
-
-                if (metaFile.exists())
-                    throw new IgniteCheckedException("Snapshot meta is already exist and cannot be written: " + snpName);
-
                 try {
-                    metaFile.createNewFile();
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException(e);
-                }
+                    File metaFile = new File(snpLocDir, settings.folderName() + SNAPSHOT_META_EXTENSION);
 
-                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(metaFile))) {
-                    U.marshal(marshaller, new SnapshotMeta(snpName, hist), out);
+                    if (metaFile.exists())
+                        throw new IgniteCheckedException("Snapshot meta is already exist and cannot be written: " + snpName);
+                    else
+                        metaFile.createNewFile();
+
+                    try (OutputStream out = new BufferedOutputStream(new FileOutputStream(metaFile))) {
+                        U.marshal(marshaller, new SnapshotMeta(snpName, hist), out);
+                    }
                 }
                 catch (IOException e) {
                     throw new IgniteCheckedException(e);
