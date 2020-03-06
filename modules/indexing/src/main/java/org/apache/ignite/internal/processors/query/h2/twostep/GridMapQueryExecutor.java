@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
@@ -552,7 +553,8 @@ public class GridMapQueryExecutor {
                         Collection<Object> params0 = F.asList(qry.parameters(params));
 
                         final PreparedStatement stmt = h2.preparedStatementWithParams(conn, qry.query(),
-                            params0, true);
+                            params0, true,
+                            H2StatementCache.queryFlags(distributedJoinMode != OFF, enforceJoinOrder, false));
 
                         GridH2StatementCleaner stmtCleaner = GridH2StatementCleaner.fromPrepared(stmt);
                         qctx.addResource(stmtCleaner);
