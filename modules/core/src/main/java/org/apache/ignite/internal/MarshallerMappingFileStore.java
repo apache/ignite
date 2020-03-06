@@ -45,7 +45,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
  * It writes new mapping when it is accepted by all grid members and reads mapping
  * when a classname is requested but is not presented in local cache of {@link MarshallerContextImpl}.
  */
-final class MarshallerMappingFileStore implements MarshallerMappingWriter {
+final class MarshallerMappingFileStore {
     /** */
     private static final String FILE_EXTENSION = ".classname";
 
@@ -62,22 +62,13 @@ final class MarshallerMappingFileStore implements MarshallerMappingWriter {
     private final File workDir;
 
     /**
-     * @param igniteWorkDir Ignite work directory
-     * @param kctx Grid kernal context.
-     */
-    MarshallerMappingFileStore(GridKernalContext kctx, String igniteWorkDir) throws IgniteCheckedException {
-        workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
-        log = kctx.log(MarshallerMappingFileStore.class);
-    }
-
-    /**
      * Creates marshaller mapping file store with custom predefined work directory.
      *
-     * @param marshallerMappingFileStoreDir custom marshaller work directory.
+     * @param workDir custom marshaller work directory.
      * @param kctx Grid kernal context.
      */
-    MarshallerMappingFileStore(GridKernalContext kctx, final File marshallerMappingFileStoreDir) {
-        workDir = marshallerMappingFileStoreDir;
+    MarshallerMappingFileStore(GridKernalContext kctx, final File workDir) {
+        this.workDir = workDir;
         log = kctx.log(MarshallerMappingFileStore.class);
     }
 
@@ -199,11 +190,6 @@ final class MarshallerMappingFileStore implements MarshallerMappingWriter {
 
             marshCtx.registerClassNameLocally(platformId, typeId, clsName);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void write(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
-        mergeAndWriteMapping(platformId, typeId, typeName);
     }
 
     /**

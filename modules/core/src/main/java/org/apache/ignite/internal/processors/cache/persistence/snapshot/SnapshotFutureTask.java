@@ -48,7 +48,6 @@ import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -56,8 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.GridIntIterator;
@@ -353,9 +350,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         if (stopping.getAsBoolean())
             return;
 
-        // Gather partitions metainfo for thouse which will be copied.
-        ctx.collectPartStat(parts);
-
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
                 cpEndFut.complete(true);
@@ -366,53 +360,41 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) {
-        // Write lock is helded. Partition counters has been collected under write lock
-        // in another checkpoint listeners.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onMarkCheckpointEnd(Context ctx) {
+        // Write lock is helded. Partition pages counters has been collected under write lock.
         if (stopping.getAsBoolean())
             return;
 
-        // Under the write lock here. It's safe to add new stores.
         try {
-            PartitionAllocationMap allocationMap = ctx.partitionStatMap();
-
-            allocationMap.prepareForSnapshot();
+            Map<GroupPartitionId, GridDhtPartitionState> missed = new HashMap<>();
 
             for (GroupPartitionId pair : parts) {
-                PagesAllocationRange allocRange = allocationMap.get(pair);
-
-                GridDhtLocalPartition part = pair.getPartitionId() == INDEX_PARTITION ? null :
+                GridDhtPartitionState partState = pair.getPartitionId() == INDEX_PARTITION ? GridDhtPartitionState.OWNING :
                     cctx.cache()
                         .cacheGroup(pair.getGroupId())
                         .topology()
-                        .localPartition(pair.getPartitionId());
+                        .localPartition(pair.getPartitionId())
+                        .state();
 
                 // Partition can be reserved.
                 // Partition can be MOVING\RENTING states.
                 // Index partition will be excluded if not all partition OWNING.
                 // There is no data assigned to partition, thus it haven't been created yet.
-                assert allocRange != null || part == null || part.state() != GridDhtPartitionState.OWNING :
-                    "Partition counters has not been collected " +
-                        "[pair=" + pair + ", snpName=" + snpName + ", part=" + part + ']';
+                if (partState != GridDhtPartitionState.OWNING) {
+                    missed.put(pair, partState);
 
-                if (allocRange == null) {
-                    List<GroupPartitionId> missed = parts.stream()
-                        .filter(allocationMap::containsKey)
-                        .collect(Collectors.toList());
-
-                    acceptException(new IgniteCheckedException("Snapshot operation cancelled due to " +
-                        "not all of requested partitions has OWNING state [missed=" + missed + ']'));
-
-                    break;
+                    continue;
                 }
 
-                PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(pair.getGroupId(), pair.getPartitionId());
+                PageStore store = ((FilePageStoreManager)cctx.pageStore())
+                    .getStore(pair.getGroupId(), pair.getPartitionId());
 
                 partFileLengths.put(pair, store.size());
-                partDeltaWriters.get(pair).init(allocRange.getCurrAllocatedPageCnt());
+                partDeltaWriters.get(pair).init(store.pages());
+            }
+
+            if (!missed.isEmpty()) {
+                acceptException(new IgniteCheckedException("Snapshot operation cancelled due to " +
+                    "not all of requested partitions has OWNING state on local node [missed=" + missed + ']'));
             }
         }
         catch (IgniteCheckedException e) {

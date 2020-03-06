@@ -405,6 +405,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private MetaStorage metaStorage;
 
+    /** Temporary metastorage to migration of index partition. {@see IGNITE-8735}. */
+    private MetaStorage.TmpStorage tmpMetaStorage;
+
     /** */
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
@@ -4112,7 +4115,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointProgressImpl curr = scheduledCp;
 
-            curr.dbLsnrs = new ArrayList<>(lsnrs);
+            List<DbCheckpointListener> dbLsnrs = new ArrayList<>(lsnrs);
 
             CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
 
@@ -4131,7 +4134,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             internalReadLock();
 
             try {
-                for (DbCheckpointListener lsnr : curr.dbLsnrs)
+                for (DbCheckpointListener lsnr : dbLsnrs)
                     lsnr.beforeCheckpointBegin(ctx0);
 
                 ctx0.awaitPendingTasksFinished();
@@ -4152,7 +4155,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onMarkStart();
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
-                for (DbCheckpointListener lsnr : curr.dbLsnrs)
+                for (DbCheckpointListener lsnr : dbLsnrs)
                     lsnr.onMarkCheckpointBegin(ctx0);
 
                 ctx0.awaitPendingTasksFinished();
@@ -4192,9 +4195,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     cpHistory.addCheckpoint(cp);
                 }
-
-                for (DbCheckpointListener lsnr : curr.dbLsnrs)
-                    lsnr.onMarkCheckpointEnd(ctx0);
             }
             finally {
                 checkpointLock.writeLock().unlock();
@@ -4206,7 +4206,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.transitTo(LOCK_RELEASED);
 
-            for (DbCheckpointListener lsnr : curr.dbLsnrs)
+            for (DbCheckpointListener lsnr : dbLsnrs)
                 lsnr.onCheckpointBegin(ctx);
 
             if (snapFut != null) {
@@ -4446,16 +4446,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
-                @Override public Map<Integer, Set<Integer>> collectPartStat() {
-                    return delegate.collectPartStat();
-                }
-
-                /** {@inheritDoc} */
-                @Override public void collectPartStat(List<GroupPartitionId> parts) {
-                    delegate.collectPartStat(parts);
-                }
-
-                /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
                     return delegate.partitionStatMap();
                 }
@@ -4599,9 +4589,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** Partition map. */
             private final PartitionAllocationMap map;
 
-            /** Collection of partitions to gather statistics. */
-            private final Map<Integer, Set<Integer>> collectPartStat = new HashMap<>();
-
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
 
@@ -4623,19 +4610,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** {@inheritDoc} */
             @Override public IgniteInternalFuture<?> finishedStateFut() {
                 return curr.futureFor(FINISHED);
-            }
-
-            /** {@inheritDoc} */
-            @Override public Map<Integer, Set<Integer>> collectPartStat() {
-                return collectPartStat;
-            }
-
-            /** {@inheritDoc} */
-            @Override public void collectPartStat(List<GroupPartitionId> parts) {
-                for (GroupPartitionId part : parts) {
-                    collectPartStat.computeIfAbsent(part.getGroupId(), g -> new HashSet<>())
-                        .add(part.getPartitionId());
-                }
             }
 
             /** {@inheritDoc} */
@@ -5115,9 +5089,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
         private volatile SnapshotOperation snapshotOperation;
 
-        /** Snapshot listeners of currenty snapshot execution. */
-        private volatile Collection<DbCheckpointListener> dbLsnrs;
-
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
 
@@ -5401,6 +5372,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
         return metaStorage;
+    }
+
+    /**
+     * @return Temporary metastorage to migration of index partition.
+     */
+    public MetaStorage.TmpStorage temporaryMetaStorage() {
+        return tmpMetaStorage;
+    }
+
+    /**
+     * @param tmpMetaStorage Temporary metastorage to migration of index partition.
+     */
+    public void temporaryMetaStorage(MetaStorage.TmpStorage tmpMetaStorage) {
+        this.tmpMetaStorage = tmpMetaStorage;
     }
 
     /** {@inheritDoc} */

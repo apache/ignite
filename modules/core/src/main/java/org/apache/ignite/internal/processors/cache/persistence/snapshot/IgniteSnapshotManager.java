@@ -69,7 +69,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.MarshallerMappingWriter;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -133,6 +132,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
+import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.MarshallerContextImpl.addPlatformMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -1268,9 +1268,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             types -> cctx.kernalContext()
                 .cacheObjects()
                 .saveMetadata(types, snpLocDir),
-            cctx.kernalContext()
-                .marshallerContext()
-                .marshallerMappingWriter(cctx.kernalContext(), snpLocDir.getAbsolutePath()),
+            mappings -> saveMappings(cctx.kernalContext(), mappings, snpLocDir),
             pageSize);
     }
 
@@ -1708,7 +1706,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         private final Consumer<Collection<BinaryType>> binaryWriter;
 
         /** Marshaller mapping writer. */
-        private final MarshallerMappingWriter mappingWriter;
+        private final Consumer<List<Map<Integer, MappedName>>> mappingWriter;
 
         /** Size of page. */
         private final int pageSize;
@@ -1729,7 +1727,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             FileIOFactory ioFactory,
             BiFunction<Integer, Boolean, FilePageStoreFactory> storeFactory,
             Consumer<Collection<BinaryType>> binaryWriter,
-            MarshallerMappingWriter mappingWriter,
+            Consumer<List<Map<Integer, MappedName>>> mappingWriter,
             int pageSize
         ) {
             super(log, exec);
@@ -1769,21 +1767,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
             if (mappings == null)
                 return;
 
-            for (int platformId = 0; platformId < mappings.size(); platformId++) {
-                Map<Integer, MappedName> cached = mappings.get(platformId);
-
-                try {
-                    addPlatformMappings((byte)platformId,
-                        cached,
-                        (typeId, clsName) -> true,
-                        (typeId, mapping) -> {
-                        },
-                        mappingWriter);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
+            mappingWriter.accept(mappings);
         }
 
         /** {@inheritDoc} */
