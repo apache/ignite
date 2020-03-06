@@ -95,7 +95,7 @@ class BinaryMetadataFileStore {
     }
 
     /**
-     * Starts worker thread for acyn writing of binary metadata.
+     * Starts worker thread for acync writing of binary metadata.
      */
     void start() {
         writer = new BinaryMetadataAsyncWriter();
