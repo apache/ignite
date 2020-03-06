@@ -163,10 +163,10 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> startPartitionsPreloading() {
-        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
-
         if (remaining.isEmpty())
             onDone(true);
+
+        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
 
         requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
 
@@ -352,7 +352,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         assert !grp.localWalEnabled() : "grp=" + grpName;
 
-        cctx.database().rebuildIndexes(grp);
+        IgniteInternalFuture<?> idxFut = cctx.database().rebuildIndexes(grp);
 
         // Cache group File preloading is finished, historical rebalancing will send separate events.
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
@@ -362,7 +362,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         fut.onDone(histAssignments);
 
         if (histAssignments.isEmpty())
-            cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
+            idxFut.listen(f -> cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer));
 
         int remainGroupsCnt = remainingGroups().size();
 

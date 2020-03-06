@@ -313,8 +313,23 @@ public class GridDhtPartitionDemander {
             if (!grp.localWalEnabled())
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
-                        if (future.get())
-                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
+                        if (future.get()) {
+                            GridCompoundFuture<Object, ?> idxsFut = new GridCompoundFuture<>();
+
+                            for (GridCacheContext ctx : grp.caches()) {
+                                IgniteInternalFuture<Object> idxFut =
+                                    (IgniteInternalFuture<Object>)ctx.shared().database().indexRebuildFuture(ctx.cacheId());
+
+                                if (idxFut != null)
+                                    idxsFut.add(idxFut);
+                            }
+
+                            idxsFut.markInitialized();
+
+                            idxsFut.listen(f ->
+                                ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion())
+                            );
+                        }
                     }
                 });
 

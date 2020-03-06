@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -989,9 +990,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * @param grp Cache group.
+     * @return Future that will be completed when the indexes rebuild for specified cache group is finished.
      */
-    public void rebuildIndexes(CacheGroupContext grp) {
-        // No-op.
+    public IgniteInternalFuture<?> rebuildIndexes(CacheGroupContext grp) {
+        return new GridFinishedFuture<>();
     }
 
     /**

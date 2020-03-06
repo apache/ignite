@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -59,8 +58,7 @@ public class IndexedCacheFileRebalancingTest extends IgniteCacheFileRebalancingT
 
             UUID nodeId = g.cluster().localNode().id();
 
-            boolean idxUsed = GridTestUtils.waitForCondition(() ->
-                isIndexUsed(((IgniteEx)g).context().query(), "V1", tbl, "V1"), 15_000);
+            boolean idxUsed = isIndexUsed(((IgniteEx)g).context().query(), "V1", tbl, "V1");
 
             assertTrue("node=" + nodeId, idxUsed);
 

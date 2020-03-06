@@ -1566,14 +1566,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param grp Cache group.
      */
-    @Override public void rebuildIndexes(CacheGroupContext grp) {
+    @Override public IgniteInternalFuture<?> rebuildIndexes(CacheGroupContext grp) {
         if (!cctx.kernalContext().query().moduleEnabled())
-            return;
+            return new GridFinishedFuture<>();
+
+        GridCompoundFuture<Object, ?> idxsFut = new GridCompoundFuture<>();
 
         for (GridCacheContext ctx : grp.caches()) {
             IgniteInternalFuture<?> fut = cctx.kernalContext().query().rebuildIndexesFromHash(ctx);
 
             if (fut != null) {
+                idxsFut.add(((IgniteInternalFuture<Object>)fut));
+
                 if (log.isInfoEnabled())
                     log.info("Starting index rebuild [cache=" + ctx.cache().name() + "]");
 
@@ -1581,13 +1585,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     ((GridCacheDatabaseSharedManager)cctx.database()).prepareIndexRebuildFuture(ctx.cacheId());
 
                 fut.listen(f -> {
+                    assert !f.isCancelled();
+
                     log.info("Finished index rebuild [cache=" + ctx.cache().name() +
-                        ", success=" + (!f.isCancelled() && f.error() == null) + "]");
+                        ", success=" + (f.error() == null) + "]");
 
                     usrFut.onDone();
                 });
             }
         }
+
+        idxsFut.markInitialized();
+
+        return idxsFut;
     }
 
     /**
