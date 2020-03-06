@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -80,6 +81,15 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         unregisterQuery();
 
         super.close();
+    }
+
+    /**
+     * Cancels query.
+     */
+    public void cancel() {
+        failReason = new QueryCancelledException();
+
+        close();
     }
 
     /**
