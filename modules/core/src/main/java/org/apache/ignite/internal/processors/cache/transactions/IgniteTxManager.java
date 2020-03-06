@@ -49,6 +49,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
@@ -333,36 +334,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         };
 
         cctx.gridEvents().addDiscoveryEventListener(
-            new DiscoveryEventListener() {
-                @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-                    if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
-                        UUID nodeId = evt.eventNode().id();
-
-                        IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
-                            new TxRecoveryInitRunnable(evt.eventNode(), cctx.coordinators().currentCoordinator()));
-
-                        recInitFut.listen(future -> {
-                            if (future.error() != null)
-                                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, future.error()));
-                        });
-
-                        for (TxDeadlockFuture fut : deadlockDetectFuts.values())
-                            fut.onNodeLeft(nodeId);
-
-                        for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
-                            Object obj = entry.getValue();
-
-                            if (obj instanceof GridCacheReturnCompletableWrapper &&
-                                nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
-                                removeTxReturn(entry.getKey());
-                        }
-                    }
-
-                    suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
-                        cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
-                }
-            },
-            EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
+            new TxRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
 
         this.txDeadlockDetection = new TxDeadlockDetection(cctx);
 
@@ -852,7 +824,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         for (IgniteInternalTx tx : activeTransactions()) {
             if (node != null) {
-                if (tx.originatingNodeId().equals(node.id())) {
+                if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
                     assert needWaitTransaction(tx, topVer);
 
                     if (filter == null || filter.apply(tx))
@@ -2938,6 +2910,80 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     *
+     */
+    private final class TxRecoveryListener implements HighPriorityListener, DiscoveryEventListener {
+        /** {@inheritDoc} */
+        @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
+            if (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) {
+                UUID nodeId = evt.eventNode().id();
+
+                IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
+                    for (IgniteTxEntry entry : tx.writeEntries())
+                        if (cctx.cacheContext(entry.cacheId()).isReplicated())
+                            return true;
+
+                    return false;
+                };
+
+                // Affects backups or failed replicated primaries.
+                // Asap, since affects every server node.
+                IgniteInternalFuture<?> replicatedRecovery =
+                    initTxRecovery(evt.eventNode(), tx -> (tx.dht() && !tx.local()) && replicatedOnly.apply(tx));
+
+                replicatedRecovery.listen(ignored1 -> {
+                    // Affects backups of failed partitioned primaries
+                    // Second priority since affects only some server nodes.
+                    IgniteInternalFuture<?> partitionedRecovery =
+                        initTxRecovery(evt.eventNode(), tx -> (tx.dht() && !tx.local()) && !replicatedOnly.apply(tx));
+
+                    partitionedRecovery.listen(ignored2 -> {
+                        // Partitioned and replicated with near node failed.
+                        // Switch does not wait for this recovery.
+                        initTxRecovery(evt.eventNode(), tx -> !(tx.dht() && !tx.local()) && replicatedOnly.apply(tx));
+                        initTxRecovery(evt.eventNode(), tx -> !(tx.dht() && !tx.local()) && !replicatedOnly.apply(tx));
+                    });
+                });
+
+                for (TxDeadlockFuture fut : deadlockDetectFuts.values())
+                    fut.onNodeLeft(nodeId);
+
+                for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
+                    Object obj = entry.getValue();
+
+                    if (obj instanceof GridCacheReturnCompletableWrapper &&
+                        nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
+                        removeTxReturn(entry.getKey());
+                }
+            }
+
+            suspendResumeForPessimisticSupported = IgniteFeatures.allNodesSupports(
+                cctx.discovery().remoteNodes(), IgniteFeatures.SUSPEND_RESUME_PESSIMISTIC_TX);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int order() {
+            return 0;
+        }
+
+        /**
+         * @param node Node.
+         * @param filter Filter.
+         */
+        private IgniteInternalFuture<?> initTxRecovery(ClusterNode node, IgnitePredicate<IgniteInternalTx> filter) {
+            IgniteInternalFuture<?> recInitFut = cctx.kernalContext().closure().runLocalSafe(
+                new TxRecoveryInitRunnable(node, cctx.coordinators().currentCoordinator(), filter));
+
+            recInitFut.listen(fut -> {
+                if (fut.error() != null)
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, fut.error()));
+            });
+
+            return recInitFut;
+        }
+    }
+
+    /**
      * Transactions recovery initialization runnable.
      */
     private final class TxRecoveryInitRunnable implements Runnable {
@@ -2947,13 +2993,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         /** */
         private final MvccCoordinator mvccCrd;
 
+        /** */
+        private final IgnitePredicate<IgniteInternalTx> filter;
+
         /**
          * @param node Failed node.
          * @param mvccCrd Mvcc coordinator at time of node failure.
          */
-        private TxRecoveryInitRunnable(ClusterNode node, MvccCoordinator mvccCrd) {
+        private TxRecoveryInitRunnable(ClusterNode node, MvccCoordinator mvccCrd,
+            IgnitePredicate<IgniteInternalTx> filter) {
             this.node = node;
             this.mvccCrd = mvccCrd;
+            this.filter = filter;
         }
 
         /** {@inheritDoc} */
@@ -2981,6 +3032,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     ? new GridCompoundFuture<>() : null;
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
+                    if (filter != null && !filter.apply(tx))
+                        continue;
+
                     if ((tx.near() && !tx.local()) || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);

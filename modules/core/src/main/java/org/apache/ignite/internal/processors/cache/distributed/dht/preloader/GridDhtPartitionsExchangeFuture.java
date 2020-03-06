@@ -1513,33 +1513,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
         if (context().exchangeFreeSwitch()) {
-            String replicatedRecovery = "exchange-free-replicated-recovery";
-            String partitionedRecovery = "exchange-free-partitioned-recovery";
+            String replicatedBackupsRecovery = "exchange-free-replicated-backups-recovery";
+            String partitionedBackupsRecovery = "exchange-free-partitioned-backups-recovery";
 
-            if (partitionedCachesRecoveryRequired(firstDiscoEvt.eventNode())) {
-                IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
-                    for (IgniteTxEntry entry : tx.writeEntries())
-                        if (cctx.cacheContext(entry.cacheId()).isReplicated())
-                            return true;
+            IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
+                for (IgniteTxEntry entry : tx.writeEntries())
+                    if (cctx.cacheContext(entry.cacheId()).isReplicated())
+                        return true;
 
-                    return false;
-                };
+                return false;
+            };
 
-                waitPartitionRelease(replicatedRecovery, true, false, replicatedOnly); // Replicated.
-                waitPartitionRelease(partitionedRecovery, true, false, null); // Rest of txs (Partitioned).
-            }
-            else {
-                confirmPartitionReleased(partitionedRecovery); // Partitioned caches require no recovery at this node.
+            waitPartitionRelease(replicatedBackupsRecovery, true, false, replicatedOnly);
 
-                IgnitePredicate<IgniteInternalTx> assertReplicated = tx -> {
-                    for (IgniteTxEntry entry : tx.writeEntries())
-                        assert cctx.cacheContext(entry.cacheId()).isReplicated();
-
-                    return true;
-                };
-
-                waitPartitionRelease(replicatedRecovery, true, false, assertReplicated); // Replicated.
-            }
+            if (primaryFailed(firstDiscoEvt.eventNode()))
+                waitPartitionRelease(partitionedBackupsRecovery, true, false, null);
+            else
+                // This node contains no backup partitions for failed partitioned caches primaries.
+                confirmPartitionReleased(partitionedBackupsRecovery);
         }
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
@@ -5126,7 +5117,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param failed Failed node.
      */
-    private boolean partitionedCachesRecoveryRequired(ClusterNode failed) {
+    private boolean primaryFailed(ClusterNode failed) {
         return rebalancedInfo.primaryNodesForLocBackups.contains(failed);
     }
 
