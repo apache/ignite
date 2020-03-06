@@ -448,7 +448,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 H2RowCache cache = rowCache.forGroup(cacheInfo.groupId());
 
-                return new H2TreeIndex(
+                return H2TreeIndex.createIndex(
                     cacheInfo.cacheContext(),
                     cache,
                     tbl,
@@ -459,11 +459,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     wrappedCols,
                     inlineSize,
                     segments,
-                    qryCtxRegistry
+                    qryCtxRegistry,
+                    log
                 );
             }
             else
-                return new H2TreeClientIndex(tbl, name, pk, unwrappedCols, inlineSize);
+                return H2TreeClientIndex.createIndex(tbl, name, pk, unwrappedCols, inlineSize, log);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

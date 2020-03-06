@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.junit.Test;
 
@@ -126,11 +122,8 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         int disconnectNodeIdx = dfltCh == channels[0] ? 1 : 0;
 
         // Drop all thin connections from the node.
-        ObjectName mbeanName = U.makeMBeanName(grid(disconnectNodeIdx).name(), "Clients",
-            ClientListenerProcessor.class.getSimpleName());
-
-        MBeanServerInvocationHandler.newProxyInstance(ManagementFactory.getPlatformMBeanServer(), mbeanName,
-            ClientProcessorMXBean.class, true).dropAllConnections();
+        getMxBean(grid(disconnectNodeIdx).name(), "Clients",
+            ClientListenerProcessor.class, ClientProcessorMXBean.class).dropAllConnections();
 
         channels[disconnectNodeIdx] = null;
 

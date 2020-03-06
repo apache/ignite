@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client;
 
-import java.lang.management.ManagementFactory;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,8 +41,6 @@ import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -71,6 +68,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.apache.ignite.testframework.junits.GridAbstractTest.getMxBean;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -683,10 +681,8 @@ public class FunctionalTest {
             cache.put(1, "value5");
 
             // Test failover.
-            ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Clients", ClientListenerProcessor.class.getSimpleName());
-
-            ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
-                ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class, true);
+            ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
+                ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
             try (ClientTransaction tx = client.transactions().txStart()) {
                 cache.put(1, "value6");

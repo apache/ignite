@@ -17,30 +17,22 @@
 
 package org.apache.ignite.plugin;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
  * Tests for Ignite plugin configuration.
  */
 public class PluginConfigurationTest extends GridCommonAbstractTest {
-    /** Test plugin name. */
-    private static final String TEST_PLUGIN_NAME = "test_plugin";
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -106,91 +98,11 @@ public class PluginConfigurationTest extends GridCommonAbstractTest {
         return col.stream().map(PluginProvider::name).collect(Collectors.toList());
     }
 
-    /** Plugin with own message factory. */
-    private static class TestPlugin implements IgnitePlugin {
-    }
-
     /** */
-    @SuppressWarnings("RedundantThrows")
-    public static class TestPluginProvider implements PluginProvider<TestPluginConfiguration> {
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
-            return TEST_PLUGIN_NAME;
+            return "test_plugin";
         }
-
-        /** {@inheritDoc} */
-        @Override  public <T extends IgnitePlugin> T plugin() {
-            return (T)new TestPlugin();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String version() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String copyright() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("rawtypes")
-        @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(PluginContext ctx) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStart() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onIgniteStop(boolean cancel) {
-            // no-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validateNewNode(ClusterNode node, Serializable data) {
-            // No-op.
-        }
-    }
-
-    /** */
-    private static class TestPluginConfiguration implements PluginConfiguration {
     }
 }

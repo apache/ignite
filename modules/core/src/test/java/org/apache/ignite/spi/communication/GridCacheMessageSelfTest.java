@@ -35,11 +35,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.util.typedef.CI2;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -61,21 +66,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String TEST_BODY = "Test body";
 
-    /**
-     *
-     */
-    static {
-        IgniteMessageFactoryImpl.registerCustom(TestMessage.DIRECT_TYPE, TestMessage::new);
-
-        IgniteMessageFactoryImpl.registerCustom(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
-
-        IgniteMessageFactoryImpl.registerCustom(TestMessage1.DIRECT_TYPE, TestMessage1::new);
-
-        IgniteMessageFactoryImpl.registerCustom(TestMessage2.DIRECT_TYPE, TestMessage2::new);
-
-        IgniteMessageFactoryImpl.registerCustom(TestBadMessage.DIRECT_TYPE, TestBadMessage::new);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -93,6 +83,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         ccfg.setBackups(0);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setPluginProviders(new TestPluginProvider());
 
         return cfg;
     }
@@ -805,15 +797,34 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class TestFailureHandler extends AbstractFailureHandler {
         /** {@inheritDoc} */
         @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             failureLatch.countDown();
 
             return false;
+        }
+    }
+
+    /** */
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_PLUGIN";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(TestMessage.DIRECT_TYPE, TestMessage::new);
+                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                    factory.register(TestMessage1.DIRECT_TYPE, TestMessage1::new);
+                    factory.register(TestMessage2.DIRECT_TYPE, TestMessage2::new);
+                    factory.register(TestBadMessage.DIRECT_TYPE, TestBadMessage::new);
+                }
+            });
         }
     }
 }
