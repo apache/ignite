@@ -1623,16 +1623,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Execute DDL statement on given node.
      *
-     * @param node Node.
-     * @param sql Statement.
-     */
-    private List<List<?>> execute(Ignite node, String sql) {
-        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
-    }
-
-    /**
-     * Execute DDL statement on given node.
-     *
      * @param sql Statement.
      */
     private List<List<?>> executeLocal(GridCacheContext cctx, String sql) {
