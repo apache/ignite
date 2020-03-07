@@ -143,7 +143,7 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
 
                 return null;
             }
-        }, CacheException.class, "Property with name 'name' already exists.");
+        }, CacheException.class, "Property with name 'name' already exists for value");
     }
 
     /**

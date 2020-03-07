@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class BinaryClassificationEvaluatorTest extends TrainerTest {
     /**
-     * Test evalutor and trainer on classification model y = x.
+     * Test evaluator and trainer on classification model y = x.
      */
     @Test
     public void testEvaluatorWithoutFilter() {
@@ -64,7 +64,7 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
     }
 
     /**
-     * Test evalutor and trainer on classification model y = x.
+     * Test evaluator and trainer on classification model y = x.
      */
     @Test
     public void testEvaluatorWithFilter() {

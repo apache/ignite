@@ -77,6 +77,7 @@ public interface Marshaller {
     /**
      * Marshals object to the output stream. This method should not close
      * given output stream.
+     * Note: {@code null} obj will be marshaled to binary {@code null} representation.
      *
      * @param obj Object to marshal.
      * @param out Output stream to marshal into.
@@ -86,6 +87,7 @@ public interface Marshaller {
 
     /**
      * Marshals object to byte array.
+     * Note: {@code null} obj will be marshaled to binary {@code null} representation.
      *
      * @param obj Object to marshal.
      * @return Byte array.

@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
    <ol>
  *     <li><b>Low water mark (LWM)</b> or update counter - lowest applied sequential update number.</li>
  *     <li><b>High water mark (HWM)</b> or reservation counter - highest seen but unapplied yet update number.</li>
- *     <li>Out-of-order applied updates in range between LWM and HWM.</li>
+ *     <li>Out-of-order applied updates in range between LWM and HWM</li>
  * </ol>
  */
 public interface PartitionUpdateCounter extends Iterable<long[]> {
@@ -35,9 +35,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * Restores update counter state.
      *
      * @param initUpdCntr LWM.
-     * @param updCntrGapsData Updates counters gaps raw data.
+     * @param cntrUpdData Counter updates raw data.
      */
-    public void init(long initUpdCntr, @Nullable byte[] updCntrGapsData);
+    public void init(long initUpdCntr, @Nullable byte[] cntrUpdData);
 
     /**
      * @deprecated TODO LWM should be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396
@@ -103,6 +103,11 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public void reset();
 
     /**
+     * Reset the initial counter value to zero.
+     */
+    public void resetInitialCounter();
+
+    /**
      * @param start Counter.
      * @param delta Delta.
      * @deprecated TODO https://ggsystems.atlassian.net/browse/GG-17396
@@ -133,4 +138,9 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * @return Iterator for pairs [start, range] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();
+
+    /**
+     * @return Cache group context.
+     */
+    public CacheGroupContext context();
 }

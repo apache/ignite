@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -258,7 +259,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         GridMetricManager mmgr = ignite.context().metric();
 
-        Stream<MetricRegistry> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
+        Stream<ReadOnlyMetricRegistry> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
                 .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
 
         return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
@@ -299,7 +300,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @param mmgr Metric manager.
      * @param type Staticstics type.
-     * @param id Metric set id.
+     * @param id Metric registry id.
      * @return Logical reads count.
      */
     public static long logicalReads(GridMetricManager mmgr, IoStatisticsType type, String id) {

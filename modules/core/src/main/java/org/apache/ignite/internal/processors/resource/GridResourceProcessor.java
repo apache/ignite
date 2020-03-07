@@ -74,12 +74,26 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             new GridResourceLoggerInjector(ctx.config().getGridLogger());
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
             new GridResourceBasicInjector<>(ctx.grid());
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.METRIC_MANAGER.ordinal()] =
+            new GridResourceSupplierInjector<>(ctx::metric);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Started resource processor.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
+
+        // The IgniteSecurity started for this moment,
+        // and we can make a decision on what instance of Ignite injector should be used.
+        if (ctx.security().sandbox().enabled()) {
+            injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] =
+                new GridResourceProxiedIgniteInjector(ctx.grid());
+        }
     }
 
     /** {@inheritDoc} */

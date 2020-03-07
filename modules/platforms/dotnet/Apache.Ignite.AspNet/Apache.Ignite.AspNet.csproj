@@ -37,7 +37,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>Apache.Ignite.AspNet.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Release\Apache.Ignite.AspNet.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\Apache.Ignite.AspNet.xml</DocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>

@@ -22,7 +22,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
- * Test partitions consistency in various scenarios.
+ * Test partitions consistency in various scenarios when all rebalance is historical.
  */
 @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
 public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPartitionCounterStateConsistencyTest {

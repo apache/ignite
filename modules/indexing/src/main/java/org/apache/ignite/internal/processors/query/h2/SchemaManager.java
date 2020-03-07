@@ -38,6 +38,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.systemview.walker.SqlIndexViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlSchemaViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlTableViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -147,34 +153,34 @@ public class SchemaManager {
         log = ctx.log(SchemaManager.class);
 
         ctx.systemView().registerView(SQL_SCHEMA_VIEW, SQL_SCHEMA_VIEW_DESC,
-            SqlSchemaView.class,
+            new SqlSchemaViewWalker(),
             schemas.values(),
             SqlSchemaView::new);
 
         ctx.systemView().registerView(SQL_TBLS_VIEW, SQL_TBLS_VIEW_DESC,
-            SqlTableView.class,
+            new SqlTableViewWalker(),
             dataTables.values(),
             SqlTableView::new);
 
         ctx.systemView().registerView(SQL_VIEWS_VIEW, SQL_VIEWS_VIEW_DESC,
-            SqlViewView.class,
+            new SqlViewViewWalker(),
             systemViews,
             SqlViewView::new);
 
         ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
-            SqlIndexView.class,
+            new SqlIndexViewWalker(),
             dataTables.values(),
             GridH2Table::getIndexes,
             SqlIndexView::new);
 
         ctx.systemView().registerInnerArrayView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
-            SqlTableColumnView.class,
+            new SqlTableColumnViewWalker(),
             dataTables.values(),
             GridH2Table::getColumns,
             SqlTableColumnView::new);
 
         ctx.systemView().registerInnerArrayView(SQL_VIEW_COLS_VIEW, SQL_VIEW_COLS_VIEW_DESC,
-            SqlViewColumnView.class,
+            new SqlViewColumnViewWalker(),
             systemViews,
             SqlSystemView::getColumns,
             SqlViewColumnView::new);

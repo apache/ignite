@@ -195,7 +195,7 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public void setRaw(int i, Serializable v) {
         if(!(v instanceof Number))
-            throw new IllegalStateException("Matriсes don't support non-Number values");
+            throw new IllegalStateException("Matrices don't support non-Number values");
 
         parent.set(row + i * rowStride, col + i * colStride, ((Number) v).doubleValue());
     }

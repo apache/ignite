@@ -45,4 +45,9 @@ public interface IoStatisticsHolder {
      * @return Number of physical reads.
      */
     public long physicalReads();
+
+    /**
+     * @return Metric registry name.
+     */
+    public String metricRegistryName();
 }

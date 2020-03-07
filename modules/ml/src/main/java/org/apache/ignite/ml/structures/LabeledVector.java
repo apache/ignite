@@ -35,7 +35,6 @@ public class LabeledVector<L> extends DatasetRow<Vector> {
      * Default constructor.
      */
     public LabeledVector() {
-        super();
     }
 
     /**

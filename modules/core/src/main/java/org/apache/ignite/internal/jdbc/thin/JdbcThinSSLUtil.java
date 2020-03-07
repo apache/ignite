@@ -18,33 +18,20 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.file.FileSystems;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.ssl.SslContextFactory;
 
 /**
  * SSL utility method to create SSL connetion.
@@ -63,6 +50,9 @@ public class JdbcThinSSLUtil {
         }
     };
 
+    /** Empty char array. */
+    public static final char[] EMPTY_CHARS = new char[0];
+
     /**
      *
      */
@@ -77,7 +67,7 @@ public class JdbcThinSSLUtil {
      * @throws IOException On IO error in handshake.
      * @return SSL socket.
      */
-    public static SSLSocket createSSLSocket(InetSocketAddress addr, ConnectionProperties connProps) throws SQLException, IOException {
+    public static SSLSocket createSSLSocket(InetSocketAddress addr, ConnectionProperties connProps) throws SQLException {
         try {
             SSLSocketFactory sslSocketFactory = getSSLSocketFactory(connProps);
 
@@ -102,6 +92,7 @@ public class JdbcThinSSLUtil {
      */
     private static SSLSocketFactory getSSLSocketFactory(ConnectionProperties connProps) throws SQLException {
         String sslFactory = connProps.getSslFactory();
+        String cipherSuites = connProps.getSslCipherSuites();
         String cliCertKeyStoreUrl = connProps.getSslClientCertificateKeyStoreUrl();
         String cliCertKeyStorePwd = connProps.getSslClientCertificateKeyStorePassword();
         String cliCertKeyStoreType = connProps.getSslClientCertificateKeyStoreType();
@@ -128,7 +119,7 @@ public class JdbcThinSSLUtil {
 
         if (cliCertKeyStoreUrl == null && cliCertKeyStorePwd == null && cliCertKeyStoreType == null
             && trustCertKeyStoreUrl == null && trustCertKeyStorePwd == null && trustCertKeyStoreType == null
-            && sslProtocol == null) {
+            && sslProtocol == null && cipherSuites == null) {
             try {
                 return SSLContext.getDefault().getSocketFactory();
             }
@@ -159,176 +150,42 @@ public class JdbcThinSSLUtil {
         if (sslProtocol == null)
             sslProtocol = "TLS";
 
-        if (!F.isEmpty(cliCertKeyStoreUrl))
-            cliCertKeyStoreUrl = checkAndConvertUrl(cliCertKeyStoreUrl);
+        SslContextFactory f = new SslContextFactory();
 
-        if (!F.isEmpty(trustCertKeyStoreUrl))
-            trustCertKeyStoreUrl = checkAndConvertUrl(trustCertKeyStoreUrl);
+        f.setProtocol(sslProtocol);
 
-        TrustManagerFactory tmf;
-        KeyManagerFactory kmf;
+        f.setKeyAlgorithm(keyAlgorithm);
 
-        KeyManager[] kms = null;
-
-        try {
-            tmf = TrustManagerFactory.getInstance(keyAlgorithm);
-
-            kmf = KeyManagerFactory.getInstance(keyAlgorithm);
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new SQLException("Default algorithm definitions for TrustManager and/or KeyManager are invalid." +
-                " Check java security properties file.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-
-        InputStream ksInputStream = null;
-
-        try {
-            if (!F.isEmpty(cliCertKeyStoreUrl) && !F.isEmpty(cliCertKeyStoreType)) {
-                KeyStore clientKeyStore = KeyStore.getInstance(cliCertKeyStoreType);
-
-                URL ksURL = new URL(cliCertKeyStoreUrl);
-
-                char[] password = (cliCertKeyStorePwd == null) ? new char[0] : cliCertKeyStorePwd.toCharArray();
-
-                ksInputStream = ksURL.openStream();
-
-                clientKeyStore.load(ksInputStream, password);
-
-                kmf.init(clientKeyStore, password);
-
-                kms = kmf.getKeyManagers();
-            }
-        }
-        catch (UnrecoverableKeyException e) {
-            throw new SQLException("Could not recover keys from client keystore.",
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (KeyStoreException e) {
-            throw new SQLException("Could not create client KeyStore instance.",
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (CertificateException e) {
-            throw new SQLException("Could not load client key store. [storeType=" + cliCertKeyStoreType
-                + ", cliStoreUrl=" + cliCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (MalformedURLException e) {
-            throw new SQLException("Invalid client key store URL. [url=" + cliCertKeyStoreUrl + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (IOException e) {
-            throw new SQLException("Could not open client key store.[url=" + cliCertKeyStoreUrl + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        finally {
-            if (ksInputStream != null) {
-                try {
-                    ksInputStream.close();
-                }
-                catch (IOException e) {
-                    // can't close input stream, but keystore can be properly initialized
-                    // so we shouldn't throw this exception
-                }
-            }
-        }
-
-        InputStream tsInputStream = null;
-
-        List<TrustManager> tms;
+        f.setKeyStoreFilePath(cliCertKeyStoreUrl);
+        f.setKeyStoreType(cliCertKeyStoreType);
+        f.setKeyStorePassword((cliCertKeyStorePwd == null) ? EMPTY_CHARS :
+            cliCertKeyStorePwd.toCharArray());
 
         if (connProps.isSslTrustAll())
-            tms = Collections.<TrustManager>singletonList(TRUST_ALL_MANAGER);
+            f.setTrustManagers(TRUST_ALL_MANAGER);
         else {
-            tms = new ArrayList<>();
-
-            try {
-                KeyStore trustKeyStore = null;
-
-                if (!F.isEmpty(trustCertKeyStoreUrl) && !F.isEmpty(trustCertKeyStoreType)) {
-                    char[] trustStorePassword = (trustCertKeyStorePwd == null) ? new char[0]
-                        : trustCertKeyStorePwd.toCharArray();
-
-                    tsInputStream = new URL(trustCertKeyStoreUrl).openStream();
-
-                    trustKeyStore = KeyStore.getInstance(trustCertKeyStoreType);
-
-                    trustKeyStore.load(tsInputStream, trustStorePassword);
-                }
-
-                tmf.init(trustKeyStore);
-
-                TrustManager[] origTms = tmf.getTrustManagers();
-
-                Collections.addAll(tms, origTms);
-            }
-            catch (NoSuchAlgorithmException e) {
-                throw new SQLException("Unsupported keystore algorithm.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-            catch (KeyStoreException e) {
-                throw new SQLException("Could not create trust KeyStore instance.",
-                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-            catch (CertificateException e) {
-                throw new SQLException("Could not load trusted key store. [storeType=" + trustCertKeyStoreType +
-                    ", cliStoreUrl=" + trustCertKeyStoreUrl + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-            catch (MalformedURLException e) {
-                throw new SQLException("Invalid trusted key store URL. [url=" + trustCertKeyStoreUrl + ']',
-                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-            catch (IOException e) {
-                throw new SQLException("Could not open trusted key store. [url=" + cliCertKeyStoreUrl + ']',
-                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
-            finally {
-                if (tsInputStream != null) {
-                    try {
-                        tsInputStream.close();
-                    }
-                    catch (IOException e) {
-                        // can't close input stream, but keystore can be properly initialized
-                        // so we shouldn't throw this exception
-                    }
-                }
-            }
+            f.setTrustStoreFilePath(trustCertKeyStoreUrl);
+            f.setTrustStoreType(trustCertKeyStoreType);
+            f.setTrustStorePassword((trustCertKeyStorePwd == null) ? EMPTY_CHARS
+                : trustCertKeyStorePwd.toCharArray());
         }
 
-        assert !tms.isEmpty();
+        if (!F.isEmpty(cipherSuites))
+            f.setCipherSuites(cipherSuites.split(","));
 
         try {
-            SSLContext sslContext = SSLContext.getInstance(sslProtocol);
-
-            sslContext.init(kms, tms.toArray(new TrustManager[tms.size()]), null);
+            final SSLContext sslContext = f.create();
 
             return sslContext.getSocketFactory();
         }
-        catch (NoSuchAlgorithmException e) {
-            throw new SQLException(sslProtocol + " is not a valid SSL protocol.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-        catch (KeyManagementException e) {
-            throw new SQLException("Cannot init SSL context.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
-    }
+        catch (IgniteException e) {
+            final Throwable cause = e.getCause();
 
-    /**
-     * @param url URL or path to check and convert to URL.
-     * @return URL.
-     * @throws SQLException If URL is invalid.
-     */
-    private static String checkAndConvertUrl(String url) throws SQLException {
-        try {
-            return new URL(url).toString();
-        }
-        catch (MalformedURLException e) {
-            try {
-                return FileSystems.getDefault().getPath(url).toUri().toURL().toString();
-            }
-            catch (MalformedURLException e1) {
-                throw new SQLException("Invalid keystore UR: " + url,
-                    SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-            }
+            // Unwrap.
+            if (cause instanceof SSLException)
+                throw new SQLException(cause.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            else
+                throw new SQLException("Unknown error.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 }

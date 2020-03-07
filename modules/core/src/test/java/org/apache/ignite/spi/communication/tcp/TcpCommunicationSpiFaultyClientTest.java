@@ -64,9 +64,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     /** Server port for {@link FakeServer}. */
     private static int serverPort = 47200;
 
-    /** Client mode. */
-    private static boolean clientMode;
-
     /** Block. */
     private static volatile boolean block;
 
@@ -87,7 +84,6 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setFailureDetectionTimeout(failureDetectionTimeout);
-        cfg.setClientMode(clientMode);
 
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
@@ -220,14 +216,10 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
             if (srv != null)
                 fut = GridTestUtils.runMultiThreadedAsync(srv, 1, "fake-server");
 
-            clientMode = false;
-
             startGrids(2);
 
-            clientMode = true;
-
-            startGrid(2);
-            startGrid(3);
+            startClientGrid(2);
+            startClientGrid(3);
 
             // Need to wait for PME to avoid opening new connections during closing idle connections.
             awaitPartitionMapExchange();

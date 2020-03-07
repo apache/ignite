@@ -1,5 +1,5 @@
 Control utility [ver. <!any!>
-2019 Copyright(C) Apache Software Foundation
+2020 Copyright(C) Apache Software Foundation
 User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
@@ -8,14 +8,23 @@ Control utility script is used to execute admin commands on cluster or get commo
 
 
 This utility can do the following commands:
-  Activate cluster:
+
+  Activate cluster (deprecated. Use --set-state instead):
     control.(sh|bat) --activate
 
-  Deactivate cluster:
+  Deactivate cluster (deprecated. Use --set-state instead):
     control.(sh|bat) --deactivate [--yes]
 
   Print current cluster state:
     control.(sh|bat) --state
+
+  Change cluster state:
+    control.(sh|bat) --set-state INACTIVE|ACTIVE|ACTIVE_READ_ONLY [--yes]
+
+    Parameters:
+      ACTIVE            - Activate cluster. Cache updates are allowed.
+      INACTIVE          - Deactivate cluster.
+      ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
 
   Print cluster baseline topology:
     control.(sh|bat) --baseline
@@ -53,11 +62,11 @@ This utility can do the following commands:
   View diagnostic information in a cluster. For more details type:
     control.(sh|bat) --diagnostic
 
-  Enable read-only mode on active cluster:
-    control.(sh|bat) --read-only-on [--yes]
+  Print the current master key name:
+    control.(sh|bat) --encryption get_master_key_name
 
-  Disable read-only mode on active cluster:
-    control.(sh|bat) --read-only-off [--yes]
+  Change the master key:
+    control.(sh|bat) --encryption change_master_key newMasterKeyName
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

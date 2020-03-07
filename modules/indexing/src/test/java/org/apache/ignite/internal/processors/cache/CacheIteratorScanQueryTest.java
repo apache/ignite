@@ -39,9 +39,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Node filter test.
  */
 public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
-    /** Client mode. */
-    private boolean client = false;
-
     /** Cache configurations. */
     private CacheConfiguration[] ccfgs = null;
 
@@ -56,17 +53,9 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        client = false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setClientMode(client);
         cfg.setCacheConfiguration(ccfgs);
 
         return cfg;
@@ -79,7 +68,6 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
     public void testScanQuery() throws Exception {
         Ignite server = startGrid(0);
 
-        client = true;
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration("test-cache-replicated").setCacheMode(REPLICATED)
                 .setNodeFilter(new AlwaysFalseCacheFilter()),
@@ -87,7 +75,7 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
                 .setNodeFilter(new AlwaysFalseCacheFilter())
         };
 
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         assertEquals(2, server.cluster().nodes().size());
         assertEquals(1, server.cluster().forServers().nodes().size());
@@ -115,9 +103,7 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = server.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        client = true;
-
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         IgniteCache<Integer, Integer> cliCache = client.cache(DEFAULT_CACHE_NAME);
 

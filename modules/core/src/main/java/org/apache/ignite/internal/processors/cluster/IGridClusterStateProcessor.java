@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -38,23 +39,34 @@ import org.jetbrains.annotations.Nullable;
 public interface IGridClusterStateProcessor extends GridProcessor {
     /**
      * @return Cluster state to be used on public API.
+     * @deprecated Use {@link #publicApiState(boolean)} instead.
      */
+    @Deprecated
     boolean publicApiActiveState(boolean waitForTransition);
 
     /**
      * @return Cluster state to be used on public API.
+     * @deprecated Use {@link #publicApiStateAsync(boolean)} instead.
      */
+    @Deprecated
     IgniteFuture<Boolean> publicApiActiveStateAsync(boolean waitForTransition);
 
     /**
-     * @return Grid read only mode to be used on public API.
+     * @param waitForTransition Wait end of transition or not.
+     * @return Current cluster state to be used on public API.
      */
-    boolean publicApiReadOnlyMode();
+    ClusterState publicApiState(boolean waitForTransition);
 
     /**
-     * @return Time change of read only mode to be used on public API.
+     * @param waitForTransition Wait end of transition or not.
+     * @return Current cluster state to be used on public API.
      */
-    long readOnlyModeStateChangeTime();
+    IgniteFuture<ClusterState> publicApiStateAsync(boolean waitForTransition);
+
+    /**
+     * @return Time of last cluster state change to be used on public API.
+     */
+    long lastStateChangeTime();
 
     /**
      * @param discoCache Discovery data cache.
@@ -93,9 +105,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      */
     DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg);
 
-    /**
-     *
-     */
+    /** */
     void cacheProcessorStarted();
 
     /**
@@ -103,7 +113,9 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param baselineNodes New baseline nodes.
      * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
+     * @deprecated Use {@link #changeGlobalState(ClusterState, Collection, boolean)} instead.
      */
+    @Deprecated
     IgniteInternalFuture<?> changeGlobalState(
         boolean activate,
         Collection<? extends BaselineNode> baselineNodes,
@@ -111,24 +123,16 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     );
 
     /**
-     * @param activate New cluster state.
-     * @param readOnly Enable read-only mode.
+     * @param state New cluster state.
      * @param baselineNodes New baseline nodes.
      * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
      */
     IgniteInternalFuture<?> changeGlobalState(
-        boolean activate,
-        boolean readOnly,
+        ClusterState state,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     );
-
-    /**
-     * @param readOnly Enable/disable read-only mode.
-     * @return State change future.
-     */
-    IgniteInternalFuture<?> changeGlobalState(boolean readOnly);
 
     /**
      * @param errs Errors.

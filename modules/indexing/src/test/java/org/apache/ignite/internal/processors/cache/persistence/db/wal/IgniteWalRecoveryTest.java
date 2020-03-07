@@ -117,6 +117,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -521,7 +522,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig2
             .context().cache().context().database();
 
-        IgniteInternalFuture<?> cpFinishFut = dbMgr.forceCheckpoint("force checkpoint").finishFuture();
+        IgniteInternalFuture<?> cpFinishFut = dbMgr.forceCheckpoint("force checkpoint").futureFor(FINISHED);
 
         // Delete checkpoint END file to emulate node stopped at the middle of checkpoint.
         cpFinishFut.listen(new IgniteInClosureX<IgniteInternalFuture>() {

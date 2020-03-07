@@ -338,8 +338,8 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeMetadata(BinaryRawWriterEx writer, int typeId) {
-        writeMetadata0(writer, cacheObjProc.metadata(typeId));
+    @Override public void writeMetadata(BinaryRawWriterEx writer, int typeId, boolean includeSchemas) {
+        writeMetadata0(writer, cacheObjProc.metadata(typeId), includeSchemas);
     }
 
     /** {@inheritDoc} */
@@ -349,7 +349,7 @@ public class PlatformContextImpl implements PlatformContext {
         writer.writeInt(metas.size());
 
         for (BinaryType m : metas)
-            writeMetadata0(writer, m);
+            writeMetadata0(writer, m, false);
     }
 
     /** {@inheritDoc} */
@@ -363,7 +363,7 @@ public class PlatformContextImpl implements PlatformContext {
      * @param writer Writer.
      * @param meta Metadata.
      */
-    private void writeMetadata0(BinaryRawWriterEx writer, BinaryType meta) {
+    private void writeMetadata0(BinaryRawWriterEx writer, BinaryType meta, boolean includeSchemas) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
@@ -371,7 +371,7 @@ public class PlatformContextImpl implements PlatformContext {
 
             BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
 
-            PlatformUtils.writeBinaryMetadata(writer, meta0, false);
+            PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }
     }
 

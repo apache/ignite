@@ -248,30 +248,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return BinaryObjectHeader.Flag.None;
             }
         }
-
-        /// <summary>
-        /// Gets the field ids.
-        /// </summary>
-        private static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite)
-        {
-            Debug.Assert(hdr.TypeId != BinaryTypeId.Unregistered);
-
-            int[] fieldIds = null;
-
-            if (ignite != null)
-            {
-                fieldIds = ignite.BinaryProcessor.GetSchema(hdr.TypeId, hdr.SchemaId);
-            }
-
-            if (fieldIds == null)
-            {
-                throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                                                "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
-            }
-
-            return fieldIds;
-        }
-
         /// <summary>
         /// Reads the schema, maintains stream position.
         /// </summary>
@@ -307,6 +283,29 @@ namespace Apache.Ignite.Core.Impl.Binary
             return res;
         }
 
+        /// <summary>
+        /// Gets the field ids.
+        /// </summary>
+        private static int[] GetFieldIds(BinaryObjectHeader hdr, IIgniteInternal ignite)
+        {
+            Debug.Assert(hdr.TypeId != BinaryTypeId.Unregistered);
+
+            int[] fieldIds = null;
+
+            if (ignite != null)
+            {
+                fieldIds = GetCachedSchema(hdr, ignite) ??
+                           ignite.Marshaller.GetBinaryType(hdr.TypeId).Schema.Get(hdr.SchemaId);
+            }
+
+            if (fieldIds == null)
+            {
+                throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                                                "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
+            }
+
+            return fieldIds;
+        }
 
         /// <summary>
         /// Gets the field ids.
@@ -314,6 +313,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, IIgniteInternal ignite)
         {
             return schema.Get(hdr.SchemaId) ?? GetFieldIds(hdr, ignite);
+        }
+
+        /// <summary>
+        /// Gets the cached schema.
+        /// </summary>
+        private static int[] GetCachedSchema(BinaryObjectHeader hdr, IIgniteInternal ignite)
+        {
+            var cachedHolder = ignite.Marshaller.GetCachedBinaryTypeHolder(hdr.TypeId);
+            if (cachedHolder == null || cachedHolder.BinaryType == null || cachedHolder.BinaryType.Schema == null)
+            {
+                return null;
+            }
+            
+            return cachedHolder.BinaryType.Schema.Get(hdr.SchemaId);
         }
     }
 }

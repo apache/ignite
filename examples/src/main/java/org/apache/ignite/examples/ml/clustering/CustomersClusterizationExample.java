@@ -27,6 +27,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
@@ -38,8 +40,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example of using KMeans clusterization to determine the optimal count of clusters in data.
@@ -62,7 +62,7 @@ public class CustomersClusterizationExample {
                 System.out.println(">>> Fill dataset cache.");
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.WHOLESALE_CUSTOMERS);
 
-                System.out.println(">>> Start traininig and scoring.");
+                System.out.println(">>> Start training and scoring.");
                 for (int amountOfClusters = 1; amountOfClusters < 10; amountOfClusters++) {
                     KMeansTrainer trainer = new KMeansTrainer()
                         .withAmountOfClusters(amountOfClusters)
@@ -88,7 +88,8 @@ public class CustomersClusterizationExample {
                 }
             }
             finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
         finally {

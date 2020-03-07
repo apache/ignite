@@ -84,7 +84,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /**
      * Client-side learning environment.
      */
-    private final LearningEnvironment localLearningEnv;
+    private final LearningEnvironment locLearningEnv;
 
     /**
      * Constructs a new instance of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
@@ -122,7 +122,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
         this.envBuilder = envBuilder;
         this.datasetId = datasetId;
         this.upstreamKeepBinary = upstreamKeepBinary;
-        this.localLearningEnv = localLearningEnv;
+        this.locLearningEnv = localLearningEnv;
         this.retries = retriesCnt;
     }
 
@@ -204,7 +204,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      */
     private <R> R computeForAllPartitions(IgniteFunction<Integer, R> fun, IgniteBinaryOperator<R> reduce, R identity) {
         Collection<String> cacheNames = Arrays.asList(datasetCache.getName(), upstreamCache.getName());
-        Collection<R> results = ComputeUtils.affinityCallWithRetries(ignite, cacheNames, fun, retries, RETRY_INTERVAL, localLearningEnv.deployingContext());
+        Collection<R> results = ComputeUtils.affinityCallWithRetries(ignite, cacheNames, fun, retries, RETRY_INTERVAL, locLearningEnv.deployingContext());
 
         R res = identity;
         for (R partRes : results)

@@ -33,7 +33,7 @@ public abstract class BinaryClassificationMetric<L extends Serializable> impleme
     /**
      * Truth label.
      */
-    private final L truthLabel;
+    private final L truthLb;
 
     /**
      * False label.
@@ -47,7 +47,7 @@ public abstract class BinaryClassificationMetric<L extends Serializable> impleme
      * @param falseLabel User provided false label.
      */
     public BinaryClassificationMetric(L truthLabel, L falseLabel) {
-        this.truthLabel = truthLabel;
+        this.truthLb = truthLabel;
         this.falseLabel = falseLabel;
     }
 
@@ -55,7 +55,7 @@ public abstract class BinaryClassificationMetric<L extends Serializable> impleme
      * Creates an instance of BinaryClassificationMetric.
      */
     public BinaryClassificationMetric() {
-        truthLabel = null;
+        truthLb = null;
         falseLabel = null;
     }
 
@@ -63,9 +63,9 @@ public abstract class BinaryClassificationMetric<L extends Serializable> impleme
      * {@inheritDoc}
      */
     @Override public BinaryClassificationPointwiseMetricStatsAggregator<L> makeAggregator() {
-        if (truthLabel == null && falseLabel == null)
+        if (truthLb == null && falseLabel == null)
             return new BinaryClassificationPointwiseMetricStatsAggregator<>();
         else
-            return new BinaryClassificationPointwiseMetricStatsAggregator.WithCustomLabelsAggregator<>(truthLabel, falseLabel);
+            return new BinaryClassificationPointwiseMetricStatsAggregator.WithCustomLabelsAggregator<>(truthLb, falseLabel);
     }
 }

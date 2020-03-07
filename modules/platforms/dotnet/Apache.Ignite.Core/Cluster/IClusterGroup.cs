@@ -253,6 +253,14 @@ namespace Apache.Ignite.Core.Cluster
         IServices GetServices();
 
         /// <summary>
+        /// Sets statistics enabled flag globally for the caches
+        /// </summary>
+        /// <param name="cacheNames">Collection of cache names to set the flag</param>
+        /// <param name="enabled">Enabled flag</param>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        void EnableStatistics(IEnumerable<string> cacheNames, bool enabled);
+
+        /// <summary>
         /// Clears statistics for caches cluster wide.
         /// </summary>
         /// <param name="caches">Collection of cache names.</param>

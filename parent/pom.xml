@@ -56,7 +56,7 @@
         <camel.version>2.22.0</camel.version>
         <aws.encryption.sdk.version>1.3.2</aws.encryption.sdk.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
-        <commons.beanutils.version>1.9.3</commons.beanutils.version>
+        <commons.beanutils.version>1.9.4</commons.beanutils.version>
         <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
@@ -76,17 +76,17 @@
         <hamcrest.version>1.2</hamcrest.version>
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
-        <jackson.version>2.9.6</jackson.version>
+        <jackson.version>2.9.10</jackson.version>
         <jackson1.version>1.9.13</jackson1.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
-        <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
+        <javax.cache.tck.version>1.1.0</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.11.v20180605</jetty.version>
+        <jetty.version>9.4.25.v20191220</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
@@ -105,7 +105,7 @@
         <lz4.version>1.5.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.0.0</maven.checkstyle.plugin.version>
-        <checkstyle.puppycrawl.version>8.19</checkstyle.puppycrawl.version>
+        <checkstyle.puppycrawl.version>8.21</checkstyle.puppycrawl.version>
         <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>8.0.13</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
@@ -124,10 +124,12 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
-        <spring.data.version>1.13.14.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
-        <spring.version>4.3.18.RELEASE</spring.version><!-- don't forget to update spring-data version -->
-        <spring.data-2.0.version>2.0.9.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
-        <spring-5.0.version>5.0.8.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
+        <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
+        <spring.version>4.3.26.RELEASE</spring.version><!-- don't forget to update spring-data version -->
+        <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
+        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
+        <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
+        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version><!-- don't forget to update spring-data-2.2 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <tomcat.version>9.0.10</tomcat.version>
@@ -139,7 +141,9 @@
         <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
-
+        <!--Spark 2.4 version support -->
+        <spark24.hadoop.version>2.6.5</spark24.hadoop.version>
+        <spark24.version>2.4.4</spark24.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
@@ -182,61 +186,6 @@
         <system>jira</system>
         <url>http://issues.apache.org/jira/browse/IGNITE</url>
     </issueManagement>
-
-    <developers>
-        <developer>
-            <id>dsetrakyan</id>
-            <name>Dmitriy Setrakyan</name>
-            <email>dsetrakyan at apache dot org</email>
-        </developer>
-        <developer>
-            <id>agoncharuk</id>
-            <name>Alexey Goncharuk</name>
-            <email>agoncharuk at apache dot org</email>
-        </developer>
-        <developer>
-            <id>vkulichenko</id>
-            <name>Valentin Kulichenko</name>
-            <email>vkulichenko at apache dot org</email>
-        </developer>
-        <developer>
-            <id>svladykin</id>
-            <name>Sergi Vladykin</name>
-            <email>sergi dot vladykin at gmail dot com</email>
-        </developer>
-        <developer>
-            <id>yzhdanov</id>
-            <name>Yakov Zhdanov</name>
-            <email>yzhdanov at apache dot org</email>
-        </developer>
-        <developer>
-            <id>sboikov</id>
-            <name>Semyon Boikov</name>
-            <email>sboikov at gridgain dot com</email>
-        </developer>
-        <developer>
-            <id>vozerov</id>
-            <name>Vladimir Ozerov</name>
-            <email>vozerov at gridgain dot com</email>
-        </developer>
-    </developers>
-
-    <repositories>
-        <repository>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-                <checksumPolicy>ignore</checksumPolicy>
-            </snapshots>
-            <id>h2database.com</id>
-            <name>Snapshot repository on h2database.com</name>
-            <url>https://h2database.com/m2-repo</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -338,9 +287,6 @@
                         <author>false</author>
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
-                        <links>
-                            <link>https://hadoop.apache.org/docs/current/api/</link>
-                        </links>
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
@@ -491,20 +437,16 @@
                                 <packages>org.apache.ignite.osgi*</packages>
                             </group>
                             <group>
-                                <title>Flink Sink Integration</title>
-                                <packages>org.apache.ignite.sink.flink*</packages>
-                            </group>
-                            <group>
-                                <title>Flink Source Integration</title>
-                                <packages>org.apache.ignite.source.flink*</packages>
-                            </group>
-                            <group>
                                 <title>SpringData integration</title>
                                 <packages>org.apache.ignite.springdata.repository*</packages>
                             </group>
                             <group>
                                 <title>SpringData 2.0 integration</title>
                                 <packages>org.apache.ignite.springdata20.repository*</packages>
+                            </group>
+                            <group>
+                                <title>Spring Data 2.2 Integration</title>
+                                <packages>org.apache.ignite.springdata22.repository*</packages>
                             </group>
                             <group>
                             <title>RocketMQ integration</title>
@@ -521,10 +463,6 @@
                             <group>
                                 <title>Ignite ML</title>
                                 <packages>org.apache.ignite.ml*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite TensorFlow</title>
-                                <packages>org.apache.ignite.tensorflow*</packages>
                             </group>
                             <group>
                                 <title>Encryption SPI</title>
@@ -1080,7 +1018,6 @@
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
                 <maven.compiler.target>11</maven.compiler.target>
-                <scala.library.version>2.12.6</scala.library.version>
             </properties>
             <dependencies/>
             <build>

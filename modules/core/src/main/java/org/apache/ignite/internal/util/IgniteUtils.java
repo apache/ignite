@@ -136,8 +136,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
@@ -234,6 +234,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -298,6 +299,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
+    public static final long MB = 1024L * 1024;
+
+    /** */
     public static final long GB = 1024L * 1024 * 1024;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
@@ -339,6 +343,9 @@ public abstract class IgniteUtils {
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
 
+    /** Lock hold message. */
+    public static final String LOCK_HOLD_MESSAGE = "ReadLock held the lock more than ";
+
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
         new ConcurrentHashMap<>();
@@ -348,6 +355,9 @@ public abstract class IgniteUtils {
 
     /** Default working directory name. */
     private static final String DEFAULT_WORK_DIR = "work";
+
+    /** Thread dump message. */
+    public static final String THREAD_DUMP_MSG = "Thread dump at ";
 
     /** Correct Mbean cache name pattern. */
     private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
@@ -1407,25 +1417,37 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Performs thread dump and prints all available info to the given log.
+     * Performs thread dump and prints all available info to the given log with WARN logging level.
      *
      * @param log Logger.
      */
     public static void dumpThreads(@Nullable IgniteLogger log) {
+        dumpThreads(log, false);
+    }
+
+    /**
+     * Performs thread dump and prints all available info to the given log
+     * with WARN or ERROR logging level depending on {@code isErrorLevel} parameter.
+     *
+     * @param log Logger.
+     * @param isErrorLevel {@code true} if thread dump must be printed with ERROR logging level,
+     *      {@code false} if thread dump must be printed with WARN logging level.
+     */
+    public static void dumpThreads(@Nullable IgniteLogger log, boolean isErrorLevel) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
         final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
 
         if (deadlockedThreadsIds.isEmpty())
-            warn(log, "No deadlocked threads detected.");
+            logMessage(log, "No deadlocked threads detected.", isErrorLevel);
         else
-            warn(log, "Deadlocked threads detected (see thread dump below) " +
-                "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+            logMessage(log, "Deadlocked threads detected (see thread dump below) " +
+                "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']', isErrorLevel);
 
         ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
-        GridStringBuilder sb = new GridStringBuilder("Thread dump at ")
+        GridStringBuilder sb = new GridStringBuilder(THREAD_DUMP_MSG)
             .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
@@ -1442,7 +1464,20 @@ public abstract class IgniteUtils {
 
         sb.a(NL);
 
-        warn(log, sb.toString());
+        logMessage(log, sb.toString(), isErrorLevel);
+    }
+
+    /**
+     * @param log Logger.
+     * @param msg Message.
+     * @param isErrorLevel {@code true} if message must be printed with ERROR logging level,
+     *      {@code false} if message must be printed with WARN logging level.
+     */
+    private static void logMessage(@Nullable IgniteLogger log, String msg, boolean isErrorLevel) {
+        if (isErrorLevel)
+            error(log, msg);
+        else
+            warn(log, msg);
     }
 
     /**
@@ -3638,6 +3673,16 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Converts size in bytes to human-readable size in megabytes.
+     *
+     * @param sizeInBytes Size of any object (file, memory region etc) in bytes.
+     * @return Size converted to megabytes.
+     */
+    public static int sizeInMegabytes(long sizeInBytes) {
+        return (int)(sizeInBytes / MB);
+    }
+
+    /**
      * Deletes file or directory with all sub-directories and files.
      *
      * @param path File or directory to delete.
@@ -4435,6 +4480,20 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Logs warning message in both verbose and quiet modes.
+     *
+     * @param log Logger to use.
+     * @param msg Message to log.
+     * @param e Optional exception.
+     */
+    public static void quietAndWarn(IgniteLogger log, Object msg, @Nullable Throwable e) {
+        warn(log, msg, e);
+
+        if (log.isQuiet())
+            quiet(false, msg);
+    }
+
+    /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log ERROR message. If {@code log} is {@code null}
      * or in QUIET mode it will add {@code (err)} prefix to the message.
@@ -4617,6 +4676,17 @@ public abstract class IgniteUtils {
         PrintStream ps = err ? System.err : System.out;
 
         ps.print(compact(sb.toString()));
+    }
+
+    /**
+     *
+     * @param err Whether to print to {@code System.err}.
+     * @param multiline Multiple lines string to print.
+     */
+    public static void quietMultipleLines(boolean err, String multiline) {
+        assert multiline != null;
+
+        quiet(err, multiline.split(NL));
     }
 
     /**
@@ -5368,7 +5438,6 @@ public abstract class IgniteUtils {
 
         return map;
     }
-
 
     /**
      * Calculate a hashCode for an array.
@@ -8679,6 +8748,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Round up the argument to the next highest power of 2;
+     *
+     * @param v Value to round up.
+     * @return Next closest power of 2.
+     */
+    public static int nextPowerOf2(int v) {
+        A.ensure(v >= 0, "v must not be negative");
+
+        if (v == 0)
+            return 1;
+
+        return 1 << (32 - Integer.numberOfLeadingZeros(v - 1));
+    }
+
+    /**
      * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
      *
      * @param i Integer.
@@ -10767,20 +10851,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param lock Lock.
-     */
-    public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
-        return new ReentrantReadWriteLockTracer(lock);
-    }
-
-    /**
-     * @param lock Lock.
-     */
-    public static LockTracer lockTracer(Lock lock) {
-        return new LockTracer(lock);
-    }
-
-    /**
      * Puts additional text to thread name.
      * Calls {@code enhanceThreadName(Thread.currentThread(), text)}.
      * For details see {@link #enhanceThreadName(Thread, String)}.
@@ -11331,102 +11401,125 @@ public abstract class IgniteUtils {
         };
     }
 
-    /**
-     *
-     */
-    public static class ReentrantReadWriteLockTracer implements ReadWriteLock {
+    /** */
+    public static class ReentrantReadWriteLockTracer extends ReentrantReadWriteLock {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Read lock. */
-        private final LockTracer readLock;
+        private final ReadLockTracer readLock;
 
         /** Write lock. */
-        private final LockTracer writeLock;
+        private final WriteLockTracer writeLock;
+
+        /** Lock print threshold. */
+        private long readLockThreshold;
+
+        /** */
+        private IgniteLogger log;
 
         /**
-         * @param delegate Delegate.
+         * @param delegate RWLock delegate.
+         * @param kctx Kernal context.
+         * @param readLockThreshold ReadLock threshold timeout.
+         *
          */
-        public ReentrantReadWriteLockTracer(ReadWriteLock delegate) {
-            readLock = new LockTracer(delegate.readLock());
-            writeLock = new LockTracer(delegate.writeLock());
+        public ReentrantReadWriteLockTracer(ReentrantReadWriteLock delegate, GridKernalContext kctx, long readLockThreshold) {
+            log = kctx.cache().context().logger(getClass());
+
+            readLock = new ReadLockTracer(delegate, log, readLockThreshold);
+
+            writeLock = new WriteLockTracer(delegate);
+
+            this.readLockThreshold = readLockThreshold;
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Lock readLock() {
+        @Override public ReadLock readLock() {
             return readLock;
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Lock writeLock() {
+        @Override public WriteLock writeLock() {
             return writeLock;
         }
 
-        /**
-         *
-         */
-        public LockTracer getReadLock() {
-            return readLock;
-        }
-
-        /**
-         *
-         */
-        public LockTracer getWriteLock() {
-            return writeLock;
+        /** */
+        public long lockWaitThreshold() {
+            return readLockThreshold;
         }
     }
 
-    /**
-     *
-     */
-    public static class LockTracer implements Lock {
+    /** */
+    private static class ReadLockTracer extends ReentrantReadWriteLock.ReadLock {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Delegate. */
-        private final Lock delegate;
+        private final ReentrantReadWriteLock.ReadLock delegate;
 
-        private final AtomicLong cnt = new AtomicLong();
+        /** */
+        private static final ThreadLocal<T2<Integer, Long>> READ_LOCK_HOLDER_TS =
+            ThreadLocal.withInitial(() -> new T2<>(0, 0L));
 
-        /** Count. */
-        private final ConcurrentMap<String, AtomicLong> cntMap = new ConcurrentHashMap<>();
+        /** */
+        private IgniteLogger log;
 
-        /**
-         * @param delegate Delegate.
-         */
-        public LockTracer(Lock delegate) {
-            this.delegate = delegate;
+        /** */
+        private long readLockThreshold;
+
+        /** */
+        public ReadLockTracer(ReentrantReadWriteLock lock, IgniteLogger log, long readLockThreshold) {
+            super(lock);
+
+            delegate = lock.readLock();
+
+            this.log = log;
+
+            this.readLockThreshold = readLockThreshold;
         }
 
-        /**
-         *
-         */
-        private void inc(){
-            cnt.incrementAndGet();
+        /** */
+        private void inc() {
+            T2<Integer, Long> val = READ_LOCK_HOLDER_TS.get();
 
-            String name = Thread.currentThread().getName();
+            int cntr = val.get1();
 
-            AtomicLong cnt = cntMap.get(name);
+            if (cntr == 0)
+                val.set2(U.currentTimeMillis());
 
-            if (cnt == null) {
-                AtomicLong cnt0 = cntMap.putIfAbsent(name, cnt = new AtomicLong());
+            val.set1(++cntr);
 
-                if (cnt0 != null)
-                    cnt = cnt0;
+            READ_LOCK_HOLDER_TS.set(val);
+        }
+
+        /** */
+        private void dec() {
+            T2<Integer, Long> val = READ_LOCK_HOLDER_TS.get();
+
+            int cntr = val.get1();
+
+            if (--cntr == 0) {
+                long timeout = U.currentTimeMillis() - val.get2();
+
+                if (timeout > readLockThreshold) {
+                    GridStringBuilder sb = new GridStringBuilder();
+
+                    sb.a(LOCK_HOLD_MESSAGE + timeout + " ms." + nl());
+
+                    U.printStackTrace(Thread.currentThread().getId(), sb);
+
+                    U.warn(log, sb.toString());
+                }
             }
 
-            cnt.incrementAndGet();
-        }
+            val.set1(cntr);
 
-        /**
-         *
-         */
-        private void dec(){
-            cnt.decrementAndGet();
-
-            String name = Thread.currentThread().getName();
-
-            AtomicLong cnt = cntMap.get(name);
-
-            cnt.decrementAndGet();
+            READ_LOCK_HOLDER_TS.set(val);
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
         @Override public void lock() {
             delegate.lock();
 
@@ -11434,6 +11527,7 @@ public abstract class IgniteUtils {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("LockAcquiredButNotSafelyReleased")
         @Override public void lockInterruptibly() throws InterruptedException {
             delegate.lockInterruptibly();
 
@@ -11468,24 +11562,16 @@ public abstract class IgniteUtils {
 
             dec();
         }
+    }
 
-        /** {@inheritDoc} */
-        @NotNull @Override public Condition newCondition() {
-            return delegate.newCondition();
-        }
+    /** */
+    private static class WriteLockTracer extends ReentrantReadWriteLock.WriteLock {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-        /**
-         *
-         */
-        public Map<String, AtomicLong> getLockUnlockCounters() {
-            return new HashMap<>(cntMap);
-        }
-
-        /**
-         *
-         */
-        public long getLockUnlockCounter() {
-            return cnt.get();
+        /** */
+        public WriteLockTracer(ReentrantReadWriteLock lock) {
+            super(lock);
         }
     }
 
@@ -11582,5 +11668,35 @@ public abstract class IgniteUtils {
                 U.warn(log, "Listener error", e);
             }
         }
+    }
+
+    /**
+     * Stops workers from given collection and waits for their completion.
+     *
+     * @param workers Workers collection.
+     * @param cancel Wheter should cancel workers.
+     * @param log Logger.
+     */
+    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, IgniteLogger log) {
+        for (GridWorker worker : workers) {
+            try {
+                if (cancel)
+                    worker.cancel();
+
+                worker.join();
+            }
+            catch (Exception e) {
+                log.warning(String.format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+            }
+        }
+    }
+
+    /**
+     * Unquote the given string.
+     * @param s String.
+     * @return Unquoted string.
+     */
+    public static String unquote(String s) {
+        return s == null ? null : s.replaceAll("^\"|\"$", "");
     }
 }

@@ -723,4 +723,11 @@ public interface Ignite extends AutoCloseable {
      * @return {@link DataStorageMetrics} snapshot.
      */
     public DataStorageMetrics dataStorageMetrics();
+
+    /**
+     * Gets an instance of {@link IgniteEncryption} interface.
+     *
+     * @return Instance of {@link IgniteEncryption} interface.
+     */
+    public IgniteEncryption encryption();
 }

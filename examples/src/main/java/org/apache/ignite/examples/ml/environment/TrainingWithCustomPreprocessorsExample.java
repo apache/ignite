@@ -20,6 +20,8 @@ package org.apache.ignite.examples.ml.environment;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -37,11 +39,9 @@ import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
- * This example demostrates an ability of using custom client classes in cluster in case of absence of these classes on
+ * This example demonstrates an ability of using custom client classes in cluster in case of absence of these classes on
  * server nodes. Preprocessors (see {@link Preprocessor}, preprocessor trainers (see {@link PreprocessingTrainer} and
  * vectorizers (see {@link Vectorizer}) can be defined in client code and deployed to server nodes during training
  * phase.
@@ -58,40 +58,49 @@ public class TrainingWithCustomPreprocessorsExample {
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            IgniteCache<Integer, Vector> trainingSet = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.BOSTON_HOUSE_PRICES);
+            IgniteCache<Integer, Vector> trainingSet = null;
+            try {
+                trainingSet = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.BOSTON_HOUSE_PRICES);
 
-            Vectorizer<Integer, Vector, Integer, Double> basicVectorizer = new DummyVectorizer<Integer>()
-                .labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> basicVectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
-                .fit(ignite, trainingSet, basicVectorizer);
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
+                    .fit(ignite, trainingSet, basicVectorizer);
 
-            // In-place definition of custom preprocessor by lambda expression.
-            Preprocessor<Integer, Vector> customPreprocessor = (k, v) -> {
-                LabeledVector res = imputingPreprocessor.apply(k, v);
-                double fifthFeature = res.features().get(5);
+                // In-place definition of custom preprocessor by lambda expression.
+                Preprocessor<Integer, Vector> customPreprocessor = (k, v) -> {
+                    LabeledVector res = imputingPreprocessor.apply(k, v);
+                    double fifthFeature = res.features().get(5);
 
-                Vector updatedVector = res.features().set(5, fifthFeature > 0 ? Math.log(fifthFeature) : -1);
-                return updatedVector.labeled(res.label());
-            };
+                    Vector updatedVector = res.features().set(5, fifthFeature > 0 ? Math.log(fifthFeature) : -1);
+                    return updatedVector.labeled(res.label());
+                };
 
-            Vectorizer9000 customVectorizer = new Vectorizer9000(customPreprocessor);
+                Vectorizer9000 customVectorizer = new Vectorizer9000(customPreprocessor);
 
-            PipelineMdl<Integer, Vector> mdl = new Pipeline<Integer, Vector, Integer, Double>()
-                .addVectorizer(customVectorizer)
-                .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
-                .addPreprocessingTrainer(new NormalizationTrainer<Integer, Vector>().withP(1))
-                .addPreprocessingTrainer(getCustomTrainer())
-                .addTrainer(new DecisionTreeClassificationTrainer(5, 0))
-                .fit(ignite, trainingSet);
+                PipelineMdl<Integer, Vector> mdl = new Pipeline<Integer, Vector, Integer, Double>()
+                    .addVectorizer(customVectorizer)
+                    .addPreprocessingTrainer(new MinMaxScalerTrainer<Integer, Vector>())
+                    .addPreprocessingTrainer(new NormalizationTrainer<Integer, Vector>().withP(1))
+                    .addPreprocessingTrainer(getCustomTrainer())
+                    .addTrainer(new DecisionTreeClassificationTrainer(5, 0))
+                    .fit(ignite, trainingSet);
 
-            System.out.println(">>> Perform scoring.");
-            double score = Evaluator.evaluate(trainingSet,
-                mdl, mdl.getPreprocessor(), MetricName.R2
-            );
+                System.out.println(">>> Perform scoring.");
+                double score = Evaluator.evaluate(trainingSet,
+                    mdl, mdl.getPreprocessor(), MetricName.R2
+                );
 
-            System.out.println(">>> R^2 score: " + score);
+                System.out.println(">>> R^2 score: " + score);
+            }
+            finally {
+                if (trainingSet != null)
+                    trainingSet.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 

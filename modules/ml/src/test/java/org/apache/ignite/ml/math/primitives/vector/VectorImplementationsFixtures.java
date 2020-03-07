@@ -53,7 +53,7 @@ class VectorImplementationsFixtures {
 
     /** */
     void consumeSampleVectors(Consumer<Integer> paramsConsumer, BiConsumer<Vector, String> consumer) {
-        for (Supplier<Iterable<Vector>> fixtureSupplier : VectorImplementationsFixtures.suppliers) {
+        for (Supplier<Iterable<Vector>> fixtureSupplier : suppliers) {
             final Iterable<Vector> fixture = fixtureSupplier.get();
 
             for (Vector v : fixture) {
@@ -192,7 +192,7 @@ class VectorImplementationsFixtures {
         /** {@inheritDoc} */
         @Override void nextIdx() {
             assert extras[extraIdx] != null
-                : "Index(es) out of bound at " + VectorSizesExtraIterator.this;
+                : "Index(es) out of bound at " + this;
 
             if (hasNextExtra(extraIdx + 1)) {
                 extraIdx++;
@@ -318,7 +318,7 @@ class VectorImplementationsFixtures {
         /** {@inheritDoc} */
         @Override public Vector next() {
             if (!hasNext())
-                throw new NoSuchElementException(TwoParamsIterator.this.toString());
+                throw new NoSuchElementException(toString());
 
             if (ctxDescrConsumer != null)
                 ctxDescrConsumer.accept(toString());
@@ -359,7 +359,7 @@ class VectorImplementationsFixtures {
         /** IMPL NOTE override in subclasses if needed */
         void nextIdx() {
             assert params1[param1Idx] != null && params2[param2Idx] != null
-                : "Index(es) out of bound at " + TwoParamsIterator.this;
+                : "Index(es) out of bound at " + this;
 
             if (hasNextParam2(param2Idx + 1)) {
                 param2Idx++;

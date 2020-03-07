@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDataMetrics;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.client.impl.GridClientDataMetricsAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureAdapter;
 import org.apache.ignite.internal.client.impl.GridClientFutureCallback;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -56,7 +58,7 @@ public abstract class GridClientConnection {
     private SSLContext sslCtx;
 
     /** Client credentials. */
-    private Object cred;
+    private SecurityCredentials cred;
 
     /** Reason why connection was closed. {@code null} means connection is still alive. */
     protected volatile GridClientConnectionCloseReason closeReason;
@@ -71,7 +73,7 @@ public abstract class GridClientConnection {
      * @param cred Client credentials.
      */
     protected GridClientConnection(UUID clientId, InetSocketAddress srvAddr, SSLContext sslCtx, GridClientTopology top,
-        Object cred) {
+        SecurityCredentials cred) {
         assert top != null;
 
         this.clientId = clientId;
@@ -312,38 +314,41 @@ public abstract class GridClientConnection {
      *
      * @param active Active.
      * @param destNodeId Destination node id.
+     * @deprecated Use {@link #changeState(ClusterState, UUID)} instead.
      */
+    @Deprecated
     public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
             throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Changes grid global state.
+     *
+     * @param state New cluster state.
+     * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
      * Get current grid state.
      *
      * @param destNodeId Destination node id.
+     * @deprecated Use {@link #state(UUID)} instead.
      */
+    @Deprecated
     public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Get current read-only mode status. If future contains {@code true} - read-only mode enabled, if {@code false} -
-     * read-only mode disabled.
+     * Gets current grid global state.
      *
      * @param destNodeId Destination node id.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFuture<Boolean> readOnlyState(UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
-     * Change read-only mode. Cluster must be activated.
-     *
-     * @param readOnly Read-only mode enabled flag.
-     * @param destNodeId Destination node id.
-     * @throws GridClientConnectionResetException In case of error.
-     * @throws GridClientClosedException If client was manually closed before request was sent over network.
-     */
-    public abstract GridClientFuture<?> changeReadOnlyState(boolean readOnly, UUID destNodeId)
+    public abstract GridClientFuture<ClusterState> state(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
@@ -430,7 +435,7 @@ public abstract class GridClientConnection {
      *
      * @return Credentials.
      */
-    protected Object credentials() {
+    protected SecurityCredentials credentials() {
         return cred;
     }
 

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Benchmarks
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Reflection;
     using System.Text;
     using Apache.Ignite.Benchmarks.Interop;
 
@@ -40,7 +41,7 @@ namespace Apache.Ignite.Benchmarks
                 typeof(GetAllBinaryBenchmark).FullName,
                 //typeof(ThinClientGetAllBenchmark).FullName,
                 //typeof(ThinClientGetAllBinaryBenchmark).FullName,
-                "-ConfigPath", Directory.GetCurrentDirectory() + @"\..\..\Config\benchmark.xml",
+                "-ConfigPath", GetConfigPath(),
                 "-Threads", "1",
                 "-Warmup", "0",
                 "-Duration", "60",
@@ -52,7 +53,7 @@ namespace Apache.Ignite.Benchmarks
             Console.WriteLine("GC Server: " + gcSrv);
 
             if (!gcSrv)
-                Console.WriteLine("WARNING! GC server mode is disabled. This could yield in bad preformance.");
+                Console.WriteLine("WARNING! GC server mode is disabled. This could yield in bad performance.");
 
             Console.WriteLine("DotNet benchmark process started: " + Process.GetCurrentProcess().Id);
 
@@ -93,6 +94,27 @@ namespace Apache.Ignite.Benchmarks
 #if (DEBUG)
             Console.ReadLine();
 #endif
+        }
+
+        /// <summary>
+        /// Gets the config path.
+        /// </summary>
+        private static string GetConfigPath()
+        {
+            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+
+            while (dir != null)
+            {
+                var configPath = Path.Combine(dir.FullName, "Config", "benchmark.xml");
+                if (File.Exists(configPath))
+                {
+                    return configPath;
+                }
+                
+                dir = dir.Parent;
+            }
+
+            throw new InvalidOperationException("Could not locate benchmark config.");
         }
     }
 }

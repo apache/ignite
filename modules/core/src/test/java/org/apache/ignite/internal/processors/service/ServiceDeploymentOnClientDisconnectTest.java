@@ -75,7 +75,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
 
         startGrid(0);
 
-        startGrid(getConfiguration("client").setClientMode(true));
+        startClientGrid(getConfiguration("client"));
     }
 
     /** {@inheritDoc} */

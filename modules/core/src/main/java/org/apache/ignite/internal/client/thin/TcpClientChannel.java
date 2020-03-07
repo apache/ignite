@@ -63,7 +63,10 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -73,6 +76,8 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -84,6 +89,8 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -91,6 +98,8 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 class TcpClientChannel implements ClientChannel {
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_7_0,
+        V1_6_0,
         V1_5_0,
         V1_4_0,
         V1_2_0,
@@ -148,7 +157,7 @@ class TcpClientChannel implements ClientChannel {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
 
-        handshake(cfg.getUserName(), cfg.getUserPassword());
+        handshake(cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -393,35 +402,42 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** Client handshake. */
-    private void handshake(String user, String pwd)
+    private void handshake(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
-        handshakeReq(user, pwd);
-        handshakeRes(user, pwd);
+        handshakeReq(user, pwd, userAttrs);
+        handshakeRes(user, pwd, userAttrs);
     }
 
     /** Send handshake request. */
-    private void handshakeReq(String user, String pwd) throws ClientConnectionException {
-        try (BinaryOutputStream req = new BinaryHeapOutputStream(32)) {
-            req.writeInt(0); // reserve an integer for the request size
-            req.writeByte((byte)1); // handshake code, always 1
-            req.writeShort(ver.major());
-            req.writeShort(ver.minor());
-            req.writeShort(ver.patch());
-            req.writeByte((byte)2); // client code, always 2
+    private void handshakeReq(String user, String pwd, Map<String, String> userAttrs)
+        throws ClientConnectionException {
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null);
 
-            if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
-                req.writeByteArray(marshalString(user));
-                req.writeByteArray(marshalString(pwd));
-            }
+        writer.writeInt(0); // reserve an integer for the request size
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
-            req.writeInt(0, req.position() - 4); // actual size
+        writer.writeShort(ver.major());
+        writer.writeShort(ver.minor());
+        writer.writeShort(ver.patch());
 
-            write(req.array(), req.position());
+        writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+
+        if (ver.compareTo(V1_7_0) >= 0)
+            writer.writeMap(userAttrs);
+
+        if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
+            writer.writeString(user);
+            writer.writeString(pwd);
         }
+
+        writer.out().writeInt(0, writer.out().position() - 4);// actual size
+
+        write(writer.array(), writer.out().position());
     }
 
     /** Receive and handle handshake response. */
-    private void handshakeRes(String user, String pwd)
+    private void handshakeRes(String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
         int resSize = dataInput.readInt();
 
@@ -462,7 +478,7 @@ class TcpClientChannel implements ClientChannel {
                 else { // Retry with server version.
                     ver = srvVer;
 
-                    handshake(user, pwd);
+                    handshake(user, pwd, userAttrs);
                 }
             }
         }

@@ -63,9 +63,6 @@ import org.junit.Test;
  */
 public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /** */
-    private volatile boolean startClient;
-
-    /** */
     private volatile boolean startClientCaches;
 
     /** Tx cache name from client static configuration. */
@@ -98,9 +95,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024)));
 
-        if (startClient) {
-            cfg.setClientMode(true);
-
+        if (cfg.isClientMode()) {
             // It is necessary to ensure that client always connects to grid(0).
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(CLIENT_IP_FINDER);
 
@@ -122,8 +117,6 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        startClient = false;
 
         startClientCaches = false;
 
@@ -155,9 +148,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         discoSpi.latch = latch;
 
-        startClient = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         assertTrue(GridTestUtils.waitForCondition(() ->
                 new AffinityTopologyVersion(5, 0).equals(grid(0).context().discovery().topologyVersionEx()) &&
@@ -207,9 +198,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
             5_000));
 
-        startClient = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         TestDiscoverySpi discoSpi = (TestDiscoverySpi)grid(2).context().discovery().getInjectedDiscoverySpi();
 
@@ -266,11 +255,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
                 .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setCacheMode(CacheMode.REPLICATED));
 
-            startClient = true;
-
-            Ignite client = startGrid("client");
-
-            startClient = false;
+            Ignite client = startClientGrid("client");
 
             stopGrid(1);
             stopGrid(2);
@@ -325,20 +310,38 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that multiple client events won't fail transactions due to affinity assignment history expiration.
+     * Checks case when number of client events is greater than affinity history size.
      *
      * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "10")
     public void testMulipleClientLeaveJoin() throws Exception {
+        doTestMulipleClientLeaveJoin();
+    }
+
+    /**
+     * Checks case when number of client events is so big that history consists only from client event versions.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, value = "2")
+    public void testMulipleClientLeaveJoinLinksLimitOverflow() throws Exception {
+        doTestMulipleClientLeaveJoin();
+    }
+
+    /**
+     * Tests that multiple client events won't fail transactions due to affinity assignment history expiration.
+     *
+     * @throws Exception If failed.
+     */
+    public void doTestMulipleClientLeaveJoin() throws Exception {
         Ignite ig = startGrids(2);
 
         ig.cluster().active(true);
 
-        startClient = true;
-
-        IgniteEx stableClient = startGrid(2);
+        IgniteEx stableClient = startClientGrid(2);
 
         IgniteCache<Integer, Integer> stableClientTxCacheProxy = stableClient.createCache(
             new CacheConfiguration<Integer, Integer>()
@@ -353,7 +356,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             @Override public void run() {
                 for (int i = 0; i < 10; i++) {
                     try {
-                        startGrid(3);
+                        startClientGrid(3);
 
                         stopGrid(3);
                     }
@@ -407,11 +410,9 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
 
         discoSpi.latch = latch;
 
-        startClient = true;
-
         startClientCaches = true;
 
-        Ignite client = startGrid(2);
+        Ignite client = startClientGrid(2);
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
                 AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();

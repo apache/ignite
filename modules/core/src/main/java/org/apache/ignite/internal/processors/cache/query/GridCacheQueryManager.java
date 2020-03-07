@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -843,8 +844,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.mvccSnapshot(), qry.isDataPageScanEnabled());
             }
 
-            ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode,
-                locNode ? locIters : null, cctx, log);
+            ScanQueryIterator iter = new ScanQueryIterator(it, qry, topVer, locPart,
+                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteBiPredicate.class, keyValFilter),
+                SecurityUtils.sandboxedProxy(cctx.kernalContext(), IgniteClosure.class, transformer),
+                locNode, locNode ? locIters : null, cctx, log);
 
             if (locNode) {
                 ScanQueryIterator old = locIters.addx(iter);

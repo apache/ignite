@@ -152,7 +152,7 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
-     * Gets serializable value from storage and casts it to targe type T.
+     * Gets serializable value from storage and casts it to target type T.
      *
      * @param i Index.
      * @return Value.

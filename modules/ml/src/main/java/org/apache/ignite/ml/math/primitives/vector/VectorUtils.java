@@ -64,17 +64,6 @@ public class VectorUtils {
     }
 
     /**
-     * Turn number into a local Vector of given size with one-hot encoding.
-     *
-     * @param num Number to turn into vector.
-     * @param vecSize Vector size of output vector.
-     * @return One-hot encoded number.
-     */
-    public static Vector oneHot(int num, int vecSize) {
-        return oneHot(num, vecSize);
-    }
-
-    /**
      * Turn number to 1-sized array.
      *
      * @param val Value to wrap in array.

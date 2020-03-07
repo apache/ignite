@@ -25,7 +25,6 @@ import org.junit.runners.Parameterized;
 /**
  * Test KILL QUERY requested from client node.
  */
-
 @RunWith(Parameterized.class)
 public class KillQueryFromClientTest extends KillQueryTest {
     /** {@inheritDoc} */

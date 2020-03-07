@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.management.ManagementFactory;
 import java.sql.Connection;
+import java.text.DateFormat;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +38,8 @@ import java.util.function.Consumer;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularDataSupport;
 import org.apache.ignite.IgniteCache;
@@ -48,10 +48,12 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -59,12 +61,16 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestPredicate;
+import org.apache.ignite.internal.metric.SystemViewSelfTest.TestRunnable;
 import org.apache.ignite.internal.metric.SystemViewSelfTest.TestTransformer;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -75,12 +81,15 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
@@ -89,6 +98,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD_DESCRIPTION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD_DESCRIPTION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.IGNITE_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
@@ -96,6 +106,7 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.spi.metric.jmx.MetricRegistryMBean.searchHistogram;
+import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.FILTER_OPERATION;
 import static org.apache.ignite.spi.systemview.jmx.SystemViewMBean.VIEWS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -124,7 +135,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -206,13 +216,13 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         IgniteCache c = ignite.createCache(n);
 
-        DynamicMBean cacheBean = mbean(ignite, CACHE_METRICS, n);
+        DynamicMBean cacheBean = metricRegistry(ignite.name(), CACHE_METRICS, n);
 
         assertNotNull(cacheBean);
 
         ignite.destroyCache(n);
 
-        assertThrowsWithCause(() -> mbean(ignite, CACHE_METRICS, n), IgniteException.class);
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), CACHE_METRICS, n), IgniteException.class);
     }
 
     /** */
@@ -446,7 +456,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     public TabularDataSupport systemView(IgniteEx g, String name) {
         try {
-            DynamicMBean caches = mbean(g, VIEWS, name);
+            DynamicMBean caches = metricRegistry(g.name(), VIEWS, name);
 
             MBeanAttributeInfo[] attrs = caches.getMBeanInfo().getAttributes();
 
@@ -460,21 +470,37 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
-    public DynamicMBean mbean(IgniteEx g, String grp, String name) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(g.name(), grp, name);
+    public TabularDataSupport filteredSystemView(IgniteEx g, String name, Map<String, Object> filter) {
+        try {
+            DynamicMBean mbean = metricRegistry(g.name(), VIEWS, name);
 
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+            MBeanOperationInfo[] opers = mbean.getMBeanInfo().getOperations();
 
-        if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
+            assertEquals(1, opers.length);
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, DynamicMBean.class, false);
+            assertEquals(FILTER_OPERATION, opers[0].getName());
+
+            MBeanParameterInfo[] paramInfo = opers[0].getSignature();
+
+            Object params[] = new Object[paramInfo.length];
+            String signature[] = new String[paramInfo.length];
+
+            for (int i = 0; i < paramInfo.length; i++) {
+                params[i] = filter.get(paramInfo[i].getName());
+                signature[i] = paramInfo[i].getType();
+            }
+
+            return (TabularDataSupport)mbean.invoke(FILTER_OPERATION, params, signature);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("test", null);
+        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
 
         createTestHistogram(mreg);
 
@@ -681,8 +707,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+        try(IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")
@@ -720,10 +746,82 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             qryRes1.close();
             qryRes2.close();
 
-            boolean res = waitForCondition(() -> qrySysView0.isEmpty(), 5_000);
+            boolean res = waitForCondition(() -> systemView(ignite, SCAN_QRY_SYS_VIEW).isEmpty(), 5_000);
 
             assertTrue(res);
         }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testIgniteKernal() throws Exception {
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, IGNITE_METRICS);
+
+        assertNotNull(mbn);
+
+        assertEquals(36, mbn.getMBeanInfo().getAttributes().length);
+
+        assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a-> F.isEmpty(a.getDescription())));
+
+        assertFalse(F.isEmpty((String)mbn.getAttribute("fullVersion")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("copyright")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("osInformation")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("jdkInformation")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("vmName")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("discoverySpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("communicationSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("deploymentSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("checkpointSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("collisionSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("eventStorageSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("failoverSpiFormatted")));
+        assertFalse(F.isEmpty((String)mbn.getAttribute("loadBalancingSpiFormatted")));
+
+        assertEquals(System.getProperty("user.name"), (String)mbn.getAttribute("osUser"));
+
+        assertNotNull(DateFormat.getDateTimeInstance().parse((String)mbn.getAttribute("startTimestampFormatted")));
+        assertNotNull(LocalTime.parse((String)mbn.getAttribute("uptimeFormatted")));
+
+        assertTrue((boolean)mbn.getAttribute("isRebalanceEnabled"));
+        assertTrue((boolean)mbn.getAttribute("isNodeInBaseline"));
+        assertTrue((boolean)mbn.getAttribute("active"));
+
+        assertTrue((long)mbn.getAttribute("startTimestamp") > 0);
+        assertTrue((long)mbn.getAttribute("uptime") > 0);
+
+        assertEquals(ignite.name(), (String)mbn.getAttribute("instanceName"));
+
+        assertEquals(Collections.emptyList(), mbn.getAttribute("userAttributesFormatted"));
+        assertEquals(Collections.emptyList(), mbn.getAttribute("lifecycleBeansFormatted"));
+
+        assertEquals(Collections.emptyMap(), mbn.getAttribute("longJVMPauseLastEvents"));
+
+        assertEquals(0L, mbn.getAttribute("longJVMPausesCount"));
+        assertEquals(0L, mbn.getAttribute("longJVMPausesTotalDuration"));
+
+        long clusterStateChangeTime = (long)mbn.getAttribute("lastClusterStateChangeTime");
+
+        assertTrue(0 < clusterStateChangeTime && clusterStateChangeTime < System.currentTimeMillis());
+
+        assertEquals(String.valueOf(ignite.configuration().getPublicThreadPoolSize()),
+                mbn.getAttribute("executorServiceFormatted"));
+
+        assertEquals(ignite.configuration().isPeerClassLoadingEnabled(), mbn.getAttribute("isPeerClassLoadingEnabled"));
+
+        assertTrue(((String)mbn.getAttribute("currentCoordinatorFormatted"))
+                .contains(ignite.localNode().id().toString()));
+
+        assertEquals(ignite.configuration().getIgniteHome(), (String)mbn.getAttribute("igniteHome"));
+
+        assertEquals(ignite.localNode().id(), mbn.getAttribute("localNodeId"));
+
+        assertEquals(ignite.configuration().getGridLogger().toString(),
+                (String)mbn.getAttribute("gridLoggerFormatted"));
+
+        assertEquals(ignite.configuration().getMBeanServer().toString(),
+                (String)mbn.getAttribute("mBeanServerFormatted"));
+
+        assertEquals(ClusterState.ACTIVE.toString(), mbn.getAttribute("clusterState"));
     }
 
     /** */
@@ -796,10 +894,95 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /** */
+    @Test
+    public void testSysStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite.context().getStripedExecutorService(),
+            SYS_POOL_QUEUE_VIEW,
+            "sys");
+    }
+
+    /** */
+    @Test
+    public void testStreamerStripedExecutor() throws Exception {
+        checkStripeExecutorView(ignite.context().getDataStreamerExecutorService(),
+            STREAM_POOL_QUEUE_VIEW,
+            "data-streamer");
+    }
+
+    /**
+     * Checks striped executor system view.
+     *
+     * @param execSvc Striped executor.
+     * @param viewName System view.
+     * @param poolName Executor name.
+     */
+    private void checkStripeExecutorView(StripedExecutor execSvc, String viewName, String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            boolean res = waitForCondition(() -> systemView(viewName).size() == 2, 5_000);
+
+            assertTrue(res);
+
+            TabularDataSupport view = systemView(viewName);
+
+            CompositeData row0 = view.get(new Object[] {0});
+
+            assertEquals(0, row0.get("stripeIndex"));
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.get("description"));
+            assertEquals(poolName + "-stripe-0", row0.get("threadName"));
+            assertEquals(TestRunnable.class.getName(), row0.get("taskName"));
+
+            CompositeData row1 = view.get(new Object[] {1});
+
+            assertEquals(1, row1.get("stripeIndex"));
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.get("description"));
+            assertEquals(poolName + "-stripe-1", row1.get("threadName"));
+            assertEquals(TestRunnable.class.getName(), row1.get("taskName"));
+        }
+        finally {
+            latch.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        String cacheName = "cacheFL";
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName(cacheName).setAffinity(new RendezvousAffinityFunction().setPartitions(2)));
+
+        // Put some data to cache to init cache partitions.
+        for (int i = 0; i < 10; i++)
+            cache.put(i, i);
+
+        TabularDataSupport view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
+            CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
+            CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
+            CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+        ));
+
+        assertEquals(1, view.size());
+
+        view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
+            CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
+            CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+        ));
+
+        assertEquals(2, view.size());
+    }
+
+    /** */
     private void createTestHistogram(MetricRegistry mreg) {
         long[] bounds = new long[] {50, 500};
 
-        HistogramMetric histogram = mreg.histogram("histogram", bounds, null);
+        HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
 
         histogram.value(10);
         histogram.value(51);

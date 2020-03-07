@@ -83,7 +83,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             boolean initNew,
             GridKernalContext ctx
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener(), ctx);
+            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener(), ctx, null);
         }
 
         /**

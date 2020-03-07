@@ -25,6 +25,8 @@ import javax.xml.bind.JAXBException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -33,8 +35,6 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 import org.dmg.pmml.PMML;
 import org.dmg.pmml.regression.RegressionModel;
 import org.dmg.pmml.regression.RegressionTable;
@@ -81,8 +81,9 @@ public class LogRegFromSparkThroughPMMLExample {
 
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
-            } finally {
-                dataCache.destroy();
+            }    finally {
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
     }

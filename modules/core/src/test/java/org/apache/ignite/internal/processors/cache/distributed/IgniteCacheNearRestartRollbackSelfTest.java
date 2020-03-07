@@ -65,14 +65,10 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientFailureDetectionTimeout(50000);
-
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        if (getTestIgniteInstanceName(3).equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi())
+            .setForceServerMode(getTestIgniteInstanceName(3).equals(igniteInstanceName));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -108,9 +104,9 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
      */
     @Test
     public void testRestarts() throws Exception {
-        startGrids(4);
+        startGrids(3);
 
-        Ignite tester = ignite(3);
+        Ignite tester = startClientGrid(3);
 
         final AtomicLong lastUpdateTs = new AtomicLong(System.currentTimeMillis());
 

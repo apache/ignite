@@ -33,7 +33,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -50,9 +49,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryTest {
-    /** */
-    private boolean client;
-
     /** */
     private static final int OBJECTS = 200;
 
@@ -99,21 +95,10 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         long seed = System.currentTimeMillis();
 

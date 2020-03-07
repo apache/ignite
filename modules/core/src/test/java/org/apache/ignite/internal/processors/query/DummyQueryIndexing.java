@@ -304,6 +304,11 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
+    @Override public void closeCacheOnClient(String cacheName) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
         return false;
     }

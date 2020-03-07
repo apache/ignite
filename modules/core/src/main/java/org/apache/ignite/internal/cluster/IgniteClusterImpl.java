@@ -46,11 +46,13 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -72,8 +74,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteFeatures.CLUSTER_READ_ONLY_MODE;
-import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.parseFile;
@@ -313,7 +313,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.state().changeGlobalState(active, baselineNodes(), false).get();
+            ctx.state().changeGlobalState(active, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -324,11 +324,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readOnly() {
+    @Override public ClusterState state() {
         guard();
 
         try {
-            return ctx.state().publicApiReadOnlyMode();
+            return ctx.state().publicApiState(true);
         }
         finally {
             unguard();
@@ -336,13 +336,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public void readOnly(boolean readOnly) throws IgniteException {
+    @Override public void state(ClusterState newState) throws IgniteException {
         guard();
 
         try {
-            verifyReadOnlyModeSupport();
-
-            ctx.state().changeGlobalState(readOnly).get();
+            ctx.state().changeGlobalState(newState, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -353,13 +351,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** */
-    private void verifyReadOnlyModeSupport() {
-        if (!allNodesSupports(ctx.discovery().discoCache().serverNodes(), CLUSTER_READ_ONLY_MODE))
-            throw new IgniteException("Not all nodes in cluster supports cluster read-only mode");
-    }
-
-    /** */
-    private Collection<BaselineNode> baselineNodes() {
+    private Collection<BaselineNode> serverNodes() {
         return new ArrayList<>(ctx.cluster().get().forServers().nodes());
     }
 
@@ -580,7 +572,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            ctx.cache().setTxTimeoutOnPartitionMapExchange(timeout);
+            ctx.cache().context().tm().setTxTimeoutOnPartitionMapExchange(timeout);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -618,7 +610,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return ctx.cache().changeWalMode(Collections.singleton(cacheName), enabled).get();
+            return ctx.cache().context().walState().changeWalMode(Collections.singleton(cacheName), enabled).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -629,11 +621,16 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isWalEnabled(String cacheName) {
+    @Override public boolean isWalEnabled(String cacheName) throws IgniteException {
         guard();
 
         try {
-            return ctx.cache().walEnabled(cacheName);
+            DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+            if (desc == null)
+                throw new IgniteException("Cache not found: " + cacheName);
+
+            return desc.groupDescriptor().walEnabled();
         }
         finally {
             unguard();

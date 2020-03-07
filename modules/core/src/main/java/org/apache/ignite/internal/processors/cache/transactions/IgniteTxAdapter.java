@@ -218,7 +218,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** IO policy. */
     private byte plc;
 
-    /** */
+    /** One phase commit flag. */
     protected boolean onePhaseCommit;
 
     /** Commit version. */
@@ -631,7 +631,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Finalization status.
      */
-    protected FinalizationStatus finalizationStatus() {
+    @Override @Nullable public FinalizationStatus finalizationStatus() {
         return finalizing;
     }
 
@@ -2318,6 +2318,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public boolean markFinalizing(FinalizationStatus status) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public FinalizationStatus finalizationStatus() {
+            return null;
         }
 
         /** {@inheritDoc} */

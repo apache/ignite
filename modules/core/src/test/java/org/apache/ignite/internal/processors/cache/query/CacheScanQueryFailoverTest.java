@@ -59,24 +59,8 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean isRemoteJvm(String igniteInstanceName) {
-        if(igniteInstanceName.equals("client") || igniteInstanceName.equals("server"))
-            return false;
-        else
-            return super.isRemoteJvm(igniteInstanceName);
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
-
-        if (name.equals("client"))
-            cfg.setClientMode(true);
 
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
@@ -88,8 +72,8 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
      */
     @Test
     public void testScanQueryWithFailedClosures() throws Exception {
-        Ignite srv = startGrids(4);
-        Ignite client = startGrid("client");
+        Ignite srv = startGridsMultiThreaded(4);
+        Ignite client = startClientGrid("client");
 
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME).setCacheMode(PARTITIONED);
 
@@ -107,7 +91,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
      */
     @Test
     public void testScanQueryOverLocalCacheWithFailedClosures() throws Exception {
-        Ignite srv = startGrids(4);
+        Ignite srv = startGridsMultiThreaded(4);
 
         queryCachesWithFailedPredicates(srv, new CacheConfiguration(LOCAL_CACHE_NAME).setCacheMode(LOCAL));
 

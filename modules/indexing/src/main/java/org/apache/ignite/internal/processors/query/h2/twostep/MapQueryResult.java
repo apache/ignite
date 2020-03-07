@@ -43,6 +43,7 @@ import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -130,7 +131,7 @@ class MapQueryResult {
     }
 
     /** */
-    void openResult(ResultSet rs) {
+    void openResult(@NotNull ResultSet rs) {
         res = new Result(rs);
     }
 
@@ -337,28 +338,18 @@ class MapQueryResult {
          *
          * @param rs H2 result set.
          */
-        Result(ResultSet rs) {
-            if (rs != null) {
-                this.rs = rs;
+        Result(@NotNull ResultSet rs) {
+            this.rs = rs;
 
-                try {
-                    res = (ResultInterface)RESULT_FIELD.get(rs);
-                }
-                catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e); // Must not happen.
-                }
-
-                rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
-                cols = res.getVisibleColumnCount();
+            try {
+                res = (ResultInterface)RESULT_FIELD.get(rs);
             }
-            else {
-                this.rs = null;
-                this.res = null;
-                this.cols = -1;
-                this.rowCnt = -1;
-
-                closed = true;
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
             }
+
+            rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
+            cols = res.getVisibleColumnCount();
         }
 
         /** */

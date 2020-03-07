@@ -49,4 +49,9 @@ public class IoStatisticsHolderNoOp implements IoStatisticsHolder {
     @Override public long physicalReads() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public String metricRegistryName() {
+        return null;
+    }
 }

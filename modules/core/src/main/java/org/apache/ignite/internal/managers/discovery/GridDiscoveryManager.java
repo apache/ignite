@@ -47,6 +47,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
@@ -140,6 +142,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVI
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -178,9 +183,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     public static final String NODES_SYS_VIEW_DESC = "Cluster nodes";
 
-    /** Discovery cached history size. */
-    private static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
-
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
@@ -194,6 +196,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             return n.isClient();
         }
     };
+
+    /** Discovery cached history size. */
+    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -284,7 +289,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         super(ctx, ctx.config().getDiscoverySpi());
 
         ctx.systemView().registerView(NODES_SYS_VIEW, NODES_SYS_VIEW_DESC,
-            ClusterNodeView.class,
+            new ClusterNodeViewWalker(),
             () -> F.concat(false, allNodes(), daemonNodes()),
             ClusterNodeView::new);
     }
@@ -1530,7 +1535,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             clo.apply("  ^-- Baseline [id=" + blt.id() + ", size=" + bltSize + ", online=" + bltOnline
                 + ", offline=" + bltOffline + ']');
 
-            if (!state.active() && ctx.config().isAutoActivationEnabled()) {
+            ClusterState targetState = ctx.config().getClusterStateOnStart();
+
+            if (targetState == null)
+                targetState = ctx.config().isAutoActivationEnabled() ? ACTIVE : INACTIVE;
+
+            if (!active(state.state()) && active(targetState)) {
                 String offlineConsistentIds = "";
 
                 if (bltOffline > 0 && bltOffline <= 5) {
@@ -2473,6 +2483,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ((IgniteDiscoverySpi)spi).resolveCommunicationFailure(node, err);
     }
 
+    /**
+     * Resolves by ID cluster node which is alive or has recently left the cluster.
+     *
+     * @param nodeId Node id.
+     * @return resolved node, or <code>null</code> if node not found.
+     */
+    public ClusterNode historicalNode(UUID nodeId) {
+        for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
+            ClusterNode node = discoCache.node(nodeId);
+
+            if (node != null)
+                return node;
+        }
+
+        return null;
+    }
+
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
@@ -2719,28 +2746,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, FILTER_NOT_DAEMON));
 
                 if (type == EVT_NODE_METRICS_UPDATED)
-                    evt.message("Metrics were updated: " + node);
+                    evt.message("Metrics were updated");
 
                 else if (type == EVT_NODE_JOINED)
-                    evt.message("Node joined: " + node);
+                    evt.message("Node joined");
 
                 else if (type == EVT_NODE_LEFT)
-                    evt.message("Node left: " + node);
+                    evt.message("Node left");
 
                 else if (type == EVT_NODE_FAILED)
-                    evt.message("Node failed: " + node);
+                    evt.message("Node failed");
 
                 else if (type == EVT_NODE_SEGMENTED)
-                    evt.message("Node segmented: " + node);
+                    evt.message("Node segmented");
 
                 else if (type == EVT_CLIENT_NODE_DISCONNECTED)
-                    evt.message("Client node disconnected: " + node);
+                    evt.message("Client node disconnected");
 
                 else if (type == EVT_CLIENT_NODE_RECONNECTED)
-                    evt.message("Client node reconnected: " + node);
+                    evt.message("Client node reconnected");
 
                 else
-                    assert false;
+                    assert false : "Unexpected discovery message type: " + type;;
 
                 ctx.event().record(evt, discoCache);
             }

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -84,7 +85,7 @@ public abstract class PagesList extends DataStructure {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, false);
 
     /** */
-    protected final AtomicLong[] bucketsSize;
+    protected final AtomicLongArray bucketsSize;
 
     /** */
     protected volatile boolean changed;
@@ -202,14 +203,11 @@ public abstract class PagesList extends DataStructure {
         this.buckets = buckets;
         this.metaPageId = metaPageId;
 
-        bucketsSize = new AtomicLong[buckets];
-
-        for (int i = 0; i < buckets; i++)
-            bucketsSize[i] = new AtomicLong();
-
         onheapListCachingEnabled = isCachingApplicable();
 
         log = ctx.log(PagesList.class);
+
+        bucketsSize = new AtomicLongArray(buckets);
     }
 
     /**
@@ -307,7 +305,7 @@ public abstract class PagesList extends DataStructure {
 
                     assert ok;
 
-                    bucketsSize[bucket].set(bucketSize);
+                    bucketsSize.set(bucket, bucketSize);
                 }
             }
         }
@@ -774,7 +772,7 @@ public abstract class PagesList extends DataStructure {
             }
         }
 
-        assert res == bucketsSize[bucket].get() : "Wrong bucket size counter [exp=" + res + ", cntr=" + bucketsSize[bucket].get() + ']';
+        assert res == bucketsSize.get(bucket) : "Wrong bucket size counter [exp=" + res + ", cntr=" + bucketsSize.get(bucket) + ']';
 
         return res;
     }
@@ -1198,7 +1196,7 @@ public abstract class PagesList extends DataStructure {
     private Stripe getPageForTake(int bucket) {
         Stripe[] tails = getBucket(bucket);
 
-        if (tails == null || bucketsSize[bucket].get() == 0)
+        if (tails == null || bucketsSize.get(bucket) == 0)
             return null;
 
         int len = tails.length;
@@ -1319,7 +1317,7 @@ public abstract class PagesList extends DataStructure {
                     // Another thread took the last page.
                     writeUnlock(tailId, tailPage, tailAddr, false);
 
-                    if (bucketsSize[bucket].get() > 0) {
+                    if (bucketsSize.get(bucket) > 0) {
                         lockAttempt--; // Ignore current attempt.
 
                         continue;
@@ -1808,7 +1806,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket number.
      */
     private void incrementBucketSize(int bucket) {
-        bucketsSize[bucket].incrementAndGet();
+        bucketsSize.incrementAndGet(bucket);
     }
 
     /**
@@ -1817,7 +1815,7 @@ public abstract class PagesList extends DataStructure {
      * @param bucket Bucket number.
      */
     private void decrementBucketSize(int bucket) {
-        bucketsSize[bucket].decrementAndGet();
+        bucketsSize.decrementAndGet(bucket);
     }
 
     /**
@@ -1827,6 +1825,51 @@ public abstract class PagesList extends DataStructure {
         // Ok to have a race here, see the field javadoc.
         if (!changed)
             changed = true;
+    }
+
+    /**
+     * Pages list name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Buckets count.
+     */
+    public int bucketsCount() {
+        return buckets;
+    }
+
+    /**
+     * Bucket size.
+     *
+     * @param bucket Bucket.
+     */
+    public long bucketSize(int bucket) {
+        return bucketsSize.get(bucket);
+    }
+
+    /**
+     * Stripes count.
+     *
+     * @param bucket Bucket.
+     */
+    public int stripesCount(int bucket) {
+        Stripe[] stripes = getBucket(bucket);
+
+        return stripes == null ? 0 : stripes.length;
+    }
+
+    /**
+     * Cached pages count.
+     *
+     * @param bucket Bucket.
+     */
+    public int cachedPagesCount(int bucket) {
+        PagesCache pagesCache = getBucketCache(bucket, false);
+
+        return pagesCache == null ? 0 : pagesCache.size();
     }
 
     /**
@@ -1869,7 +1912,6 @@ public abstract class PagesList extends DataStructure {
     }
 
     /** Class to store page-list cache onheap. */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static class PagesCache {
         /** Pages cache max size. */
         private static final int MAX_SIZE =
@@ -1904,16 +1946,21 @@ public abstract class PagesList extends DataStructure {
         private volatile int size;
 
         /** Count of flush calls with empty cache. */
-        private volatile int emptyFlushCnt;
+        private int emptyFlushCnt;
+
+        /** Global (per data region) limit of caches for page lists. */
+        private final AtomicLong pagesCacheLimit;
 
         /**
          * Default constructor.
          */
-        public PagesCache() {
+        public PagesCache(@Nullable AtomicLong pagesCacheLimit) {
             assert U.isPow2(STRIPES_COUNT) : STRIPES_COUNT;
 
             for (int i = 0; i < STRIPES_COUNT; i++)
                 stripeLocks[i] = new Object();
+
+            this.pagesCacheLimit = pagesCacheLimit;
         }
 
         /**
@@ -1930,8 +1977,10 @@ public abstract class PagesList extends DataStructure {
 
                 boolean rmvd = stripe != null && stripe.removeValue(0, pageId) >= 0;
 
-                if (rmvd)
-                    sizeUpdater.decrementAndGet(this);
+                if (rmvd) {
+                    if (sizeUpdater.decrementAndGet(this) == 0 && pagesCacheLimit != null)
+                        pagesCacheLimit.incrementAndGet();
+                }
 
                 return rmvd;
             }
@@ -1953,7 +2002,8 @@ public abstract class PagesList extends DataStructure {
                     GridLongList stripe = stripes[stripeIdx];
 
                     if (stripe != null && !stripe.isEmpty()) {
-                        sizeUpdater.decrementAndGet(this);
+                        if (sizeUpdater.decrementAndGet(this) == 0 && pagesCacheLimit != null)
+                            pagesCacheLimit.incrementAndGet();
 
                         return stripe.remove();
                     }
@@ -1966,7 +2016,6 @@ public abstract class PagesList extends DataStructure {
         /**
          * Flush all stripes to one list and clear stripes.
          */
-        @SuppressWarnings("NonAtomicOperationOnVolatileField")
         public GridLongList flush() {
             GridLongList res = null;
 
@@ -2006,7 +2055,8 @@ public abstract class PagesList extends DataStructure {
                         if (res == null)
                             res = new GridLongList(size);
 
-                        sizeUpdater.addAndGet(this, -stripe.size());
+                        if (sizeUpdater.addAndGet(this, -stripe.size()) == 0 && pagesCacheLimit != null)
+                            pagesCacheLimit.incrementAndGet();
 
                         res.addAll(stripe);
 
@@ -2024,9 +2074,14 @@ public abstract class PagesList extends DataStructure {
          * @param pageId Page id.
          * @return {@code True} if page can be added, {@code false} if list is full.
          */
-        public synchronized boolean add(long pageId) {
+        public boolean add(long pageId) {
             assert pageId != 0L;
 
+            // Ok with race here.
+            if (size == 0 && pagesCacheLimit != null && pagesCacheLimit.get() <= 0)
+                return false; // Pages cache limit exceeded.
+
+            // Ok with race here.
             if (size >= MAX_SIZE)
                 return false;
 
@@ -2043,7 +2098,8 @@ public abstract class PagesList extends DataStructure {
                 else {
                     stripe.add(pageId);
 
-                    sizeUpdater.incrementAndGet(this);
+                    if (sizeUpdater.getAndIncrement(this) == 0 && pagesCacheLimit != null)
+                        pagesCacheLimit.decrementAndGet();
 
                     return true;
                 }

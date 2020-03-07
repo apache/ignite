@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest
 import org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsWithIndexBuildFailTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsWithIndexTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeDoesNotBreakSqlSelectTest;
 import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
@@ -96,7 +98,10 @@ import org.junit.runners.Suite;
 
     ClusterReadOnlyModeSqlTest.class,
 
+    ClusterReadOnlyModeDoesNotBreakSqlSelectTest.class,
+
     CacheGroupMetricsWithIndexTest.class,
+    CacheGroupMetricsWithIndexBuildFailTest.class,
 
     RebuildIndexLogMessageTest.class,
 

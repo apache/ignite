@@ -74,12 +74,12 @@ public class ComputeUtils {
      * @param fun Function to be applied on all partitions.
      * @param retries Number of retries for the case when one of partitions not found on the node.
      * @param interval Interval of retries for the case when one of partitions not found on the node.
-     * @param deployingContext Deploy context of user-defined classes for peer class loading.
+     * @param deployingCtx Deploy context of user-defined classes for peer class loading.
      * @param <R> Type of a result.
      * @return Collection of results.
      */
     public static <R> Collection<R> affinityCallWithRetries(Ignite ignite, Collection<String> cacheNames,
-        IgniteFunction<Integer, R> fun, int retries, int interval, DeployingContext deployingContext) {
+        IgniteFunction<Integer, R> fun, int retries, int interval, DeployingContext deployingCtx) {
         assert !cacheNames.isEmpty();
         assert interval >= 0;
 
@@ -104,7 +104,7 @@ public class ComputeUtils {
                         currPart,
                         ignite.compute(clusterGrp).affinityCallAsync(
                             cacheNames, currPart,
-                            new DeployableCallable<>(deployingContext, part, fun)
+                            new DeployableCallable<>(deployingCtx, part, fun)
                         )
                     );
                 }
@@ -257,7 +257,7 @@ public class ComputeUtils {
     /**
      * Remove learning environment from local cache by Dataset ID.
      *
-     * @param ignite Ingnite instance.
+     * @param ignite Ignite instance.
      * @param datasetId Dataset ID.
      */
     public static void removeLearningEnv(Ignite ignite, UUID datasetId) {
@@ -273,7 +273,7 @@ public class ComputeUtils {
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
      * @param isKeepBinary Support of binary objects.
-     * @param deployingContext Deploy context.
+     * @param deployingCtx Deploy context.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -289,7 +289,7 @@ public class ComputeUtils {
         int retries,
         int interval,
         boolean isKeepBinary,
-        DeployingContext deployingContext) {
+        DeployingContext deployingCtx) {
 
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
@@ -331,7 +331,7 @@ public class ComputeUtils {
             datasetCache.put(part, ctx);
 
             return part;
-        }, retries, interval, deployingContext);
+        }, retries, interval, deployingCtx);
     }
 
     /**
@@ -417,13 +417,13 @@ public class ComputeUtils {
 
         /**
          * Creates an instance of DeployableCallable.
-         * @param deployingContext Deploy context.
+         * @param deployingCtx Deploy context.
          * @param part Partition.
          * @param fun Callable function.
          */
-        public DeployableCallable(DeployingContext deployingContext, int part, IgniteFunction<Integer, C> fun) {
+        public DeployableCallable(DeployingContext deployingCtx, int part, IgniteFunction<Integer, C> fun) {
             this.fun = fun;
-            this.deployingContext = deployingContext;
+            this.deployingContext = deployingCtx;
             this.part = part;
         }
 

@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,16 +39,8 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-
-        Ignition.setClientMode(true);
-
-        try {
-            startGrid("client1");
-            startGrid("client2");
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        startClientGrid("client1");
+        startClientGrid("client2");
     }
 
     /**

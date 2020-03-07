@@ -45,15 +45,15 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
 /**
- * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
+ * To choose the best hyper-parameters the cross-validation with {@link ParamGrid} will be used in this example.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
  * After that it defines how to split the data to train and test sets and configures preprocessors that extract features
  * from an upstream data and perform other desired changes over the extracted data.</p>
  * <p>
- * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on the
- * processed data using decision tree classification and the obtained hyperparams.</p>
+ * Then, it tunes hyper-parameters with K-fold Cross-Validation on the split training set and trains the model based on the
+ * processed data using decision tree classification and the obtained hyper-parameters.</p>
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  * <p>
@@ -73,6 +73,9 @@ public class Step_13_RandomSearch {
      * Run example.
      */
     public static void main(String[] args) {
+        System.out.println();
+        System.out.println(">>> Tutorial step 13 (Random Search) example started.");
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
                 IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
@@ -144,7 +147,7 @@ public class Step_13_RandomSearch {
                     .withAmountOfFolds(3)
                     .withParamGrid(paramGrid);
 
-                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParamterers();
+                CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
                 System.out.println("Train with maxDeep: " + crossValidationRes.getBest("maxDeep")
                     + " and minImpurityDecrease: " + crossValidationRes.getBest("minImpurityDecrease"));
@@ -182,7 +185,7 @@ public class Step_13_RandomSearch {
                 System.out.println("\n>>> Accuracy " + accuracy);
                 System.out.println("\n>>> Test Error " + (1 - accuracy));
 
-                System.out.println(">>> Tutorial step 8 (cross-validation with param grid) example started.");
+                System.out.println(">>> Tutorial step 13 (Random Search) example completed.");
             }
             catch (FileNotFoundException e) {
                 e.printStackTrace();

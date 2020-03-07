@@ -51,7 +51,7 @@ public abstract class EncoderPreprocessor<K, V> implements Preprocessor<K, V> {
      * @param basePreprocessor Base preprocessor.
      * @param handledIndices Handled indices.
      */
-    public EncoderPreprocessor(Map<String, Integer>[] encodingValues,
+    protected EncoderPreprocessor(Map<String, Integer>[] encodingValues,
         Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         this.handledIndices = handledIndices;
         this.encodingValues = encodingValues;
@@ -63,7 +63,7 @@ public abstract class EncoderPreprocessor<K, V> implements Preprocessor<K, V> {
      *
      * @param basePreprocessor Base preprocessor.
      */
-    public EncoderPreprocessor(Map<String, Integer> labelFrequencies,
+    protected EncoderPreprocessor(Map<String, Integer> labelFrequencies,
         Preprocessor<K, V> basePreprocessor) {
         this.labelFrequencies = labelFrequencies;
         this.basePreprocessor = basePreprocessor;

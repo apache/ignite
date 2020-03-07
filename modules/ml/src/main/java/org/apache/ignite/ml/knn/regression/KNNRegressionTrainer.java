@@ -23,7 +23,7 @@ import org.apache.ignite.ml.knn.KNNTrainer;
 import org.apache.ignite.ml.knn.utils.indices.SpatialIndex;
 
 /**
- * KNN regression model trader that trains model on top of distribtued spatial indices. Be aware that this model is
+ * KNN regression model trader that trains model on top of distributed spatial indices. Be aware that this model is
  * linked with cluster environment it's been built on and can't be saved or used in other places. Under the hood it
  * keeps {@link Dataset} that consists of a set of resources allocated across the cluster.
  */

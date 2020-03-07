@@ -337,13 +337,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
      */
     @Test
     public void testDeployService2() throws Exception {
-        helper.clientMode(false);
-
         startGrid(0);
 
-        helper.clientMode(true);
-
-        startGrid(1);
+        startClientGrid(1);
 
         grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
     }
@@ -355,15 +351,11 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     public void testDeployService3() throws Exception {
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                helper.clientModeThreadLocal(true);
-
-                startGrid(0);
+                startClientGrid(0);
 
                 return null;
             }
         }, "start-node");
-
-        helper.clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -435,9 +427,10 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
             else
                 userAttrs = null;
 
-            helper.clientMode(i > 5);
-
-            startGrid(i);
+            if (i > 5)
+                startClientGrid(i);
+            else
+                startGrid(i);
         }
 
         waitForTopology(10);
@@ -513,10 +506,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         startGrid(0);
 
         sesTimeout = 2000;
-        helper.clientMode(true);
         testSockNio = true;
 
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         client.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
@@ -536,9 +528,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         startGrids(SRVS);
 
-        helper.clientMode(true);
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -562,9 +552,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
 
         startGrids(SRVS);
 
-        helper.clientMode(true);
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         reconnectClientNodes(Collections.singletonList(ignite(SRVS)), new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1037,13 +1025,9 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
         for (int i = 0; i < 3; i++) {
             info("Iteration: " + i);
 
-            helper.clientMode(false);
-
             startGridsMultiThreaded(4, i == 0);
 
-            helper.clientMode(true);
-
-            startGridsMultiThreaded(4, 3);
+            startClientGridsMultiThreaded(4, 3);
 
             waitForTopology(7);
 

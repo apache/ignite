@@ -64,16 +64,16 @@ public class DistributionMixtureTest {
     /** */
     private static class Constant implements Distribution {
         /** Value. */
-        private final double value;
+        private final double val;
 
         /** */
         public Constant(double value) {
-            this.value = value;
+            this.val = value;
         }
 
         /** {@inheritDoc} */
         @Override public double prob(Vector x) {
-            return value;
+            return val;
         }
 
         /** {@inheritDoc} */

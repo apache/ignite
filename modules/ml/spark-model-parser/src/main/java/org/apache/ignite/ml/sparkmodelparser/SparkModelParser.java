@@ -478,6 +478,7 @@ public class SparkModelParser {
                 for (int i = 0; i < rows; i++) {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
+
                     final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
                     NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
 

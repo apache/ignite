@@ -33,9 +33,7 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
 
         startGridsMultiThreaded(3);
 
-        client = true;
-
-        startGrid(3);
+        startClientGrid(3);
     }
 
     /**

@@ -108,8 +108,6 @@ namespace Apache.Ignite.AspNet.Tests
 
             public bool IsKeepBinary { get; private set; }
             
-            public bool IsReadRepair { get; private set; }
-
             public bool IsAllowAtomicOpsInTx { get; private set; }
 
             public ICache<int, int> WithSkipStore()
@@ -128,11 +126,6 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICache<int, int> WithAllowAtomicOpsInTx()
-            {
-                throw new NotImplementedException();
-            }
-
-            public ICache<int, int> WithReadRepair()
             {
                 throw new NotImplementedException();
             }
@@ -529,6 +522,11 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICacheMetrics GetLocalMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void EnableStatistics(bool enabled)
             {
                 throw new NotImplementedException();
             }

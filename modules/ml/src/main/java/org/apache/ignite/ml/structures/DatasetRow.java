@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /** Class to keep one observation in dataset. This is a base class for labeled and unlabeled rows. */
-public class DatasetRow<V extends Vector> implements Serializable, Externalizable {
+public class DatasetRow<V extends Vector> implements Externalizable {
     /** Vector. */
     protected V vector;
 

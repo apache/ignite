@@ -53,7 +53,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.3.0. */
     public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
 
-    /** Version 1.4.0. Added: Affinity Awareness, IEP-23. */
+    /** Version 1.4.0. Added: Partition awareness, IEP-23. */
     public static final ClientListenerProtocolVersion VER_1_4_0 = ClientListenerProtocolVersion.create(1, 4, 0);
 
     /** Version 1.5.0. Added: Transactions support, IEP-34. */
@@ -62,11 +62,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.6.0. Added: Expiration Policy configuration. */
     public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
 
+    /** Version 1.7.0. Added: User attributes support. */
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_6_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_7_0,
         VER_1_6_0,
         VER_1_5_0,
         VER_1_4_0,
@@ -157,6 +161,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         String user = null;
         String pwd = null;
+
+        if (ver.compareTo(VER_1_7_0) >= 0)
+            userAttrs = reader.readMap();
 
         if (ver.compareTo(VER_1_1_0) >= 0) {
             try {

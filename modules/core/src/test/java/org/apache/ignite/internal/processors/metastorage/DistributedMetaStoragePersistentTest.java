@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -484,9 +483,10 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test @SuppressWarnings("ThrowableNotThrown")
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testConflictingData() throws Exception {
-        startGrid(0);
+        IgniteEx igniteEx = startGrid(0);
+
+        igniteEx.cluster().baselineAutoAdjustEnabled(false);
 
         startGrid(1);
 

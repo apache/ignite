@@ -90,7 +90,7 @@ public class IdealAffinityAssignment {
      * @param nodes Nodes.
      * @param assignment Assignment.
      */
-    private static Map<Object, Set<Integer>> calculatePrimaries(
+    public static Map<Object, Set<Integer>> calculatePrimaries(
         @Nullable List<ClusterNode> nodes,
         List<List<ClusterNode>> assignment
     ) {

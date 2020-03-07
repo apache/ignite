@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
@@ -941,7 +941,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         // Interceptor returns incremented new value.
         interceptor.retInterceptor = new PutIncrementInterceptor();
 
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Integer> map = new TreeMap<>();
 
         final String key1;
         String key2;
@@ -1030,7 +1030,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     @SuppressWarnings("unchecked")
     private void testBatchRemove(Operation op) throws Exception {
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Integer> map = new TreeMap<>();
 
         final String key1;
         String key2;

@@ -27,9 +27,9 @@ public class UnsupportedSparkModelException extends IgniteException {
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param modelName Model name that caused this exception.
+     * @param mdlName Model name that caused this exception.
      */
-    public UnsupportedSparkModelException(String modelName) {
-        super("This Spark ML model is not supported yet: " + modelName);
+    public UnsupportedSparkModelException(String mdlName) {
+        super("This Spark ML model is not supported yet: " + mdlName);
     }
 }

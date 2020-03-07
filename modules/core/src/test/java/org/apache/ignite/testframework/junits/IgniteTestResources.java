@@ -32,6 +32,7 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.resources.MetricManagerResource;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
@@ -75,6 +76,9 @@ public class IgniteTestResources {
     private IgniteConfiguration cfg;
 
     /** */
+    private GridTestKernalContext ctx;
+
+    /** */
     private GridResourceProcessor rsrcProc;
 
     /**
@@ -95,7 +99,9 @@ public class IgniteTestResources {
 
         this.jmx = prepareMBeanServer();
 
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+        this.ctx = new GridTestKernalContext(log);
+
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -105,7 +111,8 @@ public class IgniteTestResources {
         this.cfg = cfg;
         this.log = rootLog.getLogger(getClass());
         this.jmx = prepareMBeanServer();
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log, this.cfg));
+        this.ctx = new GridTestKernalContext(log, this.cfg);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -116,7 +123,8 @@ public class IgniteTestResources {
 
         this.jmx = jmx;
         this.log = rootLog.getLogger(getClass());
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+        this.ctx = new GridTestKernalContext(log);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -127,7 +135,8 @@ public class IgniteTestResources {
 
         this.log = log.getLogger(getClass());
         this.jmx = prepareMBeanServer();
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+        this.ctx = new GridTestKernalContext(log);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -185,6 +194,7 @@ public class IgniteTestResources {
         rsrcProc.injectBasicResource(target, LoggerResource.class, getLogger().getLogger(target.getClass()));
         rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
             new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home, cfg));
+        rsrcProc.injectBasicResource(target, MetricManagerResource.class, ctx.metric());
     }
 
     /**

@@ -52,9 +52,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     private static final int SRVS = 4;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean clientDiscovery;
 
     /** {@inheritDoc} */
@@ -80,8 +77,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         if (!clientDiscovery)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -137,8 +132,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void manyClientsSequentially() throws Exception {
-        client = true;
-
         List<Ignite> clients = new ArrayList<>();
 
         final int CLIENTS = 50;
@@ -148,7 +141,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         for (int i = 0; i < CLIENTS; i++) {
-            Ignite ignite = startGrid(idx++);
+            Ignite ignite = startClientGrid(idx++);
 
             log.info("Started node: " + ignite.name());
 
@@ -228,8 +221,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void manyClientsPutGet() throws Throwable {
-        client = true;
-
         final AtomicInteger idx = new AtomicInteger(SRVS);
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -250,7 +241,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                         Thread.currentThread().setName("client-thread-node-" + nodeIdx);
 
-                        try (Ignite ignite = startGrid(nodeIdx)) {
+                        try (Ignite ignite = startClientGrid(nodeIdx)) {
                             log.info("Started node: " + ignite.name());
 
                             assertTrue(ignite.configuration().isClientMode());

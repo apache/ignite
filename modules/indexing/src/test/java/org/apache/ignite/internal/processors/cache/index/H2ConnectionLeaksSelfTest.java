@@ -64,9 +64,6 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        if (getTestIgniteInstanceIndex(igniteInstanceName) != 0)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -211,7 +208,8 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
      * @throws Exception On error.
      */
     private void startGridAndPopulateCache(int nodes) throws Exception {
-        startGrids(NODE_CNT);
+        startGrid(0);
+        startClientGridsMultiThreaded(1, NODE_CNT - 1);
 
         IgniteCache<Long, String> cache = grid(0).cache(CACHE_NAME);
 

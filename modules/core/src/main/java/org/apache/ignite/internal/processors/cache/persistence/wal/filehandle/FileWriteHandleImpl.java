@@ -489,7 +489,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                     int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                    if (rollOver && written < (maxWalSegmentSize - switchSegmentRecSize)) {
+                    if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
                         segmentRecord.size(switchSegmentRecSize);
 
                         WALPointer segRecPtr = addRecord(segmentRecord);

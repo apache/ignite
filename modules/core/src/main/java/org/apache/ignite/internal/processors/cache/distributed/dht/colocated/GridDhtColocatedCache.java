@@ -331,6 +331,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (keyCheck)
             validateCacheKeys(keys);
 
+        warnIfUnordered(keys, BulkOperation.GET);
+
         GridNearTxLocal tx = checkCurrentTx();
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();

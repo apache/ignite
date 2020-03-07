@@ -120,7 +120,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
-    /** Default lock timeout. */
+    /** 
+      * Default lock timeout.
+      * @deprecated Default lock timeout configuration property has no effect.
+      */
+    @Deprecated
     public static final long DFLT_LOCK_TIMEOUT = 0;
 
     /** Default cache size to use with eviction policy. */
@@ -258,6 +262,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean eagerTtl = DFLT_EAGER_TTL;
 
     /** Default lock timeout. */
+    @Deprecated
     private long dfltLockTimeout = DFLT_LOCK_TIMEOUT;
 
     /** Near cache configuration. */
@@ -1103,7 +1108,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * which is {@code 0} and means that lock acquisition will never timeout.
      *
      * @return Default lock timeout.
+     * @deprecated Default lock timeout configuration property has no effect.
      */
+    @Deprecated
     public long getDefaultLockTimeout() {
         return dfltLockTimeout;
     }
@@ -1113,7 +1120,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param dfltLockTimeout Default lock timeout.
      * @return {@code this} for chaining.
+     * @deprecated Default lock timeout configuration property has no effect.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setDefaultLockTimeout(long dfltLockTimeout) {
         this.dfltLockTimeout = dfltLockTimeout;
 

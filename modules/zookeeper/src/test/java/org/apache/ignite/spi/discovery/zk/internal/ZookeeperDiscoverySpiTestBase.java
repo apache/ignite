@@ -318,8 +318,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
         }
-
-        helper.clientModeThreadLocalReset();
     }
 
     /**
@@ -422,13 +420,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(zkSpi);
 
         cfg.setCacheConfiguration(getCacheConfiguration());
-
-        Boolean clientMode = helper.clientModeThreadLocal();
-
-        if (clientMode != null)
-            cfg.setClientMode(clientMode);
-        else
-            cfg.setClientMode(helper.clientMode());
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);

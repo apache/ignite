@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -53,6 +54,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter.GlobalRemoveAllJob;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -281,6 +284,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private final boolean disableTriggeringCacheInterceptorOnConflict =
         Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
+
+    /** Last remove all job future. */
+    private AtomicReference<IgniteInternalFuture<Boolean>> lastRmvAllJobFut = new AtomicReference<>();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -625,13 +631,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
 
-        if (grp.supportsTombstone() && cache.configuration().getAtomicityMode() == TRANSACTIONAL
-                && !store().configured())
-            deferredDel = false;
-        else {
-            deferredDel = (cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
-                (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC));
-        }
+        deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
     /**
@@ -2342,6 +2343,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
         return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
             contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
+    }
+
+    /**
+     * Returns future that assigned to last performing {@link GlobalRemoveAllJob}.
+     */
+    public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
+        return lastRmvAllJobFut;
     }
 
     /** {@inheritDoc} */

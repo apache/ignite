@@ -236,7 +236,7 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
     }
 
     /**
-     * Class for label summurizing in histograms.
+     * Class for label summarizing in histograms.
      */
     private static class SumOfLabelsHistogram extends BootstrappedVectorsHistogram {
         /** Serial version uid. */

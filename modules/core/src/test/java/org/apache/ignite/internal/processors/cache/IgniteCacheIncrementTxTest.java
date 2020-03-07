@@ -55,9 +55,6 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        if (getTestIgniteInstanceName(SRVS).equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -67,7 +64,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        startGrid(SRVS);
+        startClientGrid(SRVS);
     }
 
     /**

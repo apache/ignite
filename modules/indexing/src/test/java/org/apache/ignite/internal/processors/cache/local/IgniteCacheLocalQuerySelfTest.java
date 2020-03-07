@@ -102,9 +102,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     /** {@inheritDoc} */
     @Test
     @Override public void testLocalSqlQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 10; i++)
@@ -124,17 +122,12 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
                 assertEquals(5, res.size());
             }
         }
-        finally {
-            stopGrid("client");
-        }
     }
 
     /** {@inheritDoc} */
     @Test
     @Override public void testLocalSqlFieldsQueryFromClient() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
 
             Person p = new Person("Jon", 1500);
@@ -154,9 +147,6 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
                 assertEquals(1, res.size());
             }
-        }
-        finally {
-            stopGrid("client");
         }
     }
 }

@@ -225,6 +225,8 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             doPark(throttleParkTimeNs);
         }
 
+        pageMemory.metrics().addThrottlingTime(U.nanosToMillis(System.nanoTime() - curNanoTime));
+
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
     }
 

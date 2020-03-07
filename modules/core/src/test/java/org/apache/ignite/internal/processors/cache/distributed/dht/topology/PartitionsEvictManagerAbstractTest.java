@@ -17,22 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import javax.annotation.Nullable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -45,7 +49,8 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setActiveOnStart(false);
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         cfg.setFailureHandler(new AbstractFailureHandler() {
             /** {@inheritDoc} */
@@ -62,16 +67,12 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /**
@@ -91,43 +92,40 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
     protected void awaitEvictionQueueForFilling(IgniteEx node, int ms) throws IgniteInterruptedCheckedException {
         PartitionsEvictManager.BucketQueue evictionQueue = node.context().cache().context().evict().evictionQueue;
 
-        assertTrue(GridTestUtils.waitForCondition(() -> {
-            for (Queue queue : evictionQueue.buckets)
-                return ((InstrumentedEvictionQueue) queue).itemOffered;
-
-            return false;
-        }, ms));
+        assertTrue(GridTestUtils.waitForCondition(() -> !evictionQueue.isEmpty(), ms));
     }
 
     /**
      * @param node Node.
-     * @param interceptor Interceptor that will be invoked after task from eviction has polled.
+     * @param latch Latch.
+     * @param completeWithError Inner future throws exception.
      */
-    protected void instrumentEvictionQueue(
-        IgniteEx node,
-        IgniteClosure<PartitionsEvictManager.AbstractEvictionTask,
-            PartitionsEvictManager.AbstractEvictionTask> interceptor
-    ) {
+    protected void subscribeEvictionQueueAtLatch(IgniteEx node, CountDownLatch latch, boolean completeWithError) {
         PartitionsEvictManager.BucketQueue evictionQueue = node.context().cache().context().evict().evictionQueue;
         Queue[] buckets = evictionQueue.buckets;
 
         for (int i = 0; i < buckets.length; i++)
-            buckets[i] = new InstrumentedEvictionQueue(interceptor);
+            buckets[i] = new WaitingQueue(latch, completeWithError);
     }
 
     /**
      *
      */
     protected T2<IgniteEx, CountDownLatch> makeNodeWithEvictLatch() throws Exception {
+        return makeNodeWithEvictLatch(false);
+    }
+
+    /**
+     *
+     */
+    protected T2<IgniteEx, CountDownLatch> makeNodeWithEvictLatch(boolean completeWithError) throws Exception {
         IgniteEx node1 = startGrid(0);
+
+        node1.cluster().baselineAutoAdjustEnabled(false);
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        instrumentEvictionQueue(node1, task -> {
-            U.awaitQuiet(latch);
-
-            return task;
-        });
+        subscribeEvictionQueueAtLatch(node1, latch, completeWithError);
 
         node1.cluster().active(true);
 
@@ -139,7 +137,11 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
      * @param r R.
      */
     protected void doActionDuringEviction(T2<IgniteEx, CountDownLatch> nodeAndEvictLatch, Runnable r) throws Exception {
-        startGrid(1);
+        IgniteEx node2 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        nodeAndEvictLatch.get1().cluster().setBaselineTopology(node2.cluster().topologyVersion());
 
         awaitEvictionQueueForFilling(nodeAndEvictLatch.get1(), 100_000);
 
@@ -151,38 +153,55 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * Queue that executes an interceptor during eviction task poll.
+     * Queue witch waits on the poll or breaks a PartitionEvictionTask.
      */
-    private static class InstrumentedEvictionQueue extends LinkedBlockingQueue {
-        /** Interceptor. */
-        private final IgniteClosure<PartitionsEvictManager.AbstractEvictionTask,
-            PartitionsEvictManager.AbstractEvictionTask> interceptor;
+    private class WaitingQueue extends LinkedBlockingQueue {
+        /** Latch. */
+        private final CountDownLatch latch;
 
-        /** Empty indicator. */
-        private volatile boolean itemOffered;
+        /** Complete with error. */
+        private final boolean completeWithError;
 
         /**
-         * @param interceptor Interceptor.
+         * @param latch Latch.
+         * @param completeWithError flag.
          */
-        private InstrumentedEvictionQueue(IgniteClosure<PartitionsEvictManager.AbstractEvictionTask,
-            PartitionsEvictManager.AbstractEvictionTask> interceptor
-        ) {
-            this.interceptor = interceptor;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean offer(@NotNull Object o) {
-            itemOffered = true;
-
-            return super.offer(o);
+        public WaitingQueue(CountDownLatch latch, boolean completeWithError) {
+            this.latch = latch;
+            this.completeWithError = completeWithError;
         }
 
         /** {@inheritDoc} */
         @Override public Object poll() {
+            U.awaitQuiet(latch);
+
             Object obj = super.poll();
 
-            if (obj instanceof PartitionsEvictManager.AbstractEvictionTask)
-                return interceptor.apply((PartitionsEvictManager.AbstractEvictionTask) obj);
+            // This code uses for failure handler testing into PartitionEvictionTask.
+            if(obj != null && completeWithError) {
+                try {
+                    Field field = U.findField(PartitionsEvictManager.PartitionEvictionTask.class, "finishFut");
+
+                    field.setAccessible(true);
+
+                    Field modifiersField = Field.class.getDeclaredField("modifiers");
+                    modifiersField.setAccessible(true);
+                    modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+                    field.set(obj, new GridFutureAdapter<Object>() {
+                        @Override
+                        protected boolean onDone(@Nullable Object res, @Nullable Throwable err, boolean cancel) {
+                            if (err == null)
+                                throw new RuntimeException("TEST");
+
+                            return super.onDone(res, err, cancel);
+                        }
+                    });
+                }
+                catch (Exception e) {
+                    fail();
+                }
+            }
 
             return obj;
         }

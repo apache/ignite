@@ -411,7 +411,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Adds cache configuration template. Name should contain *.
-        /// Template settins are applied to a cache created with <see cref="CreateCache{K,V}(string)"/> if specified
+        /// Template settings are applied to a cache created with <see cref="CreateCache{K,V}(string)"/> if specified
         /// name matches the template name.
         /// </summary>
         /// <param name="configuration">Configuration.</param>

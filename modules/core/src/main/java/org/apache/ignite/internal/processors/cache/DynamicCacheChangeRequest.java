@@ -101,6 +101,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Encryption key. */
     @Nullable private byte[] encKey;
 
+    /** Master key digest. */
+    @Nullable private byte[] masterKeyDigest;
+
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
@@ -465,6 +468,16 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     @Nullable public byte[] encryptionKey() {
         return encKey;
+    }
+
+    /** @param masterKeyDigest Master key digest. */
+    public void masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest;
+    }
+
+    /** @return Master key digest that encrypted the group encryption key. */
+    @Nullable public byte[] masterKeyDigest() {
+        return masterKeyDigest;
     }
 
     /**

@@ -47,7 +47,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -117,17 +116,6 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
     /** Random for generator. */
     private Random rnd = new Random();
-
-    /**
-     * Makes configuration for client node.
-     */
-    private IgniteConfiguration clientConfiguration() throws Exception {
-        IgniteConfiguration clCfg = getConfiguration(CLIENT_NODE_NAME);
-
-        clCfg.setClientMode(true);
-
-        return optimize(clCfg);
-    }
 
     /**
      * Fills tables with data.
@@ -266,7 +254,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
         startGrid(SRV1_NAME, getConfiguration(SRV1_NAME), null);
         startGrid(SRV2_NAME, getConfiguration(SRV2_NAME), null);
 
-        client = (IgniteEx)startGrid(CLIENT_NODE_NAME, clientConfiguration(), null);
+        client = startClientGrid(CLIENT_NODE_NAME);
 
         boolean locExp = explain;
         explain = false;

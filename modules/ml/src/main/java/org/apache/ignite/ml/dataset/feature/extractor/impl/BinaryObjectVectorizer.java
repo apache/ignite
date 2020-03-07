@@ -43,7 +43,7 @@ public final class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoord
     public static final String DEFAULT_VALUE = "DEFAULT";
 
     /** Mapping for feature with non-number values. */
-    private HashMap<String, HashMap<Object, Double>> featureValueMappings = new HashMap<>();
+    private HashMap<String, HashMap<Object, Double>> featureValMappings = new HashMap<>();
 
     /**
      * Creates an instance of Vectorizer.
@@ -62,13 +62,13 @@ public final class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoord
      * @return this.
      */
     public BinaryObjectVectorizer withFeature(String coord, Mapping valuesMapping) {
-        featureValueMappings.put(coord, valuesMapping.toMap());
+        featureValMappings.put(coord, valuesMapping.toMap());
         return this;
     }
 
     /** {@inheritDoc} */
     @Override protected Double feature(String coord, K key, BinaryObject value) {
-        HashMap<Object, Double> mapping = featureValueMappings.get(coord);
+        HashMap<Object, Double> mapping = featureValMappings.get(coord);
         if (mapping != null)
             return mapping.get(coord);
 

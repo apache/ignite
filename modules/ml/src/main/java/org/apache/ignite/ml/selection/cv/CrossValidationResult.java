@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,7 +27,7 @@ import java.util.Map;
  * Represents the cross validation procedure result,
  * wraps score and values of hyper parameters associated with these values.
  */
-public class CrossValidationResult {
+public class CrossValidationResult implements Serializable {
     /** Best hyper params. */
     private Map<String, Double> bestHyperParams;
 

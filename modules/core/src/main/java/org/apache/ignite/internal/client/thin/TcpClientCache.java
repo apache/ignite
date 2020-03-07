@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
@@ -42,6 +43,8 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 
 import static java.util.AbstractMap.SimpleEntry;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
+import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
@@ -52,6 +55,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** "Transactional" flag mask. */
     private static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
+
+    /** "With expiry policy" flag mask. */
+    private static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
 
     /** Cache id. */
     private final int cacheId;
@@ -72,10 +78,19 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     private final ClientUtils serDes;
 
     /** Indicates if cache works with Ignite Binary format. */
-    private boolean keepBinary = false;
+    private final boolean keepBinary;
+
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPlc;
 
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions) {
+        this(name, ch, marsh, transactions, false, null);
+    }
+
+    /** Constructor. */
+    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
+        boolean keepBinary, ExpiryPolicy expiryPlc) {
         this.name = name;
         this.cacheId = ClientUtils.cacheId(name);
         this.ch = ch;
@@ -83,6 +98,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         this.transactions = transactions;
 
         serDes = new ClientUtils(marsh);
+
+        this.keepBinary = keepBinary;
+        this.expiryPlc = expiryPlc;
     }
 
     /** {@inheritDoc} */
@@ -361,26 +379,13 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <K1, V1> ClientCache<K1, V1> withKeepBinary() {
-        TcpClientCache<K1, V1> binCache;
+        return keepBinary ? (ClientCache<K1, V1>)this :
+            new TcpClientCache<>(name, ch, marsh, transactions, true, expiryPlc);
+    }
 
-        if (keepBinary) {
-            try {
-                binCache = (TcpClientCache<K1, V1>)this;
-            }
-            catch (ClassCastException ex) {
-                throw new IllegalStateException(
-                    "Trying to enable binary mode on already binary cache with different key/value type arguments.",
-                    ex
-                );
-            }
-        }
-        else {
-            binCache = new TcpClientCache<>(name, ch, marsh, transactions);
-
-            binCache.keepBinary = true;
-        }
-
-        return binCache;
+    /** {@inheritDoc} */
+    @Override public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc) {
+        return new TcpClientCache<>(name, ch, marsh, transactions, keepBinary, expirePlc);
     }
 
     /** {@inheritDoc} */
@@ -481,7 +486,6 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         ));
     }
 
-
     /**
      * Execute cache operation with a single key.
      */
@@ -515,19 +519,34 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         TcpClientTransaction tx = transactions.tx();
 
-        if (tx != null) {
-            flags |= TRANSACTIONAL_FLAG_MASK;
+        if (expiryPlc != null) {
+            if (payloadCh.clientChannel().serverVersion().compareTo(V1_6_0) < 0) {
+                throw new ClientProtocolError(String.format("Expire policies have not supported by the server " +
+                    "version %s, required version %s", payloadCh.clientChannel().serverVersion(), V1_6_0));
+            }
 
+            flags |= WITH_EXPIRY_POLICY_FLAG_MASK;
+        }
+
+        if (tx != null) {
             if (tx.clientChannel() != payloadCh.clientChannel()) {
                 throw new ClientException("Transaction context has been lost due to connection errors. " +
                     "Cache operations are prohibited until current transaction closed.");
             }
 
-            out.writeByte(flags);
-            out.writeInt(tx.txId());
+            flags |= TRANSACTIONAL_FLAG_MASK;
         }
-        else
-            out.writeByte(flags);
+
+        out.writeByte(flags);
+
+        if ((flags & WITH_EXPIRY_POLICY_FLAG_MASK) != 0) {
+            out.writeLong(convertDuration(expiryPlc.getExpiryForCreation()));
+            out.writeLong(convertDuration(expiryPlc.getExpiryForUpdate()));
+            out.writeLong(convertDuration(expiryPlc.getExpiryForAccess()));
+        }
+
+        if ((flags & TRANSACTIONAL_FLAG_MASK) != 0)
+            out.writeInt(tx.txId());
     }
 
     /** */

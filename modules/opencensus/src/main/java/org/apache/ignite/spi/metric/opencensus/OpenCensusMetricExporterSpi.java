@@ -43,17 +43,17 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.jetbrains.annotations.Nullable;
 
 import static io.opencensus.tags.TagMetadata.TagTtl.UNLIMITED_PROPAGATION;
@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.hist
  *
  * @see MetricRegistry
  * @see GridMetricManager
- * @see ReadOnlyMetricRegistry
+ * @see ReadOnlyMetricManager
  */
 public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** Flag to enable or disable tag with Ignite instance name. */
@@ -291,6 +291,8 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
+        super.onContextInitialized0(spiCtx);
+
         consistenIdValue = TagValue.create(
             ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
     }

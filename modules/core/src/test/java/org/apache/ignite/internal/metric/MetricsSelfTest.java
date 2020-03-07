@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -49,6 +49,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertArrayEquals;
@@ -61,7 +62,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistry("group", null);
+        mreg = new MetricRegistry("group", name -> null, name -> null, null);
     }
 
     /** */
@@ -231,7 +232,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogram() throws Exception {
-        HistogramMetric h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetricImpl h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -271,7 +272,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
         mreg.longMetric("test1", "");
         mreg.longMetric("test2", "");
@@ -292,7 +293,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = new MetricRegistry("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", name -> null, name -> null, null);
 
         AtomicLongMetric cntr = mreg.longMetric("my.name", null);
         AtomicLongMetric cntr2 = mreg.longMetric("my.name.x", null);
@@ -342,7 +343,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testHistogramNames() throws Exception {
-        HistogramMetric h = new HistogramMetric("test", null, new long[]{10, 50, 500});
+        HistogramMetricImpl h = new HistogramMetricImpl("test", null, new long[]{10, 50, 500});
 
         Map<String, T2<long[], String[]>> cache = new HashMap<>();
 
@@ -358,6 +359,13 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
         assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
+    /** */
+    @Test
+    public void testFromFullName() {
+        assertEquals(new T2<>("org.apache", "ignite"), fromFullName("org.apache.ignite"));
+
+        assertEquals(new T2<>("org", "apache"), fromFullName("org.apache"));
+    }
 
     /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {

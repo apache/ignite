@@ -48,8 +48,6 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
 
-        cfg.setClientMode(true);
-
         cfg.setDiscoverySpi(new TcpDiscoverySpi()
             .setForceServerMode(true)
             .setIpFinder(new TcpDiscoveryVmIpFinder(true)));
@@ -84,7 +82,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrids(1);
+        startClientGrid(0);
     }
 
     /** {@inheritDoc} */

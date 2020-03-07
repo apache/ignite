@@ -133,8 +133,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             cfg.setCacheConfiguration(cacheCfg);
         }
-        else
-            cfg.setClientMode(true);
 
         cfg.setIncludeEventTypes(EVTS_ALL);
 
@@ -1051,7 +1049,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         QueryCursor<Cache.Entry<Integer, Integer>> cur = cache.query(qry);
 
         try {
-            try (Ignite ignite = startGrid(NO_CACHE_IGNITE_INSTANCE_NAME)) {
+            try (Ignite ignite = startClientGrid(NO_CACHE_IGNITE_INSTANCE_NAME)) {
                 log.info("Started node without cache: " + ignite);
             }
 

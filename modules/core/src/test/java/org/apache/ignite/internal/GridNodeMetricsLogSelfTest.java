@@ -95,7 +95,9 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         checkNodeMetricsFormat(logOutput);
 
-        checkMemoryMetrics(logOutput);
+        checkOffHeapMetrics(logOutput);
+
+        checkDataRegionsMetrics(logOutput);
     }
 
     /**
@@ -109,12 +111,15 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         // Don't check the format strictly, but check that all expected metrics are present.
         assertTrue(msg, fullLog.contains("Metrics for local node (to disable set 'metricsLogFrequency' to 0)"));
         assertTrue(msg, fullLog.matches("(?s).*Node \\[id=.*, name=.*, uptime=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*H/N/C \\[hosts=.*, nodes=.*, CPUs=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*CPU \\[cur=.*, avg=.*, GC=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*PageMemory \\[pages=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Cluster \\[hosts=.*, CPUs=.*, servers=.*, clients=.*, topVer=.*, minorTopVer=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Network \\[addrs=\\[.*], localHost=.*, discoPort=.*, commPort=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*CPU \\[CPUs=.*, curLoad=.*, avgLoad=.*, GC=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Page memory \\[pages=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).*Off-heap \\[used=.*, free=.*, comm=.*].*"));
-        assertTrue(msg, fullLog.matches("(?s).* region \\[used=.*, free=.*, comm=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Off-heap memory \\[used=.*, free=.*, allocated=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).* region \\[type=internal, persistence=(true|false), lazyAlloc=(true|false).*"));
+        assertTrue(msg, fullLog.matches("(?s).* region \\[type=default, persistence=(true|false), lazyAlloc=(true|false).*"));
+        assertTrue(msg, fullLog.matches("(?s).*... initCfg=.*, maxCfg=.*, usedRam=.*, freeRam=.*, allocRam=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
@@ -127,44 +132,78 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
      *
      * @param logOutput Logging output.
      */
-    protected void checkMemoryMetrics(String logOutput) {
-        boolean summaryFmtMatches = false;
-
+    protected void checkDataRegionsMetrics(String logOutput) {
         Set<String> regions = new HashSet<>();
 
-        Matcher matcher = Pattern.compile("(?m).{2,}( {3}(?<name>.+) region|Off-heap) " +
-                "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, comm=(?<comm>[-.\\d]*).*]")
+        Matcher matcher = Pattern.compile("(?m).{2,} {3}(?<name>.+) region \\[type=(default|internal), " +
+                "persistence=(true|false), lazyAlloc=(true|false),\\s*\\.\\.\\.\\s*" +
+                "initCfg=(?<init>[-\\d]+)MB, maxCfg=(?<max>[-\\d]+)MB, usedRam=(?<used>[-\\d]+).*MB, " +
+                "freeRam=(?<free>[-.\\d]+)%, allocRam=(?<alloc>[-\\d]+)MB(, allocTotal=(?<total>[-\\d]+)MB)?]")
             .matcher(logOutput);
 
         while (matcher.find()) {
             String subj = logOutput.substring(matcher.start(), matcher.end());
 
-            assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
-            assertFalse("\"free\" cannot be empty: " + subj, F.isEmpty(matcher.group("free")));
-            assertFalse("\"comm\" cannot be empty: " + subj, F.isEmpty(matcher.group("comm")));
-
+            int init = Integer.parseInt(matcher.group("init"));
+            int max = Integer.parseInt(matcher.group("max"));
             int used = Integer.parseInt(matcher.group("used"));
-            int comm = Integer.parseInt(matcher.group("comm"));
             double free = Double.parseDouble(matcher.group("free"));
+            int alloc = Integer.parseInt(matcher.group("alloc"));
 
+            assertTrue(init + " should be non negative: " + subj, init >= 0);
+            assertTrue(max + " is less then " + init + ": " + subj, max >= init);
             assertTrue(used + " should be non negative: " + subj, used >= 0);
-            assertTrue(comm + " is less then " + used + ": " + subj, comm >= used);
+            assertTrue(alloc + " is less then " + used + ": " + subj, alloc >= used);
             assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
 
-            String regName = matcher.group("name");
+            if (persistenceEnabled()) {
+                int total = Integer.parseInt(matcher.group("total"));
 
-            if (F.isEmpty(regName))
-                summaryFmtMatches = true;
-            else
-                regions.add(regName.trim());
+                assertTrue(total + " is less then " + used + ": " + subj, total >= used);
+            } else
+                assertTrue(F.isEmpty(matcher.group("total")));
+
+            regions.add(matcher.group("name").trim());
         }
-
-        assertTrue("Off-heap metrics have unexpected format.", summaryFmtMatches);
 
         Set<String> expRegions = grid(0).context().cache().context().database().dataRegions().stream()
             .map(v -> v.config().getName().trim())
             .collect(Collectors.toSet());
 
-        assertEquals("Off-heap per-region metrics have unexpected format.", expRegions, regions);
+        assertFalse("No data regions in the log.", regions.isEmpty());
+
+        assertEquals("Unexpected names of data regions.", expRegions, regions);
+    }
+
+    /**
+     * Check memory metrics values.
+     *
+     * @param logOutput Logging output.
+     */
+    protected void checkOffHeapMetrics(String logOutput) {
+        Matcher matcher = Pattern.compile("Off-heap memory " +
+                "\\[used=(?<used>[-.\\d]*).*, free=(?<free>[-.\\d]*).*, allocated=(?<comm>[-.\\d]*).*]")
+            .matcher(logOutput);
+
+        assertTrue("Off-heap metrics not found in the log.", matcher.find());
+
+        String subj = logOutput.substring(matcher.start(), matcher.end());
+
+        assertFalse("\"used\" cannot be empty: " + subj, F.isEmpty(matcher.group("used")));
+        assertFalse("\"free\" cannot be empty: " + subj, F.isEmpty(matcher.group("free")));
+        assertFalse("\"comm\" cannot be empty: " + subj, F.isEmpty(matcher.group("comm")));
+
+        int used = Integer.parseInt(matcher.group("used"));
+        int comm = Integer.parseInt(matcher.group("comm"));
+        double free = Double.parseDouble(matcher.group("free"));
+
+        assertTrue(used + " should be non negative: " + subj, used >= 0);
+        assertTrue(comm + " is less then " + used + ": " + subj, comm >= used);
+        assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
+    }
+
+    /** */
+    protected boolean persistenceEnabled() {
+        return false;
     }
 }

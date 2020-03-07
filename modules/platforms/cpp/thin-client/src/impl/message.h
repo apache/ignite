@@ -30,7 +30,7 @@
 
 #include "impl/protocol_version.h"
 #include "impl/affinity/affinity_topology_version.h"
-#include "impl/affinity/affinity_awareness_group.h"
+#include "impl/affinity/partition_awareness_group.h"
 
 namespace ignite
 {
@@ -773,9 +773,9 @@ namespace ignite
                 /**
                  * Constructor.
                  *
-                 * @param groups Affinity Awareness Groups.
+                 * @param groups Partition awareness Groups.
                  */
-                CachePartitionsResponse(std::vector<AffinityAwarenessGroup>& groups);
+                CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups);
 
                 /**
                  * Destructor.
@@ -800,11 +800,11 @@ namespace ignite
                 }
 
                 /**
-                 * Get affinity awareness groups.
+                 * Get partition awareness groups.
                  *
-                 * @return Affinity awareness groups.
+                 * @return Partition awareness groups.
                  */
-                const std::vector<AffinityAwarenessGroup>& GetGroups() const
+                const std::vector<PartitionAwarenessGroup>& GetGroups() const
                 {
                     return groups;
                 }
@@ -813,8 +813,8 @@ namespace ignite
                 /** Affinity topology version. */
                 AffinityTopologyVersion topologyVersion;
 
-                /** Affinity awareness groups. */
-                std::vector<AffinityAwarenessGroup>& groups;
+                /** Partition awareness groups. */
+                std::vector<PartitionAwarenessGroup>& groups;
             };
 
             /**

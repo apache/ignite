@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.cache.RemoveAllDeadlockTest;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,8 +49,8 @@ public class IgniteReproducingSuite {
             suite.add(IgniteReproducingSuite.TestStub.class);
 
             //uncomment to add some test
-            //for (int i = 0; i < 100; i++)
-            //    suite.add(IgniteCheckpointDirtyPagesForLowLoadTest.class);
+            for (int i = 0; i < 50; i++)
+                suite.add(RemoveAllDeadlockTest.class);
 
             return suite;
         }

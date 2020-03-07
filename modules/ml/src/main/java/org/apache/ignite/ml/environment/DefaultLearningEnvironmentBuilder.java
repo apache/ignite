@@ -150,7 +150,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
         private final Random randomNumGen;
 
         /** Deploy context. */
-        private final DeployingContext deployingContext = DeployingContext.unitialized();
+        private final DeployingContext deployingCtx = DeployingContext.unitialized();
 
         /**
          * Creates an instance of LearningEnvironmentImpl.
@@ -206,7 +206,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
 
         /** {@inheritDoc} */
         @Override public DeployingContext deployingContext() {
-            return deployingContext;
+            return deployingCtx;
         }
     }
 }

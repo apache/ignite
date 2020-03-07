@@ -26,7 +26,7 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
  * @param <T> Type of function values.
  */
 public class StepFunction<T extends ImpurityMeasure<T>> {
-    /** Argument of every steps start. Should be ascendingly sorted all the time. */
+    /** Argument of every steps start. Should be ascending sorted all the time. */
     private final double[] x;
 
     /** Value of every step. */

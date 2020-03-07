@@ -141,7 +141,7 @@ public class DmsDataWriterWorkerTest {
         assertEquals(6, metastorage.cache.size());
 
         DistributedMetaStorageVersion ver = (DistributedMetaStorageVersion)metastorage.read(versionKey());
-        assertEquals(3, ver.id);
+        assertEquals(3, ver.id());
 
         assertEquals("val3", metastorage.read(localKey("key1")));
         assertEquals("val2", metastorage.read(localKey("key2")));
@@ -335,9 +335,9 @@ public class DmsDataWriterWorkerTest {
 
     /** */
     private DistributedMetaStorageKeyValuePair toKeyValuePair(DistributedMetaStorageHistoryItem histItem) {
-        assertEquals(1, histItem.keys.length);
+        assertEquals(1, histItem.keys().length);
 
-        return new DistributedMetaStorageKeyValuePair(histItem.keys[0], histItem.valBytesArray[0]);
+        return new DistributedMetaStorageKeyValuePair(histItem.keys()[0], histItem.valuesBytesArray()[0]);
     }
 
     /** */

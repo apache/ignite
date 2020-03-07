@@ -87,7 +87,9 @@ namespace Apache.Ignite.Core.Impl.Services
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets or sets the platform of this service.
+        /// </summary>
         public Platform Platform { get; private set; }
 
         /** <inheritdoc /> */
