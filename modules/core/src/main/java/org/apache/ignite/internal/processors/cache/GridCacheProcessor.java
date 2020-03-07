@@ -1990,7 +1990,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    private void stopCacheSafely(GridCacheContext<?, ?> cctx) {
+    public void stopCacheSafely(GridCacheContext<?, ?> cctx) {
         stopCacheSafely(cctx, true);
     }
 

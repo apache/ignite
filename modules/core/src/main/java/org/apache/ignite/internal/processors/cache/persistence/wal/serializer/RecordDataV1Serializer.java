@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRestoreRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
@@ -538,6 +539,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
 
                 return rec.dataSize();
+
+            case SNAPSHOT_RESTORE_RECORD:
+                return ((SnapshotRestoreRecord)record).dataSize();
+
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -1182,6 +1187,17 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case SNAPSHOT_RESTORE_RECORD:
+                int snpNameLen = in.readInt();
+
+                byte[] snpNameBytes = new byte[snpNameLen];
+
+                in.readFully(snpNameBytes);
+
+                res = new SnapshotRestoreRecord(new String(snpNameBytes));
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1764,6 +1780,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     buf.putInt(entry.getValue().length);
                     buf.put(entry.getValue());
                 }
+
+                break;
+
+            case SNAPSHOT_RESTORE_RECORD:
+                SnapshotRestoreRecord snpRec = (SnapshotRestoreRecord)rec;
+
+                byte[] nameBytes = snpRec.snapshotName().getBytes();
+
+                buf.putInt(nameBytes.length);
+                buf.put(nameBytes);
 
                 break;
 

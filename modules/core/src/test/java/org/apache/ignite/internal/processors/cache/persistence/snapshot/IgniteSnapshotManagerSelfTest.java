@@ -81,8 +81,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -95,8 +95,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -288,7 +288,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+                new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -408,7 +408,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             ig.localNode().id(),
             parts,
             mgr.snapshotExecutorService(),
-            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException("Test. Fail to copy partition: " + pair);
@@ -688,7 +688,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 ig.localNode().id(),
                 parts,
                 mgr.snapshotExecutorService(),
-                new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+                new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                     @Override
                     public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                         try {
@@ -817,7 +817,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 cctx.localNodeId(),
                 parts,
                 mgr.snapshotExecutorService(),
-                mgr.localSnapshotSender(snpName));
+                mgr.localSnapshotSender(snpName, parts.keySet()));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);

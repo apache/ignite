@@ -948,6 +948,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         Arrays.sort(files);
 
+        // todo temporary copied snapshot directories must be filtered out
+
         for (File file : files) {
             if (file.isDirectory()) {
                 if (file.getName().startsWith(CACHE_DIR_PREFIX)) {

@@ -113,6 +113,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRestoreRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -207,6 +208,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SNAPSHOT_RESTORE_RECORD;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
@@ -817,7 +819,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metaStorage = createMetastorage(true);
 
-                applyLogicalUpdates(status, onlyMetastorageGroup(), onlyMetastorageAndEncryptionRecords(), false);
+                applyLogicalUpdates(status,
+                    onlyMetastorageGroup(),
+                    (type, ptr) -> type == METASTORE_DATA_RECORD ||
+                        type == MASTER_KEY_CHANGE_RECORD ||
+                        type == SNAPSHOT_RESTORE_RECORD,
+                    false);
 
                 fillWalDisabledGroups();
 
@@ -2915,6 +2922,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     case MASTER_KEY_CHANGE_RECORD:
                         cctx.kernalContext().encryption().applyKeys((MasterKeyChangeRecord)rec);
+
+                        break;
+
+                    case SNAPSHOT_RESTORE_RECORD:
+                        cctx.kernalContext()
+                            .cache()
+                            .context()
+                            .snapshotMgr()
+                            .snapshotWalRestore((SnapshotRestoreRecord)rec);
 
                         break;
 
@@ -5645,13 +5661,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private IgnitePredicate<Integer> groupsWithEnabledWal() {
         return groupId -> !initiallyGlobalWalDisabledGrps.contains(groupId)
             && !initiallyLocalWalDisabledGrps.contains(groupId);
-    }
-
-    /**
-     * @return WAL records predicate that passes only Metastorage and encryption data records.
-     */
-    private IgniteBiPredicate<WALRecord.RecordType, WALPointer> onlyMetastorageAndEncryptionRecords() {
-        return (type, ptr) -> type == METASTORE_DATA_RECORD || type == MASTER_KEY_CHANGE_RECORD;
     }
 
     /**

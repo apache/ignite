@@ -227,7 +227,10 @@ public abstract class WALRecord {
         BTREE_META_PAGE_INIT_ROOT_V3(59),
 
         /** Master key change record. */
-        MASTER_KEY_CHANGE_RECORD(60, LOGICAL);
+        MASTER_KEY_CHANGE_RECORD(60, LOGICAL),
+
+        /** Master key change record. */
+        SNAPSHOT_RESTORE_RECORD(61, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;
