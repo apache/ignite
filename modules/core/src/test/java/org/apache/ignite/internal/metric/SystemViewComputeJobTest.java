@@ -482,7 +482,8 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
 
             for (CollisionJobContext job : ctx.activeJobs()) {
                 // Cancelling job and then waiting for test checks job in the `CANCELLED` state.
-                job.cancel();
+                if (job.getTaskSession().getTaskName().equalsIgnoreCase("cancel-task"))
+                    job.cancel();
 
                 waitForCancelJobChecks(job);
             }
