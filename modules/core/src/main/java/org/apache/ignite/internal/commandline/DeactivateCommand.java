@@ -37,7 +37,7 @@ public class DeactivateCommand implements Command<Void> {
     /** Cluster name. */
     private String clusterName;
 
-    /** Force cluster deactivation flag. */
+    /** If {@code true}, cluster deactivation will be forced. */
     private boolean forceDeactivation;
 
     /** {@inheritDoc} */

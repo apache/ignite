@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -36,36 +35,27 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
     private boolean forceDeactivation;
 
     /**
-     * @param state New cluster state.
-     * @param forceDeactivation Forced cluster deactivation.
-     * @return Cluster state change request.
-     */
-    public static GridClientClusterStateRequestV2 state(ClusterState state, boolean forceDeactivation) {
-        return new GridClientClusterStateRequestV2(GridClientClusterStateRequest.state(state), forceDeactivation);
-    }
-
-    /** Empty constructor required by {@link Externalizable}. */
-    public GridClientClusterStateRequestV2() {
-        // No op.
-    }
-
-    /**
-     * Copying constructor.
-     *
-     * @param clusterStateReq Original request, of the previous version.
-     * @param forceDeactivation If {@code true}, indicates to skip checking of deactivation safety.
-     */
-    private GridClientClusterStateRequestV2(GridClientClusterStateRequest clusterStateReq, boolean forceDeactivation) {
-        super(clusterStateReq);
-
-        this.forceDeactivation = forceDeactivation;
-    }
-
-    /**
      * @return {@code True} if deactivation must not check safety of this operation. {@code False} otherwise.
+     *
+     * @see ClusterState#INACTIVE
      */
     public boolean forceDeactivation() {
         return forceDeactivation;
+    }
+
+    /**
+     * @param state New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @return Cluster state change request.
+     */
+    public static GridClientClusterStateRequestV2 state(ClusterState state, boolean forceDeactivation) {
+        GridClientClusterStateRequestV2 req = new GridClientClusterStateRequestV2();
+
+        req.state = state;
+
+        req.forceDeactivation = forceDeactivation;
+
+        return req;
     }
 
     /** {@inheritDoc} */

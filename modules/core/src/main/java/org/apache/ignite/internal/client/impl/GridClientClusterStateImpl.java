@@ -72,16 +72,20 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException {
         // Check compatibility of new forced deactivation on all nodes.
-        UUID oldVerNode = checkFeatureSupportedByCluster(client, IgniteFeatures.SAFE_CLUSTER_DEACTIVATION, false, false);
+        UUID oldVerNode = checkFeatureSupportedByCluster(client, IgniteFeatures.SAFE_CLUSTER_DEACTIVATION, false,
+            false);
 
-        if (newState == INACTIVE && oldVerNode != null && !forceDeactivation) {
-            throw new GridClientException("Deactivation stopped. Found node not supporting safe deactivation: "
-                + oldVerNode + ". It causes deactivation safety won't be ensured. You can try with flag 'force'. " +
-                "Deactivation clears in-memory caches (without persistence) including the system caches!");
+        if (oldVerNode == null)
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, forceDeactivation)).get();
+        else {
+            if (newState == INACTIVE && !forceDeactivation) {
+                throw new GridClientException("Deactivation stopped. Found a node not supporting checking of " +
+                    "safety of this operation: " + oldVerNode + ". Deactivation clears in-memory caches (without " +
+                    "persistence) including the system caches. You can try with flag 'force'.");
+            }
+
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, null)).get();
         }
-
-        withReconnectHandling((con, nodeId) ->
-            con.changeState(newState, nodeId, oldVerNode != null ? null : forceDeactivation)).get();
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -36,7 +35,7 @@ public class GridClientClusterStateRequest extends GridClientAbstractMessage {
     private boolean reqCurrentState;
 
     /** New cluster state. */
-    private ClusterState state;
+    protected ClusterState state;
 
     /** */
     public boolean isReqCurrentState() {
@@ -69,21 +68,6 @@ public class GridClientClusterStateRequest extends GridClientAbstractMessage {
         msg.state = state;
 
         return msg;
-    }
-
-    /** Empty constructor required by {@link Externalizable}. */
-    public GridClientClusterStateRequest() {
-        // No op.
-    }
-
-    /**
-     * Copying constructor.
-     *
-     * @param src The request to copy data from.
-     */
-    protected GridClientClusterStateRequest(GridClientClusterStateRequest src) {
-        reqCurrentState = src.reqCurrentState;
-        state = src.state;
     }
 
     /** {@inheritDoc} */

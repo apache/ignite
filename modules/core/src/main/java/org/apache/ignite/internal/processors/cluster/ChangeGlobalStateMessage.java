@@ -71,7 +71,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     @GridToStringExclude
     @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
 
-    /** Force cluster deactivation. */
+    /** If {@code true}, cluster deactivation will be forced. */
     private boolean forceDeactivation;
 
     /**
@@ -79,7 +79,7 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      * @param initiatingNodeId Node initiated state change.
      * @param storedCfgs Configurations read from persistent store.
      * @param state New cluster state.
-     * @param forceDeactivation Forced cluster deactivation even if unsafe.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param baselineTopology Baseline topology.
      * @param forceChangeBaselineTopology Force change baseline topology flag.
      * @param timestamp Timestamp.
@@ -212,6 +212,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
 
     /**
      * @return {@code True} if deactivation must not check safety of this operation. {@code False} otherwise.
+     *
+     * @see ClusterState#INACTIVE
      */
     boolean forceDeactivation() {
         return forceDeactivation;

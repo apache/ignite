@@ -125,7 +125,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     /**
      * @param state New cluster state.
      * @param baselineNodes New baseline nodes.
-     * @param forceDeactivation Forced cluster deactivation.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
      */

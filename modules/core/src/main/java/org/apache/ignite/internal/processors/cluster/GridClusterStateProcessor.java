@@ -119,8 +119,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private static final String METASTORE_CURR_BLT_KEY = "metastoreBltKey";
 
     /** Warning of unsafe cluster deactivation. */
-    public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Cluster has in-memory " +
-        "caches (without persistence). During deactivation, in-memory data will be lost!";
+    public static final String DATA_LOST_ON_DEACTIVATION_WARNING = "Deactivation stopped. Deactivation clears " +
+        "in-memory caches (without persistence) including the system caches.";
 
     /** */
     private boolean inMemoryMode;
@@ -981,7 +981,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /**
      * @param state New activate state.
-     * @param forceDeactivation Forced cluster deactivation.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param baselineNodes New BLT nodes.
      * @param forceChangeBaselineTopology Force change BLT.
      * @param isAutoAdjust Auto adjusting flag.
