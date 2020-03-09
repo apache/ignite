@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterState;
  *
  */
 public class GridRestClusterStateRequest extends GridRestRequest {
-    /** Name of the request param 'force'. */
+    /** Flag of forced cluster deactivation. */
     public static final String ARG_FORCE = "force";
 
     /** Request current state. */
@@ -36,7 +36,7 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     private boolean forceDeactivation;
 
     /**
-     * @param forceDeactivation If {@code true}, indicates not to ensure deactivation is safe.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      */
     public void forceDeactivation(boolean forceDeactivation) {
         this.forceDeactivation = forceDeactivation;
@@ -53,8 +53,7 @@ public class GridRestClusterStateRequest extends GridRestRequest {
     }
 
     /**
-     * @return {@code True} if there is no need to ensure the deactivation is safe.
-     *
+     * @return {@code True} if cluster deactivation will be forced. {@code False} otherwise.
      * @see ClusterState#INACTIVE
      */
     public boolean forceDeactivation() {

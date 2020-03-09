@@ -211,11 +211,10 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return {@code True} if deactivation must not check safety of this operation. {@code False} otherwise.
-     *
+     * @return {@code True} if cluster deactivation will be forced. {@code False} otherwise.
      * @see ClusterState#INACTIVE
      */
-    boolean forceDeactivation() {
+    public boolean forceDeactivation() {
         return forceDeactivation;
     }
 

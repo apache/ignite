@@ -1684,8 +1684,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
-     * @return {@code False} if cluster deactivation will erase user's data and objects.
-     * {@code True} otherwise.
+     * @return {@code True} if cluster deactivation won't clear in-memory caches (without persistence) including the
+     * system caches. {@code False} otherwise.
      */
     public boolean isDeactivationSafe() {
         return ctx.cache().cacheDescriptors().values().stream()

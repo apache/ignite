@@ -68,8 +68,7 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     }
 
     /**
-     * @return {@code True} if deactivation must not check safety of this operation. {@code False} otherwise.
-     *
+     * @return {@code True} if cluster deactivation will be forced. {@code False} otherwise.
      * @see ClusterState#INACTIVE
      */
     public boolean forceDeactivation() {

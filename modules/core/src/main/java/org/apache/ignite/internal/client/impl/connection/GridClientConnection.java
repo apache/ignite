@@ -314,7 +314,7 @@ public abstract class GridClientConnection {
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
-     * @param forceDeactivation If {@code true} then skips checking of deactivation safety.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      *                          If {@code false}, checks if deactivation is safe.
      *                          If {@code null}, executes old version of cluster state changing considering it is always
      *                          forced.
