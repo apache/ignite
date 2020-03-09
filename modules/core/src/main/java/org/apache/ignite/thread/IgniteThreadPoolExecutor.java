@@ -31,6 +31,8 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
     /**
      * Creates a new service with the given initial parameters.
+     * NOTE: There is known bug. If 'corePoolSize' equals {@code 0},
+     * then pool will degraded to single-threaded pool.
      *
      * @param threadNamePrefix Will be added at the beginning of all created threads.
      * @param igniteInstanceName Must be the name of the grid.
@@ -60,6 +62,8 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
 
     /**
      * Creates a new service with the given initial parameters.
+     * NOTE: There is known bug. If 'corePoolSize' equals {@code 0},
+     * then pool will degraded to single-threaded pool.
      *
      * @param threadNamePrefix Will be added at the beginning of all created threads.
      * @param igniteInstanceName Must be the name of the grid.
@@ -93,6 +97,8 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
 
     /**
      * Creates a new service with the given initial parameters.
+     * NOTE: There is known bug. If 'corePoolSize' equals {@code 0},
+     * then pool will degraded to single-threaded pool.
      *
      * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
      * @param maxPoolSize The maximum number of threads to allow in the pool.
