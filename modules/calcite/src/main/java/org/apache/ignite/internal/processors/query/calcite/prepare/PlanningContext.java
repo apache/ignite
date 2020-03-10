@@ -35,11 +35,10 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.QueryCancelGroup;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Planning context.
@@ -79,7 +78,7 @@ public final class PlanningContext implements Context {
     private final AffinityTopologyVersion topologyVersion;
 
     /** */
-    private final QueryCancelGroup cancelGroup;
+    private final GridQueryCancel queryCancel;
 
     /** */
     private final IgniteLogger logger;
@@ -100,18 +99,19 @@ public final class PlanningContext implements Context {
      * Private constructor, used by a builder.
      */
     private PlanningContext(FrameworkConfig config, Context parentContext, UUID localNodeId, UUID originatingNodeId,
-        String query, Object[] parameters, AffinityTopologyVersion topologyVersion, IgniteLogger logger, QueryCancelGroup cancelGroup) {
+        String query, Object[] parameters, AffinityTopologyVersion topologyVersion, IgniteLogger logger) {
         this.localNodeId = localNodeId;
         this.originatingNodeId = originatingNodeId;
         this.query = query;
         this.parameters = parameters;
         this.topologyVersion = topologyVersion;
         this.logger = logger;
-        this.cancelGroup = cancelGroup;
 
         this.parentContext = Contexts.chain(parentContext, config.getContext());
         // link frameworkConfig#context() to this.
         this.config = Frameworks.newConfigBuilder(config).context(this).build();
+
+        queryCancel = unwrap(GridQueryCancel.class);
     }
 
     /**
@@ -157,10 +157,10 @@ public final class PlanningContext implements Context {
     }
 
     /**
-     * @return Query cancel group.
+     * @return Query cancel.
      */
-    public QueryCancelGroup cancelGroup() {
-        return cancelGroup;
+    public GridQueryCancel queryCancel() {
+        return queryCancel;
     }
 
     /**
@@ -319,9 +319,6 @@ public final class PlanningContext implements Context {
         /** */
         private IgniteLogger logger;
 
-        /** */
-        private QueryCancelGroup cancelGroup;
-
         /**
          * @param localNodeId Local node ID.
          * @return Builder for chaining.
@@ -395,22 +392,13 @@ public final class PlanningContext implements Context {
         }
 
         /**
-         * @param cancelGroup Query cancel group.
-         * @return Builder for chaining.
-         */
-        public Builder cancelGroup(@Nullable QueryCancelGroup cancelGroup) {
-            this.cancelGroup = cancelGroup;
-            return this;
-        }
-
-        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
             return new PlanningContext(frameworkConfig, parentContext, localNodeId, originatingNodeId, query,
-                parameters, topologyVersion, logger, cancelGroup);
+                parameters, topologyVersion, logger);
         }
     }
 }

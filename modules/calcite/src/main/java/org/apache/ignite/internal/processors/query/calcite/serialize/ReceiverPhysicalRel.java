@@ -31,7 +31,6 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 
-
 /**
  * Describes {@link IgniteReceiver}.
  */

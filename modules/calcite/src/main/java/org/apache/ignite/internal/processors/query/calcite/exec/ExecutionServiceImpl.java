@@ -435,7 +435,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             .query(query)
             .parameters(params)
             .topologyVersion(topologyVersion())
-            .cancelGroup(cancelGroup(qryCtx))
             .logger(log)
             .build();
     }
@@ -675,22 +674,19 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         running.put(queryId, info);
 
-        if (pctx.cancelGroup() == null || pctx.cancelGroup().add(info))
+        GridQueryCancel queryCancel = pctx.queryCancel();
+
+        if (queryCancel == null)
             return;
 
-        running.remove(queryId);
+        try {
+            queryCancel.add(info);
+        }
+        catch (QueryCancelledException e) {
+            running.remove(queryId);
 
-        throw new IgniteSQLException(QueryCancelledException.ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED);
-    }
-
-    /** */
-    private QueryCancelGroup cancelGroup(@Nullable QueryContext qryCtx) {
-        GridQueryCancel cancel;
-
-        if (qryCtx == null || (cancel = qryCtx.unwrap(GridQueryCancel.class)) == null)
-            return null;
-
-        return new QueryCancelGroup(cancel, failureProcessor());
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
+        }
     }
 
     /** */
