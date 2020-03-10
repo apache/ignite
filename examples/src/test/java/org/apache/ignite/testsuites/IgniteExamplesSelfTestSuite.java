@@ -47,6 +47,7 @@ import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.apache.ignite.examples.opencensus.OpenCensusMetricsExporterExample;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -96,6 +97,9 @@ import org.junit.runners.Suite;
 
     // Encryption.
     EncryptedCacheExampleSelfTest.class,
+
+    // OpenCensus.
+    OpenCensusMetricsExporterExample.class
 })
 public class IgniteExamplesSelfTestSuite {
 }
