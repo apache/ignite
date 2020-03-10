@@ -678,10 +678,13 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
-        // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val, true);
+        // If another XID has become an owner, its thread chain should be checked.
+        boolean chainEnded = owner == null || !owner.hasCandidate(ver);
 
-        return owner == null || !owner.hasCandidate(ver); // Will return false if locked by thread chain version.
+        // This call must be made outside of synchronization.
+        checkOwnerChanged(prev, owner, val, !chainEnded);
+
+        return chainEnded; // Will return false if locked by thread chain version.
     }
 
     /** {@inheritDoc} */
