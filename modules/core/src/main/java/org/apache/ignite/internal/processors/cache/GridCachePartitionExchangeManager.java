@@ -3371,7 +3371,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
-                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futAssigns =
+                        Map<Integer, ? extends IgniteInternalFuture<GridDhtPreloaderAssignments>> futAssigns =
                             cctx.preloader().preloadAsync(cnt, exchFut, assignsMap);
 
                         int size = assignsMap.size();
@@ -3406,7 +3406,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 IgniteInternalFuture<GridDhtPreloaderAssignments> fut = futAssigns.get(grpId);
 
-                                assert fut != null;
+                                assert fut != null : "grp=" + grp.cacheOrGroupName();
 
                                 Runnable cur = grp.preloader().addAssignments(fut,
                                     forcePreload,

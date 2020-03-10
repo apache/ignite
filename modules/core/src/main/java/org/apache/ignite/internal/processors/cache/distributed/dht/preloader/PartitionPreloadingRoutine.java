@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,77 +96,56 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private IgniteInternalFuture<Boolean> snapshotFut;
 
     /**
-     * @param assignments Assignments.
      * @param exchFut Exchange future.
      * @param cctx Cache shared context.
      * @param rebalanceId Rebalance ID
+     * @param assignments Assignments mapped by node ID.
+     * @param futAssigns Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public PartitionPreloadingRoutine(
-        Map<Integer, GridDhtPreloaderAssignments> assignments,
         GridDhtPartitionsExchangeFuture exchFut,
         GridCacheSharedContext cctx,
-        long rebalanceId
+        long rebalanceId,
+        Map<UUID, Map<Integer, Set<Integer>>> assignments,
+        Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> futAssigns
     ) {
-        // Re-map assignments by node.
-        Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = new ConcurrentHashMap<>();
-        Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> routines = new HashMap<>();
         int totalParts = 0;
 
-        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignments.entrySet()) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
-            GridDhtPreloaderAssignments assigns = e.getValue();
+        // Copy into concurrent collection.
+        ConcurrentHashMap<UUID, Map<Integer, Set<Integer>>> remaining0 = new ConcurrentHashMap<>(assignments.size());
 
-            GridDhtLocalPartition part = F.first(grp.topology().currentLocalPartitions());
+        for (Map.Entry<UUID, Map<Integer, Set<Integer>>> nodeAssign : assignments.entrySet()) {
+            Map<Integer, Set<Integer>> nodeAssign0 = new ConcurrentHashMap<>(nodeAssign.getValue().size());
 
-            if (part == null || part.active() || assigns.isEmpty()) {
-                GridFutureAdapter<GridDhtPreloaderAssignments> finished = new GridFutureAdapter<>();
+            remaining0.put(nodeAssign.getKey(), nodeAssign0);
 
-                finished.onDone(assigns);
+            for (Map.Entry<Integer, Set<Integer>> grpAssign : nodeAssign.getValue().entrySet()) {
+                nodeAssign0.put(grpAssign.getKey(), new GridConcurrentHashSet<>(grpAssign.getValue()));
 
-                routines.put(grp.groupId(), finished);
-
-                continue;
-            }
-
-            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
-                Map<Integer, Set<Integer>> grpAssigns =
-                    assignsByNode.computeIfAbsent(e0.getKey().id(), v -> new ConcurrentHashMap<>());
-
-                Set<Integer> parts = e0.getValue().partitions().fullSet();
-
-                grpAssigns.put(grp.groupId(), new GridConcurrentHashSet<>(parts));
-                routines.put(grp.groupId(), new GridFutureAdapter<>());
-
-                totalParts  += parts.size();
+                totalParts += grpAssign.getValue().size();
             }
         }
 
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
 
-        exchId = exchFut != null ? exchFut.exchangeId() : null;
-        topVer = exchFut != null ? exchFut.topologyVersion() : null;
+        exchId = exchFut.exchangeId();
+        topVer = exchFut.topologyVersion();
         log = cctx.kernalContext().log(getClass());
         totalPartitionsCnt = totalParts;
-        grpRoutines = routines;
-        remaining = assignsByNode;
+        grpRoutines = new ConcurrentHashMap<>(futAssigns);
+        remaining = remaining0;
     }
 
     /**
      * Start partitions preloading.
-     *
-     * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
-    public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> startPartitionsPreloading() {
-        if (!remaining.isEmpty()) {
-            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
+    public void startPartitionsPreloading() {
+        assert !remaining.isEmpty();
 
-            requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
-        }
-        else // Nothing to do.
-            onDone(true);
+        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
 
-        return Collections.unmodifiableMap(new HashMap<>(grpRoutines));
+        requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
     }
 
     /**

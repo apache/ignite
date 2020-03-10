@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteSystemProperties;
@@ -34,6 +37,8 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.NotNull;
 
@@ -84,37 +89,61 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param assignments A map of cache assignments grouped by grpId.
      * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
-    public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
+    public Map<Integer, ? extends IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut,
         Map<Integer, GridDhtPreloaderAssignments> assignments
     ) {
-        if (assignments.isEmpty())
-            return Collections.emptyMap();
+        // Re-map assignments by node.
+        Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = new HashMap<>();
+        Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> futAssigns = new HashMap<>();
 
-        if (!cctx.kernalContext().grid().isRebalanceEnabled()) {
-            if (log.isDebugEnabled())
-                log.debug("Cancel partition file demand because rebalance disabled on current node.");
+        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignments.entrySet()) {
+            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
+            GridDhtPreloaderAssignments assigns = e.getValue();
+            GridDhtLocalPartition part = null;
 
-            return Collections.emptyMap();
+            if (assigns.isEmpty() || !supports(grp) ||
+                (part = F.first(grp.topology().currentLocalPartitions())) == null || part.active()) {
+                GridFutureAdapter<GridDhtPreloaderAssignments> finished = new GridFutureAdapter<>();
+
+                finished.onDone(assigns);
+
+                futAssigns.put(grp.groupId(), finished);
+
+                continue;
+            }
+
+            for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
+                Map<Integer, Set<Integer>> grpAssigns =
+                    assignsByNode.computeIfAbsent(e0.getKey().id(), v -> new HashMap<>());
+
+                grpAssigns.put(grp.groupId(), e0.getValue().partitions().fullSet());
+                futAssigns.put(grp.groupId(), new GridFutureAdapter<>());
+            }
         }
 
-        lock.lock();
+        if (!assignsByNode.isEmpty()) {
+            lock.lock();
 
-        try {
-            if (isStopping())
-                return Collections.emptyMap();
+            try {
+                if (isStopping())
+                    return Collections.emptyMap();
 
-            assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
+                assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
 
-            // Start new rebalance session.
-            partPreloadingRoutine = new PartitionPreloadingRoutine(assignments, exchFut, cctx, rebalanceId);
+                // Start new rebalance session.
+                partPreloadingRoutine =
+                    new PartitionPreloadingRoutine(exchFut, cctx, rebalanceId, assignsByNode, futAssigns);
 
-            return partPreloadingRoutine.startPartitionsPreloading();
+                partPreloadingRoutine.startPartitionsPreloading();
+            }
+            finally {
+                lock.unlock();
+            }
         }
-        finally {
-            lock.unlock();
-        }
+
+        return futAssigns;
     }
 
     /**
