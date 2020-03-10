@@ -171,19 +171,24 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
+        BlockingIndexing blockingIndexing = (BlockingIndexing)ignite.context().query().getIndexing();
+
+        while (!blockingIndexing.isBlock(cacheName2) || !blockingIndexing.isBlock(cacheName3))
+            U.sleep(10);
+
         MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME_2).get2();
 
         LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
         assertEquals(parts2 + parts3, indexBuildCountPartitionsLeft.value());
 
-        ((BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName2);
+        blockingIndexing.stopBlock(cacheName2);
 
         ignite.cache(cacheName2).indexReadyFuture().get(30_000);
 
         assertEquals(parts3, indexBuildCountPartitionsLeft.value());
 
-        ((BlockingIndexing)ignite.context().query().getIndexing()).stopBlock(cacheName3);
+        blockingIndexing.stopBlock(cacheName3);
 
         ignite.cache(cacheName3).indexReadyFuture().get(30_000);
 

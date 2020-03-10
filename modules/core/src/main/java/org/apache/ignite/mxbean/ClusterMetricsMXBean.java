@@ -314,9 +314,9 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      * @param attrName Attribute name.
      */
     @MXBeanDescription("Distinct attribute values for given nodes projection.")
-    @MXBeanParametersNames("attrName")
-    @MXBeanParametersDescriptions("Attribute name.")
-    public Set<String> attributeValues(String attrName);
+    public Set<String> attributeValues(
+        @MXBeanParameter(name = "attrName", description = "Attribute name.") String attrName
+    );
 
      /**
       * Get node IDs with the given attribute value.
@@ -327,11 +327,10 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
       * @param includeClients Include client nodes.
       */
      @MXBeanDescription("Get node IDs with the given attribute value.")
-     @MXBeanParametersNames(
-         {"attrName", "attrValue", "includeSrvs", "includeClients"}
-     )
-     @MXBeanParametersDescriptions(
-         {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
-     )
-     public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs, boolean includeClients);
+     public Set<UUID> nodeIdsForAttribute(
+         @MXBeanParameter(name = "attrName", description = "Attribute name.") String attrName,
+         @MXBeanParameter(name = "attrValue", description = "Attribute value.") String attrVal,
+         @MXBeanParameter(name = "includeSrvs", description = "Include server nodes.") boolean includeSrvs,
+         @MXBeanParameter(name = "includeClients", description = "Include client nodes.") boolean includeClients
+     );
 }

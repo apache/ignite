@@ -386,22 +386,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
 
-        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
-
-        CommunicationSpi spi = ctx.config().getCommunicationSpi();
-
-        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
-            "Outbound messages queue size.");
-
-        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
-
-        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
-
-        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
-            "Received messages count.");
-
-        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
-
         retryCnt = ctx.config().getNetworkSendRetryCount();
         netTimeoutMs = (int)ctx.config().getNetworkTimeout();
     }
@@ -434,6 +418,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         startSpi();
+
+        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
+
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,
+                "Outbound messages queue size.");
+
+        ioMetric.register(SENT_MSG_CNT, spi::getSentMessagesCount, "Sent messages count.");
+
+        ioMetric.register(SENT_BYTES_CNT, spi::getSentBytesCount, "Sent bytes count.");
+
+        ioMetric.register(RCVD_MSGS_CNT, spi::getReceivedMessagesCount,
+                "Received messages count.");
+
+        ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
 
         getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -2837,7 +2837,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 boolean exit = in.readBoolean();
 
                 if (exit) {
-                    rcvCtxs.remove(topic);
+                    ReceiverContext rcv = rcvCtxs.remove(topic);
+
+                    assert rcv != null;
+
+                    rcv.hnd.onEnd(rcv.rmtNodeId);
 
                     break;
                 }

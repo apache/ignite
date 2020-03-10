@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,9 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -41,7 +37,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -224,18 +219,14 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     public void testMbean() throws Exception {
         startGrids(3);
 
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
         UUID crdNodeId = grid(0).localNode().id();
 
         try {
             for (int i = 0; i < 3; i++) {
                 IgniteEx grid = grid(i);
 
-                ObjectName spiName = U.makeMBeanName(grid.context().igniteInstanceName(), "SPIs",
-                    ZookeeperDiscoverySpi.class.getSimpleName());
-
-                ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+                ZookeeperDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
+                    ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
                 assertNotNull(bean);
 
@@ -459,6 +450,21 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         startGrid(3);
 
         waitForTopology(5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testZkMbeansValidity() throws Exception {
+        try {
+            Ignite ignite = startGrid();
+
+            validateMbeans(ignite, "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi$ZookeeperDiscoverySpiMBeanImpl");
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

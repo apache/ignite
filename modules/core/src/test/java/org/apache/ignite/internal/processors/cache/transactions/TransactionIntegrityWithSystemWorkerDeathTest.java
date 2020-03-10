@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +46,8 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
             /** {@inheritDoc}. */
             @Override public void afterFirstTransaction() throws Exception {
                 // Terminate disco-event-worker thread on one node.
-                WorkersControlMXBean bean = workersMXBean(failedNodeIdx);
+                WorkersControlMXBean bean = getMxBean(getTestIgniteInstanceName(failedNodeIdx), "Kernal",
+                    WorkersControlMXBeanImpl.class, WorkersControlMXBean.class);
 
                 bean.terminateWorker(
                     bean.getWorkerNames().stream()
@@ -84,23 +80,5 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
                 awaitPartitionMapExchange();
             }
         }, true);
-    }
-
-    /**
-     * Configure workers mx bean.
-     */
-    private WorkersControlMXBean workersMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(igniteInt),
-            "Kernal",
-            WorkersControlMXBeanImpl.class.getSimpleName()
-        );
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, WorkersControlMXBean.class, true);
     }
 }

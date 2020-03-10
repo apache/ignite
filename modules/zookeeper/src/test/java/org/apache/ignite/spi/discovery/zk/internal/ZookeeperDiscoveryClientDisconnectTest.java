@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
@@ -25,9 +24,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -92,14 +88,8 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         assertEquals(1, srv1.cluster().forClients().nodes().size());
 
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-        IgniteEx ignite = grid("server1-block");
-
-        ObjectName spiName = U.makeMBeanName(ignite.context().igniteInstanceName(), "SPIs",
-            ZookeeperDiscoverySpi.class.getSimpleName());
-
-        ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+        ZookeeperDiscoverySpiMBean bean = getMxBean(srv1.name(), "SPIs",
+            ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
         assertNotNull(bean);
 

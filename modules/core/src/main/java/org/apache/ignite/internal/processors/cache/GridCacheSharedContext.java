@@ -368,7 +368,15 @@ public class GridCacheSharedContext<K, V> {
         this.rebalanceEnabled = rebalanceEnabled;
 
         if (rebalanceEnabled)
-            cache().enableRebalance();
+            enableRebalance();
+    }
+
+    /**
+     * Gets all caches having cache proxy and starts on them force rebalance.
+     */
+    private void enableRebalance() {
+        for (IgniteCacheProxy c : cache().publicCaches())
+            c.rebalance();
     }
 
     /**
