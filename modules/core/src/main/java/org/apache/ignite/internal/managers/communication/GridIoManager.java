@@ -2835,7 +2835,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 boolean exit = in.readBoolean();
 
                 if (exit) {
-                    rcvCtxs.remove(topic);
+                    ReceiverContext rcv = rcvCtxs.remove(topic);
+
+                    assert rcv != null;
+
+                    rcv.hnd.onEnd(rcv.rmtNodeId);
 
                     break;
                 }

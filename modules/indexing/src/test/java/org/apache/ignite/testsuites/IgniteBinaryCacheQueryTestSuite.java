@@ -208,6 +208,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateD
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.JdbcSqlCustomSchemaTest;
 import org.apache.ignite.internal.processors.query.JdbcSqlDefaultSchemaTest;
+import org.apache.ignite.internal.processors.query.KillQueryErrorOnCancelTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
 import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTest;
@@ -596,6 +597,7 @@ import org.junit.runners.Suite;
     KillQueryFromNeighbourTest.class,
     KillQueryFromClientTest.class,
     KillQueryOnClientDisconnectTest.class,
+    KillQueryErrorOnCancelTest.class,
 
     // Table statistics.
     RowCountTableStatisticsUsageTest.class,
