@@ -1569,23 +1569,23 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         GridDeploymentInfo bean = cacheMsg.deployInfo();
 
-        if (bean != null) {
-            assert depEnabled : "Received deployment info while peer class loading is disabled [nodeId=" + nodeId +
-                ", msg=" + cacheMsg + ']';
-
-            cctx.deploy().p2pContext(
-                nodeId,
-                bean.classLoaderId(),
-                bean.userVersion(),
-                bean.deployMode(),
-                bean.participants()
-            );
-
-            if (log.isDebugEnabled())
-                log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
-        }
-
         try {
+            if (bean != null) {
+                assert depEnabled : "Received deployment info while peer class loading is disabled [nodeId=" + nodeId +
+                    ", msg=" + cacheMsg + ']';
+
+                cctx.deploy().p2pContext(
+                    nodeId,
+                    bean.classLoaderId(),
+                    bean.userVersion(),
+                    bean.deployMode(),
+                    bean.participants()
+                );
+
+                if (log.isDebugEnabled())
+                    log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
+            }
+
             cacheMsg.finishUnmarshal(cctx, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
