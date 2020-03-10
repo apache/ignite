@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -315,7 +314,6 @@ public abstract class GridClientConnection {
      * @param state New cluster state.
      * @param destNodeId Destination node id.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-     *                          If {@code false}, checks if deactivation is safe.
      *                          If {@code null}, executes old version of cluster state changing considering it is always
      *                          forced.
      * @throws GridClientConnectionResetException In case of error.

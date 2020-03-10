@@ -33,7 +33,7 @@ public interface GridClientClusterState {
 
     /**
      * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
-     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
+     * @deprecated Use {@link #state()} instead.
      */
     @Deprecated
     public boolean active() throws GridClientException;
@@ -50,6 +50,7 @@ public interface GridClientClusterState {
      * @param newState New cluster state.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @throws GridClientException If the request to change the cluster state failed.
+     * @see ClusterState#INACTIVE
      */
     public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException;
 

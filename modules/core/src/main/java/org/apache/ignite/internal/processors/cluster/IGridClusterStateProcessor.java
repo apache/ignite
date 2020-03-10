@@ -128,6 +128,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
+     * @see ClusterState#INACTIVE
      */
     IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,

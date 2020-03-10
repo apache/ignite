@@ -81,7 +81,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
             if (newState == INACTIVE && !forceDeactivation) {
                 throw new GridClientException("Deactivation stopped. Found a node not supporting checking of " +
                     "safety of this operation: " + oldVerNode + ". Deactivation clears in-memory caches (without " +
-                    "persistence) including the system caches. You can try with flag 'force'.");
+                    "persistence) including the system caches. To deactivate cluster pass flag 'force'.");
             }
 
             withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, null)).get();
