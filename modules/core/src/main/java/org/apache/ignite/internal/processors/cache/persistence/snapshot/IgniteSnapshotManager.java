@@ -31,7 +31,9 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +43,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -84,6 +87,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRestoreRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -247,7 +251,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     private final DistributedProcess<SnapshotMeta, Boolean> prepareRestoreSnpProc;
 
     /** Snapshot restore operation procedure. */
-    private final DistributedProcess<SnapshotMeta, Boolean> restoreSnpProc;
+    private final DistributedProcess<SnapshotMeta, SnapshotMeta> restoreSnpProc;
 
     /** Cluster snapshot operation requested by user. */
     private ClusterSnapshotFuture clusterSnpFut;
@@ -923,7 +927,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param snpMeta Snapshot meta which offered to restore.
      * @return Future which will be completed on restore operation prepared.
      */
-    IgniteInternalFuture<Boolean> snapshotRestoreTask(SnapshotMeta snpMeta) {
+    IgniteInternalFuture<SnapshotMeta> snapshotRestoreTask(SnapshotMeta snpMeta) {
         if (log.isInfoEnabled())
             log.info("Start snapshot restore on local node [snpMeta=" + snpMeta + ", nodeId=" + cctx.localNode().id() + ']');
 
@@ -940,20 +944,37 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         try {
             // Binary and logical states will be restored on node start.
             // Checkpoint will be written to disk.
-            //
-            cctx.wal().log(new SnapshotRestoreRecord(snpMeta.snpName));
+            cctx.wal().log(new SnapshotRestoreRecord(snpMeta.snpName,
+                SnapshotRestoreRecord.SnapshotRestoreState.START,
+                snpMeta.grps));
+
+            Collection<CompletableFuture<?>> futs = new ArrayList<>(snpMeta.grps.size());
+
+            // todo sumbit tasks by number of cache groups
+            for (String grpName : snpMeta.grps.keySet()) {
+                futs.add(CompletableFuture.runAsync(System.out::println,
+                    snpRunner));
+            }
+
+            GridFutureAdapter<SnapshotMeta> resFut = new GridFutureAdapter<>();
+
+            CompletableFuture.allOf(futs.toArray(new CompletableFuture[snpMeta.grps.size()]))
+                .whenComplete((v, t) -> {
+                    if (t == null)
+                        resFut.onDone(snpMeta);
+                    else
+                        resFut.onDone(t);
+                });
 
             System.out.println(">>>>> snp " + snpMeta);
+
+            return resFut;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | RejectedExecutionException e) {
             U.error(log, e);
 
             return new GridFinishedFuture<>(e);
         }
-
-        System.out.println(">>>>> ctxs2 " + cctx.cache().cacheGroups());
-
-        return new GridFinishedFuture<>();
     }
 
     /**
@@ -961,12 +982,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      * @param res Results of prepare restore process.
      * @param err Errors if occurred.
      */
-    void snapshotRestoreTaskResult(UUID id, Map<UUID, Boolean> res, Map<UUID, Exception> err) {
+    void snapshotRestoreTaskResult(UUID id, Map<UUID, SnapshotMeta> res, Map<UUID, Exception> err) {
         if (log.isInfoEnabled())
             log.info("Finish snapshot restore on local node [snpName=" + restoringSnp + ", nodeId=" + cctx.localNode().id() + ']');
 
-        if (err.isEmpty() && restoreSnpFut != null)
-            restoreSnpFut.onDone();
+        if (err.isEmpty()) {
+            try {
+                // Binary and logical states will be restored on node start.
+                // Checkpoint will be written to disk.
+                cctx.wal().log(new SnapshotRestoreRecord(res.get(cctx.localNodeId()).snpName,
+                    SnapshotRestoreRecord.SnapshotRestoreState.FINISH,
+                    Collections.emptyMap()));
+
+                //todo force checkpoint on snapshot restore
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed writing snapshot restore FINISH state to WAL", e);
+            }
+
+            if (restoreSnpFut != null)
+                restoreSnpFut.onDone();
+        }
+        else {
+
+        }
     }
 
     /**
@@ -974,6 +1013,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
      */
     public void snapshotWalRestore(SnapshotRestoreRecord rec) {
         System.out.println(">>>>> on wal restore rec" + rec);
+
+        // todo roll through all records, save last and do what we need
     }
 
     /** {@inheritDoc} */
@@ -1296,9 +1337,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     SnapshotFileSender localSnapshotSender(String snpName, Set<Integer> grpIds) throws IgniteCheckedException {
         File snpLocDir = snapshotLocalDir(snpName);
 
-        Set<String> grpNames = grpIds.stream()
-            .map(id -> cctx.cache().cacheGroup(id).cacheOrGroupName())
-            .collect(Collectors.toSet());
+        Map<String, Boolean> grps = grpIds.stream()
+            .map(id -> cctx.cache().cacheGroup(id))
+            .collect(Collectors.toMap(CacheGroupContext::cacheOrGroupName, CacheGroupContext::sharedGroup));
 
         // This will be called inside discovery thread which initiates snapshot operation.
         // So discoCache will be calculated correctly.
@@ -1324,7 +1365,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                         metaFile.createNewFile();
 
                     try (OutputStream out = new BufferedOutputStream(new FileOutputStream(metaFile))) {
-                        U.marshal(marshaller, new SnapshotMeta(snpName, grpNames, hist), out);
+                        U.marshal(marshaller, new SnapshotMeta(snpName, grps, hist), out);
                     }
                 }
                 catch (IOException e) {
@@ -1429,8 +1470,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         /** Snapshot name. */
         private final String snpName;
 
-        /** Cache group names to be included into snapshot */
-        private final Set<String> grpNames;
+        /** Cache group names with their shared (true, false) state which are included into snapshot. */
+        private final Map<String, Boolean> grps;
 
         /** Baseline topology at the moment of snapshot creation. */
         private final BaselineTopologyHistoryItem hist;
@@ -1439,9 +1480,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
          * @param snpName Snapshot name.
          * @param hist aseline topology at the moment of snapshot creation.
          */
-        public SnapshotMeta(String snpName, Set<String> grpNames, BaselineTopologyHistoryItem hist) {
+        public SnapshotMeta(String snpName, Map<String, Boolean> grps, BaselineTopologyHistoryItem hist) {
             this.snpName = snpName;
-            this.grpNames = grpNames;
+            this.grps = grps;
             this.hist = hist;
         }
 
@@ -1455,13 +1496,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             SnapshotMeta meta = (SnapshotMeta)o;
 
-            return snpName.equals(meta.snpName) &&
-                grpNames.equals(meta.grpNames);
+            return snpName.equals(meta.snpName);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(snpName, grpNames);
+            return Objects.hash(snpName);
         }
 
         /** {@inheritDoc} */

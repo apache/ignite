@@ -1188,13 +1188,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case SNAPSHOT_RESTORE_RECORD:
-                int snpNameLen = in.readInt();
-
-                byte[] snpNameBytes = new byte[snpNameLen];
-
-                in.readFully(snpNameBytes);
-
-                res = new SnapshotRestoreRecord(new String(snpNameBytes));
+                res = SnapshotRestoreRecord.read(in);
 
                 break;
 
@@ -1786,10 +1780,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case SNAPSHOT_RESTORE_RECORD:
                 SnapshotRestoreRecord snpRec = (SnapshotRestoreRecord)rec;
 
-                byte[] nameBytes = snpRec.snapshotName().getBytes();
-
-                buf.putInt(nameBytes.length);
-                buf.put(nameBytes);
+                snpRec.write(buf);
 
                 break;
 
