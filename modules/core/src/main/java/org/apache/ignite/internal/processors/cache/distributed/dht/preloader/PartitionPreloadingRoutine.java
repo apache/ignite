@@ -153,14 +153,14 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * @param iter Iterator on node assignments.
-     * @param groups Requested groups.
+     * @param it Iterator on node assignments.
+     * @param grps Requested groups.
      */
-    private void requestPartitionsSnapshot(Iterator<Map.Entry<UUID, Map<Integer, Set<Integer>>>> iter, Set<Integer> groups) {
-        if (!iter.hasNext())
+    private void requestPartitionsSnapshot(Iterator<Map.Entry<UUID, Map<Integer, Set<Integer>>>> it, Set<Integer> grps) {
+        if (!it.hasNext())
             return;
 
-        Map.Entry<UUID, Map<Integer, Set<Integer>>> nodeAssigns = iter.next();
+        Map.Entry<UUID, Map<Integer, Set<Integer>>> nodeAssigns = it.next();
 
         UUID nodeId = nodeAssigns.getKey();
         Map<Integer, Set<Integer>> assigns = nodeAssigns.getValue();
@@ -172,8 +172,8 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
             currGroups.add(grp.cacheOrGroupName());
 
-            if (!groups.contains(grpId)) {
-                groups.add(grpId);
+            if (!grps.contains(grpId)) {
+                grps.add(grpId);
 
                 grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
             }
@@ -197,7 +197,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 .chain(f -> {
                         try {
                             if (!f.isCancelled() && f.get())
-                                requestPartitionsSnapshot(iter, groups);
+                                requestPartitionsSnapshot(it, grps);
                         }
                         catch (IgniteCheckedException e) {
                             if (!onDone(e) && log.isDebugEnabled())

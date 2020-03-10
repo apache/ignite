@@ -89,7 +89,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param assignments A map of cache assignments grouped by grpId.
      * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
-    public Map<Integer, ? extends IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
+    public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
         long rebalanceId,
         GridDhtPartitionsExchangeFuture exchFut,
         Map<Integer, GridDhtPreloaderAssignments> assignments
@@ -101,10 +101,11 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignments.entrySet()) {
             CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
             GridDhtPreloaderAssignments assigns = e.getValue();
-            GridDhtLocalPartition part;
+
+            GridDhtLocalPartition anyPart;
 
             if (F.isEmpty(assigns) || !supports(grp) ||
-                (part = F.first(grp.topology().currentLocalPartitions())) == null || part.active()) {
+                (anyPart = F.first(grp.topology().currentLocalPartitions())) == null || anyPart.active()) {
                 futAssigns.put(grp.groupId(), new GridFinishedFuture<>(assigns));
 
                 continue;
