@@ -173,30 +173,17 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         if (!supports(grp))
             return;
 
+        boolean disable = filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
+
         boolean hasIdleParttition = false;
-
-        Object constId = cctx.localNode().consistentId();
-
-        boolean locJoinBaselineChange = exchActions != null && exchActions.changedBaseline() &&
-            !exchActions.stateChangeRequest().prevBaselineTopologyHistoryItem().consistentIds().contains(constId);
-
-        if (!locJoinBaselineChange) {
-            if (log.isDebugEnabled())
-                log.debug("Partition file preloading skipped [grp=" + grp.cacheOrGroupName() + "]");
-
-            if (!(hasIdleParttition = hasIdleParttition(grp)))
-                return;
-        }
-
-        boolean disable = !hasIdleParttition && filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
         // At this point, cache updates are queued, and we can safely
         // switch partitions to inactive mode and vice versa.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (disable)
                 part.disable();
-            else
-                part.enable();
+            else if (part.enable())
+                hasIdleParttition = true;
         }
 
         if (hasIdleParttition)
@@ -272,19 +259,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param grp Cache group.
-     * @return {@code True} if cache group has at least one inactive partition.
-     */
-    private boolean hasIdleParttition(CacheGroupContext grp) {
-        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-            if (!part.active())
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @param resVer Exchange result version.
      * @param grp Cache group.
      * @param cntrs Partition counters.
@@ -299,6 +273,9 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         Map<Integer, Long> globalSizes,
         IgniteDhtPartitionHistorySuppliersMap suppliers
     ) {
+        if (!cctx.discovery().baselineNodes(resVer).contains(cctx.localNode()))
+            return false;
+
         AffinityAssignment aff = grp.affinity().readyAffinity(resVer);
 
         assert aff != null;
@@ -307,10 +284,22 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         for (int p = 0; p < grp.affinity().partitions(); p++) {
             if (!aff.get(p).contains(cctx.localNode())) {
-                assert grp.topology().localPartition(p) == null : "Should not start when a partition is evicting";
+                // Should not start when a partition is evicting
+                if (grp.topology().localPartition(p) != null)
+                    return false;
 
                 continue;
             }
+
+            GridDhtLocalPartition part = grp.topology().localPartition(p);
+
+            assert part != null : "grp=" + grp.cacheOrGroupName() + ", id=" + part.id();
+
+            if (part.state() != MOVING)
+                return false;
+
+            if (part.dataStore().rowStore() != null || cctx.pageStore().exists(grp.groupId(), part.id()))
+                return false;
 
             if (!hasApplicablePart) {
                 Long partSize = globalSizes.get(p);
@@ -318,9 +307,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 if (partSize != null && partSize > fileRebalanceThreshold)
                     hasApplicablePart = true;
             }
-
-            assert grp.topology().localPartition(p).state() == MOVING :
-                "grp=" + grp.cacheOrGroupName() + ", p=" + p + ", state=" + grp.topology().localPartition(p).state();
 
             // Should have partition file supplier for all partitions to start file preloading.
             if (suppliers.getSupplier(grp.groupId(), p, cntrs.updateCounter(p)) == null)

@@ -462,6 +462,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition mode was changed, otherwise updates already enabled.
      */
     public boolean enable() {
+        if (store.active())
+            return false;
+
         if (state() != MOVING)
             throw new IgniteException("Expected MIVING partition, actual state is " + state());
 
@@ -486,6 +489,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition mode was changed, otherwise updates already disabled.
      */
     public boolean disable() {
+        if (!store.active())
+            return false;
+
         if (state() != MOVING)
             throw new IgniteException("Expected MOVING partition, actual state is " + state());
 
