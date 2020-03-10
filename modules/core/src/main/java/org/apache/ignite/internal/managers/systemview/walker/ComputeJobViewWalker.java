@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.systemview.walker;
 
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.ComputeJobView.ComputeJobState;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -31,42 +32,42 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 public class ComputeJobViewWalker implements SystemViewRowAttributeWalker<ComputeJobView> {
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
-        v.accept(0, "affinityCacheNames", String.class);
-        v.accept(1, "affinityPartitionId", int.class);
-        v.accept(2, "createTime", long.class);
-        v.accept(3, "executorName", String.class);
-        v.accept(4, "fininshTime", long.class);
-        v.accept(5, "id", IgniteUuid.class);
-        v.accept(6, "isFinishing", boolean.class);
-        v.accept(7, "isInternal", boolean.class);
-        v.accept(8, "isStarted", boolean.class);
-        v.accept(9, "isSysCancelled", boolean.class);
-        v.accept(10, "isSysStopping", boolean.class);
-        v.accept(11, "isTimedOut", boolean.class);
-        v.accept(12, "originNodeId", UUID.class);
-        v.accept(13, "startTime", long.class);
-        v.accept(14, "taskClassName", String.class);
-        v.accept(15, "taskName", String.class);
+        v.accept(0, "id", IgniteUuid.class);
+        v.accept(1, "sessionId", IgniteUuid.class);
+        v.accept(2, "originNodeId", UUID.class);
+        v.accept(3, "taskName", String.class);
+        v.accept(4, "taskClassName", String.class);
+        v.accept(5, "affinityCacheIds", String.class);
+        v.accept(6, "affinityPartitionId", int.class);
+        v.accept(7, "createTime", long.class);
+        v.accept(8, "startTime", long.class);
+        v.accept(9, "finishTime", long.class);
+        v.accept(10, "executorName", String.class);
+        v.accept(11, "isFinishing", boolean.class);
+        v.accept(12, "isInternal", boolean.class);
+        v.accept(13, "isStarted", boolean.class);
+        v.accept(14, "isTimedOut", boolean.class);
+        v.accept(15, "state", ComputeJobState.class);
     }
 
     /** {@inheritDoc} */
     @Override public void visitAll(ComputeJobView row, AttributeWithValueVisitor v) {
-        v.accept(0, "affinityCacheNames", String.class, row.affinityCacheIds());
-        v.acceptInt(1, "affinityPartitionId", row.affinityPartitionId());
-        v.acceptLong(2, "createTime", row.createTime());
-        v.accept(3, "executorName", String.class, row.executorName());
-        v.acceptLong(4, "fininshTime", row.fininshTime());
-        v.accept(5, "id", IgniteUuid.class, row.id());
-        v.acceptBoolean(6, "isFinishing", row.isFinishing());
-        v.acceptBoolean(7, "isInternal", row.isInternal());
-        v.acceptBoolean(8, "isStarted", row.isStarted());
-        v.acceptBoolean(9, "isSysCancelled", row.isSysCancelled());
-        v.acceptBoolean(10, "isSysStopping", row.isSysStopping());
-        v.acceptBoolean(11, "isTimedOut", row.isTimedOut());
-        v.accept(12, "originNodeId", UUID.class, row.originNodeId());
-        v.acceptLong(13, "startTime", row.startTime());
-        v.accept(14, "taskClassName", String.class, row.taskClassName());
-        v.accept(15, "taskName", String.class, row.taskName());
+        v.accept(0, "id", IgniteUuid.class, row.id());
+        v.accept(1, "sessionId", IgniteUuid.class, row.sessionId());
+        v.accept(2, "originNodeId", UUID.class, row.originNodeId());
+        v.accept(3, "taskName", String.class, row.taskName());
+        v.accept(4, "taskClassName", String.class, row.taskClassName());
+        v.accept(5, "affinityCacheIds", String.class, row.affinityCacheIds());
+        v.acceptInt(6, "affinityPartitionId", row.affinityPartitionId());
+        v.acceptLong(7, "createTime", row.createTime());
+        v.acceptLong(8, "startTime", row.startTime());
+        v.acceptLong(9, "finishTime", row.finishTime());
+        v.accept(10, "executorName", String.class, row.executorName());
+        v.acceptBoolean(11, "isFinishing", row.isFinishing());
+        v.acceptBoolean(12, "isInternal", row.isInternal());
+        v.acceptBoolean(13, "isStarted", row.isStarted());
+        v.acceptBoolean(14, "isTimedOut", row.isTimedOut());
+        v.accept(15, "state", ComputeJobState.class, row.state());
     }
 
     /** {@inheritDoc} */
