@@ -163,12 +163,13 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
      */
     public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> startPartitionsPreloading() {
-        if (remaining.isEmpty())
+        if (!remaining.isEmpty()) {
+            ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
+
+            requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
+        }
+        else // Nothing to do.
             onDone(true);
-
-        ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
-
-        requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
 
         return Collections.unmodifiableMap(new HashMap<>(grpRoutines));
     }
@@ -387,6 +388,9 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         try {
             if (!super.onDone(res, err, cancel))
                 return false;
+
+            if (!(cctx.database() instanceof GridCacheDatabaseSharedManager))
+                return true;
 
             ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(checkpointLsnr);
 
