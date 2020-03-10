@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.NotNull;
@@ -96,20 +96,16 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     ) {
         // Re-map assignments by node.
         Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = new HashMap<>();
-        Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> futAssigns = new HashMap<>();
+        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futAssigns = new HashMap<>();
 
         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignments.entrySet()) {
             CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
             GridDhtPreloaderAssignments assigns = e.getValue();
-            GridDhtLocalPartition part = null;
+            GridDhtLocalPartition part;
 
-            if (assigns.isEmpty() || !supports(grp) ||
+            if (F.isEmpty(assigns) || !supports(grp) ||
                 (part = F.first(grp.topology().currentLocalPartitions())) == null || part.active()) {
-                GridFutureAdapter<GridDhtPreloaderAssignments> finished = new GridFutureAdapter<>();
-
-                finished.onDone(assigns);
-
-                futAssigns.put(grp.groupId(), finished);
+                futAssigns.put(grp.groupId(), new GridFinishedFuture<>(assigns));
 
                 continue;
             }
@@ -119,7 +115,6 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                     assignsByNode.computeIfAbsent(e0.getKey().id(), v -> new HashMap<>());
 
                 grpAssigns.put(grp.groupId(), e0.getValue().partitions().fullSet());
-                futAssigns.put(grp.groupId(), new GridFutureAdapter<>());
             }
         }
 
@@ -133,10 +128,12 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
                 assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
 
                 // Start new rebalance session.
-                partPreloadingRoutine =
-                    new PartitionPreloadingRoutine(exchFut, cctx, rebalanceId, assignsByNode, futAssigns);
+                partPreloadingRoutine = new PartitionPreloadingRoutine(exchFut, cctx, rebalanceId, assignsByNode);
 
-                partPreloadingRoutine.startPartitionsPreloading();
+                Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futHistAssigns =
+                    partPreloadingRoutine.startPartitionsPreloading();
+
+                futAssigns.putAll(futHistAssigns);
             }
             finally {
                 lock.unlock();
