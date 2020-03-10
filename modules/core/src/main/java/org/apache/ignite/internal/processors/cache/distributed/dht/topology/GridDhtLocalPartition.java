@@ -189,8 +189,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     ) {
         super(ENTRY_FACTORY);
 
-//        U.dumpStack("create partition: grp="+grp.cacheOrGroupName() + " p="+id);
-
         this.id = id;
         this.ctx = ctx;
         this.grp = grp;
