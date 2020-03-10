@@ -100,16 +100,14 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
     /**
      * @param assignments Assignments.
-     * @param startVer Topology version on which the rebalance started.
+     * @param exchFut Exchange future.
      * @param cctx Cache shared context.
-     * @param exchId Exchange ID.
      * @param rebalanceId Rebalance ID
      */
     public PartitionPreloadingRoutine(
         Map<Integer, GridDhtPreloaderAssignments> assignments,
-        AffinityTopologyVersion startVer,
+        GridDhtPartitionsExchangeFuture exchFut,
         GridCacheSharedContext cctx,
-        GridDhtPartitionExchangeId exchId,
         long rebalanceId
     ) {
         // Re-map assignments by node.
@@ -148,9 +146,9 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         this.cctx = cctx;
         this.rebalanceId = rebalanceId;
-        this.exchId = exchId;
 
-        topVer = startVer;
+        exchId = exchFut != null ? exchFut.exchangeId() : null;
+        topVer = exchFut != null ? exchFut.topologyVersion() : null;
         log = cctx.kernalContext().log(getClass());
         totalPartitionsCnt = totalParts;
         grpRoutines = routines;

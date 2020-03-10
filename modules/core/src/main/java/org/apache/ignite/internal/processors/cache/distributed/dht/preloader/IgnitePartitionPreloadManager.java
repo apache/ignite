@@ -108,8 +108,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
             assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
 
             // Start new rebalance session.
-            partPreloadingRoutine = new PartitionPreloadingRoutine(assignments,
-                exchFut.topologyVersion(), cctx, exchFut.exchangeId(), rebalanceId);
+            partPreloadingRoutine = new PartitionPreloadingRoutine(assignments, exchFut, cctx, rebalanceId);
 
             return partPreloadingRoutine.startPartitionsPreloading();
         }
