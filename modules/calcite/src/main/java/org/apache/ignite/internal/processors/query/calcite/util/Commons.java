@@ -25,14 +25,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -192,5 +197,27 @@ public final class Commons {
             U.closeWithSuppressingException((AutoCloseable) o, e);
         else
             U.closeQuiet((AutoCloseable) o);
+    }
+
+    /** */
+    public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
+        final RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
+
+        for (RelDataType type : types)
+            builder.addAll(type.getFieldList());
+
+        return builder.build();
+    }
+
+    /** */
+    public static Class<?> boxType(Class<?> type) {
+        Primitive primitive = Primitive.of(type);
+
+        return primitive == null ? type : primitive.boxClass;
+    }
+
+    /** */
+    public static <T> List<T> flat(List<List<? extends T>> src) {
+        return src.stream().flatMap(List::stream).collect(Collectors.toList());
     }
 }

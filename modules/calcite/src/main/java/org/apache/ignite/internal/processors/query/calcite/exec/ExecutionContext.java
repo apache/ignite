@@ -146,8 +146,9 @@ public class ExecutionContext implements DataContext {
     /**
      * Sets cancelled flag.
      */
-    public void setCancelled() {
-        cancelled = true;
+    public void markCancelled() {
+        if (!cancelled)
+            cancelled = true;
     }
 
     /**

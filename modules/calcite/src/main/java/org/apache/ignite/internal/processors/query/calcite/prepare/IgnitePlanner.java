@@ -58,11 +58,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.GraphToRelConverter;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
@@ -153,13 +148,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         validator = null;
     }
 
-    /**
-     * @return Planner context.
-     */
-    public PlanningContext context() {
-        return ctx;
-    }
-
     /** {@inheritDoc} */
     @Override public SqlNode parse(Reader reader) throws SqlParseException {
         SqlNodeList sqlNodes = SqlParser.create(reader, parserConfig).parseStmtList();
@@ -201,47 +189,15 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode convert(SqlNode sql) {
-        return rel(sql).rel;
-    }
-
-    /**
-     * Converts intermediate relational nodes tree representation into a relational nodes tree, bounded to the planner.
-     *
-     * @param graph Relational nodes tree representation.
-     * @return Root node of relational tree.
-     */
-    public IgniteRel convert(RelGraph graph) {
-        RelOptCluster cluster = createCluster();
-        RelBuilder relBuilder = createRelBuilder(cluster, catalogReader);
-
-        return new GraphToRelConverter(this, relBuilder, operatorTable).convert(graph);
+        return rel(sql).project();
     }
 
     /** {@inheritDoc} */
     @Override public RelRoot rel(SqlNode sql) {
-        RelOptCluster cluster = createCluster();
-        SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-            .withConfig(sqlToRelConverterConfig)
-            .withTrimUnusedFields(false)
-            .withConvertTableAccess(false)
-            .build();
-        SqlToRelConverter sqlToRelConverter =
-            new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
+        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
+            validator, catalogReader, createCluster(), convertletTable, sqlToRelConverterConfig);
 
         return sqlToRelConverter.convertQuery(sql, false, true);
-    }
-
-    /**
-     * Creates an intermediate relational nodes tree representation for a given relational nodes tree.
-     *
-     * @param rel Root node of relational tree.
-     * @return Relational nodes tree representation.
-     */
-    public RelGraph graph(RelNode rel) {
-        if (rel.getConvention() != IgniteConvention.INSTANCE)
-            throw new IllegalArgumentException("Physical node is required.");
-
-        return new RelToGraphConverter().go((IgniteRel) rel);
     }
 
     /** {@inheritDoc} */
@@ -260,15 +216,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlValidator validator = new IgniteSqlValidator(operatorTable, catalogReader, typeFactory, conformance);
         validator.setIdentifierExpansion(true);
 
-        RelOptCluster cluster = createCluster();
-        SqlToRelConverter.Config config = SqlToRelConverter
-            .configBuilder()
-            .withConfig(sqlToRelConverterConfig)
-            .withTrimUnusedFields(false)
-            .withConvertTableAccess(false)
-            .build();
-        SqlToRelConverter sqlToRelConverter =
-            new SqlToRelConverter(this, validator, catalogReader, cluster, convertletTable, config);
+        SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(this,
+            validator, catalogReader, createCluster(), convertletTable, sqlToRelConverterConfig);
 
         return sqlToRelConverter.convertQuery(sqlNode, true, false);
     }

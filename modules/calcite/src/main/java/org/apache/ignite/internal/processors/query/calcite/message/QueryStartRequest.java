@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
+import org.apache.ignite.internal.processors.query.calcite.serialize.PhysicalRel;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -48,10 +48,10 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** */
     @GridDirectTransient
-    private RelGraph plan;
+    private PhysicalRel root;
 
     /** */
-    private byte[] planBytes;
+    private byte[] rootBytes;
 
     /** */
     @GridDirectTransient
@@ -61,13 +61,13 @@ public class QueryStartRequest implements MarshalableMessage {
     private byte[] paramsBytes;
 
     /** */
-    public QueryStartRequest(UUID queryId, long fragmentId, String schema, RelGraph plan, AffinityTopologyVersion version, int[] partitions, Object[] params) {
+    public QueryStartRequest(UUID queryId, long fragmentId, String schema, PhysicalRel root, AffinityTopologyVersion version, int[] partitions, Object[] params) {
         this.schema = schema;
         this.queryId = queryId;
         this.fragmentId = fragmentId;
         this.partitions = partitions;
         this.version = version;
-        this.plan = plan;
+        this.root = root;
         this.params = params;
     }
 
@@ -114,8 +114,8 @@ public class QueryStartRequest implements MarshalableMessage {
     /**
      * @return Fragment plan.
      */
-    public RelGraph plan() {
-        return plan;
+    public PhysicalRel root() {
+        return root;
     }
 
     /**
@@ -127,8 +127,8 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        if (planBytes == null && plan != null)
-            planBytes = marshaller.marshal(plan);
+        if (rootBytes == null && root != null)
+            rootBytes = marshaller.marshal(root);
 
         if (paramsBytes == null && params != null)
             paramsBytes = marshaller.marshal(params);
@@ -136,8 +136,8 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
-        if (plan == null && planBytes != null)
-            plan = marshaller.unmarshal(planBytes, loader);
+        if (root == null && rootBytes != null)
+            root = marshaller.unmarshal(rootBytes, loader);
 
         if (params == null && paramsBytes != null)
             params = marshaller.unmarshal(paramsBytes, loader);
@@ -174,7 +174,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("planBytes", planBytes))
+                if (!writer.writeByteArray("rootBytes", rootBytes))
                     return false;
 
                 writer.incrementState();
@@ -235,7 +235,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 3:
-                planBytes = reader.readByteArray("planBytes");
+                rootBytes = reader.readByteArray("rootBytes");
 
                 if (!reader.isLastRead())
                     return false;

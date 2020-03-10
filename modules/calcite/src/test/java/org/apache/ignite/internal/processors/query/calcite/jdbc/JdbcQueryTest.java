@@ -22,6 +22,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -45,10 +47,10 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
      * @throws SQLException If failed.
      */
     @Test
-    public void testSimpleQuery() throws SQLException {
+    public void testSimpleQuery() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
-        doSleep(1000);
+        grid(0).context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
 
         stmt.executeUpdate("INSERT INTO Person VALUES (10, 'Name')");
         try (ResultSet rs = stmt.executeQuery("select p.*, (1+1) as synthetic from Person p")) {

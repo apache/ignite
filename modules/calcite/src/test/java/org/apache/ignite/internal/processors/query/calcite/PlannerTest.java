@@ -49,13 +49,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.ConsumerNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.Implementor;
+import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -73,8 +74,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.SortedTable;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -82,7 +81,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -591,147 +589,6 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPlanSerializationDeserialization() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable developer = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .add("PROJECTID", f.createJavaType(Integer.class))
-                .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2),
-                    select(nodes, 2, 0),
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
-            }
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "Developer", "hash");
-            }
-        };
-
-        TestTable project = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .add("VER", f.createJavaType(Integer.class))
-                .build()) {
-            @Override public NodesMapping mapping(PlanningContext ctx) {
-                return new NodesMapping(null, Arrays.asList(
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2),
-                    select(nodes, 2, 0),
-                    select(nodes, 0, 1),
-                    select(nodes, 1, 2)
-                ), NodesMapping.HAS_PARTITIONED_CACHES);
-            }
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.affinity(0, "Project", "hash");
-            }
-        };
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("DEVELOPER", developer);
-        publicSchema.addTable("PROJECT", project);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
-            "ON d.id = p.id0 " +
-            "WHERE (d.projectId + 1) > ?";
-
-        RelTraitDef<?>[] traitDefs = {
-            DistributionTraitDef.INSTANCE,
-            ConventionTraitDef.INSTANCE
-        };
-
-        PlanningContext ctx = PlanningContext.builder()
-            .localNodeId(F.first(nodes))
-            .originatingNodeId(F.first(nodes))
-            .parentContext(Contexts.empty())
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .traitDefs(traitDefs)
-                .build())
-            .logger(log)
-            .query(sql)
-            .parameters(new Object[]{2})
-            .topologyVersion(AffinityTopologyVersion.NONE)
-            .build();
-
-        byte[] convertedBytes;
-
-        try (IgnitePlanner planner = ctx.planner()){
-            assertNotNull(planner);
-
-            String query = ctx.query();
-
-            assertNotNull(planner);
-
-            // Parse
-            SqlNode sqlNode = planner.parse(query);
-
-            // Validate
-            sqlNode = planner.validate(sqlNode);
-
-            // Convert to Relational operators graph
-            RelNode rel = planner.convert(sqlNode);
-
-            // Transformation chain
-            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
-
-            RelTraitSet desired = rel.getCluster().traitSet()
-                .replace(IgniteConvention.INSTANCE)
-                .replace(IgniteDistributions.single())
-                .simplify();
-
-            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
-
-            assertNotNull(rel);
-
-            MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) rel));
-
-            assertNotNull(plan);
-
-            assertTrue(plan.fragments().size() == 2);
-
-            plan.init(this::intermediateMapping, ctx);
-
-            RelGraph graph = new RelToGraphConverter().go(plan.fragments().get(1).root());
-
-            convertedBytes = new JdkMarshaller().marshal(graph);
-
-            assertNotNull(convertedBytes);
-        }
-
-        try (IgnitePlanner planner = ctx.planner()) {
-            assertNotNull(planner);
-
-            RelGraph graph = new JdkMarshaller().unmarshal(convertedBytes, getClass().getClassLoader());
-
-            assertNotNull(graph);
-
-            RelNode rel = planner.convert(graph);
-
-            assertNotNull(rel);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
@@ -1032,10 +889,11 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
 
-            exec = new Implementor(c1 -> r1 -> 0, mailboxRegistry, exchangeService,
-                new TestFailureProcessor(kernal), ectx, log()).go(fragment.root());
+            exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
+                new TestFailureProcessor(kernal)).go(fragment.root());
 
-            ConsumerNode consumer = new ConsumerNode(ectx, exec);
+            RootNode consumer = new RootNode(ectx, r -> {});
+            consumer.register(exec);
 
             //// Remote part
 
@@ -1089,12 +947,14 @@ public class PlannerTest extends GridCommonAbstractTest {
                 null,
                 Commons.parametersMap(ctx.parameters()));
 
-            exec = new Implementor(c -> r -> 0, mailboxRegistry, exchangeService,
-                new TestFailureProcessor(kernal), ectx, log()).go(fragment.root());
+            exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
+                new TestFailureProcessor(kernal)).go(fragment.root());
 
             //// Start execution
 
-            exec.context().execute(exec::request);
+            assert exec instanceof Outbox;
+
+            exec.context().execute(((Outbox<Object[]>) exec)::init);
 
             ArrayList<Object[]> res = new ArrayList<>();
 
@@ -1105,6 +965,229 @@ public class PlannerTest extends GridCommonAbstractTest {
 
             Assert.assertArrayEquals(new Object[]{0, "Igor", 0, "Calcite", 1}, res.get(0));
             Assert.assertArrayEquals(new Object[]{1, "Roman", 0, "Calcite", 1}, res.get(1));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPhysicalPlan2() throws Exception {
+        executors = new ArrayList<>();
+
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable testTable = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID0", f.createJavaType(Integer.class))
+                .add("ID1", f.createJavaType(Integer.class))
+                .build()) {
+            @Override public Enumerable<Object[]> scan(DataContext root) {
+                return Linq4j.asEnumerable(Arrays.asList(
+                    new Object[]{0, 1},
+                    new Object[]{1, 2}
+                ));
+            }
+
+            @Override public NodesMapping mapping(PlanningContext ctx) {
+                return new NodesMapping(select(nodes, 1), null, (byte) (HAS_REPLICATED_CACHES | PARTIALLY_REPLICATED));
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.broadcast();
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST_TABLE", testTable);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{-10})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(planner);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            RelRoot relRoot = planner.rel(sqlNode);
+
+            RelNode rel = relRoot.rel;
+
+            // Transformation chain
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+            RelTraitSet desired = rel.getCluster()
+                .traitSetOf(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single());
+
+            RelNode phys = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            assertNotNull(phys);
+
+            MultiStepPlan plan = new MultiStepQueryPlan(new Splitter().go((IgniteRel) phys));
+
+            assertNotNull(plan);
+
+            plan.init(this::intermediateMapping, ctx);
+
+            List<Fragment> fragments = plan.fragments();
+            assertEquals(2, fragments.size());
+
+            UUID queryId = UUID.randomUUID();
+
+            TestIoManager mgr = new TestIoManager();
+            GridTestKernalContext kernal;
+            QueryTaskExecutorImpl taskExecutor;
+            MessageServiceImpl messageService;
+            MailboxRegistryImpl mailboxRegistry;
+            ExchangeServiceImpl exchangeService;
+            ExecutionContext ectx;
+            Node<Object[]> exec;
+
+            //// Local part
+
+            Fragment fragment = fragments.get(0);
+            assert fragment.local();
+
+            kernal = newContext();
+
+            taskExecutor = new QueryTaskExecutorImpl(kernal);
+            taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+                kernal.config().getQueryThreadPoolSize(),
+                kernal.igniteInstanceName(),
+                "calciteQry",
+                (t,ex) -> {
+                    log().error(ex.getMessage(), ex);
+                    lastException = ex;
+                },
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME
+            ));
+            executors.add(taskExecutor);
+
+            messageService = new TestMessageServiceImpl(kernal, mgr);
+
+            messageService.localNodeId(nodes.get(0));
+            messageService.taskExecutor(taskExecutor);
+            mgr.register(messageService);
+
+            mailboxRegistry = new MailboxRegistryImpl(kernal);
+
+            exchangeService = new ExchangeServiceImpl(kernal);
+            exchangeService.taskExecutor(taskExecutor);
+            exchangeService.messageService(messageService);
+            exchangeService.mailboxRegistry(mailboxRegistry);
+            exchangeService.init();
+
+            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
+
+            exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
+                new TestFailureProcessor(kernal)).go(fragment.root());
+
+            RootNode consumer = new RootNode(ectx, r -> {});
+            consumer.register(exec);
+
+            //// Remote part
+
+            fragment = fragments.get(1);
+
+            assert !fragment.local();
+
+            kernal = newContext();
+
+            taskExecutor = new QueryTaskExecutorImpl(kernal);
+            taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+                kernal.config().getQueryThreadPoolSize(),
+                kernal.igniteInstanceName(),
+                "calciteQry",
+                (t,ex) -> {
+                    log().error(ex.getMessage(), ex);
+                    lastException = ex;
+                },
+                true,
+                DFLT_THREAD_KEEP_ALIVE_TIME
+            ));
+            executors.add(taskExecutor);
+
+            messageService = new TestMessageServiceImpl(kernal, mgr);
+            messageService.localNodeId(nodes.get(1));
+            messageService.taskExecutor(taskExecutor);
+            mgr.register(messageService);
+
+            mailboxRegistry = new MailboxRegistryImpl(kernal);
+
+            exchangeService = new ExchangeServiceImpl(kernal);
+            exchangeService.taskExecutor(taskExecutor);
+            exchangeService.messageService(messageService);
+            exchangeService.mailboxRegistry(mailboxRegistry);
+            exchangeService.init();
+
+            ectx = new ExecutionContext(
+                taskExecutor,
+                PlanningContext.builder()
+                    .localNodeId(nodes.get(1))
+                    .originatingNodeId(nodes.get(0))
+                    .parentContext(Contexts.empty())
+                    .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                        .defaultSchema(schema)
+                        .traitDefs(traitDefs)
+                        .build())
+                    .logger(log)
+                    .build(),
+                queryId,
+                fragment.fragmentId(),
+                null,
+                Commons.parametersMap(ctx.parameters()));
+
+            exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
+                new TestFailureProcessor(kernal)).go(fragment.root());
+
+            //// Start execution
+
+            assert exec instanceof Outbox;
+
+            exec.context().execute(((Outbox<Object[]>) exec)::init);
+
+            ArrayList<Object[]> res = new ArrayList<>();
+
+            while (consumer.hasNext())
+                res.add(consumer.next());
+
+            assertFalse(res.isEmpty());
+
+            Assert.assertArrayEquals(new Object[]{1}, res.get(0));
+            Assert.assertArrayEquals(new Object[]{3}, res.get(1));
         }
     }
 

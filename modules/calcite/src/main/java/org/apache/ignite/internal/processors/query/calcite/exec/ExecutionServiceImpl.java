@@ -62,6 +62,9 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCancelRequest;
@@ -86,12 +89,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.processors.query.calcite.rel.RelOp;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelGraph;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.RelToGraphConverter;
-import org.apache.ignite.internal.processors.query.calcite.serialize.relation.SenderNode;
+import org.apache.ignite.internal.processors.query.calcite.serialize.RelToPhysicalConverter;
+import org.apache.ignite.internal.processors.query.calcite.serialize.SenderPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -616,21 +616,18 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         ExecutionContext ectx = new ExecutionContext(taskExecutor(), pctx, queryId, local.fragmentId(),
             local.mapping().partitions(pctx.localNodeId()), Commons.parametersMap(pctx.parameters()));
 
-        Node<Object[]> node = new Implementor(partitionService(), mailboxRegistry(), exchangeService(), failureProcessor(), ectx, log).go(local.root());
+        Node<Object[]> node = new LogicalRelImplementor(ectx, partitionService(), mailboxRegistry(), exchangeService(), failureProcessor()).go(local.root());
 
-        assert !(node instanceof SenderNode);
+        assert !(node instanceof SenderPhysicalRel);
 
         QueryInfo info = new QueryInfo(ectx, fragments, node);
 
         // register query
         register(info);
 
-        // start local execution
-        info.consumer.request();
-
         // start remote execution
         if (fragments.size() > 1) {
-            RelOp<IgniteRel, RelGraph> converter = new RelToGraphConverter();
+            RelToPhysicalConverter converter = new RelToPhysicalConverter(ectx.getTypeFactory());
 
             for (int i = 1; i < fragments.size(); i++) {
                 Fragment fragment = fragments.get(i);
@@ -734,11 +731,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
         RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER));
-        try (IgnitePlanner planner = ctx.planner()) {
-            IgniteRel root = planner.convert(msg.plan());
-
-            assert root instanceof IgniteSender : root;
-
+        try {
             ExecutionContext execCtx = new ExecutionContext(
                 taskExecutor(),
                 ctx,
@@ -748,19 +741,22 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 Commons.parametersMap(msg.parameters())
             );
 
-            Node<Object[]> node = new Implementor(partitionService(), mailboxRegistry(), exchangeService(), failureProcessor(), execCtx, log).go(root);
+            Node<Object[]> node = new PhysicalRelImplementor(execCtx, partitionService(),
+                mailboxRegistry(), exchangeService(), failureProcessor()).go(msg.root());
 
             assert node instanceof Outbox : node;
 
-            node.context().execute(node::request);
+            node.context().execute(((Outbox<Object[]>) node)::init);
 
             messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId()));
         }
-        catch (Exception ex) {
+        catch (Throwable ex) { // TODO don't catch errors!
             cancelQuery(msg.queryId());
 
             if (ex instanceof ClusterTopologyCheckedException)
                 return;
+
+            U.warn(log, "Failed to start query. [nodeId=" + nodeId + ']', ex);
 
             try {
                 messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
@@ -770,6 +766,9 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
                 U.warn(log, "Failed to send reply. [nodeId=" + nodeId + ']', e);
             }
+
+            if (ex instanceof Error)
+                throw (Error)ex;
         }
         finally {
             RelMetadataQuery.THREAD_PROVIDERS.remove();
@@ -794,11 +793,19 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private void onConsumerClose(ConsumerNode consumer) {
-        if (consumer.canceled())
-            cancelQuery(consumer.queryId());
-        else
-            running.remove(consumer.queryId());
+    private void onCursorClose(RootNode rootNode) {
+        switch (rootNode.state()) {
+            case CANCELLED:
+                cancelQuery(rootNode.queryId());
+
+                break;
+            case END:
+                running.remove(rootNode.queryId());
+
+                break;
+            default:
+                throw new AssertionError();
+        }
     }
 
     /** */
@@ -866,7 +873,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private final ExecutionContext ctx;
 
         /** */
-        private final ConsumerNode consumer;
+        private final RootNode root;
 
         /** remote nodes */
         private final Set<UUID> remotes;
@@ -884,7 +891,10 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         private QueryInfo(ExecutionContext ctx, List<Fragment> fragments, Node<Object[]> root) {
             this.ctx = ctx;
 
-            consumer = new ConsumerNode(ctx, root, ExecutionServiceImpl.this::onConsumerClose);
+            RootNode rootNode = new RootNode(ctx, ExecutionServiceImpl.this::onCursorClose);
+            rootNode.register(root);
+
+            this.root = rootNode;
 
             remotes = new HashSet<>();
             waiting = new HashSet<>();
@@ -905,7 +915,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         /** */
         public Iterator<Object[]> iterator() {
-            return iteratorsHolder().iterator(consumer);
+            return iteratorsHolder().iterator(root);
         }
 
         /** {@inheritDoc} */
@@ -955,7 +965,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
             }
 
             if (cancelLocal)
-                consumer.cancel();
+                root.cancel();
 
             if (cancelRemote) {
                 QueryCancelRequest msg = new QueryCancelRequest(ctx.queryId());
