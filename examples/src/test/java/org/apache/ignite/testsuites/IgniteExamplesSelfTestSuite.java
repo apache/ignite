@@ -42,12 +42,12 @@ import org.apache.ignite.examples.MemcacheRestExamplesSelfTest;
 import org.apache.ignite.examples.MessagingExamplesSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
+import org.apache.ignite.examples.OpenCensusMetricsExporterExampleSelfTest;
 import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.SpringDataExampleSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
-import org.apache.ignite.examples.opencensus.OpenCensusMetricsExporterExample;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -99,7 +99,7 @@ import org.junit.runners.Suite;
     EncryptedCacheExampleSelfTest.class,
 
     // OpenCensus.
-    OpenCensusMetricsExporterExample.class
+    OpenCensusMetricsExporterExampleSelfTest.class
 })
 public class IgniteExamplesSelfTestSuite {
 }

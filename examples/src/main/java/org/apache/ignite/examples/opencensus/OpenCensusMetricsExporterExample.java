@@ -83,6 +83,8 @@ public class OpenCensusMetricsExporterExample {
 
                 try {
                     desktop.browse(new URI(METRICS_URL));
+
+                    Thread.sleep(2 * PERIOD);
                 }
                 catch (IOException | URISyntaxException e) {
                     throw new RuntimeException(e);
