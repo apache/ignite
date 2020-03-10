@@ -13,26 +13,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.examples;
 
-import org.apache.ignite.internal.IgniteEx;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.apache.ignite.examples.opencensus.OpenCensusMetricsExporterExample;
+import org.junit.Test;
 
-/**
- * Test KILL QUERY requested from client node.
- */
-@RunWith(Parameterized.class)
-public class KillQueryFromClientTest extends KillQueryTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteEx getKillRequestNode()  {
-        IgniteEx clientNode = grid(NODES_COUNT - 1);
-
-        assertTrue(clientNode.context().clientNode());
-
-        return clientNode;
+/** */
+public class OpenCensusMetricsExporterExampleSelfTest {
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOpenCensusExample() throws Exception {
+        OpenCensusMetricsExporterExample.main(new String[0]);
     }
 }
