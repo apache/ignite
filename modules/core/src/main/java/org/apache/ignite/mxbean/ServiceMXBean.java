@@ -24,11 +24,11 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
  */
 public interface ServiceMXBean {
     /**
-     * @param id Service id.
-     * @see ServiceView#serviceId()
+     * @param name Service name.
+     * @see ServiceView#name()
      */
-    @MXBeanDescription("Kills service by the identifier.")
-    @MXBeanParametersNames("id")
-    @MXBeanParametersDescriptions("Service id.")
-    public void cancel(String id);
+    @MXBeanDescription("Kills service by the name.")
+    public void cancel(
+        @MXBeanParameter(name = "name", description = "Service name.") String name
+    );
 }

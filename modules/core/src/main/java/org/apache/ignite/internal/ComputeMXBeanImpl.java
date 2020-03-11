@@ -42,11 +42,11 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(String id) {
-        A.notNull(id, "id");
+    @Override public void cancel(String sessionId) {
+        A.notNull(sessionId, "sessionId");
 
         Set<IgniteUuid> ids = new HashSet<>();
-        ids.add(IgniteUuid.fromString(id));
+        ids.add(IgniteUuid.fromString(sessionId));
 
         VisorComputeCancelSessionsTaskArg arg = new VisorComputeCancelSessionsTaskArg(ids);
 

@@ -37,30 +37,41 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.QueryMXBeanImpl;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    /** */
+    public static final String SVC_NAME = "my-svc";
+
     /** */
     private static final int PAGE_SZ = 5;
 
@@ -133,7 +144,7 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
             assertTrue(qryIters.size() <= 1);
 
-            if (qryIters.size() == 0)
+            if (qryIters.isEmpty())
                 return;
 
             GridCacheQueryManager<?, ?>.RequestFutureMap futs = qryIters.get(client.localNode().id());
@@ -145,7 +156,6 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
     /** @throws Exception If failed. */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12732")
     public void testCancelSQLQuery() throws Exception {
         startGrids(NODES_CNT);
         IgniteEx client = startClientGrid("client");
@@ -175,7 +185,6 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
         qryMBean.cancelSQL(qryId);
 
-        //TODO: this test should be done prior merge.
         while(iter.hasNext())
             assertNotNull(iter.next());
 
@@ -283,21 +292,15 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        // Здесь будет киляние таски
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelComputeJob() throws Exception {
         IgniteEx ignite0 = startGrids(1);
         IgniteEx client = startClientGrid("client");
 
         ignite0.cluster().state(ACTIVE);
 
         IgniteFuture<Collection<Integer>> fut = client.compute().broadcastAsync(() -> {
-            System.out.println("KillCommandTest.testCancelComputeTask");
+            Thread.sleep(60_000L);
 
-            Thread.sleep(10_000L);
+            fail("Task should be killed!");
 
             return 1;
         });
@@ -305,8 +308,7 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
         String[] id = new String[1];
 
         boolean res = waitForCondition(() -> {
-            List<List<?>> tasks = SqlViewExporterSpiTest.execute(ignite0,
-                "SELECT ID FROM SYS.JOBS");
+            List<List<?>> tasks = SqlViewExporterSpiTest.execute(ignite0, "SELECT SESSION_ID FROM SYS.JOBS");
 
             if (tasks.size() == 1) {
                 id[0] = (String)tasks.get(0).get(0);
@@ -325,5 +327,79 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
         computeMBean.cancel(id[0]);
 
         assertThrowsWithCause((Callable<Collection<Integer>>)fut::get, IgniteException.class);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelService() throws Exception {
+        IgniteEx ignite0 = startGrids(1);
+        IgniteEx client = startClientGrid("client");
+
+        ignite0.cluster().state(ACTIVE);
+
+        ServiceConfiguration scfg = new ServiceConfiguration();
+
+        scfg.setName(SVC_NAME);
+        scfg.setMaxPerNodeCount(1);
+        scfg.setNodeFilter(n -> n.id().equals(ignite0.localNode().id()));
+        scfg.setService(new TestServiceImpl());
+
+        client.services().deploy(scfg);
+
+        SystemView<ServiceView> svcView = ignite0.context().systemView().view(SVCS_VIEW);
+
+        boolean res = waitForCondition(() -> svcView.size() == 1, 5_000L);
+
+        assertTrue(res);
+
+        TestService svc = client.services().serviceProxy("my-svc", TestService.class, true);
+
+        assertNotNull(svc);
+
+        IgniteInternalFuture fut = runAsync(svc::doTheJob);
+
+        ServiceMXBean svcMxBean = getMxBean(client.name(), "Service",
+            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
+
+        svcMxBean.cancel("my-svc");
+
+        res = waitForCondition(() -> svcView.size() == 1, 5_000L);
+
+        assertTrue(res);
+    }
+
+    /** */
+    public interface TestService extends Service {
+        /** */
+        public void doTheJob();
+    }
+
+    public static class TestServiceImpl implements TestService {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void doTheJob() {
+            try {
+                Thread.sleep(60_000L);
+
+                fail("Task should be killed!");
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

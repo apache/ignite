@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
@@ -24,11 +25,12 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
  */
 public interface ComputeMXBean {
     /**
-     * @param id Task id.
-     * @see ComputeTaskView#jobId()
+     * @param sessionId Session id.
+     * @see ComputeTaskView#sessionId()
+     * @see ComputeJobView#sessionId()
      */
-    @MXBeanDescription("Kills compute task by the identifier.")
-    @MXBeanParametersNames("id")
-    @MXBeanParametersDescriptions("Task id.")
-    public void cancel(String id);
+    @MXBeanDescription("Kills compute task by the session idenitifier.")
+    public void cancel(
+        @MXBeanParameter(name = "sessionId", description = "Session identifier.") String sessionId
+    );
 }
