@@ -34,7 +34,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -148,15 +147,13 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     /**
      * Callback on exchange done, should be invoked before initialize file page store.
      *
-     * @param exchActions Exchange actions.
      * @param resVer Exchange result version.
      * @param grp Cache group.
      * @param cntrs Partition counters.
      * @param globalSizes Global partition sizes.
      * @param suppliers Historical suppliers.
      */
-    public void onExchangeDone(
-        ExchangeActions exchActions,
+    public void onExchange(
         AffinityTopologyVersion resVer,
         CacheGroupContext grp,
         CachePartitionFullCountersMap cntrs,
@@ -167,7 +164,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         PartitionPreloadingRoutine preloadRoutine = partPreloadingRoutine;
 
-        // Abort the current rebalancing procedure if it is still in progress
+        // Abort the current parttition preloading if it is still in progress.
         if (preloadRoutine != null && !preloadRoutine.isDone())
             preloadRoutine.cancel();
 
@@ -176,18 +173,19 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
         boolean disable = filePreloadingApplicable(resVer, grp, cntrs, globalSizes, suppliers);
 
-        boolean hasIdleParttition = false;
+        // Should rebuild indexes if the last partition files preloading routine was incomplete.
+        boolean rebuildIdx = false;
 
         // At this point, cache updates are queued, and we can safely
         // switch partitions to inactive mode and vice versa.
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
             if (disable)
                 part.disable();
-            else if (part.enable())
-                hasIdleParttition = true;
+            else if (part.enable() && cctx.pageStore().exists(grp.groupId(), part.id()))
+                rebuildIdx = true;
         }
 
-        if (hasIdleParttition)
+        if (rebuildIdx)
             cctx.database().rebuildIndexes(grp);
     }
 

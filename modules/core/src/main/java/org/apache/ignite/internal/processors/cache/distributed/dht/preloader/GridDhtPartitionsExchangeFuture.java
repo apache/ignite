@@ -3644,7 +3644,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     Map<Integer, Long> partSizes = grpCtx.topology().globalPartSizes();
 
-                    cctx.preloader().onExchangeDone(exchActions, resTopVer, grpCtx, cntrs, partSizes, partHistSuppliers);
+                    cctx.preloader().onExchange(resTopVer, grpCtx, cntrs, partSizes, partHistSuppliers);
                 }
 
                 grpCtx.topology().applyUpdateCounters();
@@ -4432,8 +4432,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             msg.partitionUpdateCounters(grpId, grp.topology().partitions());
 
                         if (rebalanceRequired && grp.persistenceEnabled()) {
-                            cctx.preloader().onExchangeDone(exchActions,
-                                resTopVer,
+                            cctx.preloader().onExchange(resTopVer,
                                 grp,
                                 cntrMap,
                                 msg.partitionSizes(cctx).get(grp.groupId()),
