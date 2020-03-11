@@ -427,6 +427,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                     if (evt0.customMessage() instanceof InitMessage) {
                         InitMessage<?> msg = (InitMessage<?>)evt0.customMessage();
 
+                        // This happens when #takeSnapshot() method already invoked and distributed process
+                        // starts its action.
                         if (msg.type() == TAKE_SNAPSHOT.ordinal()) {
                             assert clusterSnpTask != null : evt;
 
@@ -1106,7 +1108,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
             takeSnpProc.start(clsFut.id, new SnapshotOperationRequest(name, grps));
 
-
             if(log.isInfoEnabled())
                 log.info("Cluster-wide snapshot operation started [snpName=" + name + ", gprs=" + grps + ']');
 
@@ -1325,6 +1326,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         snpFutTask.listen(f -> locSnpTasks.remove(snpName));
 
+        // todo for local snapshot should not be started here
         snpFutTask.start();
 
         return snpFutTask;
