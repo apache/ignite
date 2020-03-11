@@ -276,7 +276,10 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     ) {
         Collection<? extends BaselineNode> bltNodes = cctx.discovery().baselineNodes(resVer);
 
-        if (F.isEmpty(bltNodes) || !bltNodes.contains(cctx.localNode()))
+        if (bltNodes == null || !bltNodes.contains(cctx.localNode()))
+            return false;
+
+        if (grp.topology().stopping())
             return false;
 
         AffinityAssignment aff = grp.affinity().readyAffinity(resVer);

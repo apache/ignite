@@ -88,8 +88,11 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     @GridToStringInclude
     private final Map<Integer, Map<UUID, Map<Integer, Long>>> restored = new ConcurrentHashMap<>();
 
-    /** Cache group identifiers with futures that will be completed when partition files are preloaded. */
-    private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> grpRoutines = new ConcurrentHashMap<>();
+    /**
+     * Cache group identifiers with historical assignments future that will be completed when partition files are
+     * preloaded.
+     */
+    private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> futAssigns = new ConcurrentHashMap<>();
 
     /** Total number of partitions. */
     private final int totalPartitionsCnt;
@@ -111,7 +114,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     ) {
         int totalParts = 0;
 
-        // Copy into concurrent collection.
+        // Copy contents.
         Map<UUID, Map<Integer, Set<Integer>>> remaining0 = U.newHashMap(assignments.size());
 
         for (Map.Entry<UUID, Map<Integer, Set<Integer>>> nodeAssign : assignments.entrySet()) {
@@ -121,7 +124,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
             for (Map.Entry<Integer, Set<Integer>> grpAssign : nodeAssign.getValue().entrySet()) {
                 nodeAssign0.put(grpAssign.getKey(), new GridConcurrentHashSet<>(grpAssign.getValue()));
-                grpRoutines.put(grpAssign.getKey(), new GridFutureAdapter<>());
+                futAssigns.put(grpAssign.getKey(), new GridFutureAdapter<>());
 
                 totalParts += grpAssign.getValue().size();
             }
@@ -134,7 +137,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         topVer = exchFut.topologyVersion();
         log = cctx.kernalContext().log(getClass());
         totalPartitionsCnt = totalParts;
-        remaining = remaining0;
+        remaining = Collections.unmodifiableMap(remaining0);
     }
 
     /**
@@ -149,7 +152,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
 
-        return Collections.unmodifiableMap(grpRoutines);
+        return Collections.unmodifiableMap(futAssigns);
     }
 
     /**
@@ -217,7 +220,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @return Set of identifiers of the remaining groups.
      */
     public Set<Integer> remainingGroups() {
-        return grpRoutines.keySet();
+        return futAssigns.keySet();
     }
 
     /**
@@ -230,7 +233,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
         if (grp == null) {
-            log.warning("Snapshot initialization skipped, cache group not found [grpId=" + grpId + "]");
+            log.warning("Partition snapshot initialization skipped, cache group not found [grpId=" + grpId + "]");
 
             return;
         }
@@ -317,7 +320,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
      */
     private void onCacheGroupDone(int grpId, Map<UUID, Map<Integer, Long>> maxCntrs) {
-        GridFutureAdapter<GridDhtPreloaderAssignments> fut = grpRoutines.remove(grpId);
+        GridFutureAdapter<GridDhtPreloaderAssignments> fut = futAssigns.remove(grpId);
 
         if (fut == null)
             return;
@@ -338,7 +341,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         if (histAssignments.isEmpty())
             idxFut.listen(f -> cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer));
 
-        boolean finalPreloading = grpRoutines.isEmpty() && onDone(true);
+        boolean finalPreloading = futAssigns.isEmpty() && onDone(true);
 
         if (log.isInfoEnabled()) {
             log.info("Completed" + (finalPreloading ? " (final)" : "") +
@@ -377,14 +380,11 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 snapshotFut.cancel();
             }
 
-            for (GridFutureAdapter fut : grpRoutines.values())
+            for (GridFutureAdapter fut : futAssigns.values())
                 fut.onDone();
 
-            if (isFailed()) {
+            if (isFailed())
                 log.error("File preloading failed [topVer=" + topVer + "]", err);
-
-                return true;
-            }
 
             return true;
         }
