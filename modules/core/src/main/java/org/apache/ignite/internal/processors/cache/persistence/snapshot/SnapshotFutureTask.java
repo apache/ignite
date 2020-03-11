@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -422,12 +423,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             wrapExceptionIfStarted(() -> snpSndr.sendBinaryMeta(binTypesCopy)),
             snpSndr.executor()));
 
+        List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
+            .marshallerContext()
+            .getCachedMappings();
+
         // Process marshaller meta.
         futs.add(CompletableFuture.runAsync(
-            wrapExceptionIfStarted(() ->
-                    snpSndr.sendMarshallerMeta(cctx.kernalContext()
-                        .marshallerContext()
-                        .getCachedMappings())),
+            wrapExceptionIfStarted(() -> snpSndr.sendMarshallerMeta(mappingsCopy)),
             snpSndr.executor()));
 
         // Process cache group configuration files.
