@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -273,7 +274,9 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
         Map<Integer, Long> globalSizes,
         IgniteDhtPartitionHistorySuppliersMap suppliers
     ) {
-        if (!cctx.discovery().baselineNodes(resVer).contains(cctx.localNode()))
+        Collection<? extends BaselineNode> bltNodes = cctx.discovery().baselineNodes(resVer);
+
+        if (F.isEmpty(bltNodes) || !bltNodes.contains(cctx.localNode()))
             return false;
 
         AffinityAssignment aff = grp.affinity().readyAffinity(resVer);
