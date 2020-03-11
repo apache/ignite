@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandbo
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
+import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -87,7 +88,8 @@ import org.junit.runners.Suite;
     SecuritySubjectPermissionsTest.class,
     AccessToClassesInsideInternalPackageTest.class,
     IgniteSecurityProcessorTest.class,
-    GridCommandHandlerSslWithSecurityTest.class
+    GridCommandHandlerSslWithSecurityTest.class,
+    MultipleSSLContextsTest.class
 })
 public class SecurityTestSuite {
 }
