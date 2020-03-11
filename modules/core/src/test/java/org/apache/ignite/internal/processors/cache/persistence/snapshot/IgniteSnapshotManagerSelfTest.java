@@ -252,9 +252,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         GridIntList ints = new GridIntList(IntStream.range(0, CACHE_PARTS_COUNT - 1).toArray());
         ints.add(PageIdAllocator.INDEX_PARTITION);
 
-        Map<Integer, GridIntList> parts = new HashMap<>();
+        Map<Integer, int[]> parts = new HashMap<>();
 
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints.array());
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -384,10 +384,13 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
-        Map<Integer, GridIntList> parts = new HashMap<>();
+        Map<Integer, int[]> parts = new HashMap<>();
 
-        parts.computeIfAbsent(CU.cacheId(DEFAULT_CACHE_NAME), c -> new GridIntList(1))
-            .add(0);
+        int[] ints = new int[1];
+        ints[0] = 0;
+
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
+
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -663,8 +666,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         GridIntList ints = new GridIntList(IntStream.range(0, CACHE_PARTS_COUNT - 1).toArray());
         ints.add(PageIdAllocator.INDEX_PARTITION);
 
-        Map<Integer, GridIntList> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints);
+        Map<Integer, int[]> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), ints.array());
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -740,7 +743,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteSnapshotManager mgr = cctx.snapshotMgr();
 
         // Collection of pairs group and appropratate cache partition to be snapshotted.
-        Map<Integer, GridIntList> parts = grpIds.stream()
+        Map<Integer, int[]> parts = grpIds.stream()
             .collect(Collectors.toMap(grpId -> grpId,
                 grpId -> {
                     GridIntList grps = new GridIntList();
@@ -753,7 +756,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
                     grps.add(INDEX_PARTITION);
 
-                    return grps;
+                    return grps.array();
                 }));
 
         try {

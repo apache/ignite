@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -41,7 +40,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
 
     /** Map of cache group ids and corresponding set of its partition ids. */
     @GridDirectMap(keyType = Integer.class, valueType = GridIntList.class)
-    private Map<Integer, GridIntList> parts;
+    private Map<Integer, int[]> parts;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -54,21 +53,18 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
      * @param snpName Unique snapshot name.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshotted.
      */
-    public SnapshotRequestMessage(String snpName, Map<Integer, GridIntList> parts) {
+    public SnapshotRequestMessage(String snpName, Map<Integer, int[]> parts) {
         super(snpName);
 
         assert parts != null && !parts.isEmpty();
 
-        this.parts = U.newHashMap(parts.size());
-
-        for (Map.Entry<Integer, GridIntList> e : parts.entrySet())
-            this.parts.put(e.getKey(), e.getValue().copy());
+        this.parts = parts;
     }
 
     /**
      * @return The demanded cache group partions per each cache group.
      */
-    public Map<Integer, GridIntList> parts() {
+    public Map<Integer, int[]> parts() {
         return parts;
     }
 
@@ -87,7 +83,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
         }
 
         if (writer.state() == 1) {
-            if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+            if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                 return false;
 
             writer.incrementState();
@@ -107,7 +103,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
             return false;
 
         if (reader.state() == 1) {
-            parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+            parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
             if (!reader.isLastRead())
                 return false;

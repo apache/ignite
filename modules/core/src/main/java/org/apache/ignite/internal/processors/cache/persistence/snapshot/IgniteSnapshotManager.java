@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
@@ -655,7 +654,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 parts.entrySet()
                     .stream()
                     .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> GridIntList.valueOf(e.getValue()))));
+                        e -> e.getValue().stream().mapToInt(Integer::intValue).toArray())));
 
             RemoteSnapshotFuture fut = rmtSnpReq.get();
 
@@ -725,7 +724,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     IgniteInternalFuture<Boolean> startLocalSnapshotTask(
         String snpName,
         UUID srcNodeId,
-        Map<Integer, GridIntList> parts,
+        Map<Integer, int[]> parts,
         Executor exec,
         SnapshotFileSender snpSndr
     ) {
@@ -762,7 +761,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private SnapshotFutureTask startSnapshotTask(
         String snpName,
         UUID srcNodeId,
-        Map<Integer, GridIntList> parts,
+        Map<Integer, int[]> parts,
         SnapshotFileSender snpSndr
     ) {
         if (locSnpTasks.containsKey(snpName))

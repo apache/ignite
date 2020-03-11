@@ -57,8 +57,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.util.GridIntIterator;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -153,6 +151,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /**
      * @param snpName Unique identifier of snapshot task.
      * @param ioFactory Factory to working with delta as file storage.
+     * @param parts Map of cache groups and its partitions to include into snapshot, if array of partitions
+     * is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
      */
     public SnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -161,7 +161,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         File tmpWorkDir,
         FileIOFactory ioFactory,
         SnapshotFileSender snpSndr,
-        Map<Integer, GridIntList> parts
+        Map<Integer, int[]> parts
     ) {
         A.notNull(snpName, "Snapshot name cannot be empty or null");
         A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
@@ -174,11 +174,12 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
         this.snpSndr = snpSndr;
 
-        for (Map.Entry<Integer, GridIntList> e : parts.entrySet()) {
-            GridIntIterator iter = e.getValue().iterator();
+        for (Map.Entry<Integer, int[]> e : parts.entrySet()) {
+            if (e.getValue() == null)
+                continue;
 
-            while (iter.hasNext())
-                this.parts.add(new GroupPartitionId(e.getKey(), iter.next()));
+            for (int part : e.getValue())
+                this.parts.add(new GroupPartitionId(e.getKey(), part));
         }
 
         try {
