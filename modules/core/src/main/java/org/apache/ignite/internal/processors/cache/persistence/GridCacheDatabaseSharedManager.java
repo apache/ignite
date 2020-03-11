@@ -5059,7 +5059,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @param error Causal error of fail.
          */
-        public void fail(Throwable error) {
+        @Override public void fail(Throwable error) {
             failCause = error;
 
             transitTo(FINISHED);
@@ -5070,7 +5070,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @param newState New checkpoint state.
          */
-        public void transitTo(@NotNull CheckpointState newState) {
+        @Override public void transitTo(@NotNull CheckpointState newState) {
             CheckpointState state = this.state.get();
 
             if (state.ordinal() < newState.ordinal()) {
