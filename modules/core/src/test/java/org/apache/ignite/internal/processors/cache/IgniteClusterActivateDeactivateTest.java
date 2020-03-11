@@ -1565,6 +1565,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         checkClusterStateNotWaitForDeactivation(ACTIVE_READ_ONLY);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testInternalForcedDeactivation() throws Exception {
         startGrid(0, false);
