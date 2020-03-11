@@ -629,7 +629,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
         else {
             if (isApplicable(msg, state)) {
-                if (msg.state() == INACTIVE && !msg.forceDeactivation() && !isDeactivationSafe() &&
+                if (msg.state() == INACTIVE && !msg.forceDeactivation() && hasInMemoryCache() &&
                     allNodesSupports(ctx.discovery().serverNodes(topVer), SAFE_CLUSTER_DEACTIVATION)) {
                     GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
@@ -1079,7 +1079,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
 
         if (ctx.isDaemon() || ctx.clientNode())
-            return sendComputeChangeGlobalState(state, blt, forceChangeBaselineTopology);
+            return sendComputeChangeGlobalState(state, forceDeactivation, blt, forceChangeBaselineTopology);
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
             return new GridFinishedFuture<>(
@@ -1311,11 +1311,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /**
      * @param state New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param blt New cluster state.
      * @param forceBlt New cluster state.
      */
     private IgniteInternalFuture<Void> sendComputeChangeGlobalState(
         ClusterState state,
+        boolean forceDeactivation,
         BaselineTopology blt,
         boolean forceBlt
     ) {
@@ -1332,7 +1334,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
-        IgniteFuture<Void> fut = comp.runAsync(new ClientSetGlobalStateComputeRequest(state, blt, forceBlt));
+        IgniteFuture<Void> fut = comp.runAsync(new ClientSetGlobalStateComputeRequest(state, forceDeactivation, blt,
+            forceBlt));
 
         return ((IgniteFutureImpl<Void>)fut).internalFuture();
     }
@@ -1684,17 +1687,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
-     * @return {@code True} if cluster deactivation won't clear in-memory caches (without persistence) including the
-     * system caches. {@code False} otherwise.
-     */
-    public boolean isDeactivationSafe() {
-        return ctx.cache().cacheDescriptors().values().stream()
-            .allMatch(desc ->
-                isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration()) ||
-                    (desc.cacheConfiguration().isWriteBehindEnabled() && desc.cacheConfiguration().isReadThrough()));
-    }
-
-    /**
      * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
      * cluster in auto-adjust. {@code False} If cluster in manuale.
      * @throws IgniteException If operation failed.
@@ -1836,6 +1828,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return defaultValue;
+    }
+
+    /**
+     * @return {@code True} if cluster has in-memory caches (without persistence) including the system caches.
+     * {@code False} otherwise.
+     */
+    private boolean hasInMemoryCache() {
+        return ctx.cache().cacheDescriptors().values().stream()
+            .anyMatch(desc -> !isPersistentCache(desc.cacheConfiguration(), ctx.config().getDataStorageConfiguration())
+                && (!desc.cacheConfiguration().isWriteBehindEnabled() || !desc.cacheConfiguration().isReadThrough()));
     }
 
     /** {@inheritDoc} */
@@ -2004,6 +2006,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /** */
         private final ClusterState state;
 
+        /** If {@code true}, cluster deactivation will be forced. */
+        private final boolean forceDeactivation;
+
         /** */
         private final BaselineTopology baselineTopology;
 
@@ -2016,17 +2021,20 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         /**
          * @param state New cluster state.
+         * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
          * @param blt New baseline topology.
          * @param forceBlt Force change cluster state.
          */
         private ClientSetGlobalStateComputeRequest(
             ClusterState state,
+            boolean forceDeactivation,
             BaselineTopology blt,
             boolean forceBlt
         ) {
             this.state = state;
             this.baselineTopology = blt;
             this.forceChangeBaselineTopology = forceBlt;
+            this.forceDeactivation = forceDeactivation;
         }
 
         /** {@inheritDoc} */
@@ -2034,7 +2042,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             try {
                 ig.context().state().changeGlobalState(
                     state,
-                    true,
+                    forceDeactivation,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
                     forceChangeBaselineTopology
                 ).get();
