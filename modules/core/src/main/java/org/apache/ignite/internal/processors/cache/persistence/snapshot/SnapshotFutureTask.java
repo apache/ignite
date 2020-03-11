@@ -44,6 +44,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -345,72 +346,72 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         if (stopping.getAsBoolean())
             return;
 
-        for (Map.Entry<Integer, Optional<Set<Integer>>> e : parts.entrySet()) {
-            int grpId = e.getKey();
+        try {
+            for (Map.Entry<Integer, Optional<Set<Integer>>> e : parts.entrySet()) {
+                int grpId = e.getKey();
 
-            GridDhtPartitionTopology top = cctx.cache().cacheGroup(grpId).topology();
+                GridDhtPartitionTopology top = cctx.cache().cacheGroup(grpId).topology();
 
-            Iterator<GridDhtLocalPartition> iter = e.getValue()
-                .map(new Function<Set<Integer>, Iterator<GridDhtLocalPartition>>() {
-                    @Override public Iterator<GridDhtLocalPartition> apply(Set<Integer> p) {
-                        return new Iterator<GridDhtLocalPartition>() {
-                            Iterator<Integer> iter = p.iterator();
-
-                            @Override public boolean hasNext() {
-                                return iter.hasNext();
+                Iterator<GridDhtLocalPartition> iter = e.getValue()
+                    .map(new Function<Set<Integer>, Iterator<GridDhtLocalPartition>>() {
+                        @Override public Iterator<GridDhtLocalPartition> apply(Set<Integer> p) {
+                            if (p.contains(INDEX_PARTITION)) {
+                                throw new IgniteException("Index partition cannot be included into snapshot if " +
+                                    " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
                             }
 
-                            @Override public GridDhtLocalPartition next() {
-                                int partId = iter.next();
+                            return new Iterator<GridDhtLocalPartition>() {
+                                Iterator<Integer> iter = p.iterator();
 
-                                return top.localPartition(partId);
-                            }
-                        };
+                                @Override public boolean hasNext() {
+                                    return iter.hasNext();
+                                }
+
+                                @Override public GridDhtLocalPartition next() {
+                                    return top.localPartition(iter.next());
+                                }
+                            };
+                        }
+                    }).orElse(top.currentLocalPartitions().iterator());
+
+                Set<Integer> owning = processed.computeIfAbsent(grpId, g -> new HashSet<>());
+                Set<Integer> missed = new HashSet<>();
+
+                // Iterate over partition in particular cache group
+                while (iter.hasNext()) {
+                    GridDhtLocalPartition part = iter.next();
+
+                    // Partition can be reserved.
+                    // Partition can be MOVING\RENTING states.
+                    // Index partition will be excluded if not all partition OWNING.
+                    // There is no data assigned to partition, thus it haven't been created yet.
+                    if (part.state() == GridDhtPartitionState.OWNING)
+                        owning.add(part.id());
+                    else
+                        missed.add(part.id());
+                }
+
+                // Partitions has not been provided for snapshot task and all partitions have
+                // OWNING state, so index partition must be included into snapshot.
+                if (!e.getValue().isPresent()) {
+                    if (missed.isEmpty())
+                        owning.add(INDEX_PARTITION);
+                    else {
+                        log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
+                            "Partitions which have different states skipped. Index partitions has also been skipped " +
+                            "[snpName=" + snpName + ", missed=" + missed + ']');
                     }
-                }).orElse(top.currentLocalPartitions().iterator());
+                }
 
-            Set<Integer> owning = processed.computeIfAbsent(grpId, g -> new HashSet<>());
-            Set<Integer> missed = new HashSet<>();
-
-            // Iterate over partition in particular cache group
-            while (iter.hasNext()) {
-                GridDhtLocalPartition part = iter.next();
-
-                // Partition can be reserved.
-                // Partition can be MOVING\RENTING states.
-                // Index partition will be excluded if not all partition OWNING.
-                // There is no data assigned to partition, thus it haven't been created yet.
-                if (part.state() == GridDhtPartitionState.OWNING)
-                    owning.add(part.id());
-                else
-                    missed.add(part.id());
-            }
-
-            // Partitions has not been provided for snapshot task and all partitions have
-            // OWNING state, so index partition must be included into snapshot.
-            if (!e.getValue().isPresent()) {
-                if (missed.isEmpty())
-                    owning.add(INDEX_PARTITION);
-                else {
-                    log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
-                        "Partitions which have different states skipped. Index partitions has also been skipped " +
-                        "[snpName=" + snpName + ", missed=" + missed + ']');
+                // Partition has been provided for cache group, but some of them are not in OWNING state.
+                // Exit with an error
+                if (!missed.isEmpty() && e.getValue().isPresent()) {
+                    throw new IgniteCheckedException("Snapshot operation cancelled due to " +
+                        "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
+                        ", missed" + missed + ']');
                 }
             }
 
-            // Partition has been provided for cache group, but some of them are not in OWNING state.
-            // Exit with an error
-            if (!missed.isEmpty() && e.getValue().isPresent()) {
-                acceptException(new IgniteCheckedException("Snapshot operation cancelled due to " +
-                    "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
-                    ", missed" + missed + ']'));
-            }
-        }
-
-        if (stopping.getAsBoolean())
-            return;
-
-        try {
             CompletableFuture<Boolean> cpEndFut0 = cpEndFut;
 
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
@@ -442,7 +443,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | IgniteException e) {
             acceptException(e);
         }
     }
