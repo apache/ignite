@@ -21,68 +21,53 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * @deprecated Use {@link GridClientClusterStateRequestV2}
+ * Enhanced version of {@link GridClientClusterStateRequest}.
+ * Introduced to support forced version of the change state command and keep backward compatibility
+ * with nodes of old version that may occur in cluster at the rolling updates.
  */
-@Deprecated
-public class GridClientClusterStateRequest extends GridClientAbstractMessage {
+public class GridClientClusterStateRequestV2 extends GridClientClusterStateRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Request current state. */
-    private boolean reqCurrentState;
-
-    /** New cluster state. */
-    protected ClusterState state;
-
-    /** */
-    public boolean isReqCurrentState() {
-        return reqCurrentState;
-    }
-
-    /** */
-    public ClusterState state() {
-        return state;
-    }
+    /** If {@code true}, cluster deactivation will be forced. */
+    private boolean forceDeactivation;
 
     /**
-     * @return Current read-only mode request.
+     * @return {@code True} if cluster deactivation will be forced. {@code False} otherwise.
+     * @see ClusterState#INACTIVE
      */
-    public static GridClientClusterStateRequest currentState() {
-        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
-
-        msg.reqCurrentState = true;
-
-        return msg;
+    public boolean forceDeactivation() {
+        return forceDeactivation;
     }
 
     /**
      * @param state New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @return Cluster state change request.
      */
-    public static GridClientClusterStateRequest state(ClusterState state) {
-        GridClientClusterStateRequest msg = new GridClientClusterStateRequest();
+    public static GridClientClusterStateRequestV2 state(ClusterState state, boolean forceDeactivation) {
+        GridClientClusterStateRequestV2 req = new GridClientClusterStateRequestV2();
 
-        msg.state = state;
+        req.state = state;
 
-        return msg;
+        req.forceDeactivation = forceDeactivation;
+
+        return req;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeBoolean(reqCurrentState);
-        U.writeEnum(out, state);
+        out.writeBoolean(forceDeactivation);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        reqCurrentState = in.readBoolean();
-        state = ClusterState.fromOrdinal(in.readByte());
+        forceDeactivation = in.readBoolean();
     }
 }
