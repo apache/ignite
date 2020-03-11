@@ -285,7 +285,7 @@ public class ConsistencyCheckUtils {
     }
 
     /**
-     * Does remap conflicts and actual keys to {@link List<PartitionReconciliationDataRowMeta>}.
+     * Does remap conflicts and actual keys to {@code List<PartitionReconciliationDataRowMeta>}.
      */
     public static List<PartitionReconciliationDataRowMeta> mapPartitionReconciliation(
         Map<KeyCacheObject, Map<UUID, GridCacheVersion>> conflicts,
