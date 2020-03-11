@@ -50,14 +50,19 @@ public class GridConcurrentMultiPairQueueTest extends GridCommonAbstractTest {
 
     /** */
     Integer[] arr2 = {2, 4};
+
     /** */
     Integer[] arr1 = {1, 3, 5, 7, 9, 11, 13, 15, 17, 19};
+
     /** */
     Integer[] arr4 = {};
+
     /** */
     Integer[] arr5 = {};
+
     /** */
     Integer[] arr3 = {100, 200, 300, 400, 500, 600, 600, 700};
+    
     /** */
     Integer[] arr6 = {};
 
