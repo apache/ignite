@@ -68,6 +68,7 @@ public class TestSecurityContext implements SecurityContext, Serializable {
             case CACHE_CREATE:
             case CACHE_DESTROY:
             case JOIN_AS_SERVER:
+            case CHANGE_SNAPSHOT_SECURITY_LEVEL:
                 return systemOperationAllowed(perm);
 
             default:
