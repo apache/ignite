@@ -824,8 +824,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException {
+    @Override public GridClientFuture<?> changeState(
+        ClusterState state,
+        UUID destNodeId
+    ) throws GridClientClosedException, GridClientConnectionResetException {
         assert state != null;
 
         return makeRequest(GridClientClusterStateRequest.state(state), destNodeId);
