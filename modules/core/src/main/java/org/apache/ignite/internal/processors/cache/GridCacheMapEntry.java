@@ -3709,9 +3709,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param expireTime Expire time.
      * @param ver New entry version.
      * @param pred Optional predicate.
-     *
-     * @return {@code True} if storage was modified.
-     * @param pred Optional predicate.
      * @return Update closure containing invocation context.
      * @throws IgniteCheckedException If update failed.
      */
