@@ -163,7 +163,6 @@ public class AuthenticationContext {
 
     /**
      * @return Client SSL certificates.
-     * @param certificates
      */
     public Certificate[] certificates() {
         return certs;
@@ -171,6 +170,7 @@ public class AuthenticationContext {
 
     /**
      * Set client SSL certificates.
+     * @param certs Client SSL certificates.
      */
     public AuthenticationContext certificates(Certificate[] certs) {
         this.certs = certs;
