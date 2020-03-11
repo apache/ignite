@@ -220,10 +220,11 @@ class VisorOpenCommand extends VisorConsoleCommand {
         }
         catch {
             case e: IgniteException =>
-                warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
                 status("q")
+
+                throw e;
         }
     }
 
