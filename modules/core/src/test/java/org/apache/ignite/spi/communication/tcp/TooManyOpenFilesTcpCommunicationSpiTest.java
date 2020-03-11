@@ -22,6 +22,7 @@ import java.net.SocketException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -79,7 +80,7 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
     @Test
     public void testTooManyOpenFilesErr() throws Exception {
         IgniteEx crd = startGrids(3);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx stopNode = grid(2);
 
