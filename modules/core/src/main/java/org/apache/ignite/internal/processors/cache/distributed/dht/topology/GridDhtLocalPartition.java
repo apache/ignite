@@ -996,7 +996,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Backup.
             assert primaryCntr != 0;
 
-            store.updateCounter(nextCntr = primaryCntr);
+            nextCntr = primaryCntr;
+
+            store.updateCounter(nextCntr - 1, 1);
         }
 
         if (grp.sharedGroup())
