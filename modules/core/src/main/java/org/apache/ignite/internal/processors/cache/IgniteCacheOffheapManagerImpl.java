@@ -1177,8 +1177,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.rowStore = rowStore;
             this.dataTree = dataTree;
 
-            PartitionUpdateCounter delegate = grp.persistenceEnabled() ? new PartitionUpdateCounterTrackingImpl(grp) :
-                    new PartitionUpdateCounterVolatileImpl(grp);
+            PartitionUpdateCounter delegate = !grp.persistenceEnabled() || grp.hasAtomicCaches() ?
+                new PartitionUpdateCounterVolatileImpl(grp) :
+                new PartitionUpdateCounterTrackingImpl(grp);
 
             pCntr = ctx.logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : delegate;
