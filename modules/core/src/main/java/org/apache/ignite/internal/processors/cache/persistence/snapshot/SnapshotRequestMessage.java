@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -39,7 +41,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
     private static final long serialVersionUID = 0L;
 
     /** Map of cache group ids and corresponding set of its partition ids. */
-    @GridDirectMap(keyType = Integer.class, valueType = GridIntList.class)
+    @GridDirectMap(keyType = Integer.class, valueType = int[].class)
     private Map<Integer, int[]> parts;
 
     /**
@@ -53,19 +55,30 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
      * @param snpName Unique snapshot name.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshotted.
      */
-    public SnapshotRequestMessage(String snpName, Map<Integer, int[]> parts) {
+    public SnapshotRequestMessage(String snpName, Map<Integer, Set<Integer>> parts) {
         super(snpName);
 
         assert parts != null && !parts.isEmpty();
 
-        this.parts = parts;
+        this.parts = parts.entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey,
+                e -> e.getValue()
+                        .stream()
+                        .mapToInt(Integer::intValue)
+                        .toArray()));
     }
 
     /**
      * @return The demanded cache group partions per each cache group.
      */
-    public Map<Integer, int[]> parts() {
-        return parts;
+    public Map<Integer, Set<Integer>> parts() {
+        return parts.entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey,
+                e -> Arrays.stream(e.getValue())
+                        .boxed()
+                        .collect(Collectors.toSet())));
     }
 
     /** {@inheritDoc} */

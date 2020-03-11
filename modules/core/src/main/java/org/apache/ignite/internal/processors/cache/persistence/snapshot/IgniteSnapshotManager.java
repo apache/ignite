@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -71,8 +72,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -285,25 +284,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             }
                         }
 
-                        startSnapshotTask(snpName, nodeId, reqMsg0.parts(), remoteSnapshotSender(snpName, nodeId))
-                            .listen(f -> {
-                                if (f.error() == null)
-                                    return;
+                        startSnapshotTask(
+                            snpName,
+                            nodeId,
+                            reqMsg0.parts()
+                                .entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey,
+                                    e -> Optional.of(e.getValue()))),
+                            remoteSnapshotSender(snpName, nodeId)
+                        ).listen(f -> {
+                            if (f.error() == null)
+                                return;
 
-                                U.error(log, "Failed to proccess request of creating a snapshot " +
-                                    "[from=" + nodeId + ", msg=" + reqMsg0 + ']', f.error());
+                            U.error(log, "Failed to proccess request of creating a snapshot " +
+                                "[from=" + nodeId + ", msg=" + reqMsg0 + ']', f.error());
 
-                                try {
-                                    cctx.gridIO().sendToCustomTopic(nodeId,
-                                        DFLT_INITIAL_SNAPSHOT_TOPIC,
-                                        new SnapshotResponseMessage(reqMsg0.snapshotName(), f.error().getMessage()),
-                                        SYSTEM_POOL);
-                                }
-                                catch (IgniteCheckedException ex0) {
-                                    U.error(log, "Fail to send the response message with processing snapshot request " +
-                                        "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
-                                }
-                            });
+                            try {
+                                cctx.gridIO().sendToCustomTopic(nodeId,
+                                    DFLT_INITIAL_SNAPSHOT_TOPIC,
+                                    new SnapshotResponseMessage(reqMsg0.snapshotName(), f.error().getMessage()),
+                                    SYSTEM_POOL);
+                            }
+                            catch (IgniteCheckedException ex0) {
+                                U.error(log, "Fail to send the response message with processing snapshot request " +
+                                    "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
+                            }
+                        });
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
@@ -616,31 +623,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']'));
         }
 
-        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
-            int grpId = e.getKey();
-
-            GridDhtPartitionMap partMap = cctx.cache()
-                .cacheGroup(grpId)
-                .topology()
-                .partitions(rmtNodeId);
-
-            Set<Integer> owningParts = partMap.entrySet()
-                .stream()
-                .filter(p -> p.getValue() == GridDhtPartitionState.OWNING)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-
-            if (!owningParts.containsAll(e.getValue())) {
-                Set<Integer> substract = new HashSet<>(e.getValue());
-
-                substract.removeAll(owningParts);
-
-                return new GridFinishedFuture<>(new IgniteCheckedException("Only owning partitions allowed to be " +
-                    "requested from the remote node [rmtNodeId=" + rmtNodeId + ", grpId=" + grpId +
-                    ", missed=" + substract + ']'));
-            }
-        }
-
         String snpName = "snapshot_" + UUID.randomUUID().toString();
 
         RemoteSnapshotFuture snpTransFut = new RemoteSnapshotFuture(rmtNodeId, snpName,
@@ -650,11 +632,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         SnapshotRequestMessage msg0;
 
         try {
-            msg0 = new SnapshotRequestMessage(snpName,
-                parts.entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue().stream().mapToInt(Integer::intValue).toArray())));
+            msg0 = new SnapshotRequestMessage(snpName, parts);
 
             RemoteSnapshotFuture fut = rmtSnpReq.get();
 
@@ -700,12 +678,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      */
     public void onCacheGroupsStopped(List<Integer> grps) {
         for (SnapshotFutureTask sctx : locSnpTasks.values()) {
-            Set<Integer> snpGrps = sctx.partitions().stream()
-                .map(GroupPartitionId::getGroupId)
-                .collect(Collectors.toSet());
-
             Set<Integer> retain = new HashSet<>(grps);
-            retain.retainAll(snpGrps);
+            retain.retainAll(sctx.affectedCacheGroups());
 
             if (!retain.isEmpty()) {
                 sctx.acceptException(new IgniteCheckedException("Snapshot has been interrupted due to some of the required " +
@@ -724,8 +698,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     IgniteInternalFuture<Boolean> startLocalSnapshotTask(
         String snpName,
         UUID srcNodeId,
-        Map<Integer, int[]> parts,
-        Executor exec,
+        Map<Integer, Optional<Set<Integer>>> parts,
         SnapshotFileSender snpSndr
     ) {
         if (!busyLock.enterBusy())
@@ -761,7 +734,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     private SnapshotFutureTask startSnapshotTask(
         String snpName,
         UUID srcNodeId,
-        Map<Integer, int[]> parts,
+        Map<Integer, Optional<Set<Integer>>> parts,
         SnapshotFileSender snpSndr
     ) {
         if (locSnpTasks.containsKey(snpName))
@@ -780,6 +753,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         if (prev != null)
             return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
+
+        if (log.isInfoEnabled()) {
+            log.info("Snapshot task has been registered on local node [sctx=" + this +
+                ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+        }
 
         snpFutTask.listen(f -> locSnpTasks.remove(snpName));
 
