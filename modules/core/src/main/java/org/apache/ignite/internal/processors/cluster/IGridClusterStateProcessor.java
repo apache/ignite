@@ -113,7 +113,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param baselineNodes New baseline nodes.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param forceChangeBaselineTopology Force change baseline topology.
-     * @param isAutoAdjust Auto adjusting flag.
+     * @param isAutoAdjust Auto adjusting baseline flag.
      * @return State change future.
      * @see ClusterState#INACTIVE
      */
