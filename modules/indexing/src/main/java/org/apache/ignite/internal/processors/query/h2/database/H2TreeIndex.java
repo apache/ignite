@@ -417,11 +417,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** {@inheritDoc} */
     @Override public boolean putx(H2CacheRow row) {
         try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
             int seg = segmentForRow(cctx, row);
 
             H2Tree tree = treeForRead(seg);
+
+            InlineIndexHelper.setCurrentInlineIndexes(tree.inlineIndexes());
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -593,6 +593,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         for (int pos = 0; pos < inlineHelpers.size(); ++pos)
             inlineIdxs.set(pos, inlineHelpers.get(pos));
+
+        for (H2Tree seg : segments)
+            seg.refreshColumnIds(inlineIdxs);
     }
 
     /** {@inheritDoc} */
