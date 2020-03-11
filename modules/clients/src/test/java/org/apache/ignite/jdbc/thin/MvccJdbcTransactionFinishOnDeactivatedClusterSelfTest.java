@@ -22,6 +22,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -153,7 +154,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
 
             log.info(">>> Try to deactivate ...");
 
-            state.active(false);
+            state.state(ClusterState.INACTIVE, true);
         }
     }
 }

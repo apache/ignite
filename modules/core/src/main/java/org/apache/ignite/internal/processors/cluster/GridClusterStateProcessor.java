@@ -470,7 +470,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && !inMemoryMode
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
             )
-                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false);
+                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false, false);
         }
 
         return null;
@@ -943,51 +943,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
-        final boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(activate, baselineNodes, forceChangeBaselineTopology, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> changeGlobalState(
-        ClusterState state,
-        boolean forceDeactivation,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(state, forceDeactivation, baselineNodes, forceChangeBaselineTopology, false);
-    }
-
-    /**
-     * @param activate New activate state.
-     * @param baselineNodes New BLT nodes.
-     * @param forceChangeBaselineTopology Force change BLT.
-     * @param isAutoAdjust Auto adjusting flag.
-     * @return Global change state future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean, boolean)} instead.
-     */
-    @Deprecated
-    public IgniteInternalFuture<?> changeGlobalState(
-        final boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology,
-        boolean isAutoAdjust
-    ) {
-        return changeGlobalState(activate ? ACTIVE : INACTIVE, true, baselineNodes, forceChangeBaselineTopology,
-            isAutoAdjust);
-    }
-
-    /**
-     * @param state New activate state.
-     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-     * @param baselineNodes New BLT nodes.
-     * @param forceChangeBaselineTopology Force change BLT.
-     * @param isAutoAdjust Auto adjusting flag.
-     * @return Global change state future.
-     */
-    public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
         Collection<? extends BaselineNode> baselineNodes,
@@ -998,88 +953,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             null :
             calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
 
-        return changeGlobalState0(state, forceDeactivation, newBlt, forceChangeBaselineTopology, isAutoAdjust);
-    }
-
-    /** */
-    private BaselineTopology calculateNewBaselineTopology(
-        ClusterState state,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        BaselineTopology newBlt;
-
-        BaselineTopology currBlt = globalState.baselineTopology();
-
-        int newBltId = 0;
-
-        if (currBlt != null)
-            newBltId = ClusterState.active(state) ? currBlt.id() + 1 : currBlt.id();
-
-        if (baselineNodes != null && !baselineNodes.isEmpty()) {
-            List<BaselineNode> baselineNodes0 = new ArrayList<>();
-
-            for (BaselineNode node : baselineNodes) {
-                if (node instanceof ClusterNode) {
-                    ClusterNode clusterNode = (ClusterNode) node;
-
-                    if (!clusterNode.isClient() && !clusterNode.isDaemon())
-                        baselineNodes0.add(node);
-                }
-                else
-                    baselineNodes0.add(node);
-            }
-
-            baselineNodes = baselineNodes0;
-        }
-
-        if (forceChangeBaselineTopology)
-            newBlt = BaselineTopology.build(baselineNodes, newBltId);
-        else if (ClusterState.active(state)) {
-            if (baselineNodes == null)
-                baselineNodes = baselineNodes();
-
-            if (currBlt == null)
-                newBlt = BaselineTopology.build(baselineNodes, newBltId);
-            else {
-                newBlt = currBlt;
-
-                newBlt.updateHistory(baselineNodes);
-            }
-        }
-        else
-            newBlt = null;
-
-        return newBlt;
-    }
-
-    /** */
-    private Collection<BaselineNode> baselineNodes() {
-        List<ClusterNode> clNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
-
-        ArrayList<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
-
-        for (ClusterNode clNode : clNodes)
-            bltNodes.add(clNode);
-
-        return bltNodes;
-    }
-
-    /** */
-    private IgniteInternalFuture<?> changeGlobalState0(
-        ClusterState state,
-        boolean forceDeactivation,
-        BaselineTopology blt,
-        boolean forceChangeBaselineTopology,
-        boolean isAutoAdjust
-    ) {
         boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
         if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
 
         if (ctx.isDaemon() || ctx.clientNode())
-            return sendComputeChangeGlobalState(state, forceDeactivation, blt, forceChangeBaselineTopology);
+            return sendComputeChangeGlobalState(state, forceDeactivation, newBlt, forceChangeBaselineTopology);
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
             return new GridFinishedFuture<>(
@@ -1091,7 +971,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState curState = globalState;
 
         if (!curState.transition() && curState.state() == state) {
-            if (!ClusterState.active(state) || BaselineTopology.equals(curState.baselineTopology(), blt))
+            if (!ClusterState.active(state) || BaselineTopology.equals(curState.baselineTopology(), newBlt))
                 return new GridFinishedFuture<>();
         }
 
@@ -1160,7 +1040,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             storedCfgs,
             state,
             forceDeactivation,
-            blt,
+            newBlt,
             forceChangeBaselineTopology,
             System.currentTimeMillis()
         );
@@ -1168,7 +1048,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
         try {
-            U.log(log, "Sending " + prettyStr(state) + " request with BaselineTopology " + blt);
+            U.log(log, "Sending " + prettyStr(state) + " request with BaselineTopology " + newBlt);
 
             ctx.discovery().sendCustomEvent(msg);
 
@@ -1185,6 +1065,70 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return resFut;
+    }
+
+    /** */
+    private BaselineTopology calculateNewBaselineTopology(
+        ClusterState state,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology
+    ) {
+        BaselineTopology newBlt;
+
+        BaselineTopology currBlt = globalState.baselineTopology();
+
+        int newBltId = 0;
+
+        if (currBlt != null)
+            newBltId = ClusterState.active(state) ? currBlt.id() + 1 : currBlt.id();
+
+        if (baselineNodes != null && !baselineNodes.isEmpty()) {
+            List<BaselineNode> baselineNodes0 = new ArrayList<>();
+
+            for (BaselineNode node : baselineNodes) {
+                if (node instanceof ClusterNode) {
+                    ClusterNode clusterNode = (ClusterNode) node;
+
+                    if (!clusterNode.isClient() && !clusterNode.isDaemon())
+                        baselineNodes0.add(node);
+                }
+                else
+                    baselineNodes0.add(node);
+            }
+
+            baselineNodes = baselineNodes0;
+        }
+
+        if (forceChangeBaselineTopology)
+            newBlt = BaselineTopology.build(baselineNodes, newBltId);
+        else if (ClusterState.active(state)) {
+            if (baselineNodes == null)
+                baselineNodes = baselineNodes();
+
+            if (currBlt == null)
+                newBlt = BaselineTopology.build(baselineNodes, newBltId);
+            else {
+                newBlt = currBlt;
+
+                newBlt.updateHistory(baselineNodes);
+            }
+        }
+        else
+            newBlt = null;
+
+        return newBlt;
+    }
+
+    /** */
+    private Collection<BaselineNode> baselineNodes() {
+        List<ClusterNode> clNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        ArrayList<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
+
+        for (ClusterNode clNode : clNodes)
+            bltNodes.add(clNode);
+
+        return bltNodes;
     }
 
     /** {@inheritDoc} */
@@ -2044,7 +1988,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     state,
                     forceDeactivation,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
-                    forceChangeBaselineTopology
+                    forceChangeBaselineTopology,
+                    false
                 ).get();
             }
             catch (IgniteCheckedException ex) {

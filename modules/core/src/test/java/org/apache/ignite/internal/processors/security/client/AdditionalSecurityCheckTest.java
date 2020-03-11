@@ -52,6 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
@@ -189,7 +190,7 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
             assertTrue(client.connected());
 
-            client.state().active(true);
+            client.state().state(ACTIVE, true);
         }
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {

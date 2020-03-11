@@ -23,6 +23,7 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandList.ACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 
@@ -49,7 +50,7 @@ public class ActivateCommand implements Command<Void> {
         try (GridClient client = Command.startClient(cfg)) {
             GridClientClusterState state = client.state();
 
-            state.active(true);
+            state.state(ACTIVE, true);
 
             logger.info("Cluster activated");
         }
