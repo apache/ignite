@@ -557,17 +557,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!reg.config().isPersistenceEnabled())
                 continue;
 
-            IgniteBiTuple<GridMultiCollectionWrapper<FullPageId>, Boolean> nextCpPages =
-                ((PageMemoryEx)reg.pageMemory()).beginCheckpointEx(allowToReplace);
+            GridMultiCollectionWrapper<FullPageId> nextCpPages = ((PageMemoryEx)reg.pageMemory()).beginCheckpoint(allowToReplace);
 
-            GridMultiCollectionWrapper<FullPageId> nextCpPagesCol = nextCpPages.get1();
+            pagesNum += nextCpPages.size();
 
-            pagesNum += nextCpPagesCol.size();
-
-            res.add(new T2<>((PageMemoryEx)reg.pageMemory(), nextCpPagesCol));
-
-            if (nextCpPages.get2())
-                hasUserDirtyPages = true;
+            res.add(new T2<>((PageMemoryEx)reg.pageMemory(), nextCpPages));
         }
 
         currCheckpointPagesCnt = pagesNum;
@@ -3108,7 +3102,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Shared refernce for tracking exception during write pages.
         AtomicReference<IgniteCheckedException> writePagesError = new AtomicReference<>();
 
-        for (int stripeIdx = 0; stripeIdx < exec.stripes(); stripeIdx++) {
+        for (int stripeIdx = 0; stripeIdx < exec.stripesCount(); stripeIdx++) {
             exec.execute(stripeIdx, () -> {
                 PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
                     assert tag != PageMemoryImpl.TRY_AGAIN_TAG : "Lock is held by other thread for page " + fullPageId;
@@ -4205,7 +4199,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onLockRelease();
             }
 
-            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, dirtyPagesCount > 0, hasUserPages);
+            DbCheckpointListener.Context ctx = createOnCheckpointBeginContext(ctx0, hasUserPages);
 
             curr.transitTo(LOCK_RELEASED);
 
@@ -4892,7 +4886,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages;
 
         /** */
-        private final CheckpointProgressImpl progress;
+        private final CheckpointProgress progress;
 
         /** Number of deleted WAL files. */
         private int walFilesDeleted;
