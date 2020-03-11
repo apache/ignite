@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -62,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -622,6 +624,22 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
                         ctx.discovery().resolveCommunicationError(node, err);
+                    }
+
+                    @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+                        return ctx.metric().registry(name);
+                    }
+
+                    @Override public void removeMetricRegistry(String name) {
+                        ctx.metric().remove(name);
+                    }
+
+                    @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
+                        return ctx.metric();
+                    }
+
+                    @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+                        ctx.metric().addMetricRegistryCreationListener(lsnr);
                     }
 
                     /**
