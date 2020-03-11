@@ -1581,8 +1581,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         assertEquals(ACTIVE, server.cluster().state());
 
         assertThrows(null, () -> {
-            client.context().state().changeGlobalState(INACTIVE, false, server.cluster().currentBaselineTopology(), false)
-                .get();
+            client.context().state().changeGlobalState(INACTIVE, false, server.cluster().currentBaselineTopology(),
+                false).get();
 
             return null;
         }, IgniteCheckedException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
