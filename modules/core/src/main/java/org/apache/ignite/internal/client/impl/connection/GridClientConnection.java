@@ -313,14 +313,23 @@ public abstract class GridClientConnection {
      *
      * @param state New cluster state.
      * @param destNodeId Destination node id.
-     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-     *                          If {@code null}, executes old version of cluster state changing considering it is always
-     *                          forced.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
-    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId,
-        @Nullable Boolean forceDeactivation) throws GridClientClosedException, GridClientConnectionResetException;
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Changes grid global state.
+     *
+     * @param state New cluster state.
+     * @param destNodeId Destination node id.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
+        throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
      * Get current grid state.

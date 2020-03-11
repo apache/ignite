@@ -84,7 +84,7 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
                     "persistence) including the system caches. To deactivate cluster pass flag 'force'.");
             }
 
-            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, null)).get();
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
         }
     }
 

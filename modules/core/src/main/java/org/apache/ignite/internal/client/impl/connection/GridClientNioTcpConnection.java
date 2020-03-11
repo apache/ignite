@@ -816,12 +816,19 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, Boolean forceDeactivation)
+    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
         throws GridClientClosedException, GridClientConnectionResetException {
         assert state != null;
 
-        return makeRequest(forceDeactivation == null ? GridClientClusterStateRequest.state(state)
-            : GridClientClusterStateRequestV2.state(state, forceDeactivation), destNodeId);
+        return makeRequest(GridClientClusterStateRequestV2.state(state, forceDeactivation), destNodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        assert state != null;
+
+        return makeRequest(GridClientClusterStateRequest.state(state), destNodeId);
     }
 
     /** {@inheritDoc} */
