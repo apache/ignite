@@ -66,10 +66,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.lesserOf;
-import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertInactive;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -1563,36 +1561,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     @Test
     public void testReadOnlyClusterStateNotWaitForDeactivation() throws Exception {
         checkClusterStateNotWaitForDeactivation(ACTIVE_READ_ONLY);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testInternalForcedDeactivation() throws Exception {
-        startGrid(0, false);
-
-        startGrid(1, true);
-
-        IgniteEx server = grid(0);
-
-        IgniteEx client = grid(1);
-
-        assertEquals(ACTIVE, server.cluster().state());
-
-        assertThrows(null, () -> {
-            client.context().state().changeGlobalState(INACTIVE, false, server.cluster().currentBaselineTopology(),
-                false).get();
-
-            return null;
-        }, IgniteCheckedException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-        assertEquals(ACTIVE, server.cluster().state());
-
-        client.context().state().changeGlobalState(INACTIVE, true, server.cluster().currentBaselineTopology(), false)
-            .get();
-
-        assertEquals(INACTIVE, server.cluster().state());
     }
 
     /** */
