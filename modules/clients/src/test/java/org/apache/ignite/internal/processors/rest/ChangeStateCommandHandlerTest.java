@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest;
 
 import java.util.Collections;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,6 +31,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 
 /**
@@ -90,7 +90,7 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
     public void testActivateDeActivate() throws GridClientException {
         GridClientClusterState state = client.state();
 
-        boolean active = ClusterState.active(state.state());
+        boolean active = active(state.state());
 
         assertTrue(active);
 
