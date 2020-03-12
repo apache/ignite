@@ -29,6 +29,7 @@ import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteMXBeanImpl;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
 import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
@@ -131,7 +132,7 @@ public class IgniteMBeansManager {
             return;
 
         // Kernal
-        registerMBean("Kernal", IgniteKernal.class.getSimpleName(), kernal, IgniteMXBean.class);
+        registerMBean("Kernal", IgniteKernal.class.getSimpleName(), new IgniteMXBeanImpl(kernal), IgniteMXBean.class);
 
         // Metrics
         ClusterMetricsMXBean locMetricsBean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery());

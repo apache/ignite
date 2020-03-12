@@ -370,7 +370,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 0);
 
-            ((IgniteMXBean) ignite).removeCheckpoint(key1);
+            getMxBean(ignite.name(), "Kernal", "IgniteKernal", IgniteMXBean.class).removeCheckpoint(key1);
 
             // This checkpoint will not be automatically removed for cache SPI.
             taskSes.saveCheckpoint(key1, val1, GLOBAL_SCOPE, 5000);

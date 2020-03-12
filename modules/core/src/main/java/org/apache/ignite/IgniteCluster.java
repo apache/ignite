@@ -461,7 +461,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
-     * @deprecated Use {@link #state(ClusterState)} instead.
+     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
     @Deprecated
     public void active(boolean active);
@@ -481,8 +481,22 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param newState New cluster state.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
      */
+    @Deprecated
     public void state(ClusterState newState) throws IgniteException;
+
+    /**`
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param newState New cluster state.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @throws IgniteCheckedException if deactivation stopped.
+     */
+    public void state(ClusterState newState, boolean force) throws IgniteException;
 
     /**
      * Gets current baseline topology. If baseline topology was not set, will return {@code null}.

@@ -35,12 +35,11 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -226,7 +225,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             println("");
 
-            ((IgniteMXBean)ignite()).dumpDebugInfo();
+            ((IgniteKernal)ignite()).dumpDebugInfo();
 
             // Debug info on servers.
             Ignite ignite = ignite();
@@ -282,7 +281,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             println("");
 
-            ((IgniteMXBean)ignite).dumpDebugInfo();
+            ((IgniteKernal)ignite).dumpDebugInfo();
         }
     }
 

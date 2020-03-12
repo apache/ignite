@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -66,8 +67,10 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.lesserOf;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertInactive;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -215,6 +218,87 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     @Test
     public void testDisableReadOnlyFromActivateSimple_SingleNode() throws Exception {
         changeActiveClusterStateSimple(1, 0, 0, ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateNonPersistent() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        IgniteMXBean mxBean = getMxBean(getTestIgniteInstanceName(0), "Kernal", "IgniteKernal", IgniteMXBean.class);
+
+        if (persistenceEnabled()) {
+            ignite.cluster().state(ACTIVE, false);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(INACTIVE, false);
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(ACTIVE, false);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            mxBean.active(false);
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(ACTIVE, false);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            mxBean.clusterState(INACTIVE.toString(), false);
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+        }
+        else {
+            assertThrows(null, () -> {
+                ignite.cluster().state(INACTIVE, false);
+
+                return null;
+            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            assertThrows(null, () -> {
+                mxBean.active(false);
+
+                return null;
+            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            assertThrows(null, () -> {
+                mxBean.clusterState(INACTIVE.name());
+
+                return null;
+            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            assertThrows(null, () -> {
+                mxBean.clusterState(INACTIVE.name(), false);
+
+                return null;
+            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(INACTIVE, true);
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+
+            ignite.cluster().state(ACTIVE, false);
+
+            assertEquals(ACTIVE, ignite.cluster().state());
+
+            mxBean.clusterState(INACTIVE.name(), true);
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+        }
     }
 
     /**
