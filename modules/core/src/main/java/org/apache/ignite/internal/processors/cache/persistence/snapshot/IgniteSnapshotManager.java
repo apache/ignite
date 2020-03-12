@@ -690,14 +690,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param snpName Unique snapshot name.
-     * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
     IgniteInternalFuture<Boolean> startLocalSnapshotTask(
         String snpName,
-        UUID srcNodeId,
         Map<Integer, Optional<Set<Integer>>> parts,
         SnapshotFileSender snpSndr
     ) {
@@ -1160,7 +1158,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          */
         private File dbNodeSnpDir;
 
-        /** Facotry to produce IO interface over a file. */
+        /** Factory to produce IO interface over a file. */
         private final FileIOFactory ioFactory;
 
         /** Factory to create page store for restore. */
@@ -1180,7 +1178,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /**
          * @param log Ignite logger to use.
-         * @param ioFactory Facotry to produce IO interface over a file.
+         * @param ioFactory Factory to produce IO interface over a file.
          * @param storeFactory Factory to create page store for restore.
          * @param pageSize Size of page.
          */
@@ -1300,19 +1298,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     pageBuf.flip();
 
-                    long pageId = PageIO.getPageId(pageBuf);
-
-                    int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
-
-                    int crc = PageIO.getCrc(pageBuf);
-
                     if (log.isDebugEnabled()) {
                         log.debug("Read page given delta file [path=" + delta.getName() +
-                            ", pageId=" + pageId + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                            ", crcBuff=" + crc32 + ", crcPage=" + crc + ']');
-                    }
+                            ", pageId=" + PageIO.getPageId(pageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
+                            ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
 
-                    pageBuf.rewind();
+                        pageBuf.rewind();
+                    }
 
                     pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
 
@@ -1349,7 +1341,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             try (FileIO src = ioFactory.create(from, READ);
                  FileChannel dest = new FileOutputStream(to).getChannel()) {
                 if (src.size() < length)
-                    throw new IgniteException("The source file to copy has to enought length [expected=" + length + ", actual=" + src.size() + ']');
+                    throw new IgniteException("The source file to copy has to enough length [expected=" + length + ", actual=" + src.size() + ']');
 
                 src.position(0);
 

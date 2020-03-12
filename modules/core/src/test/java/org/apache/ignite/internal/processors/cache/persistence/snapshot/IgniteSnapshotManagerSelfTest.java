@@ -268,7 +268,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> snpFut = mgr
             .startLocalSnapshotTask(SNAPSHOT_NAME,
-                ig.localNode().id(),
                 parts,
                 new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                     @Override
@@ -390,7 +389,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .snapshotMgr();
 
         IgniteInternalFuture<?> fut = mgr.startLocalSnapshotTask(SNAPSHOT_NAME,
-            ig.localNode().id(),
             parts,
             new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
@@ -666,7 +664,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> snpFut = mgr
             .startLocalSnapshotTask(SNAPSHOT_NAME,
-                ig.localNode().id(),
                 parts,
                 new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                     @Override
@@ -736,7 +733,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         try {
             return mgr.startLocalSnapshotTask(snpName,
-                cctx.localNodeId(),
                 parts,
                 mgr.localSnapshotSender(snpName));
         }

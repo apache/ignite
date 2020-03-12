@@ -399,7 +399,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     else {
                         log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
                             "Partitions which have different states skipped. Index partitions has also been skipped " +
-                            "[snpName=" + snpName + ", missed=" + missed + ']');
+                            "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + missed + ']');
                     }
                 }
 
@@ -804,18 +804,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                 + " should be same with " + ByteOrder.nativeOrder();
 
-            int crc = PageIO.getCrc(pageBuf);
-            int crc32 = FastCrc.calcCrc(pageBuf, pageBuf.limit());
-
             if (log.isDebugEnabled()) {
                 log.debug("onPageWrite [pageId=" + pageId +
                     ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
                     ", fileSize=" + fileIo.size() +
-                    ", crcBuff=" + crc32 +
-                    ", crcPage=" + crc + ']');
-            }
+                    ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) +
+                    ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
 
-            pageBuf.rewind();
+                pageBuf.rewind();
+            }
 
             // Write buffer to the end of the file.
             fileIo.writeFully(pageBuf);

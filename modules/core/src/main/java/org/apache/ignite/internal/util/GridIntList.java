@@ -26,7 +26,6 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -134,22 +133,6 @@ public class GridIntList implements Message, Externalizable {
             int element  = arr[i];
             res = 31 * res + element;
         }
-
-        return res;
-    }
-
-    /**
-     * @param ints A set of integer values.
-     * @return Representation as primitive list.
-     */
-    public static GridIntList valueOf(Set<Integer> ints) {
-        if (ints == null)
-            return new GridIntList(0);
-
-        GridIntList res = new GridIntList(ints.size());
-
-        for (Integer i : ints)
-            res.add(i);
 
         return res;
     }
