@@ -401,24 +401,25 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                         missed.add(part.id());
                 }
 
-                // Partitions has not been provided for snapshot task and all partitions have
-                // OWNING state, so index partition must be included into snapshot.
-                if (!e.getValue().isPresent()) {
-                    if (missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
-                        owning.add(INDEX_PARTITION);
-                    else if (!missed.isEmpty()) {
+                if (e.getValue().isPresent()) {
+                    // Partition has been provided for cache group, but some of them are not in OWNING state.
+                    // Exit with an error
+                    if (!missed.isEmpty()) {
+                        throw new IgniteCheckedException("Snapshot operation cancelled due to " +
+                            "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
+                            ", missed" + missed + ']');
+                    }
+                }
+                else {
+                    // Partitions has not been provided for snapshot task and all partitions have
+                    // OWNING state, so index partition must be included into snapshot.
+                    if (!missed.isEmpty()) {
                         log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
                             "Partitions which have different states skipped. Index partitions has also been skipped " +
                             "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + missed + ']');
                     }
-                }
-
-                // Partition has been provided for cache group, but some of them are not in OWNING state.
-                // Exit with an error
-                if (!missed.isEmpty() && e.getValue().isPresent()) {
-                    throw new IgniteCheckedException("Snapshot operation cancelled due to " +
-                        "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
-                        ", missed" + missed + ']');
+                    else if (missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
+                        owning.add(INDEX_PARTITION);
                 }
             }
 
