@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.resources;
+package org.apache.ignite.examples;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.ignite.examples.opencensus.OpenCensusMetricsExporterExample;
+import org.junit.Test;
 
 /** */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD})
-public @interface MetricManagerResource {
-    // No-op.
+public class OpenCensusMetricsExporterExampleSelfTest {
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOpenCensusExample() throws Exception {
+        OpenCensusMetricsExporterExample.main(new String[0]);
+    }
 }
