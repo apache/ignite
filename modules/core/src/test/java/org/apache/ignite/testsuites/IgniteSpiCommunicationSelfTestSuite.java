@@ -46,6 +46,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTe
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
+import org.apache.ignite.spi.communication.tcp.TooManyOpenFilesTcpCommunicationSpiTest;
 
 /**
  * Test suite for all communication SPIs.
@@ -97,6 +98,8 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteTcpCommunicationHandshakeWaitTest.class));
         suite.addTest(new TestSuite(IgniteTcpCommunicationHandshakeWaitSslTest.class));
         suite.addTest(new TestSuite(IgniteTcpCommunicationConnectOnInitTest.class));
+
+        suite.addTest(new TestSuite(TooManyOpenFilesTcpCommunicationSpiTest.class));
 
         return suite;
     }
