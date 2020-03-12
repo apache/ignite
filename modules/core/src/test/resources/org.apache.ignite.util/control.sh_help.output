@@ -68,15 +68,42 @@ This utility can do the following commands:
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
-  Kill user initiated task :
-    control.(sh|bat) --kill scan|continuous|sql|compute|tx id
+  Kill user initiated task:
+    control.(sh|bat) --kill [scan ORIGIN_NODE_ID CACHE_NAME QUERY_ID] [continuous ROUTINE_ID] [sql QUERY_ID] [compute SESSION_ID] [tx XID] [service NAME]
 
     Parameters:
       scan            - Scan query.
-      coninuous       - Continuous query.
+
+      Parameters:
+        ORIGIN_NODE_ID  - query originating node ID.
+        CACHE_NAME      - cache name.
+        QUERY_ID        - query identifier.
+
+      continuous       - Continuous query.
+
+      Parameters:
+        ROUTINE_ID      - routine identifier.
+
       sql             - SQL query.
+
+      Parameters:
+        QUERY_ID        - routine identifier.
+
       compute         - Compute task.
+
+      Parameters:
+        SESSION_ID      - task session identifier.
+
       tx              - Transaction.
+
+      Parameters:
+        XID             - transaction identifier.
+
+      service         - Service.
+
+      Parameters:
+        NAME            - Service name.
+
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

@@ -27,75 +27,49 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * Arguments of task for cancel SCAN query.
+ * Arguments of task for cancel CONTINUOUS query.
  */
 @GridInternal
-public class VisorScanQueryCancelTaskArg extends VisorDataTransferObject {
+public class VisorContinuousQueryCancelTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Query ID to cancel. */
-    private long qryId;
-
-    /** Cache name. */
-    private String cacheName;
-
-    /** Query originating node to cancel. */
-    private UUID originNodeId;
+    /** Routine id. */
+    private UUID routineId;
 
     /**
      * Default constructor.
      */
-    public VisorScanQueryCancelTaskArg() {
+    public VisorContinuousQueryCancelTaskArg() {
         // No-op.
     }
 
     /**
-     * @param qryId Query ID to cancel.
+     * @param routineId Routine id.
      */
-    public VisorScanQueryCancelTaskArg(UUID originNodeId, String cacheName, long qryId) {
-        this.originNodeId = originNodeId;
-        this.cacheName = cacheName;
-        this.qryId = qryId;
+    public VisorContinuousQueryCancelTaskArg(UUID routineId) {
+        this.routineId = routineId;
     }
 
     /**
-     * @return Query ID to cancel.
+     * @return Routine ID.
      */
-    public long getQueryId() {
-        return qryId;
-    }
-
-    /**
-     * @return Cache name.
-     */
-    public String getCacheName() {
-        return cacheName;
-    }
-
-    /**
-     * @return Query originating node to cancel.
-     */
-    public UUID getOriginNodeId() {
-        return originNodeId;
+    public UUID getRoutineId() {
+        return routineId;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(qryId);
-        U.writeString(out, cacheName);
-        U.writeUuid(out, originNodeId);
+        U.writeUuid(out, routineId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        qryId = in.readLong();
-        cacheName = U.readString(in);
-        originNodeId = U.readUuid(in);
+        routineId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorScanQueryCancelTaskArg.class, this);
+        return S.toString(VisorContinuousQueryCancelTaskArg.class, this);
     }
 }

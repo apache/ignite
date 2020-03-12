@@ -26,12 +26,12 @@ import org.apache.ignite.spi.systemview.view.SqlQueryView;
  */
 public interface QueryMXBean {
     /**
-     * @param id Continuous query id.
+     * @param routineId Continuous query id.
      * @see ContinuousQueryView#routineId()
      */
     @MXBeanDescription("Kills continuous query by the identifier.")
     void cancelContinuous(
-        @MXBeanParameter(name = "id", description = "Continuous query id.") String id
+        @MXBeanParameter(name = "routineId", description = "Continuous query id.") String routineId
     );
 
     /**

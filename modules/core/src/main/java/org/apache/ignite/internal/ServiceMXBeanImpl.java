@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
+import java.util.UUID;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
+import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.mxbean.ServiceMXBean;
 
 /**
@@ -28,23 +34,35 @@ public class ServiceMXBeanImpl implements ServiceMXBean {
     /** */
     private final GridKernalContext ctx;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      * @param ctx Context.
      */
     public ServiceMXBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
+        this.log = ctx.log(ServiceMXBeanImpl.class);
     }
 
     /** {@inheritDoc} */
     @Override public void cancel(String name) {
         A.notNull(name, "name");
 
-        try {
-            IgniteInternalFuture<?> fut = ctx.service().cancel(name);
+        if (log.isInfoEnabled())
+            log.info("Canceling service[name=" + name + ']');
 
-            fut.get();
+        try {
+            IgniteClusterImpl cluster = ctx.cluster().get();
+
+            IgniteCompute compute = cluster.compute();
+
+            UUID nid = cluster.nodes().iterator().next().id();
+
+            compute.execute(new VisorCancelServiceTask(),
+                new VisorTaskArgument<>(nid, new VisorCancelServiceTaskArg(name), false));
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

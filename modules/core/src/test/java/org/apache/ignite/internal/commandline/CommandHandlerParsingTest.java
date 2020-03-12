@@ -517,7 +517,6 @@ public class CommandHandlerParsingTest {
         assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
-
     /**
      * Test parsing kill arguments.
      */
@@ -529,6 +528,7 @@ public class CommandHandlerParsingTest {
         assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
         assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
         assertParseArgsThrows("Expected transaction id.", "--kill", "tx");
+        assertParseArgsThrows("Expected service name.", "--kill", "service");
 
         assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
             "--kill", "scan", "not_a_number");

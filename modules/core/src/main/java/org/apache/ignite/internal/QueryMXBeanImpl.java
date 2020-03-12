@@ -27,6 +27,8 @@ import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
@@ -46,6 +48,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
     /** */
     private final GridKernalContext ctx;
 
+    /** */
     private final IgniteLogger log;
 
     /**
@@ -57,13 +60,26 @@ public class QueryMXBeanImpl implements QueryMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelContinuous(String id) {
-        A.notNull(id, "id");
+    @Override public void cancelContinuous(String routineId) {
+        A.notNull(routineId, "routineId");
 
         if (log.isInfoEnabled())
-            log.info("Killing continuous query[id=" + id + ']');
+            log.info("Killing continuous query[routineId=" + routineId + ']');
 
-        ctx.continuous().stopRoutine(UUID.fromString(id));
+        try {
+            IgniteClusterImpl cluster = ctx.cluster().get();
+
+            IgniteCompute compute = cluster.compute();
+
+            UUID nid = cluster.nodes().iterator().next().id();
+
+            compute.execute(new VisorContinuousQueryCancelTask(),
+                new VisorTaskArgument<>(nid,
+                    new VisorContinuousQueryCancelTaskArg(UUID.fromString(routineId)), false));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -107,10 +123,11 @@ public class QueryMXBeanImpl implements QueryMXBean {
                 .stream().map(ClusterNode::id).collect(Collectors.toSet());
 
             boolean res = compute.execute(new VisorScanQueryCancelTask(),
-                new VisorTaskArgument<>(nids, new VisorScanQueryCancelTaskArg(UUID.fromString(originNodeId), cacheName, id), false));
+                new VisorTaskArgument<>(nids,
+                    new VisorScanQueryCancelTaskArg(UUID.fromString(originNodeId), cacheName, id), false));
 
             if (!res) {
-                throw new RuntimeException("Query not found[originNodeId=" + originNodeId +
+                log.warning("Query not found[originNodeId=" + originNodeId +
                     ",cacheName=" + cacheName + ",qryId=" + id + ']');
             }
         }

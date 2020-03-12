@@ -24,7 +24,8 @@ public enum KillQuerySubcommand {
     CONTINUOUS_QUERY("continuous"),
     SQL_QUERY("sql"),
     COMPUTE("compute"),
-    TRANSACTION("tx");
+    TRANSACTION("tx"),
+    SERVICE("service");
 
     /** Subcommand name. */
     private final String name;

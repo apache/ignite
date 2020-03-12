@@ -39,8 +39,8 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelScanQueriesJob job(VisorScanQueryCancelTaskArg arg) {
-        return new VisorCancelScanQueriesJob(arg, debug);
+    @Override protected VisorScanQueryCancelJob job(VisorScanQueryCancelTaskArg arg) {
+        return new VisorScanQueryCancelJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -54,9 +54,9 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
     }
 
     /**
-     * Job to cancel queries on node.
+     * Job to cancel scan queries on node.
      */
-    private static class VisorCancelScanQueriesJob extends VisorJob<VisorScanQueryCancelTaskArg, Boolean> {
+    private static class VisorScanQueryCancelJob extends VisorJob<VisorScanQueryCancelTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -66,13 +66,13 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCancelScanQueriesJob(@Nullable VisorScanQueryCancelTaskArg arg, boolean debug) {
+        protected VisorScanQueryCancelJob(@Nullable VisorScanQueryCancelTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected Boolean run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
-            IgniteLogger log = ignite.log().getLogger(VisorCancelScanQueriesJob.class);
+            IgniteLogger log = ignite.log().getLogger(VisorScanQueryCancelJob.class);
 
             int cacheId = CU.cacheId(arg.getCacheName());
 

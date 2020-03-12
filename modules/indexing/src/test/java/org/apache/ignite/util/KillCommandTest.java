@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
@@ -56,6 +57,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -69,7 +71,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+public class KillCommandTest extends GridCommonAbstractTest {
     /** */
     public static final String SVC_NAME = "my-svc";
 
@@ -79,19 +81,31 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** */
     private static final int  NODES_CNT = 3;
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelScanQuery() throws Exception {
-        injectTestSystemOut();
+    /** */
+    private static IgniteEx ignite0;
 
-        IgniteEx ignite0 = startGrids(NODES_CNT);
-        IgniteEx client = startClientGrid("client");
+    /** */
+    private static IgniteEx client;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        ignite0 = startGrids(NODES_CNT);
+        client = startClientGrid("client");
 
         ignite0.cluster().state(ACTIVE);
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelScanQuery() throws Exception {
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
         Iterator<Cache.Entry<Object, Object>> iter1 = qry1.iterator();
@@ -158,17 +172,6 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelSQLQuery() throws Exception {
-        startGrids(NODES_CNT);
-        IgniteEx client = startClientGrid("client");
-
-        client.cluster().state(ACTIVE);
-
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class));
-
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
-            cache.put(i, i);
-
         String qryStr = "SELECT * FROM \"default\".Integer";
 
         SqlFieldsQuery qry = new SqlFieldsQuery(qryStr).setPageSize(PAGE_SZ);
@@ -197,18 +200,14 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelTx() throws Exception {
-        IgniteEx ignite0 = startGrids(NODES_CNT);
-        IgniteEx client = startClientGrid("client");
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
-        ignite0.cluster().state(ACTIVE);
-
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+        int testKey = PAGE_SZ * PAGE_SZ + 42;
 
         for (TransactionConcurrency txConc : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
                 try (Transaction tx = client.transactions().txStart(txConc, txIsolation)) {
-                    cache.put(1, 1);
+                    cache.put(testKey, 1);
 
                     List<List<?>> txs = SqlViewExporterSpiTest.execute(client, "SELECT xid FROM SYS.TRANSACTIONS");
                     assertEquals(1, txs.size());
@@ -224,11 +223,12 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
                     for (int i = 0; i < NODES_CNT; i++) {
                         txs = SqlViewExporterSpiTest.execute(grid(i), "SELECT xid FROM SYS.TRANSACTIONS");
+
                         assertEquals(0, txs.size());
                     }
                 }
 
-                assertNull(cache.get(1));
+                assertNull(cache.get(testKey));
             }
         }
     }
@@ -236,13 +236,7 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelContinuousQuery() throws Exception {
-        IgniteEx ignite0 = startGrids(NODES_CNT);
-        IgniteEx client = startClientGrid("client");
-
-        ignite0.cluster().state(ACTIVE);
-
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
 
@@ -295,11 +289,6 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        IgniteEx ignite0 = startGrids(1);
-        IgniteEx client = startClientGrid("client");
-
-        ignite0.cluster().state(ACTIVE);
-
         IgniteFuture<Collection<Integer>> fut = client.compute().broadcastAsync(() -> {
             Thread.sleep(60_000L);
 
@@ -335,11 +324,6 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
     /** @throws Exception If failed. */
     @Test
     public void testCancelService() throws Exception {
-        IgniteEx ignite0 = startGrids(1);
-        IgniteEx client = startClientGrid("client");
-
-        ignite0.cluster().state(ACTIVE);
-
         ServiceConfiguration scfg = new ServiceConfiguration();
 
         scfg.setName(SVC_NAME);
@@ -371,6 +355,62 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
         assertTrue(res);
 
         assertThrowsWithCause((Callable<Object>)fut::get, IgniteException.class);
+    }
+
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownSQLQuery() throws Exception {
+        QueryMXBean qryMBean = getMxBean(ignite0.name(), "Query",
+            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
+
+        qryMBean.cancelSQL(ignite0.localNode().id().toString() + "_42");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownScanQuery() throws Exception {
+        QueryMXBean qryMBean = getMxBean(ignite0.name(), "Query",
+            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
+
+        qryMBean.cancelScan(ignite0.localNode().id().toString(), "unknown", 1L);
+
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownTx() throws Exception {
+        TransactionsMXBean txMBean = getMxBean(ignite0.name(), "Transactions",
+            TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
+
+        txMBean.cancel("unknown");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownContinuousQuery() throws Exception {
+        QueryMXBean qryMBean = getMxBean(ignite0.name(), "Query",
+            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
+
+        qryMBean.cancelContinuous(UUID.randomUUID().toString());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownComputeTask() throws Exception {
+        ComputeMXBean computeMBean = getMxBean(ignite0.name(), "Compute",
+            ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
+
+        computeMBean.cancel(IgniteUuid.randomUuid().toString());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownService() throws Exception {
+        ServiceMXBean svcMxBean = getMxBean(ignite0.name(), "Service",
+            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
+
+        svcMxBean.cancel("unknown");
     }
 
     /** */
