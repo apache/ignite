@@ -22,7 +22,6 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,6 +36,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /** */
 public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridCommonAbstractTest {
@@ -154,7 +155,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
 
             log.info(">>> Try to deactivate ...");
 
-            state.state(ClusterState.INACTIVE, true);
+            state.state(INACTIVE, true);
         }
     }
 }
