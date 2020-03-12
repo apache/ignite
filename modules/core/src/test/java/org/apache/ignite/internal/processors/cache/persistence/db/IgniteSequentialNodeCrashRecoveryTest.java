@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -113,6 +114,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
      * @throws Exception if failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12780")
     public void testCrashOnCheckpointAfterLogicalRecovery() throws Exception {
         IgniteEx g = startGrid(0);
 
