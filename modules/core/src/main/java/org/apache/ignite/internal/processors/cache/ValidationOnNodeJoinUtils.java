@@ -85,7 +85,6 @@ import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
  * Util class for joining node validation.
@@ -147,7 +146,7 @@ public class ValidationOnNodeJoinUtils {
 
             if (ctx.security().enabled()) {
                 try {
-                    secCtx = nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
+                    secCtx = ctx.security().securityContext(node);
                 }
                 catch (SecurityException se) {
                     errorMsg.append(se.getMessage());
