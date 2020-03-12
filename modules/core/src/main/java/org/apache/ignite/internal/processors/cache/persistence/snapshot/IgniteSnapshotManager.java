@@ -376,6 +376,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         // Remote snapshot handler.
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
+            @Override public void onEnd(UUID nodeId) {
+                RemoteSnapshotFuture snpTrFut = rmtSnpReq.get();
+
+                assert snpTrFut.stores.isEmpty() : snpTrFut.stores.entrySet();
+                assert snpTrFut.partsLeft.get() == 0 : snpTrFut.partsLeft.get();
+
+                snpTrFut.onDone(true);
+
+                log.info("Requested snapshot from remote node has been fully received " +
+                    "[snpName=" + snpTrFut.snpName + ", snpTrans=" + snpTrFut + ']');
+            }
+
             /** {@inheritDoc} */
             @Override public void onException(UUID nodeId, Throwable err) {
                 RemoteSnapshotFuture fut = rmtSnpReq.get();
@@ -430,14 +442,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                     snpTrans.partConsumer.accept(new File(pageStore.getFileAbsolutePath()), grpPartId);
 
-                    if (snpTrans.partsLeft.decrementAndGet() == 0) {
-                        assert snpTrans.stores.isEmpty() : snpTrans.stores.entrySet();
-
-                        snpTrans.onDone(true);
-
-                        log.info("Requested snapshot from remote node has been fully received " +
-                            "[snpName=" + snpTrans.snpName + ", snpTrans=" + snpTrans + ']');
-                    }
+                    snpTrans.partsLeft.decrementAndGet();
                 }
                 catch (StorageException e) {
                     throw new IgniteException(e);

@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientCache
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequestV2;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
@@ -84,8 +85,6 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
 import static org.apache.ignite.internal.client.GridClientCacheFlag.encodeCacheFlags;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.CONN_IDLE;
@@ -817,11 +816,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeState(
-        boolean active,
-        UUID destNodeId
-    ) throws GridClientClosedException, GridClientConnectionResetException {
-        return changeState(active ? ACTIVE : INACTIVE, destNodeId);
+    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
+        throws GridClientClosedException, GridClientConnectionResetException {
+        assert state != null;
+
+        return makeRequest(GridClientClusterStateRequestV2.state(state, forceDeactivation), destNodeId);
     }
 
     /** {@inheritDoc} */

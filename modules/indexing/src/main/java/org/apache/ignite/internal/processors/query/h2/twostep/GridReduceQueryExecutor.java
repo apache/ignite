@@ -421,7 +421,7 @@ public class GridReduceQueryExecutor {
             ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn = h2.connections().detachThreadConnection();
 
             try {
-                cancel.set(() -> send(nodes, new GridQueryCancelRequest(qryReqId), null, true));
+                cancel.add(() -> send(nodes, new GridQueryCancelRequest(qryReqId), null, true));
 
                 GridH2QueryRequest req = new GridH2QueryRequest()
                     .requestId(qryReqId)
@@ -899,7 +899,7 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            cancel.set(() -> {
+            cancel.add(() -> {
                 r.future().onCancelled();
 
                 send(finalNodes, new GridQueryCancelRequest(reqId), null, true);

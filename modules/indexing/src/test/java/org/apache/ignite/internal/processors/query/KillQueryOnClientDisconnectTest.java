@@ -55,7 +55,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test KILL QUERY requested from client which disconnected from cluster during cancellation in progress.
  */
-
 @RunWith(JUnit4.class)
 public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
     /** IP finder. */
