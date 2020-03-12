@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -150,6 +151,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** An exception which has been ocurred during snapshot processing. */
     private final AtomicReference<Throwable> err = new AtomicReference<>();
+
+    /** Flag indicates that task already scheduled on checkpoint. */
+    private final AtomicBoolean started = new AtomicBoolean();
 
     /** Flag indicates the task must be interrupted. */
     private final BooleanSupplier stopping = () -> cancelled || err.get() != null;
@@ -289,6 +293,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             return;
 
         try {
+            if (!started.compareAndSet(false, true))
+                return;
+
             tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
                 relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
                 false);
@@ -397,9 +404,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 // Partitions has not been provided for snapshot task and all partitions have
                 // OWNING state, so index partition must be included into snapshot.
                 if (!e.getValue().isPresent()) {
-                    if (missed.isEmpty())
+                    if (missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
                         owning.add(INDEX_PARTITION);
-                    else {
+                    else if (!missed.isEmpty()) {
                         log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
                             "Partitions which have different states skipped. Index partitions has also been skipped " +
                             "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + missed + ']');

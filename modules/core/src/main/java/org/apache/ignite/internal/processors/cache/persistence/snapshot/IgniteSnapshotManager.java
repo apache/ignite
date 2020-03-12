@@ -294,16 +294,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                             }
                         }
 
-                        startSnapshotTask(
-                            snpName,
+                        SnapshotFutureTask task = registerSnapshotTask(snpName,
                             nodeId,
                             reqMsg0.parts()
                                 .entrySet()
                                 .stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey,
                                     e -> Optional.of(e.getValue()))),
-                            remoteSnapshotSender(snpName, nodeId)
-                        ).listen(f -> {
+                            remoteSnapshotSender(snpName, nodeId));
+
+                        task.listen(f -> {
                             if (f.error() == null)
                                 return;
 
@@ -321,6 +321,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                                     "error [request=" + reqMsg0 + ", nodeId=" + nodeId + ']', ex0);
                             }
                         });
+
+                        task.start();
                     }
                     else if (msg instanceof SnapshotResponseMessage) {
                         SnapshotResponseMessage respMsg0 = (SnapshotResponseMessage)msg;
@@ -700,79 +702,51 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param snpName Unique snapshot name.
-     * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
-     * @param snpSndr Sender which used for snapshot sub-task processing.
-     * @return Future which will be completed when snapshot is done.
-     */
-    IgniteInternalFuture<Boolean> startLocalSnapshotTask(
-        String snpName,
-        Map<Integer, Optional<Set<Integer>>> parts,
-        SnapshotFileSender snpSndr
-    ) {
-        if (!busyLock.enterBusy())
-            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
-
-        try {
-            SnapshotFutureTask snpFutTask = startSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
-
-            // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
-            // due to checkpoint aready running and we need to schedule the next one
-            // right afther current will be completed.
-            dbMgr.forceCheckpoint(String.format(SNAPSHOT_CP_REASON, snpName));
-
-            snpFutTask.awaitStarted();
-
-            return snpFutTask;
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropratate cache partition to be snapshotted.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
-    private SnapshotFutureTask startSnapshotTask(
+    SnapshotFutureTask registerSnapshotTask(
         String snpName,
         UUID srcNodeId,
         Map<Integer, Optional<Set<Integer>>> parts,
         SnapshotFileSender snpSndr
     ) {
-        if (locSnpTasks.containsKey(snpName))
-            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
+        if (!busyLock.enterBusy())
+            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
 
-        SnapshotFutureTask snpFutTask;
+        try {
+            if (locSnpTasks.containsKey(snpName))
+                return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-        SnapshotFutureTask prev = locSnpTasks.putIfAbsent(snpName,
-            snpFutTask = new SnapshotFutureTask(cctx,
-                srcNodeId,
-                snpName,
-                tmpWorkDir,
-                ioFactory,
-                snpSndr,
-                parts,
-                localBuff));
+            SnapshotFutureTask snpFutTask;
 
-        if (prev != null)
-            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
+            SnapshotFutureTask prev = locSnpTasks.putIfAbsent(snpName,
+                snpFutTask = new SnapshotFutureTask(cctx,
+                    srcNodeId,
+                    snpName,
+                    tmpWorkDir,
+                    ioFactory,
+                    snpSndr,
+                    parts,
+                    localBuff));
 
-        if (log.isInfoEnabled()) {
-            log.info("Snapshot task has been registered on local node [sctx=" + this +
-                ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+            if (prev != null)
+                return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
+
+            if (log.isInfoEnabled()) {
+                log.info("Snapshot task has been registered on local node [sctx=" + this +
+                    ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+            }
+
+            snpFutTask.listen(f -> locSnpTasks.remove(snpName));
+
+            return snpFutTask;
         }
-
-        snpFutTask.listen(f -> locSnpTasks.remove(snpName));
-
-        snpFutTask.start();
-
-        return snpFutTask;
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
