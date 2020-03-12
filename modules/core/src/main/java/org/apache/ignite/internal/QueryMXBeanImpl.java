@@ -95,7 +95,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
             T2<UUID, Long> ids = parseGlobalQueryId(id);
 
             if (ids == null)
-                throw new RuntimeException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
+                throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
             cluster.compute().execute(new VisorQueryCancelTask(),
                 new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get2()), false));

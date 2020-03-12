@@ -25,6 +25,8 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
@@ -39,12 +41,14 @@ import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL_QUERY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.CONTINUOUS_QUERY;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SCAN_QUERY;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SQL_QUERY;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.of;
+import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 import static org.apache.ignite.internal.visor.tx.VisorTxOperation.KILL;
 
 public class KillCommand implements Command<Object> {
@@ -87,11 +91,13 @@ public class KillCommand implements Command<Object> {
 
         switch (cmd) {
             case SCAN_QUERY:
-                UUID originNodeId = UUID.fromString(argIter.nextArg("Expected query originating node id."));
+                String originNodeIsStr = argIter.nextArg("Expected query originating node id.");
 
-                String cacheName = argIter.nextArg("Expected cache name");
+                UUID originNodeId = UUID.fromString(originNodeIsStr);
 
-                long qryId = Long.parseLong(argIter.nextArg("Expected query identifier"));
+                String cacheName = argIter.nextArg("Expected cache name.");
+
+                long qryId = Long.parseLong(argIter.nextArg("Expected query identifier."));
 
                 taskArgs = new VisorScanQueryCancelTaskArg(originNodeId, cacheName, qryId);
 
@@ -108,7 +114,13 @@ public class KillCommand implements Command<Object> {
                 break;
 
             case SQL_QUERY:
-                taskArgs = new VisorQueryCancelTaskArg(Long.parseLong(argIter.nextArg("Expected SQL query id.")));
+                T2<UUID, Long> ids = parseGlobalQueryId(argIter.nextArg("Expected SQL query id."));
+
+                if (ids == null)
+                    throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
+
+                //TODO: execute query on the ids.get1() node.
+                taskArgs = new VisorQueryCancelTaskArg(ids.get2());
 
                 taskName = VisorQueryCancelTask.class.getName();
 
