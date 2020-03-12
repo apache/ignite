@@ -29,7 +29,6 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Edge;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -130,7 +129,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
     public FragmentInfo fragmentInfo(IgniteReceiver rel, RelMetadataQuery mq) {
-        return new FragmentInfo(Pair.of(rel, rel.source()));
+        return new FragmentInfo(rel.source());
     }
 
     /**

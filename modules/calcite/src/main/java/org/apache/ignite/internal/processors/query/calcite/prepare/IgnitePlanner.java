@@ -118,9 +118,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         typeFactory = ctx.typeFactory();
         catalogReader = ctx.catalogReader();
+        operatorTable = ctx.opTable();
+        conformance = ctx.conformance();
         frameworkConfig = ctx.config();
 
-        operatorTable = frameworkConfig.getOperatorTable();
         programs = frameworkConfig.getPrograms();
         parserConfig = frameworkConfig.getParserConfig();
         sqlToRelConverterConfig = frameworkConfig.getSqlToRelConverterConfig();
@@ -129,7 +130,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         traitDefs = frameworkConfig.getTraitDefs();
 
         rexBuilder = new RexBuilder(typeFactory);
-        conformance = ctx.connectionConfig().conformance();
     }
 
     /** {@inheritDoc} */

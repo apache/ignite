@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Exchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 
 /**
@@ -33,14 +31,17 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
     /** */
     public static final DistributionTraitDef INSTANCE = new DistributionTraitDef();
 
+    /** {@inheritDoc} */
     @Override public Class<IgniteDistribution> getTraitClass() {
         return IgniteDistribution.class;
     }
 
+    /** {@inheritDoc} */
     @Override public String getSimpleName() {
         return "distr";
     }
 
+    /** {@inheritDoc} */
     @Override public RelNode convert(RelOptPlanner planner, RelNode rel, IgniteDistribution targetDist, boolean allowInfiniteCostConverters) {
         if (rel.getConvention() == Convention.NONE)
             return null;
@@ -54,14 +55,8 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
             case HASH_DISTRIBUTED:
             case BROADCAST_DISTRIBUTED:
             case SINGLETON:
-                Exchange exchange = new IgniteExchange(rel.getCluster(), rel.getTraitSet().replace(targetDist), rel, targetDist);
-                RelNode newRel = planner.register(exchange, rel);
-                RelTraitSet newTraits = rel.getTraitSet().replace(targetDist);
-
-                if (!newRel.getTraitSet().equals(newTraits))
-                    newRel = planner.changeTraits(newRel, newTraits);
-
-                return newRel;
+                return register(planner, rel,
+                    new IgniteExchange(rel.getCluster(), rel.getTraitSet().replace(targetDist), rel, targetDist));
             case ANY:
                 return rel;
             default:
@@ -69,11 +64,23 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public boolean canConvert(RelOptPlanner planner, IgniteDistribution fromTrait, IgniteDistribution toTrait) {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteDistribution getDefault() {
         return IgniteDistributions.any();
+    }
+
+    /** */
+    private RelNode register(RelOptPlanner planner, RelNode rel, RelNode replace) {
+        RelNode registered = planner.register(replace, rel);
+
+        if (!registered.getTraitSet().equals(replace.getTraitSet()))
+            registered = planner.changeTraits(registered, replace.getTraitSet());
+
+        return registered;
     }
 }

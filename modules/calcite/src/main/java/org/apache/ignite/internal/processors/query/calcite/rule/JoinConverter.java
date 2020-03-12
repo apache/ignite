@@ -56,7 +56,7 @@ public class JoinConverter extends IgniteConverter {
         RelMetadataQuery mq = cluster.getMetadataQuery();
 
         List<IgniteDistribution> leftTraits = IgniteMdDerivedDistribution.deriveDistributions(left, IgniteConvention.INSTANCE, mq);
-        List<IgniteDistribution> rightTraits = IgniteMdDerivedDistribution.deriveDistributions(left, IgniteConvention.INSTANCE, mq);
+        List<IgniteDistribution> rightTraits = IgniteMdDerivedDistribution.deriveDistributions(right, IgniteConvention.INSTANCE, mq);
 
         List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(leftTraits, rightTraits, join.analyzeCondition(), join.getJoinType());
 

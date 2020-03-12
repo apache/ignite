@@ -20,15 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RelTargetAware;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  * Relational expression that iterates over its input
  * and sends elements to remote {@link IgniteReceiver}
  */
-public class IgniteSender extends SingleRel implements IgniteRel {
+public class IgniteSender extends SingleRel implements IgniteRel, RelTargetAware {
     /** */
     private RelTarget target;
 
@@ -67,6 +72,11 @@ public class IgniteSender extends SingleRel implements IgniteRel {
         return visitor.visit(this);
     }
 
+    /** {@inheritDoc} */
+    @Override public void target(RelTarget target) {
+        this.target = target;
+    }
+
     /**
      * @return Remote targets information.
      */
@@ -75,9 +85,16 @@ public class IgniteSender extends SingleRel implements IgniteRel {
     }
 
     /**
-     * @param target Remote targets information.
+     * @return Node distribution.
      */
-    public void target(RelTarget target) {
-        this.target = target;
+    public IgniteDistribution distribution() {
+        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    /**
+     * @return Node collations.
+     */
+    public List<RelCollation> collations() {
+        return getTraitSet().getTraits(RelCollationTraitDef.INSTANCE);
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
@@ -62,7 +63,7 @@ public class MappingServiceImpl extends AbstractService implements MappingServic
     @Override public NodesMapping mapBalanced(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter) {
         assert desiredCnt >= 0;
 
-        List<ClusterNode> nodes = discoveryManager.discoCache(topVer).serverNodes();
+        List<ClusterNode> nodes = new ArrayList<>(discoveryManager.discoCache(topVer).serverNodes());
 
         if (nodeFilter != null)
             nodes = nodes.stream().filter(nodeFilter).collect(Collectors.toList());

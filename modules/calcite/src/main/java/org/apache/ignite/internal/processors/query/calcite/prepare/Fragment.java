@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
@@ -30,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,7 +38,7 @@ import static org.apache.calcite.rel.RelDistribution.Type.SINGLETON;
 /**
  * Fragment of distributed query
  */
-public class Fragment implements RelSource {
+public class Fragment implements RelTargetAware {
     /** */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
@@ -82,16 +79,13 @@ public class Fragment implements RelSource {
 
         mapping = fragmentMapping(mappingService, ctx, info, mq);
 
-        ImmutableList<Pair<IgniteReceiver, RelSource>> sources = info.sources();
+        if (F.isEmpty(info.targetAwareList()))
+            return;
 
-        if (!F.isEmpty(sources)) {
-            for (Pair<IgniteReceiver, RelSource> input : sources) {
-                IgniteReceiver receiver = input.left;
-                RelSource source = input.right;
+        RelTargetImpl target = new RelTargetImpl(id, mapping);
 
-                source.bindToTarget(new RelTargetImpl(id, mapping, receiver.distribution()), mappingService, ctx, mq);
-            }
-        }
+        for (RelTargetAware aware : info.targetAwareList())
+            aware.target(target);
     }
 
     /**
@@ -101,23 +95,25 @@ public class Fragment implements RelSource {
         return root;
     }
 
-    /** {@inheritDoc} */
-    @Override public long fragmentId() {
+    /**
+     * @return Fragment ID.
+     */
+    public long fragmentId() {
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public NodesMapping mapping() {
+    /**
+     * @return Fragment mapping.
+     */
+    public NodesMapping mapping() {
         return mapping;
     }
 
     /** {@inheritDoc} */
-    @Override public void bindToTarget(RelTarget target, MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
-        assert !local();
+    @Override public void target(RelTarget target) {
+        assert root instanceof RelTargetAware;
 
-        ((IgniteSender) root).target(target);
-
-        init(mappingService, ctx, mq);
+        ((RelTargetAware) root).target(target);
     }
 
     /** */

@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPl
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -63,9 +62,10 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
 
         while (true) {
             try {
-                F.first(fragments).init(mappingService, ctx, mq);
+                for (Fragment fragment : fragments)
+                    fragment.init(mappingService, ctx, mq);
 
-                break;
+                return;
             }
             catch (OptimisticPlanningException e) {
                 if (++i > 3)

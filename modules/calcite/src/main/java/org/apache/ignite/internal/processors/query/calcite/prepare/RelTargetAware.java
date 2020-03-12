@@ -17,35 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.io.Serializable;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-
 /**
- *
+ * Describes an object, that needs information about physical target distribution.
  */
-public class RelSourceImpl implements RelSource, Serializable {
-    /** */
-    private final long fragmentId;
-
-    /** */
-    private final NodesMapping mapping;
-
+public interface RelTargetAware {
     /**
-     * @param fragmentId Fragment ID.
-     * @param mapping Source mapping.
+     * @param target Remote target information.
      */
-    public RelSourceImpl(long fragmentId, NodesMapping mapping) {
-        this.fragmentId = fragmentId;
-        this.mapping = mapping;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long fragmentId() {
-        return fragmentId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public NodesMapping mapping() {
-        return mapping;
-    }
+    void target(RelTarget target);
 }

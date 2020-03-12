@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -32,6 +33,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -201,10 +203,21 @@ public final class Commons {
 
     /** */
     public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
-        final RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
+        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
-        for (RelDataType type : types)
-            builder.addAll(type.getFieldList());
+        Set<String> names = new HashSet<>();
+
+        for (RelDataType type : types) {
+            for (RelDataTypeField field : type.getFieldList()) {
+                int idx = 0;
+                String fieldName = field.getName();
+
+                while (!names.add(fieldName))
+                    fieldName = field.getName() + idx++;
+
+                builder.add(fieldName, field.getType());
+            }
+        }
 
         return builder.build();
     }

@@ -244,9 +244,6 @@ public class IgniteDistributions {
             }
         }
 
-        out = left = right = broadcast();
-        add(res, out, leftIn, rightIn, left, right);
-
         out = left = right = single();
         add(res, out, leftIn, rightIn, left, right);
 
