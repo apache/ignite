@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -310,17 +309,6 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Change grid global state.
-     *
-     * @param active Active.
-     * @param destNodeId Destination node id.
-     * @deprecated Use {@link #changeState(ClusterState, UUID)} instead.
-     */
-    @Deprecated
-    public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
-            throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
      * Changes grid global state.
      *
      * @param state New cluster state.
@@ -329,6 +317,18 @@ public abstract class GridClientConnection {
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Changes grid global state.
+     *
+     * @param state New cluster state.
+     * @param destNodeId Destination node id.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     */
+    public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**

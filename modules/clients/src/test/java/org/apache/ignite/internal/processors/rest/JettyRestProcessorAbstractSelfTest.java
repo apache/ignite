@@ -143,8 +143,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -254,18 +257,35 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws IOException If parsing failed.
      */
     protected JsonNode validateJsonResponse(String content) throws IOException {
+        return validateJsonResponse(content, false);
+    }
+
+    /**
+     * Validates JSON response.
+     *
+     * @param content Content to check.
+     * @param errorExpected is error expected.
+     * @return REST result if {@code errorExpected} is {@code false}. Error instead.
+     * @throws IOException If parsing failed.
+     */
+    protected JsonNode validateJsonResponse(String content, boolean errorExpected) throws IOException {
         assertNotNull(content);
         assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertTrue("Unexpected error: " + node.get("error").asText(), node.get("error").isNull());
+        JsonNode errNode = node.get("error");
+
+        if (errorExpected)
+            assertTrue("Expected an error.", !errNode.isNull());
+        else
+            assertTrue("Unexpected error: " + errNode.asText(), errNode.isNull());
 
         assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
 
-        return node.get("response");
+        return node.get(errorExpected ? "error" : "response");
     }
 
     /**
@@ -887,11 +907,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testDeactivateActivate() throws Exception {
         assertClusterState(true);
 
+        changeClusterState(GridRestCommand.CLUSTER_SET_STATE, "state", INACTIVE.name());
+
+        changeClusterState(GridRestCommand.CLUSTER_SET_STATE, "state", INACTIVE.name(), "force", "true");
+
+        changeClusterState(GridRestCommand.CLUSTER_SET_STATE, "state", ACTIVE.name());
+
         changeClusterState(GridRestCommand.CLUSTER_DEACTIVATE);
+
+        changeClusterState(GridRestCommand.CLUSTER_DEACTIVATE, "force", "true");
+
         changeClusterState(GridRestCommand.CLUSTER_ACTIVATE);
 
         // same for deprecated.
         changeClusterState(GridRestCommand.CLUSTER_INACTIVE);
+
+        changeClusterState(GridRestCommand.CLUSTER_INACTIVE, "force", "true");
+
         changeClusterState(GridRestCommand.CLUSTER_ACTIVE);
 
         initCache();
@@ -3181,16 +3213,37 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * Change cluster state and test new state.
      *
      * @param cmd Command.
+     * @param params Arguments for {@code cmd}.
      * @throws Exception If failed.
      */
-    private void changeClusterState(GridRestCommand cmd) throws Exception {
-        String ret = content(null, cmd);
+    private void changeClusterState(GridRestCommand cmd, String... params) throws Exception {
+        String ret = content(null, cmd, params);
 
-        JsonNode res = validateJsonResponse(ret);
+        boolean force = false;
+
+        boolean deactivate = cmd == GridRestCommand.CLUSTER_INACTIVE || cmd == GridRestCommand.CLUSTER_DEACTIVATE;
+
+        for (int i = 0; i < params.length; ++i) {
+            String p = params[i];
+
+            if ("force".equals(p) && params[i + 1].equals("true"))
+                force = true;
+
+            if (cmd == GridRestCommand.CLUSTER_SET_STATE && p.equals("state"))
+                deactivate = params[i + 1].equals(INACTIVE.name());
+        }
+
+        boolean errorExpected = !force && deactivate;
+
+        JsonNode res = validateJsonResponse(ret, errorExpected);
 
         assertFalse(res.isNull());
-        assertTrue(res.asText().startsWith(cmd.key()));
 
-        assertClusterState(cmd == GridRestCommand.CLUSTER_ACTIVATE || cmd == GridRestCommand.CLUSTER_ACTIVE);
+        if (errorExpected)
+            assertTrue(res.asText().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
+        else
+            assertTrue(res.asText().startsWith(cmd.key()));
+
+        assertClusterState(!deactivate || !force);
     }
 }
