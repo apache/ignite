@@ -50,7 +50,7 @@ public class ActivateCommand implements Command<Void> {
         try (GridClient client = Command.startClient(cfg)) {
             GridClientClusterState state = client.state();
 
-            state.state(ACTIVE, true);
+            state.state(ACTIVE, false);
 
             logger.info("Cluster activated");
         }

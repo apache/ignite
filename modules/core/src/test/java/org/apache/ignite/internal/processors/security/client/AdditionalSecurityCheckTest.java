@@ -190,7 +190,7 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
         try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
             assertTrue(client.connected());
 
-            client.state().state(ACTIVE, true);
+            client.state().state(ACTIVE, false);
         }
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {

@@ -102,7 +102,7 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
         assertFalse(ig2.active());
         assertEquals(state.state(), INACTIVE);
 
-        state.state(ACTIVE, true);
+        state.state(ACTIVE, false);
 
         assertTrue(ig1.active());
         assertTrue(ig2.active());

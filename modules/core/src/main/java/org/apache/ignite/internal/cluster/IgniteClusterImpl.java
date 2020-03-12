@@ -378,7 +378,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         try {
             validateBeforeBaselineChange(baselineTop);
 
-            ctx.state().changeGlobalState(ACTIVE, true, baselineTop, true, false).get();
+            ctx.state().changeGlobalState(ACTIVE, false, baselineTop, true, false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -529,7 +529,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             validateBeforeBaselineChange(target);
 
-            ctx.state().changeGlobalState(ACTIVE, true, target, true, isBaselineAutoAdjust).get();
+            ctx.state().changeGlobalState(ACTIVE, false, target, true, isBaselineAutoAdjust).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
