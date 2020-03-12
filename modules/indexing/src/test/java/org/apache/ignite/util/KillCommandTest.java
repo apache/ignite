@@ -25,6 +25,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,7 +59,6 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -157,7 +157,6 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
 
     /** @throws Exception If failed. */
     @Test
-    @Ignore("Closed qursor still returns data. It's a but not related to current changes.")
     public void testCancelSQLQuery() throws Exception {
         startGrids(NODES_CNT);
         IgniteEx client = startClientGrid("client");
@@ -170,7 +169,9 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT _KEY, _VAL FROM INTEGER").setSchema("default").setPageSize(10);
+        String qryStr = "SELECT * FROM \"default\".Integer";
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(qryStr).setPageSize(PAGE_SZ);
         Iterator<List<?>> iter = queryProcessor(client).querySqlFields(qry, true).iterator();
 
         assertNotNull(iter.next());
@@ -180,19 +181,17 @@ public class KillCommandTest extends GridCommandHandlerClusterPerMethodAbstractT
         assertEquals(2, sqlQries.size());
 
         String qryId = (String)sqlQries.get(0).get(0);
-        assertEquals("SELECT _KEY, _VAL FROM INTEGER", sqlQries.get(0).get(1));
+        assertEquals(qryStr, sqlQries.get(0).get(1));
 
         QueryMXBean qryMBean = getMxBean(client.name(), "Query",
             QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
 
         qryMBean.cancelSQL(qryId);
 
-        //SqlViewExporterSpiTest.execute(client, "KILL QUERY '" + qryId + "'");
-
-        while(iter.hasNext())
+        for (int i=0; i < PAGE_SZ - 2; i++)
             assertNotNull(iter.next());
 
-        fail("You shouldn't be here!");
+        assertThrowsWithCause(iter::next, CacheException.class);
     }
 
     /** @throws Exception If failed. */
