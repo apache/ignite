@@ -157,6 +157,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** Snapshot parameter name for a file transmission. */
     private static final String SNP_NAME_PARAM = "snpName";
 
+    /** Configured data storage page size. */
+    private final int pageSize;
+
+    /**
+     * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
+     * It is important to have only only buffer per thread (instead of creating each buffer per
+     * each {@code SnapshotFutureTask.PageStoreSerialWriter}) this is redundant and can lead to OOM errors. Direct buffer
+     * deallocates only when ByteBuffer is garbage collected, but it can get out of off-heap memory before it.
+     */
+    private final ThreadLocal<ByteBuffer> localBuff;
+
     /** Map of registered cache snapshot processes and their corresponding contexts. */
     private final ConcurrentMap<String, SnapshotFutureTask> locSnpTasks = new ConcurrentHashMap<>();
 
@@ -190,14 +201,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** Database manager for enabled persistence. */
     private GridCacheDatabaseSharedManager dbMgr;
 
-    /** Configured data storage page size. */
-    private int pageSize;
-
     /**
      * @param ctx Kernal context.
      */
     public IgniteSnapshotManager(GridKernalContext ctx) {
-        // No-op.
+        pageSize = ctx.config().getDataStorageConfiguration().getPageSize();
+
+        assert pageSize > 0;
+
+        localBuff = ThreadLocal.withInitial(() ->
+            ByteBuffer.allocateDirect(ctx.config().getDataStorageConfiguration().getPageSize())
+                .order(ByteOrder.nativeOrder()));
     }
 
     /**
@@ -223,19 +237,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        GridKernalContext kctx = cctx.kernalContext();
+        GridKernalContext ctx = cctx.kernalContext();
 
-        if (kctx.clientNode() || kctx.isDaemon())
+        if (ctx.clientNode() || ctx.isDaemon())
             return;
 
-        if (!CU.isPersistenceEnabled(cctx.kernalContext().config()))
+        if (!CU.isPersistenceEnabled(ctx.config()))
             return;
 
-        DataStorageConfiguration dcfg = kctx.config().getDataStorageConfiguration();
-
-        pageSize = dcfg.getPageSize();
-
-        assert pageSize > 0;
+        DataStorageConfiguration dcfg = ctx.config().getDataStorageConfiguration();
 
         snpRunner = new IgniteThreadPoolExecutor(
             SNAPSHOT_RUNNER_THREAD_PREFIX,
@@ -246,13 +256,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             new LinkedBlockingQueue<>(),
             SYSTEM_POOL,
             // todo do we need critical handler for any unhandled errors?
-            (t, e) -> kctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
+            (t, e) -> ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e)));
 
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
-        locSnpDir = U.resolveWorkDirectory(kctx.config().getWorkDirectory(), dcfg.getLocalSnapshotPath(), false);
+        locSnpDir = U.resolveWorkDirectory(ctx.config().getWorkDirectory(), dcfg.getLocalSnapshotPath(), false);
         tmpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY).toFile();
 
         U.ensureDirectory(locSnpDir, "local snapshots directory", log);
@@ -747,7 +757,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 tmpWorkDir,
                 ioFactory,
                 snpSndr,
-                parts));
+                parts,
+                localBuff));
 
         if (prev != null)
             return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
@@ -1338,10 +1349,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          * @throws IOException If fails.
          */
         private void copy(File from, File to, long length) throws IOException {
-            try (FileIO src = ioFactory.create(from, READ);
+            try (FileChannel src = FileChannel.open(from.toPath(), READ);
                  FileChannel dest = new FileOutputStream(to).getChannel()) {
-                if (src.size() < length)
-                    throw new IgniteException("The source file to copy has to enough length [expected=" + length + ", actual=" + src.size() + ']');
+                if (src.size() < length) {
+                    throw new IgniteException("The source file to copy has to enough length " +
+                        "[expected=" + length + ", actual=" + src.size() + ']');
+                }
 
                 src.position(0);
 

@@ -99,6 +99,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** Snapshot working directory on file system. */
     private final File tmpTaskWorkDir;
 
+    /** Local buffer to perpform copy-on-write operations for {@link PageStoreSerialWriter}. */
+    private final ThreadLocal<ByteBuffer> localBuff;
+
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
 
@@ -132,9 +135,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** Cache group and corresponding partitions collected under the checkpoint write lock. */
     private final Map<Integer, Set<Integer>> processed = new HashMap<>();
-
-    /** Collection of partition to be snapshotted. */
-    private final List<GroupPartitionId> pairs = new ArrayList<>();
 
     /** Checkpoint end future. */
     private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
@@ -172,6 +172,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         onDone(e);
         parts = null;
         ioFactory = null;
+        localBuff = null;
     }
 
     /**
@@ -187,7 +188,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         File tmpWorkDir,
         FileIOFactory ioFactory,
         SnapshotFileSender snpSndr,
-        Map<Integer, Optional<Set<Integer>>> parts
+        Map<Integer, Optional<Set<Integer>>> parts,
+        ThreadLocal<ByteBuffer> localBuff
     ) {
         A.notNull(snpName, "Snapshot name cannot be empty or null");
         A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
@@ -201,6 +203,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
         this.snpSndr = snpSndr;
         this.ioFactory = ioFactory;
+        this.localBuff = localBuff;
     }
 
     /**
@@ -433,13 +436,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                             partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())),
                                 partId),
                             ioFactory,
-                            cctx.kernalContext()
-                                .config()
-                                .getDataStorageConfiguration()
-                                .getPageSize()));
+                            store.pages(),
+                            localBuff));
 
                     partFileLengths.put(pair, store.size());
-                    partDeltaWriters.get(pair).init(store.pages());
                 }
             }
         }
@@ -536,7 +536,16 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     // Wait for the completion of both futures - checkpoint end, copy partition.
                     .runAfterBothAsync(cpEndFut,
                         wrapExceptionIfStarted(() -> {
-                            File delta = partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName), partId);
+                            File delta = partDeltaWriters.get(pair).deltaFile;
+
+                            try {
+                                // Atomically creates a new, empty delta file if and only if
+                                // a file with this name does not yet exist.
+                                delta.createNewFile();
+                            }
+                            catch (IOException ex) {
+                                throw new IgniteCheckedException(ex);
+                            }
 
                             snpSndr.sendDelta(delta, cacheDirName, pair);
 
@@ -637,6 +646,12 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         /** Page store to which current writer is related to. */
         private final PageStore store;
 
+        /** Factory to provide IO API over destination file. */
+        private final FileIOFactory factory;
+
+        /** Partition delta file to store delta pages into. */
+        private final File deltaFile;
+
         /** Busy lock to protect write opertions. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -650,7 +665,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         private final BooleanSupplier interrupt;
 
         /** Callback to stop snapshot if an error occurred. */
-        private final Consumer<Throwable> exConsumer;
+        private final Consumer<Throwable> exCons;
+
+        /**
+         * Array of bits. 1 - means pages written, 0 - the otherwise.
+         * Size of array can be estimated only under checkpoint write lock.
+         */
+        private final AtomicBitSet pagesWrittenBits;
 
         /** IO over the underlying file */
         private volatile FileIO fileIo;
@@ -658,71 +679,40 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         /** {@code true} if partition file has been copied to external resource. */
         private volatile boolean partProcessed;
 
-        /** {@code true} means current writer is allowed to handle page writes. */
-        private volatile boolean inited;
-
-        /**
-         * Array of bits. 1 - means pages written, 0 - the otherwise.
-         * Size of array can be estimated only under checkpoint write lock.
-         */
-        private volatile AtomicBitSet pagesWrittenBits;
-
         /**
          * @param log Ignite logger to use.
          * @param checkpointComplete Checkpoint finish flag.
-         * @param pageSize Size of page to use for local buffer.
-         * @param cfgFile Configuration file provider.
+         * @param deltaFile Destination file to write pages to.
          * @param factory Factory to produce an IO interface over underlying file.
+         * @param allocPages Total number of tracking pages.
          */
         public PageStoreSerialWriter(
             IgniteLogger log,
             PageStore store,
             BooleanSupplier checkpointComplete,
             BooleanSupplier interrupt,
-            Consumer<Throwable> exConsumer,
-            File cfgFile,
+            Consumer<Throwable> exCons,
+            File deltaFile,
             FileIOFactory factory,
-            int pageSize
-        ) throws IgniteCheckedException {
+            int allocPages,
+            ThreadLocal<ByteBuffer> localBuff
+        ) {
             assert store != null;
 
-            try {
-                fileIo = factory.create(cfgFile);
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException(e);
-            }
-
+            this.factory = factory;
+            this.deltaFile = deltaFile;
             this.checkpointComplete = checkpointComplete;
             this.interrupt = interrupt;
-            this.exConsumer = exConsumer;
+            this.exCons = exCons;
             this.log = log.getLogger(PageStoreSerialWriter.class);
-
-            localBuff = ThreadLocal.withInitial(() ->
-                ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder()));
-
             this.store = store;
+            this.localBuff = localBuff;
+            // It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
+            // This guarantee us that no pages will be modified and it's safe to init pages
+            // list which needs to be processed.
+            pagesWrittenBits = new AtomicBitSet(allocPages);
 
             store.addWriteListener(this);
-        }
-
-        /**
-         * It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
-         * This guarantee us that no pages will be modified and it's safe to init pages list
-         * which needs to be processed.
-         *
-         * @param allocPages Total number of tracking pages.
-         */
-        public void init(int allocPages) {
-            lock.writeLock().lock();
-
-            try {
-                pagesWrittenBits = new AtomicBitSet(allocPages);
-                inited = true;
-            }
-            finally {
-                lock.writeLock().unlock();
-            }
         }
 
         /**
@@ -751,12 +741,27 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             assert buf.position() == 0 : buf.position();
             assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
+            if (fileIo == null) {
+                lock.writeLock().lock();
+
+                try {
+                    if (stopped())
+                        return;
+
+                    if (fileIo == null)
+                        fileIo = factory.create(deltaFile);
+                }
+                catch (IOException e) {
+                    exCons.accept(e);
+                }
+                finally {
+                    lock.writeLock().unlock();
+                }
+            }
+
             lock.readLock().lock();
 
             try {
-                if (!inited)
-                    return;
-
                 if (stopped())
                     return;
 
@@ -786,7 +791,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
             catch (Throwable ex) {
-                exConsumer.accept(ex);
+                exCons.accept(ex);
             }
             finally {
                 lock.readLock().unlock();
@@ -828,8 +833,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 fileIo = null;
 
                 store.removeWriteListener(this);
-
-                inited = false;
             }
             finally {
                 lock.writeLock().unlock();
