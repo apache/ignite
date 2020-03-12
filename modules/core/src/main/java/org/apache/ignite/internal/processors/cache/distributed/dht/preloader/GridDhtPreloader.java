@@ -149,30 +149,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (ctx.kernalContext().clientNode())
             return false; // No-op.
 
-        if (exchFut.resetLostPartitionFor(grp.cacheOrGroupName()))
-            return true;
-
-        if (exchFut.localJoinExchange())
-            return true; // Required, can have outdated updSeq partition counter if node reconnects.
-
-        RebalanceFuture rebalanceFuture = (RebalanceFuture)rebalanceFuture();
-
-        if (rebalanceFuture.isInitial())
-            return true;
-
-        AffinityTopologyVersion rebTopVer = rebalanceFuture.topologyVersion();
-
-        if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
-            if (rebTopVer.compareTo(grp.localStartVersion()) > 0)
-                log.warning("Affinity history is exceed, rebalance should be try triggered [grp=" + grp.cacheOrGroupName() + "].");
-
-            return true; // Required, since no history info available.
-        }
-
         AffinityTopologyVersion lastAffChangeTopVer =
             ctx.exchange().lastAffinityChangedTopologyVersion(exchFut.topologyVersion());
 
-        return lastAffChangeTopVer.compareTo(rebTopVer) > 0;
+        return lastAffChangeTopVer.equals(exchFut.topologyVersion());
     }
 
     /** {@inheritDoc} */
