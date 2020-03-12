@@ -77,7 +77,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.getPartionDeltaFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
 /**
@@ -430,7 +430,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
                             stopping,
                             this::acceptException,
-                            getPartionDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())),
+                            partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())),
                                 partId),
                             ioFactory,
                             cctx.kernalContext()
@@ -536,7 +536,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     // Wait for the completion of both futures - checkpoint end, copy partition.
                     .runAfterBothAsync(cpEndFut,
                         wrapExceptionIfStarted(() -> {
-                            File delta = getPartionDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName), partId);
+                            File delta = partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName), partId);
 
                             snpSndr.sendDelta(delta, cacheDirName, pair);
 

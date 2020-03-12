@@ -205,15 +205,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @param partId Cache partition identifier.
      * @return A file representation.
      */
-    public static File getPartionDeltaFile(File snapshotCacheDir, int partId) {
-        return new File(snapshotCacheDir, getPartitionDeltaFileName(partId));
+    public static File partDeltaFile(File snapshotCacheDir, int partId) {
+        return new File(snapshotCacheDir, partDeltaFileName(partId));
     }
 
     /**
      * @param partId Partitoin id.
      * @return File name of delta partition pages.
      */
-    public static String getPartitionDeltaFileName(int partId) {
+    public static String partDeltaFileName(int partId) {
         assert partId <= MAX_PARTITION_ID || partId == INDEX_PARTITION;
 
         return partId == INDEX_PARTITION ? INDEX_DELTA_NAME : String.format(PART_DELTA_TEMPLATE, partId);

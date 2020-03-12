@@ -347,7 +347,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = DFLT_IO_FACTORY.create(file, modes);
 
-                if (file.getName().equals(IgniteSnapshotManager.getPartitionDeltaFileName(0)))
+                if (file.getName().equals(IgniteSnapshotManager.partDeltaFileName(0)))
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
