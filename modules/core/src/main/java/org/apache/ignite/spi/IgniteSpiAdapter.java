@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -34,6 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -54,9 +56,11 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 
 /**
@@ -664,8 +668,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                     "'IgniteConfiguration.metricsUpdateFrequency' to prevent unnecessary status checking.");
         }
         // Intentionally compare references using '!=' below
-        else if (ignite.configuration().getFailureDetectionTimeout() !=
-                IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT)
+        else if (ignite.configuration().getFailureDetectionTimeout() != DFLT_FAILURE_DETECTION_TIMEOUT)
             log.warning("Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)");
 
         clientFailureDetectionTimeout = ignite.configuration().getClientFailureDetectionTimeout();
@@ -841,7 +844,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> nodes() {
-            return  locNode == null  ? Collections.<ClusterNode>emptyList() : Collections.singletonList(locNode);
+            return  locNode == null  ? Collections.emptyList() : Collections.singletonList(locNode);
         }
 
         /** {@inheritDoc} */
@@ -946,7 +949,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
             if (!(ignite0 instanceof IgniteKernal))
                 throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
 
-            ((IgniteKernal)ignite0).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
+            ((IgniteEx)ignite0).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
@@ -956,7 +959,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
             if (!(ignite0 instanceof IgniteKernal))
                 throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
 
-            ((IgniteKernal)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+            ((IgniteEx)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
@@ -972,6 +975,26 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeMetricRegistry(String name) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+            // No-op.
         }
     }
 }

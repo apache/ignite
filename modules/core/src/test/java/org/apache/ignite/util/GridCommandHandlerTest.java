@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -251,6 +252,63 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(INACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
+    }
+
+    /**
+     * Test "deactivate" via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateNonPersistent() throws Exception {
+        checkDeactivateNonPersistent("--deactivate");
+    }
+
+    /**
+     * Test "set-state inactive" via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetInactiveNonPersistent() throws Exception {
+        checkDeactivateNonPersistent("--set-state", "inactive");
+    }
+
+    /**
+     * Launches cluster deactivation. Works via control.sh when a non-persistent cache involved.
+     *
+     *  @param cmd Certain command to deactivate cluster.
+     */
+    private void checkDeactivateNonPersistent(String... cmd) throws Exception {
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("non-persistent-dataRegion")
+            .setPersistenceEnabled(false);
+
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().state(ACTIVE);
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
+            .setDataRegionName("non-persistent-dataRegion"));
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+        assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        List<String> forceCmd = new ArrayList<>(Arrays.asList(cmd));
+        forceCmd.add("--force");
+
+        assertEquals(EXIT_CODE_OK, execute(forceCmd));
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
     }
 
     /**

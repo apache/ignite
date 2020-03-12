@@ -78,7 +78,6 @@ public interface TransmissionHandler {
      */
     public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta);
 
-
     /**
      * @param nodeId Remote node id on which the error occurred.
      * @param err The err of fail handling process.
