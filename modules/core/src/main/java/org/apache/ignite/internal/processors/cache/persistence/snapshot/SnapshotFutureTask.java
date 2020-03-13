@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -309,7 +310,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshotted: " + grpId);
 
                 if (gctx.config().isEncryptionEnabled())
-                    throw new IgniteCheckedException("Encrypted cache groups are note allowed to be snapshotted: " + grpId);
+                    throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshotted: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
                 U.ensureDirectory(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())),
@@ -370,17 +371,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                             " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
                     }
 
-                    iter = new Iterator<GridDhtLocalPartition>() {
-                        Iterator<Integer> iter = grpParts.iterator();
-
-                        @Override public boolean hasNext() {
-                            return iter.hasNext();
-                        }
-
-                        @Override public GridDhtLocalPartition next() {
-                            return top.localPartition(iter.next());
-                        }
-                    };
+                    iter = F.iterator(grpParts, top::localPartition, false);
                 }
 
                 Set<Integer> owning = processed.computeIfAbsent(grpId, g -> new HashSet<>());
