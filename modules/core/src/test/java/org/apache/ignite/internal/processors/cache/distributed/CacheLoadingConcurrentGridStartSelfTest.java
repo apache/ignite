@@ -397,6 +397,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void assertCacheSize(int expectedCacheSize) throws Exception {
+        awaitPartitionMapExchange();
+
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         boolean consistentCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -417,6 +419,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 return size == expectedCacheSize && expectedCacheSize == total;
             }
         }, 2 * 60_000);
+
+        for (int i = 0; i < GRIDS_CNT; i++)
+            assertPartitionsSame(idleVerify(grid(i), DEFAULT_CACHE_NAME));
 
         assertTrue("Data lost. Actual cache size: " + cache.size(CachePeekMode.PRIMARY), consistentCache);
     }
