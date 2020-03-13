@@ -989,14 +989,34 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Covers scenario when thread chain locks acquisition for XID 1 should be continued during unsuccessful attempt
-     * to acquire lock on certain key for XID 2 (XID 1 with uncompleted chain becomes owner of this key instead).
+     * Version of check thread chain case for optimistic transactions.
      *
      * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IGNITE_TO_STRING_MAX_LENGTH, value = "100000")
-    public void testConcurrentCheckThreadChain() throws Exception {
+    public void testConcurrentCheckThreadChainOptimistic() throws Exception {
+        testConcurrentCheckThreadChain(OPTIMISTIC);
+    }
+
+    /**
+     * Version of check thread chain case for pessimistic transactions.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_TO_STRING_MAX_LENGTH, value = "100000")
+    public void testConcurrentCheckThreadChainPessimistic() throws Exception {
+        testConcurrentCheckThreadChain(PESSIMISTIC);
+    }
+
+    /**
+     * Covers scenario when thread chain locks acquisition for XID 1 should be continued during unsuccessful attempt
+     * to acquire lock on certain key for XID 2 (XID 1 with uncompleted chain becomes owner of this key instead).
+     *
+     * @throws Exception If failed.
+     */
+    protected void testConcurrentCheckThreadChain(TransactionConcurrency txConcurrency) throws Exception {
         storeEnabled = false;
 
         startGrid(0);
@@ -1037,7 +1057,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                             vals.put(key, String.valueOf(key) + threadId);
                         }
 
-                        jcache(0).putAll(vals);
+                        try (Transaction tx = grid(0).transactions().txStart(txConcurrency, READ_COMMITTED)) {
+                            jcache(0).putAll(vals);
+
+                            tx.commit();
+                        }
 
                         if (itNum > 0 && itNum % 5000 == 0)
                             info(">>> " + itNum + " iterations completed.");
