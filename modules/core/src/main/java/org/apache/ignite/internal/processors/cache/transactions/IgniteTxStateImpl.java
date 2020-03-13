@@ -439,7 +439,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
      * @return All entries. Returned collection is copy of internal collection.
      */
     public synchronized Collection<IgniteTxEntry> allEntriesCopy() {
-        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new HashSet<>(txMap.values());
+        return txMap == null ? Collections.<IgniteTxEntry>emptySet() : new ArrayList<>(txMap.values());
     }
 
     /** {@inheritDoc} */
