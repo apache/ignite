@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.visor.checker;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationResult;
 import org.apache.ignite.internal.processors.cache.verify.checker.tasks.PartitionReconciliationProcessorTask;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 /**
  * Visor partition reconciliation task.
@@ -32,10 +37,28 @@ public class VisorPartitionReconciliationTask
     /** */
     private static final long serialVersionUID = 0L;
 
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorPartitionReconciliationTaskArg> arg) {
+        if (arg.getArgument().fastCheck()) {
+            // When the fast-check mode is used then VisorPartitionReconciliationJob should be mapped to the coordinator,
+            // in order to calculate a set of invalid partitions which is only possible on the coordinator node.
+            // In all other cases we do not have this limitation and that is why VisorOneNodeTask is not used.
+            ClusterNode crd = ignite.context().discovery().discoCache().oldestAliveServerNode();
+
+            Collection<UUID> nids = new ArrayList<>(1);
+
+            nids.add(crd == null ? ignite.localNode().id() : crd.id());
+
+            return nids;
+        }
+
+        return arg.getNodes();
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected VisorJob<VisorPartitionReconciliationTaskArg, ReconciliationResult> job(
-        VisorPartitionReconciliationTaskArg arg) {
+        VisorPartitionReconciliationTaskArg arg
+    ) {
         return new VisorPartitionReconciliationJob(arg, debug, PartitionReconciliationProcessorTask.class);
     }
 }

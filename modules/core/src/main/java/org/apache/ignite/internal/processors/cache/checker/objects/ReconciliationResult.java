@@ -30,24 +30,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Common result of partition reconciliation.
  */
 public class ReconciliationResult extends IgniteDataTransferObject {
-    /**
-     *
-     */
+    /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Result.
-     */
+    /** Result. */
     private ReconciliationAffectedEntries res;
 
-    /**
-     * Folders with local results.
-     */
+    /** Folders with local results. */
     private Map<UUID, String> nodeIdToFolder;
 
-    /**
-     * Errors happened during execution.
-     */
+    /** Errors happened during execution. */
     private List<String> errors;
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -50,6 +52,13 @@ public class GridDhtPartitionsStateValidator {
     private final GridCacheSharedContext<?, ?> cctx;
 
     /**
+     * Collection of partitions that did not pass validation.
+     * This collection is supported and updated by coordinator node only.
+     * Represents the following mapping: group id -> set of partitions.
+     */
+    private Map<Integer, Set<Integer>> invalidParts = new ConcurrentHashMap<>();
+
+    /**
      * Constructor.
      *
      * @param cctx Cache shared context.
@@ -73,7 +82,7 @@ public class GridDhtPartitionsStateValidator {
         GridDhtPartitionsExchangeFuture fut,
         GridDhtPartitionTopology top,
         Map<UUID, GridDhtPartitionsSingleMessage> messages
-    ) throws IgniteCheckedException {
+    ) throws PartitionStateValidationException {
         final Set<UUID> ignoringNodes = new HashSet<>();
 
         // Ignore just joined nodes.
@@ -87,8 +96,17 @@ public class GridDhtPartitionsStateValidator {
         // Validate update counters.
         Map<Integer, Map<UUID, Long>> result = validatePartitionsUpdateCounters(top, messages, ignoringNodes);
 
-        if (!result.isEmpty())
-            throw new IgniteCheckedException("Partitions update counters are inconsistent for " + fold(topVer, result));
+        if (!result.isEmpty()) {
+            Set<Integer> parts = new HashSet<>(result.keySet());
+
+            invalidParts.putIfAbsent(top.groupId(), parts);
+
+            throw new PartitionStateValidationException(
+                "Partitions update counters are inconsistent for " + fold(topVer, result),
+                topVer,
+                top.groupId(),
+                parts);
+        }
 
         // For sizes validation ignore also nodes which are not able to send cache sizes.
         for (UUID id : messages.keySet()) {
@@ -100,8 +118,45 @@ public class GridDhtPartitionsStateValidator {
         // Validate cache sizes.
         result = validatePartitionsSizes(top, messages, ignoringNodes);
 
-        if (!result.isEmpty())
-            throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
+        if (!result.isEmpty()) {
+            Set<Integer> parts = new HashSet<>(result.keySet());
+
+            invalidParts.putIfAbsent(top.groupId(), parts);
+
+            throw new PartitionStateValidationException(
+                "Partitions cache sizes are inconsistent for " + fold(topVer, result),
+                topVer,
+                top.groupId(),
+                parts);
+        }
+    }
+
+    /**
+     * Returns set of partitions that did not pass validation for all caches that were checked.
+     *
+     * @return Collection of invalid partitions.
+     * @see GridDhtPartitionsStateValidator#validatePartitionCountersAndSizes
+     */
+    public Map<Integer, Set<Integer>> invalidPartitions() {
+        return invalidParts;
+    }
+
+    /**
+     * Returns set of partitions that did not pass validation for the given cache group.
+     *
+     * @param groupId Cache group id.
+     * @return Set of invalid partitions.
+     * @see GridDhtPartitionsStateValidator#validatePartitionCountersAndSizes
+     */
+    public Set<Integer> invalidPartitions(int groupId) {
+        return invalidParts.getOrDefault(groupId, Collections.emptySet());
+    }
+
+    /**
+     * Cleans up resources to avoid excessive memory usage.
+     */
+    public void cleanUp() {
+        invalidParts = null;
     }
 
     /**
