@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -78,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -212,11 +212,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             (GridCacheDatabaseSharedManager)cctx0.database(),
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
-            new HashMap<Integer, Optional<Set<Integer>>>() {
-                {
-                    put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
-                }
-            },
+            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME));
 
         snpFut.get();
@@ -256,9 +252,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
-
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
@@ -280,7 +273,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             dbMgr,
             ig.context().cache().context().localNodeId(),
             SNAPSHOT_NAME,
-            parts,
+            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override
                 public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
@@ -378,11 +371,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             (GridCacheDatabaseSharedManager)cctx0.database(),
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
-            new HashMap<Integer, Optional<Set<Integer>>>() {
-                {
-                    put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
-                }
-            },
+            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME));
 
         snpFut.get();
@@ -395,12 +384,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-
-        Set<Integer> ints = new HashSet<>();
-        ints.add(0);
-
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.of(ints));
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), new HashSet<>(Collections.singletonList(0)));
 
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
@@ -672,9 +657,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
-
         IgniteSnapshotManager mgr = ig.context()
             .cache()
             .context()
@@ -688,7 +670,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             (GridCacheDatabaseSharedManager)cctx0.database(),
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
-            parts,
+            F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override
                 public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
@@ -750,7 +732,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         GridCacheDatabaseSharedManager dbMgr,
         UUID srcNodeId,
         String snpName,
-        Map<Integer, Optional<Set<Integer>>> parts,
+        Map<Integer, Set<Integer>> parts,
         SnapshotFileSender snpSndr
     ) throws IgniteCheckedException{
         SnapshotFutureTask snpFutTask = snpMgr.registerSnapshotTask(snpName, srcNodeId, parts, snpSndr);

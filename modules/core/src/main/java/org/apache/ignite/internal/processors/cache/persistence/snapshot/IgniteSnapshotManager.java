@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -49,7 +48,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -296,11 +294,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
                         SnapshotFutureTask task = registerSnapshotTask(snpName,
                             nodeId,
-                            reqMsg0.parts()
-                                .entrySet()
-                                .stream()
-                                .collect(Collectors.toMap(Map.Entry::getKey,
-                                    e -> Optional.of(e.getValue()))),
+                            reqMsg0.parts(),
                             remoteSnapshotSender(snpName, nodeId));
 
                         task.listen(f -> {
@@ -715,7 +709,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     SnapshotFutureTask registerSnapshotTask(
         String snpName,
         UUID srcNodeId,
-        Map<Integer, Optional<Set<Integer>>> parts,
+        Map<Integer, Set<Integer>> parts,
         SnapshotFileSender snpSndr
     ) {
         if (!busyLock.enterBusy())

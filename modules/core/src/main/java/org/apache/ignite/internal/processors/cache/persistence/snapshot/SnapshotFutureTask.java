@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -43,9 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -132,7 +129,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      * If partitions for particular cache group are not provided that they will be collected and added
      * on checkpoint under the write lock.
      */
-    private final Map<Integer, Optional<Set<Integer>>> parts;
+    private final Map<Integer, Set<Integer>> parts;
 
     /** Cache group and corresponding partitions collected under the checkpoint write lock. */
     private final Map<Integer, Set<Integer>> processed = new HashMap<>();
@@ -192,7 +189,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         File tmpWorkDir,
         FileIOFactory ioFactory,
         SnapshotFileSender snpSndr,
-        Map<Integer, Optional<Set<Integer>>> parts,
+        Map<Integer, Set<Integer>> parts,
         ThreadLocal<ByteBuffer> localBuff
     ) {
         A.notNull(snpName, "Snapshot name cannot be empty or null");
@@ -357,32 +354,34 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             return;
 
         try {
-            for (Map.Entry<Integer, Optional<Set<Integer>>> e : parts.entrySet()) {
+            for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 int grpId = e.getKey();
+                Set<Integer> grpParts = e.getValue();
 
                 GridDhtPartitionTopology top = cctx.cache().cacheGroup(grpId).topology();
 
-                Iterator<GridDhtLocalPartition> iter = e.getValue()
-                    .map(new Function<Set<Integer>, Iterator<GridDhtLocalPartition>>() {
-                        @Override public Iterator<GridDhtLocalPartition> apply(Set<Integer> p) {
-                            if (p.contains(INDEX_PARTITION)) {
-                                throw new IgniteException("Index partition cannot be included into snapshot if " +
-                                    " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
-                            }
+                Iterator<GridDhtLocalPartition> iter;
 
-                            return new Iterator<GridDhtLocalPartition>() {
-                                Iterator<Integer> iter = p.iterator();
+                if (e.getValue() == null)
+                    iter = top.currentLocalPartitions().iterator();
+                else {
+                    if (grpParts.contains(INDEX_PARTITION)) {
+                        throw new IgniteCheckedException("Index partition cannot be included into snapshot if " +
+                            " set of cache group partitions has been explicitly provided [grpId=" + grpId + ']');
+                    }
 
-                                @Override public boolean hasNext() {
-                                    return iter.hasNext();
-                                }
+                    iter = new Iterator<GridDhtLocalPartition>() {
+                        Iterator<Integer> iter = grpParts.iterator();
 
-                                @Override public GridDhtLocalPartition next() {
-                                    return top.localPartition(iter.next());
-                                }
-                            };
+                        @Override public boolean hasNext() {
+                            return iter.hasNext();
                         }
-                    }).orElse(top.currentLocalPartitions().iterator());
+
+                        @Override public GridDhtLocalPartition next() {
+                            return top.localPartition(iter.next());
+                        }
+                    };
+                }
 
                 Set<Integer> owning = processed.computeIfAbsent(grpId, g -> new HashSet<>());
                 Set<Integer> missed = new HashSet<>();
@@ -401,7 +400,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                         missed.add(part.id());
                 }
 
-                if (e.getValue().isPresent()) {
+                if (grpParts == null) {
                     // Partition has been provided for cache group, but some of them are not in OWNING state.
                     // Exit with an error
                     if (!missed.isEmpty()) {
@@ -451,7 +450,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
         }
-        catch (IgniteCheckedException | IgniteException e) {
+        catch (IgniteCheckedException e) {
             acceptException(e);
         }
     }
