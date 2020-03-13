@@ -21,91 +21,81 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.QueryMXBeanImpl;
-import org.apache.ignite.internal.ServiceMXBeanImpl;
-import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.QueryMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
-import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.client.Config.DEFAULT_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-/** */
-public class KillCommandTest extends GridCommonAbstractTest {
+/**
+ * General tests for the cancel command.
+ */
+public class CancelCommandTests {
     /** */
     public static final String SVC_NAME = "my-svc";
 
     /** */
-    private static final int PAGE_SZ = 5;
+    public static final int PAGE_SZ = 5;
 
     /** */
-    private static final int  NODES_CNT = 3;
+    public static final int TIMEOUT = 10_000;
 
     /** */
-    private static IgniteEx ignite0;
+    private static CyclicBarrier svcStartBarrier;
 
     /** */
-    private static IgniteEx client;
+    private static CyclicBarrier svcCancelBarrier;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        ignite0 = startGrids(NODES_CNT);
-        client = startClientGrid("client");
 
-        ignite0.cluster().state(ACTIVE);
-
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
-            cache.put(i, i);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelScanQuery() throws Exception {
-        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+    /**
+     * Test cancel of the scan query.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs, Consumer<T3<UUID, String, Long>> qryCanceler) {
+        IgniteCache<Object, Object> cache = cli.cache(GridAbstractTest.DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
         Iterator<Cache.Entry<Object, Object>> iter1 = qry1.iterator();
@@ -113,13 +103,10 @@ public class KillCommandTest extends GridCommonAbstractTest {
         // Fetch first entry and therefore caching first page.
         assertNotNull(iter1.next());
 
-        List<List<?>> scanQries0 = SqlViewExporterSpiTest.execute(ignite0,
+        List<List<?>> scanQries0 = SqlViewExporterSpiTest.execute(srvs.get(0),
             "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
 
         assertEquals(1, scanQries0.size());
-
-        QueryMXBean qryMBean = getMxBean(client.name(), "Query",
-            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
 
         UUID originNodeId = (UUID)scanQries0.get(0).get(0);
         String cacheName = (String)scanQries0.get(0).get(1);
@@ -133,10 +120,10 @@ public class KillCommandTest extends GridCommonAbstractTest {
         assertNotNull(iter2.next());
 
         // Cancel first query.
-        qryMBean.cancelScan(originNodeId.toString(), cacheName, qryId);
+        qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
 
-        // Fetch all cached entries. It's size equal to the {@code PAGE_SZ}.
-        for (int i = 0; i < PAGE_SZ * NODES_CNT - 1; i++)
+        // Fetch all cached entries. It's size equal to the {@code PAGE_SZ * NODES_CNT}.
+        for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
             assertNotNull(iter1.next());
 
         // Fetch of the next page should throw the exception.
@@ -147,8 +134,8 @@ public class KillCommandTest extends GridCommonAbstractTest {
             assertNotNull(iter2.next());
 
         // Checking all server node objects cleared after cancel.
-        for (int i = 0; i < NODES_CNT; i++) {
-            IgniteEx ignite = grid(i);
+        for (int i = 0; i < srvs.size(); i++) {
+            IgniteEx ignite = srvs.get(i);
 
             int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
 
@@ -162,34 +149,35 @@ public class KillCommandTest extends GridCommonAbstractTest {
             if (qryIters.isEmpty())
                 return;
 
-            GridCacheQueryManager<?, ?>.RequestFutureMap futs = qryIters.get(client.localNode().id());
+            GridCacheQueryManager<?, ?>.RequestFutureMap futs = qryIters.get(cli.localNode().id());
 
             assertNotNull(futs);
             assertFalse(futs.containsKey(qryId));
         }
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelSQLQuery() throws Exception {
+    /**
+     * Test cancel of the SQL query.
+     *
+     * @param cli Client node.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestCancelSQLQuery(IgniteEx cli, Consumer<String> qryCanceler) throws Exception {
         String qryStr = "SELECT * FROM \"default\".Integer";
 
         SqlFieldsQuery qry = new SqlFieldsQuery(qryStr).setPageSize(PAGE_SZ);
-        Iterator<List<?>> iter = queryProcessor(client).querySqlFields(qry, true).iterator();
+        Iterator<List<?>> iter = queryProcessor(cli).querySqlFields(qry, true).iterator();
 
         assertNotNull(iter.next());
 
-        List<List<?>> sqlQries = SqlViewExporterSpiTest.execute(client,
+        List<List<?>> sqlQries = SqlViewExporterSpiTest.execute(cli,
             "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME");
         assertEquals(2, sqlQries.size());
 
         String qryId = (String)sqlQries.get(0).get(0);
         assertEquals(qryStr, sqlQries.get(0).get(1));
 
-        QueryMXBean qryMBean = getMxBean(client.name(), "Query",
-            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
-
-        qryMBean.cancelSQL(qryId);
+        qryCanceler.accept(qryId);
 
         for (int i=0; i < PAGE_SZ - 2; i++)
             assertNotNull(iter.next());
@@ -197,32 +185,34 @@ public class KillCommandTest extends GridCommonAbstractTest {
         assertThrowsWithCause(iter::next, CacheException.class);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelTx() throws Exception {
-        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+    /**
+     * Test cancel of the transaction.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param txCanceler Transaction cancel closure.
+     */
+    public static void doTestCancelTx(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> txCanceler) throws Exception {
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         int testKey = PAGE_SZ * PAGE_SZ + 42;
 
         for (TransactionConcurrency txConc : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
-                try (Transaction tx = client.transactions().txStart(txConc, txIsolation)) {
+                try (Transaction tx = cli.transactions().txStart(txConc, txIsolation)) {
                     cache.put(testKey, 1);
 
-                    List<List<?>> txs = SqlViewExporterSpiTest.execute(client, "SELECT xid FROM SYS.TRANSACTIONS");
+                    List<List<?>> txs = SqlViewExporterSpiTest.execute(cli, "SELECT xid FROM SYS.TRANSACTIONS");
                     assertEquals(1, txs.size());
 
                     String xid = (String)txs.get(0).get(0);
 
-                    TransactionsMXBean txMBean = getMxBean(client.name(), "Transactions",
-                        TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
-
-                    txMBean.cancel(xid);
+                    txCanceler.accept(xid);
 
                     assertThrowsWithCause(tx::commit, IgniteException.class);
 
-                    for (int i = 0; i < NODES_CNT; i++) {
-                        txs = SqlViewExporterSpiTest.execute(grid(i), "SELECT xid FROM SYS.TRANSACTIONS");
+                    for (int i = 0; i < srvs.size(); i++) {
+                        txs = SqlViewExporterSpiTest.execute(srvs.get(i), "SELECT xid FROM SYS.TRANSACTIONS");
 
                         assertEquals(0, txs.size());
                     }
@@ -233,10 +223,15 @@ public class KillCommandTest extends GridCommonAbstractTest {
         }
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelContinuousQuery() throws Exception {
-        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+    /**
+     * Test cancel of the continuous query.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs, Consumer<UUID> qryCanceler) throws Exception {
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
 
@@ -258,39 +253,46 @@ public class KillCommandTest extends GridCommonAbstractTest {
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
 
-        boolean res = waitForCondition(() -> cntr.get() == PAGE_SZ * PAGE_SZ, 10_000);
+        boolean res = waitForCondition(() -> cntr.get() == PAGE_SZ * PAGE_SZ, TIMEOUT);
         assertTrue(res);
 
-        List<List<?>> cqQries = SqlViewExporterSpiTest.execute(client,
+        List<List<?>> cqQries = SqlViewExporterSpiTest.execute(cli,
             "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
         assertEquals(1, cqQries.size());
 
-        QueryMXBean qryMBean = getMxBean(client.name(), "Query",
-            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
+        UUID routineId = (UUID)cqQries.get(0).get(0);
 
-        qryMBean.cancelContinuous(((UUID)cqQries.get(0).get(0)).toString());
+        qryCanceler.accept(routineId);
 
         long cnt = cntr.get();
 
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
 
-        res = waitForCondition(() -> cntr.get() > cnt, 5_000);
+        res = waitForCondition(() -> cntr.get() > cnt, TIMEOUT);
+
         assertFalse(res);
 
-        for (int i = 0; i < NODES_CNT; i++) {
-            cqQries = SqlViewExporterSpiTest.execute(grid(i),
-                "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
+        for (int i = 0; i < srvs.size(); i++) {
+            IgniteEx srv = srvs.get(i);
 
-            assertTrue(cqQries.isEmpty());
+            res = waitForCondition(() -> SqlViewExporterSpiTest.execute(srv,
+                    "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES").isEmpty(), TIMEOUT);
+
+            assertTrue(srv.configuration().getIgniteInstanceName(), res);
         }
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelComputeTask() throws Exception {
-        IgniteFuture<Collection<Integer>> fut = client.compute().broadcastAsync(() -> {
-            Thread.sleep(60_000L);
+    /**
+     * Test cancel of the compute task.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestCancelComputeTask(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> qryCanceler) throws Exception {
+        IgniteFuture<Collection<Integer>> fut = cli.compute().broadcastAsync(() -> {
+            Thread.sleep(10 * TIMEOUT);
 
             fail("Task should be killed!");
 
@@ -300,7 +302,7 @@ public class KillCommandTest extends GridCommonAbstractTest {
         String[] id = new String[1];
 
         boolean res = waitForCondition(() -> {
-            List<List<?>> tasks = SqlViewExporterSpiTest.execute(ignite0, "SELECT SESSION_ID FROM SYS.JOBS");
+            List<List<?>> tasks = SqlViewExporterSpiTest.execute(srvs.get(0), "SELECT SESSION_ID FROM SYS.JOBS");
 
             if (tasks.size() == 1) {
                 id[0] = (String)tasks.get(0).get(0);
@@ -309,108 +311,66 @@ public class KillCommandTest extends GridCommonAbstractTest {
             }
 
             return false;
-        }, 10_000);
+        }, TIMEOUT);
 
         assertTrue(res);
 
-        ComputeMXBean computeMBean = getMxBean(client.name(), "Compute",
-            ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
+        qryCanceler.accept(id[0]);
 
-        computeMBean.cancel(id[0]);
+        for (IgniteEx srv : srvs) {
+            res = waitForCondition(() -> {
+                List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
 
-        assertThrowsWithCause((Callable<Collection<Integer>>)fut::get, IgniteException.class);
+                return tasks.isEmpty();
+            }, TIMEOUT);
+
+            assertTrue(res);
+        }
+
+        assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelService() throws Exception {
+    /**
+     * Test cancel of the compute task.
+     *
+     * @param cli Client node.
+     * @param srv Server node.
+     * @param svcCanceler Service cancel closure.
+     */
+    public static void doTestCancelService(IgniteEx cli, IgniteEx srv, Consumer<String> svcCanceler) throws Exception {
         ServiceConfiguration scfg = new ServiceConfiguration();
 
         scfg.setName(SVC_NAME);
         scfg.setMaxPerNodeCount(1);
-        scfg.setNodeFilter(n -> n.id().equals(ignite0.localNode().id()));
+        scfg.setNodeFilter(n -> n.id().equals(srv.localNode().id()));
         scfg.setService(new TestServiceImpl());
 
-        client.services().deploy(scfg);
+        cli.services().deploy(scfg);
 
-        SystemView<ServiceView> svcView = ignite0.context().systemView().view(SVCS_VIEW);
+        SystemView<ServiceView> svcView = srv.context().systemView().view(SVCS_VIEW);
 
-        boolean res = waitForCondition(() -> svcView.size() == 1, 5_000L);
+        boolean res = waitForCondition(() -> svcView.size() == 1, TIMEOUT);
 
         assertTrue(res);
 
-        TestService svc = client.services().serviceProxy("my-svc", TestService.class, true);
+        TestService svc = cli.services().serviceProxy("my-svc", TestService.class, true);
 
         assertNotNull(svc);
 
+        svcStartBarrier = new CyclicBarrier(2);
+        svcCancelBarrier = new CyclicBarrier(2);
+
         IgniteInternalFuture<?> fut = runAsync(svc::doTheJob);
 
-        ServiceMXBean svcMxBean = getMxBean(client.name(), "Service",
-            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
+        svcStartBarrier.await();
 
-        svcMxBean.cancel("my-svc");
+        svcCanceler.accept(SVC_NAME);
 
-        res = waitForCondition(() -> svcView.size() == 0, 5_000L);
+        res = waitForCondition(() -> svcView.size() == 0, TIMEOUT);
 
         assertTrue(res);
 
-        assertThrowsWithCause((Callable<Object>)fut::get, IgniteException.class);
-    }
-
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownSQLQuery() throws Exception {
-        QueryMXBean qryMBean = getMxBean(ignite0.name(), "Query",
-            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
-
-        qryMBean.cancelSQL(ignite0.localNode().id().toString() + "_42");
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownScanQuery() throws Exception {
-        QueryMXBean qryMBean = getMxBean(ignite0.name(), "Query",
-            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
-
-        qryMBean.cancelScan(ignite0.localNode().id().toString(), "unknown", 1L);
-
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownTx() throws Exception {
-        TransactionsMXBean txMBean = getMxBean(ignite0.name(), "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
-
-        txMBean.cancel("unknown");
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownContinuousQuery() throws Exception {
-        QueryMXBean qryMBean = getMxBean(ignite0.name(), "Query",
-            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
-
-        qryMBean.cancelContinuous(UUID.randomUUID().toString());
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownComputeTask() throws Exception {
-        ComputeMXBean computeMBean = getMxBean(ignite0.name(), "Compute",
-            ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
-
-        computeMBean.cancel(IgniteUuid.randomUuid().toString());
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownService() throws Exception {
-        ServiceMXBean svcMxBean = getMxBean(ignite0.name(), "Service",
-            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
-
-        svcMxBean.cancel("unknown");
+        fut.get(TIMEOUT);
     }
 
     /** */
@@ -422,7 +382,12 @@ public class KillCommandTest extends GridCommonAbstractTest {
     public static class TestServiceImpl implements TestService {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
-            // No-op.
+            try {
+                svcCancelBarrier.await();
+            }
+            catch (InterruptedException | BrokenBarrierException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -438,11 +403,11 @@ public class KillCommandTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void doTheJob() {
             try {
-                Thread.sleep(60_000L);
+                svcStartBarrier.await();
 
-                fail("Task should be killed!");
+                svcCancelBarrier.await();
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException | BrokenBarrierException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,6 +46,11 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
     /** {@inheritDoc} */
     @Override protected VisorScanQueryCancelJob job(VisorScanQueryCancelTaskArg arg) {
         return new VisorScanQueryCancelJob(arg, debug);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorScanQueryCancelTaskArg> arg) {
+        return F.transform(ignite.cluster().nodes(), ClusterNode::id);
     }
 
     /** {@inheritDoc} */

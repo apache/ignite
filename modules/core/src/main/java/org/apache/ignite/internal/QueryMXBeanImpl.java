@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -98,7 +95,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
                 throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
             cluster.compute().execute(new VisorQueryCancelTask(),
-                new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get2()), false));
+                new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get1(), ids.get2()), false));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -117,13 +114,12 @@ public class QueryMXBeanImpl implements QueryMXBean {
         try {
             IgniteClusterImpl cluster = ctx.cluster().get();
 
+            UUID nid = cluster.nodes().iterator().next().id();
+
             IgniteCompute compute = cluster.compute();
 
-            Collection<UUID> nids = cluster.forServers().nodes()
-                .stream().map(ClusterNode::id).collect(Collectors.toSet());
-
             boolean res = compute.execute(new VisorScanQueryCancelTask(),
-                new VisorTaskArgument<>(nids,
+                new VisorTaskArgument<>(nid,
                     new VisorScanQueryCancelTaskArg(UUID.fromString(originNodeId), cacheName, id), false));
 
             if (!res) {

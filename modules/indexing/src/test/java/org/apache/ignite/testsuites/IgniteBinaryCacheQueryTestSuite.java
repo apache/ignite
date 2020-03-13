@@ -268,6 +268,8 @@ import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
+import org.apache.ignite.util.CancelCommandCommandShTest;
+import org.apache.ignite.util.CancelCommandMXBeanTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -598,6 +600,8 @@ import org.junit.runners.Suite;
     KillQueryFromClientTest.class,
     KillQueryOnClientDisconnectTest.class,
     KillQueryErrorOnCancelTest.class,
+    CancelCommandMXBeanTest.class,
+    CancelCommandCommandShTest.class,
 
     // Table statistics.
     RowCountTableStatisticsUsageTest.class,

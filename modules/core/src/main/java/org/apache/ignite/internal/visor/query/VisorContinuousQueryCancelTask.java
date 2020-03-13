@@ -64,9 +64,9 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContin
 
             log.info("Cancelling continuous query[routineId=" + arg.getRoutineId() + ']');
 
-            IgniteInternalFuture<?> fut = ignite.context().continuous().stopRoutine(arg.getRoutineId());
-
             try {
+                IgniteInternalFuture<?> fut = ignite.context().continuous().stopRoutine(arg.getRoutineId(), true);
+
                 fut.get();
             }
             catch (IgniteCheckedException e) {

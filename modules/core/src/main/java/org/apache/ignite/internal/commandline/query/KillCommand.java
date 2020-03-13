@@ -26,7 +26,6 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
@@ -44,9 +43,12 @@ import org.apache.ignite.lang.IgniteUuid;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL_QUERY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.CONTINUOUS_QUERY;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SCAN_QUERY;
+import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SERVICE;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SQL_QUERY;
+import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.TRANSACTION;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.of;
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 import static org.apache.ignite.internal.visor.tx.VisorTxOperation.KILL;
@@ -119,8 +121,7 @@ public class KillCommand implements Command<Object> {
                 if (ids == null)
                     throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
-                //TODO: execute query on the ids.get1() node.
-                taskArgs = new VisorQueryCancelTaskArg(ids.get2());
+                taskArgs = new VisorQueryCancelTaskArg(ids.get1(), ids.get2());
 
                 taskName = VisorQueryCancelTask.class.getName();
 
@@ -154,9 +155,16 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Kill scan query by id:", KILL_QUERY, SCAN_QUERY.toString(), "id");
-        Command.usage(logger, "Kill continuous query by id:", KILL_QUERY, CONTINUOUS_QUERY.toString(), "id");
-        Command.usage(logger, "Kill sql query by id:", KILL_QUERY, SQL_QUERY.toString(), "id");
+        Command.usage(logger, "Kill scan query by node id, cache name and query id:", KILL_QUERY, SCAN_QUERY.toString(),
+            "origin_node_id", "cache_name", "query_id");
+        Command.usage(logger, "Kill continuous query by routine id:", KILL_QUERY, CONTINUOUS_QUERY.toString(),
+            "routine_id");
+        Command.usage(logger, "Kill sql query by query id:", KILL_QUERY, SQL_QUERY.toString(),
+            "query_id");
+        Command.usage(logger, "Kill compute task by session id:", KILL_QUERY, COMPUTE.toString(),
+            "session_id");
+        Command.usage(logger, "Kill transaction by xid:", KILL_QUERY, TRANSACTION.toString(), "xid");
+        Command.usage(logger, "Kill service by name:", KILL_QUERY, SERVICE.toString(), "name");
     }
 
     /** {@inheritDoc} */

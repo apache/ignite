@@ -1067,6 +1067,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     public IgniteInternalFuture<?> stopRoutine(UUID routineId) {
+        return stopRoutine(routineId, false);
+    }
+
+    /**
+     * @param routineId Consume ID.
+     * @param force {@code True} if stop should be forced.
+     * @return Future.
+     */
+    public IgniteInternalFuture<?> stopRoutine(UUID routineId, boolean force) {
         assert routineId != null;
 
         boolean doStop = false;
@@ -1104,7 +1113,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     stop = routinesInfo.routineExists(routineId);
 
                 // Finish if routine is not found (wrong ID is provided).
-                if (!stop) {
+                if (!stop && !force) {
                     stopFuts.remove(routineId);
 
                     fut.onDone();
@@ -1113,7 +1122,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
 
                 try {
-                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
+                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId, force));
                 }
                 catch (IgniteCheckedException e) {
                     fut.onDone(e);
@@ -1342,7 +1351,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message/
      */
     private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
-        if (!snd.id().equals(ctx.localNodeId())) {
+        if (!snd.id().equals(ctx.localNodeId()) || msg.force()) {
             UUID routineId = msg.routineId();
 
             unregisterRemote(routineId);

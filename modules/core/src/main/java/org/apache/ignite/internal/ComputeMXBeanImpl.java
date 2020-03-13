@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collections;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -45,10 +44,8 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     @Override public void cancel(String sessionId) {
         A.notNull(sessionId, "sessionId");
 
-        Set<IgniteUuid> ids = new HashSet<>();
-        ids.add(IgniteUuid.fromString(sessionId));
-
-        VisorComputeCancelSessionsTaskArg arg = new VisorComputeCancelSessionsTaskArg(ids);
+        VisorComputeCancelSessionsTaskArg arg = new VisorComputeCancelSessionsTaskArg(
+            Collections.singleton(IgniteUuid.fromString(sessionId)));
 
         try {
             IgniteCompute compute = ctx.cluster().get().compute();
