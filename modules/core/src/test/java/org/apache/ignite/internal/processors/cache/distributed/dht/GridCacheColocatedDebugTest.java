@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
@@ -33,6 +34,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -50,6 +53,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -958,6 +962,126 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             lock0.unlock();
             lock1.unlock();
             lock2.unlock();
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Version of check thread chain case for optimistic transactions.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConcurrentCheckThreadChainOptimistic() throws Exception {
+        System.setProperty(IGNITE_TO_STRING_MAX_LENGTH, "100000");
+
+        try {
+            testConcurrentCheckThreadChain(OPTIMISTIC);
+        }
+        finally {
+            System.clearProperty(IGNITE_TO_STRING_MAX_LENGTH);
+        }
+    }
+
+    /**
+     * Version of check thread chain case for pessimistic transactions.
+     *
+     * @throws Exception If failed.
+     */
+    public void testConcurrentCheckThreadChainPessimistic() throws Exception {
+        System.setProperty(IGNITE_TO_STRING_MAX_LENGTH, "100000");
+
+        try {
+            testConcurrentCheckThreadChain(PESSIMISTIC);
+        }
+        finally {
+            System.clearProperty(IGNITE_TO_STRING_MAX_LENGTH);
+        }
+    }
+
+    /**
+     * Covers scenario when thread chain locks acquisition for XID 1 should be continued during unsuccessful attempt
+     * to acquire lock on certain key for XID 2 (XID 1 with uncompleted chain becomes owner of this key instead).
+     *
+     * Scenario:
+     * 1) Start 1 server node with transactional cache
+     * 2) With 10 threads, perform 100000 transactions with massive puts
+     * 2.1) Every put affects the same common key, which is not first and not last in the keys list
+     * 3) Expected: 100000 transaction should end, load threads shouldn't hang for more than 5 seconds
+     *
+     * @throws Exception If failed.
+     */
+    protected void testConcurrentCheckThreadChain(TransactionConcurrency txConcurrency) throws Exception {
+        storeEnabled = false;
+
+        startGrid(0);
+
+        try {
+            final AtomicLong iterCnt = new AtomicLong();
+
+            int commonKey = 1000;
+
+            int otherKeyPickVariance = 10;
+
+            int otherKeysCnt = 5;
+
+            int maxIterCnt = 100_000;
+
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+                @Override public void run() {
+                    long threadId = Thread.currentThread().getId();
+
+                    long itNum;
+
+                    while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
+                        Map<Integer, String> vals = U.newLinkedHashMap(otherKeysCnt * 2 + 1);
+
+                        for (int i = 0; i < otherKeysCnt; i++) {
+                            int key = ThreadLocalRandom.current().nextInt(
+                                otherKeyPickVariance * i, otherKeyPickVariance * (i + 1));
+
+                            vals.put(key, String.valueOf(key) + threadId);
+                        }
+
+                        vals.put(commonKey, String.valueOf(commonKey) + threadId);
+
+                        for (int i = 0; i < otherKeysCnt; i++) {
+                            int key = ThreadLocalRandom.current().nextInt(
+                                commonKey + otherKeyPickVariance * (i + 1), otherKeyPickVariance * (i + 2) + commonKey);
+
+                            vals.put(key, String.valueOf(key) + threadId);
+                        }
+
+                        try (Transaction tx = grid(0).transactions().txStart(txConcurrency, READ_COMMITTED)) {
+                            jcache(0).putAll(vals);
+
+                            tx.commit();
+                        }
+
+                        if (itNum > 0 && itNum % 5000 == 0)
+                            info(">>> " + itNum + " iterations completed.");
+                    }
+                }
+            }, THREAD_CNT);
+
+            while (true) {
+                long prevIterCnt = iterCnt.get();
+
+                try {
+                    fut.get(5_000);
+
+                    break;
+                }
+                catch (IgniteFutureTimeoutCheckedException ignored) {
+                    if (iterCnt.get() == prevIterCnt) {
+                        Collection<IgniteInternalTx> hangingTxes =
+                            ignite(0).context().cache().context().tm().activeTransactions();
+
+                        fail(hangingTxes.toString());
+                    }
+                }
+            }
         }
         finally {
             stopAllGrids();
