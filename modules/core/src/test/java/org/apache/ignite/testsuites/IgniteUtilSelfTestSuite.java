@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
 import org.apache.ignite.internal.util.tostring.TransactionSensitiveDataTest;
+import org.apache.ignite.internal.util.worker.GridWorkerCoronavirusTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
@@ -132,7 +133,8 @@ import org.junit.runners.Suite;
     // control.sh
     CommandHandlerParsingTest.class,
 
-    GridCountDownCallbackTest.class
+    GridCountDownCallbackTest.class,
+    GridWorkerCoronavirusTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }
