@@ -20,7 +20,10 @@ package org.apache.ignite.internal.client.thin;
 import java.lang.management.ThreadInfo;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.client.thin.ReliableChannel.ASYNC_RUNNER_THREAD_NAME;
 
 /**
  * Test resource releasing by thin client.
@@ -42,13 +45,13 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
 
         assertFalse(channels[0].isClosed());
         assertFalse(channels[1].isClosed());
-        assertEquals(1, threadsCount(ReliableChannel.ASYNC_RUNNER_THREAD_NAME));
+        assertEquals(1, threadsCount(ASYNC_RUNNER_THREAD_NAME));
 
         client.close();
 
         assertTrue(channels[0].isClosed());
         assertTrue(channels[1].isClosed());
-        assertEquals(0, threadsCount(ReliableChannel.ASYNC_RUNNER_THREAD_NAME));
+        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(ASYNC_RUNNER_THREAD_NAME) == 0, 1_000L));
     }
 
     /**
