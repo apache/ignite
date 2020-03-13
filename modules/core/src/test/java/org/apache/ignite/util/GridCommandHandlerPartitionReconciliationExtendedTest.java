@@ -250,7 +250,7 @@ public class GridCommandHandlerPartitionReconciliationExtendedTest extends
      * Extract cache names which used for a start.
      */
     private LogListener fillCacheNames(Set<String> usedCaches) {
-        Pattern r = Pattern.compile("Partition reconciliation has started.*caches: \\[(.*)\\]\\].*");
+        Pattern r = Pattern.compile("Partition reconciliation has started.*caches=\\[(.*)\\]\\].*");
 
         LogListener lsnr = LogListener.matches(s -> {
             Matcher m = r.matcher(s);

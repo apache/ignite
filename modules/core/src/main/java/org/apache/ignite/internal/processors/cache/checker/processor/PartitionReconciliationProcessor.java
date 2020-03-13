@@ -28,8 +28,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.cache.configuration.Factory;
+import java.util.stream.IntStream;
 import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,10 +41,10 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.checker.objects.ExecutionResult;
 import org.apache.ignite.internal.processors.cache.checker.objects.PartitionBatchRequest;
-import org.apache.ignite.internal.processors.cache.checker.objects.VersionedKey;
-import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationAffectedEntries;
 import org.apache.ignite.internal.processors.cache.checker.objects.RecheckRequest;
+import org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationAffectedEntries;
 import org.apache.ignite.internal.processors.cache.checker.objects.RepairRequest;
+import org.apache.ignite.internal.processors.cache.checker.objects.VersionedKey;
 import org.apache.ignite.internal.processors.cache.checker.objects.VersionedValue;
 import org.apache.ignite.internal.processors.cache.checker.processor.workload.Batch;
 import org.apache.ignite.internal.processors.cache.checker.processor.workload.Recheck;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.verify.RepairMeta;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.util.Collections.EMPTY_SET;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.checkConflicts;
 import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.mapPartitionReconciliation;
@@ -82,8 +84,8 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     public static final String WORK_PROGRESS_MSG = "Partition reconciliation task [sesId=%s, total=%s, remaining=%s]";
 
     /** Start execution message. */
-    public static final String START_EXECUTION_MSG = "Partition reconciliation has started [repair: %s, repairAlg: %s, " +
-        "batchSize: %s, recheckAttempts: %s, parallelismLevel: %s, caches: %s].";
+    public static final String START_EXECUTION_MSG = "Partition reconciliation has started [repair=%s, repairAlg=%s, " +
+        "fastCheck=%s, batchSize=%s, recheckAttempts=%s, parallelismLevel=%s, caches=%s]";
 
     /** Error reason. */
     public static final String ERROR_REASON = "Reason [msg=%s, exception=%s]";
@@ -95,7 +97,13 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     private final Collection<String> caches;
 
     /** If {@code true} - Partition Reconciliation&Fix: update from Primary partition. */
-    private final boolean fixMode;
+    private final boolean repair;
+
+    /**
+     * Represents a cache group mapping to set of partitions which should be validated.
+     * If this field is {@code null} all partitions will be validated.
+     */
+    private final Map<Integer, Set<Integer>> partsToValidate;
 
     /** Amount of keys to retrieve within one job. */
     private final int batchSize;
@@ -109,19 +117,13 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
      */
     private final RepairAlgorithm repairAlg;
 
-    /**
-     * Keys that were detected as incosistent during the reconciliation process.
-     */
+    /** Keys that were detected as incosistent during the reconciliation process. */
     private final Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> inconsistentKeys = new HashMap<>();
 
-    /**
-     * Entries that were detected as inconsistent but weren't repaired due to some reason.
-     */
+    /** Entries that were detected as inconsistent but weren't repaired due to some reason. */
     private final Map<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>> skippedEntries = new HashMap<>();
 
-    /**
-     * Progress tracker.
-     */
+    /** Progress tracker. */
     private final WorkProgress workProgress = new WorkProgress();
 
     /**
@@ -130,7 +132,9 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
      * @param sesId Session identifier that allows to identify different runs of the utility.
      * @param ignite Local Ignite instance to be used as an entry point for the execution of the utility.
      * @param caches Collection of cache names to be checked.
-     * @param fixMode Flag indicates that inconsistencies should be repaired.
+     * @param repair Flag indicates that inconsistencies should be repaired.
+     * @param partsToValidate Optional collection of partition which shoulb be validated.
+     *                        If value is {@code null} all partitions will be validated.
      * @param parallelismLevel Number of batches that can be handled simultaneously.
      * @param batchSize Amount of keys to retrieve within one job.
      * @param recheckAttempts Amount of potentially inconsistent keys recheck attempts.
@@ -142,18 +146,20 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
         long sesId,
         IgniteEx ignite,
         Collection<String> caches,
-        boolean fixMode,
+        Map<Integer, Set<Integer>> partsToValidate,
+        boolean repair,
+        RepairAlgorithm repairAlg,
         int parallelismLevel,
         int batchSize,
         int recheckAttempts,
-        RepairAlgorithm repairAlg,
         int recheckDelay
     ) throws IgniteCheckedException {
         super(sesId, ignite, parallelismLevel);
 
         this.recheckDelay = recheckDelay;
         this.caches = caches;
-        this.fixMode = fixMode;
+        this.repair = repair;
+        this.partsToValidate = partsToValidate;
         this.batchSize = batchSize;
         this.recheckAttempts = recheckAttempts;
         this.repairAlg = repairAlg;
@@ -163,20 +169,30 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
      * @return Partition reconciliation result
      */
     public ExecutionResult<ReconciliationAffectedEntries> execute() {
-        log.info(String.format(START_EXECUTION_MSG, fixMode, repairAlg, batchSize, recheckAttempts, parallelismLevel, caches));
+        if (log.isInfoEnabled()) {
+            log.info(String.format(
+                START_EXECUTION_MSG,
+                repair,
+                repairAlg,
+                partsToValidate != null,
+                batchSize,
+                recheckAttempts,
+                parallelismLevel,
+                caches));
+        }
 
         try {
             for (String cache : caches) {
                 IgniteInternalCache<Object, Object> cachex = ignite.cachex(cache);
 
-                Factory<?> expiryPlcFactory = cachex.configuration().getExpiryPolicyFactory();
-                if (expiryPlcFactory != null && !(expiryPlcFactory.create() instanceof EternalExpiryPolicy)) {
+                ExpiryPolicy expPlc = cachex.context().expiry();
+                if (expPlc != null && !(expPlc instanceof EternalExpiryPolicy)) {
                     log.warning("The cache '" + cache + "' was skipped because CacheConfiguration#setExpiryPolicyFactory is set.");
 
                     continue;
                 }
 
-                int[] partitions = ignite.affinity(cache).primaryPartitions(ignite.localNode());
+                int[] partitions = partitions(cache);
 
                 for (int partId : partitions) {
                     schedule(new Batch(sesId, UUID.randomUUID(), cache, partId, null));
@@ -243,6 +259,25 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     }
 
     /**
+     * Returns primary partitions that belong to the local node for the given cache name.
+     *
+     * @param name Cache name.
+     * @return Primary partitions that belong to the local node.
+     */
+    private int[] partitions(String name) {
+        int[] cacheParts = ignite.affinity(name).primaryPartitions(ignite.localNode());
+
+        if (partsToValidate == null) {
+            // All local primary partitions should be validated.
+            return cacheParts;
+        }
+
+        Set<Integer> parts = partsToValidate.getOrDefault(ctx.cache().cacheDescriptor(name).groupId(), EMPTY_SET);
+
+        return IntStream.of(cacheParts).filter(p -> parts.contains(p)).toArray();
+    }
+
+    /**
      * @param workload Workload.
      */
     private void handle(Batch workload) throws InterruptedException {
@@ -299,7 +334,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                             TimeUnit.SECONDS
                         );
                     }
-                    else if (fixMode) {
+                    else if (repair) {
                         scheduleHighPriority(repair(workload.sessionId(), workload.workloadChainId(), workload.cacheName(), workload.partitionId(), conflicts,
                             actualKeys, workload.repairAttempt()));
                     }
