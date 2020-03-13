@@ -65,7 +65,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         for (long id : threadIds) {
             ThreadInfo info = U.getThreadMx().getThreadInfo(id);
 
-            if (info.getThreadState() != Thread.State.TERMINATED && name.equals(info.getThreadName()))
+            if (info != null && info.getThreadState() != Thread.State.TERMINATED && name.equals(info.getThreadName()))
                 cnt++;
         }
 
