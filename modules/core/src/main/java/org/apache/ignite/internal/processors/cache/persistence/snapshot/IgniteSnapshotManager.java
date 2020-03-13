@@ -85,6 +85,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRestoreRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -956,9 +957,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         try {
             // Binary and logical states will be restored on node start.
             // Checkpoint will be written to disk.
-            cctx.wal().log(new SnapshotRestoreRecord(snpMeta.snpName,
+            WALPointer ptr = cctx.wal().log(new SnapshotRestoreRecord(snpMeta.snpName,
                 SnapshotRestoreRecord.SnapshotRestoreState.START,
                 snpMeta.grps));
+
+            assert ptr != null;
 
             Collection<CompletableFuture<?>> futs = new ArrayList<>(snpMeta.grps.size());
 
