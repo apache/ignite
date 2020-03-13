@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.api.ErrorCode;
 import org.h2.engine.Session;

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
@@ -157,23 +158,9 @@ public class H2QueryInfo {
      * @return Query plan.
      */
     protected String queryPlan(IgniteLogger log, ConnectionManager connMgr) {
-//        Connection c = connMgr.connectionForThread().connection(schema);
-//
-//        H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder);
-//
-//        try (PreparedStatement pstmt = c.prepareStatement("EXPLAIN " + sql)) {
-//
-//            try (ResultSet plan = pstmt.executeQuery()) {
-//                plan.next();
-//
-//                return plan.getString(1) + U.nl();
-//            }
-//        }
-//        catch (Exception e) {
-//            log.warning("Cannot get plan for long query: " + sql, e);
-//
-//            return "[error on calculate plan: " + e.getMessage() + ']';
-//        }
+        if (!S.includeSensitive())
+            return "<sensitive info is hidden>";
+
         return GridSqlQueryParser.prepared(stmt).getPlanSQL();
     }
 
