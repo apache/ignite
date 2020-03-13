@@ -136,7 +136,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
                     List<Ignite> nodes = IgnitionEx.allGridsx();
 
                     for (Ignite node : nodes)
-                        ((IgniteKernal)node).dumpDebugInfo();
+                        ((IgniteKernal)node).mxBean().dumpDebugInfo();
 
                     U.dumpThreads(log);
 

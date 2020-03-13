@@ -247,6 +247,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_I
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
@@ -477,12 +479,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** The state object is used when reconnection occurs. See {@link IgniteKernal#onReconnected(boolean)}. */
     private final ReconnectState reconnectState = new ReconnectState();
 
-    /**
-     * Implementation of {@link IgniteMXBean} to separete behavior of cluster deactivation methods.
-     *
-     * @see Ignite#active(boolean)
-     * @see IgniteMXBean#active(boolean)
-     */
+    /** Implementation of {@link IgniteMXBean}. */
     private final IgniteMXBean mxBean = new IgniteMXBeanImpl();
 
     /**
@@ -4449,7 +4446,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /**
      * @return Implementation of {@link IgniteMXBean}.
      */
-    IgniteMXBean mxBean(){
+    public IgniteMXBean mxBean(){
         return mxBean;
     }
 
@@ -4459,6 +4456,23 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     private class IgniteMXBeanImpl implements IgniteMXBean {
+        /** {@inheritDoc} */
+        @Override public void clusterState(String state) {
+            clusterState(state, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clusterState(String state, boolean forceDeactivation) {
+            ClusterState newState = ClusterState.valueOf(state);
+
+            cluster().state(newState, forceDeactivation);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void active(boolean active) {
+            clusterState(active ? ACTIVE.toString() : INACTIVE.toString(), false);
+        }
+
         /** {@inheritDoc} */
         @Override public String getCopyright() {
             return COPYRIGHT;
@@ -4825,10 +4839,17 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public void clusterState(String state) {
-            ClusterState newState = ClusterState.valueOf(state);
+        @Override public boolean isRebalanceEnabled() {
+            return IgniteKernal.this.isRebalanceEnabled();
+        }
 
-            cluster().state(newState);
+        /** {@inheritDoc} */
+        @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
+            IgniteKernal.this.rebalanceEnabled(rebalanceEnabled);
+        }
+
+        @Override public boolean active() {
+            return IgniteKernal.this.active();
         }
     }
 }

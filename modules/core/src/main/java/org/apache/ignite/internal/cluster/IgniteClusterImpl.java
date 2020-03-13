@@ -337,10 +337,15 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        state(newState, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean forceDeactivation) throws IgniteException {
         guard();
 
         try {
-            ctx.state().changeGlobalState(newState, true, serverNodes(), false).get();
+            ctx.state().changeGlobalState(newState, forceDeactivation, serverNodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

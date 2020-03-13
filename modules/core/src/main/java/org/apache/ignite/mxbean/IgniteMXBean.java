@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.management.JMException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
@@ -388,7 +389,10 @@ public interface IgniteMXBean {
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param active Activate/DeActivate flag.
+     * @deprecated Use {@link #clusterState(String, boolean)} instead.
+     * @throws IgniteCheckedException if deactivation stopped.
      */
+    @Deprecated
     @MXBeanDescription(
         "Execute activate or deactivate process."
     )
@@ -668,10 +672,30 @@ public interface IgniteMXBean {
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
      * @param state String representation of new cluster state.
+     * @deprecated Use {@link #clusterState(String, boolean)} instead.
+     * @throws IgniteCheckedException if deactivation stopped.
      */
+    @Deprecated
     @MXBeanDescription("Changes current cluster state.")
     public void clusterState(
         @MXBeanParameter(name = "state", description = "New cluster state.") String state
+    );
+
+    /**
+     * Changes current cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param state             String representation of new cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws IgniteCheckedException if deactivation stopped.
+     */
+    @MXBeanDescription("Changes current cluster state.")
+    public void clusterState(
+        @MXBeanParameter(name = "state", description = "New cluster state.") String state,
+        @MXBeanParameter(name = "forceDeactivation",
+            description = "If true, cluster deactivation will be forced.") boolean forceDeactivation
     );
 
     /**

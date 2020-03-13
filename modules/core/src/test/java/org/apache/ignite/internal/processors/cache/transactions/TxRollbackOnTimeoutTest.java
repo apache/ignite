@@ -488,7 +488,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             error("Transactions hang", e);
 
             for (Ignite node : G.allGrids())
-                ((IgniteKernal)node).dumpDebugInfo();
+                ((IgniteKernal)node).mxBean().dumpDebugInfo();
 
             fut.cancel(); // Try to interrupt hanging threads.
 

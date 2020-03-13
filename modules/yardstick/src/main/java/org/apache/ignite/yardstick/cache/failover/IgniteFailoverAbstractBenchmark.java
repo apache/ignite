@@ -226,7 +226,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             println("");
 
-            ((IgniteMXBean)ignite()).dumpDebugInfo();
+            ((IgniteKernal)ignite()).mxBean().dumpDebugInfo();
 
             // Debug info on servers.
             Ignite ignite = ignite();
@@ -282,7 +282,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
             println("");
 
-            ((IgniteMXBean)ignite).dumpDebugInfo();
+            ((IgniteKernal)ignite()).mxBean().dumpDebugInfo();
         }
     }
 

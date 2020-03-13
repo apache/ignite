@@ -656,7 +656,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
                     final GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
-                    IgniteDiagnosticPrepareContext ctx = new IgniteDiagnosticPrepareContext(node.getLocalNodeId());
+                    IgniteDiagnosticPrepareContext ctx = new IgniteDiagnosticPrepareContext(node.mxBean()
+                        .getLocalNodeId());
 
                     ctx.basicInfo(dstNode.id(), "Test diagnostic");
 

@@ -141,7 +141,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
                             List<Ignite> nodes = IgnitionEx.allGridsx();
 
                             for (Ignite node0 : nodes)
-                                ((IgniteKernal)node0).dumpDebugInfo();
+                                ((IgniteKernal)node0).mxBean().dumpDebugInfo();
 
                             U.dumpThreads(log);
                         }

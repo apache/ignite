@@ -159,8 +159,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
-import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
@@ -2231,7 +2231,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 List<Ignite> nodes = IgnitionEx.allGridsx();
 
                 for (Ignite node : nodes)
-                    ((IgniteKernal)node).dumpDebugInfo();
+                    ((IgniteKernal)node).mxBean().dumpDebugInfo();
 
                 // We dump threads to stdout, because we can loose logs in case
                 // the build is cancelled on TeamCity.
