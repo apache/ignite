@@ -33,9 +33,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
- * Testing operation security context when the remoute listener of IgniteMessaging is executed on remote nodes.
+ * Testing operation security context when the remote listener of IgniteMessaging is executed on remote nodes.
  * <p>
- * The initiator node broadcasts a task to 'run' nodes that register the remoute listener on check nodes. That listener
+ * The initiator node broadcasts a task to 'run' nodes that register the remote listener on check nodes. That listener
  * is executed on 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification
  * that operation security context is the initiator context.
  */

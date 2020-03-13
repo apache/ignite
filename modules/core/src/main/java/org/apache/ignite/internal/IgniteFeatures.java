@@ -90,7 +90,7 @@ public enum IgniteFeatures {
     /** Long operations dump timeout. */
     LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
-    /** ContinuousQuery with security subject id support. */
+    /** IgniteMessaging with security subject id support. */
     IGNITE_MESSAGING_SECURITY_AWARE(31);
 
     /**
