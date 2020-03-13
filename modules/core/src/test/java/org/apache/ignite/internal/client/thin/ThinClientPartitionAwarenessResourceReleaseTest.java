@@ -54,7 +54,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
     /**
      * Gets threads count with a given name.
      */
-    private int threadsCount(String name) {
+    private static int threadsCount(String name) {
         int cnt = 0;
 
         long[] threadIds = U.getThreadMx().getAllThreadIds();
