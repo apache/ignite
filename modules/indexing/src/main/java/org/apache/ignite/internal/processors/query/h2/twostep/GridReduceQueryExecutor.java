@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
+import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
@@ -851,15 +852,18 @@ public class GridReduceQueryExecutor {
                         GridH2QueryContext.set(qctx);
 
                         try {
-                            if (qry.explain())
-                                return explainPlan(r.connection(), qry, params);
+                            if (qry.explain()) {
+                                return explainPlan(r.connection(), qry, params,
+                                    H2StatementCache.queryFlags(false, enforceJoinOrder, false));
+                            }
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
                             Collection<Object> params0 = F.asList(rdc.parameters(params));
 
                             final PreparedStatement stmt = h2.preparedStatementWithParams(r.connection(), rdc.query(),
-                                params0, false);
+                                params0, false,
+                                H2StatementCache.queryFlags(false, enforceJoinOrder, false));
 
                             GridH2StatementCleaner stmtCleaner = GridH2StatementCleaner.fromPrepared(stmt);
                             qctx.addResource(stmtCleaner);
@@ -1493,7 +1497,7 @@ public class GridReduceQueryExecutor {
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private Iterator<List<?>> explainPlan(JdbcConnection c, GridCacheTwoStepQuery qry, Object[] params)
+    private Iterator<List<?>> explainPlan(JdbcConnection c, GridCacheTwoStepQuery qry, Object[] params, byte stmtFlags)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
@@ -1501,7 +1505,7 @@ public class GridReduceQueryExecutor {
             ResultSet rs =
                 h2.executeSqlQueryWithTimer(c, "SELECT PLAN FROM " + mergeTableIdentifier(i),
                     null, false, 0, null,
-                    null);
+                    null, stmtFlags);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1524,7 +1528,7 @@ public class GridReduceQueryExecutor {
             false,
             0,
             null,
-            null);
+            null, stmtFlags);
 
         lists.add(F.asList(getPlan(rs)));
 

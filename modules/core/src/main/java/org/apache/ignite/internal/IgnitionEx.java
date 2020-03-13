@@ -1998,13 +1998,15 @@ public class IgnitionEx {
                 buildIdxExecSvc = new IgniteThreadPoolExecutor(
                     "build-idx-runner",
                     cfg.getIgniteInstanceName(),
-                    0,
                     buildIdxThreadPoolSize,
-                    0,
+                    buildIdxThreadPoolSize,
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<>(),
                     GridIoPolicy.UNDEFINED,
                     oomeHnd
                 );
+
+                buildIdxExecSvc.allowCoreThreadTimeOut(true);
             }
 
             validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");

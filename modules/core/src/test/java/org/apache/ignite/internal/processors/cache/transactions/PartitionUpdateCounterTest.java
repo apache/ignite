@@ -389,7 +389,10 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
             PartitionUpdateCounter cntr = counter(0, grid0.name());
 
-            assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
+            if (mode == CacheAtomicityMode.TRANSACTIONAL)
+                assertTrue(cntr instanceof PartitionUpdateCounterTrackingImpl);
+            else if (mode == CacheAtomicityMode.ATOMIC)
+                assertTrue(cntr instanceof PartitionUpdateCounterVolatileImpl);
 
             assertEquals(cntr.initial(), cntr.get());
         }

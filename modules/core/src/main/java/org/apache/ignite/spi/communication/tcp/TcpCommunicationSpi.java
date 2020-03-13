@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -157,6 +159,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -2950,6 +2953,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     catch (Throwable e) {
                         fut.onDone(e);
 
+                        if (e instanceof IgniteTooManyOpenFilesException)
+                            throw e;
+
                         if (e instanceof Error)
                             throw (Error)e;
                     }
@@ -3372,7 +3378,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (getSpiContext().node(node.id()) == null)
                         throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
 
-                    SocketChannel ch = SocketChannel.open();
+                    SocketChannel ch = openSocketChannel();
 
                     ch.configureBlocking(true);
 
@@ -3547,6 +3553,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (log.isDebugEnabled())
                         log.debug("Client creation failed [addr=" + addr + ", err=" + e + ']');
 
+                    if (X.hasCause(e, "Too many open files", SocketException.class))
+                        throw new IgniteTooManyOpenFilesException(e);
+
                     // check if timeout occured in case of unrecoverable exception
                     if (connTimeoutStgy.checkTimeout()) {
                         U.warn(log, "Connection timed out (will stop attempts to perform the connect) " +
@@ -3599,6 +3608,40 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             processClientCreationError(node, addrs, errs);
 
         return client;
+    }
+
+    /**
+     * Opens a socket channel.
+     *
+     * @return A new socket channel.
+     * @throws IOException If an I/O error occurs.
+     */
+    protected SocketChannel openSocketChannel() throws IOException {
+        return SocketChannel.open();
+    }
+
+    /**
+     * Closing connections to node.
+     * NOTE: It is recommended only for tests.
+     *
+     * @param nodeId Node for which to close connections.
+     * @throws IgniteCheckedException If occurs.
+     */
+    void closeConnections(UUID nodeId) throws IgniteCheckedException {
+        GridCommunicationClient[] clients = this.clients.remove(nodeId);
+        if (nonNull(clients)) {
+            for (GridCommunicationClient client : clients)
+                client.forceClose();
+        }
+
+        for (ConnectionKey connKey : clientFuts.keySet()) {
+            if (!nodeId.equals(connKey))
+                continue;
+
+            GridFutureAdapter<GridCommunicationClient> fut = clientFuts.remove(connKey);
+            if (nonNull(fut))
+                fut.get().forceClose();
+        }
     }
 
     /**
@@ -4614,6 +4657,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Recovery reconnect failed, node stopping [rmtNode=" + recoveryDesc.node().id() + ']');
+            }
+            catch (IgniteTooManyOpenFilesException e) {
+                onException(e.getMessage(), e);
+
+                throw e;
             }
             catch (IgniteCheckedException | IgniteException e) {
                 try {

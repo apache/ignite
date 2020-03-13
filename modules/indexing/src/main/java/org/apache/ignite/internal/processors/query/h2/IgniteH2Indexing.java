@@ -312,9 +312,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return <b>Cached</b> prepared statement.
      */
     @SuppressWarnings("ConstantConditions")
-    @Nullable private PreparedStatement cachedStatement(Connection c, String sql) {
+    @Nullable private PreparedStatement cachedStatement(Connection c, String sql, byte stmtFlags) {
         try {
-            return prepareStatement(c, sql, true, true);
+            return prepareStatement(c, sql, true, true, stmtFlags);
         }
         catch (SQLException e) {
             // We actually don't except anything SQL related here as we're supposed to work with cache only.
@@ -330,9 +330,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws SQLException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @NotNull private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache)
+    @NotNull private PreparedStatement prepareStatement(Connection c, String sql,
+        boolean useStmtCache, byte stmtFlags)
         throws SQLException {
-        return prepareStatement(c, sql, useStmtCache, false);
+        return prepareStatement(c, sql, useStmtCache, false, stmtFlags);
     }
 
     /**
@@ -344,14 +345,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws SQLException If failed.
      */
     @Nullable private PreparedStatement prepareStatement(Connection c, String sql, boolean useStmtCache,
-        boolean cachedOnly) throws SQLException {
+        boolean cachedOnly, byte stmtFlags) throws SQLException {
         // We can't avoid parsing and avoid using cache at the same time.
         assert useStmtCache || !cachedOnly;
 
         if (useStmtCache) {
             H2StatementCache cache = connMgr.statementCacheForThread();
 
-            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql);
+            H2CachedStatementKey key = new H2CachedStatementKey(c.getSchema(), sql, stmtFlags);
 
             PreparedStatement stmt = cache.get(key);
 
@@ -404,7 +405,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) {
         Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-        return prepareStatementAndCaches(conn, sql);
+        return prepareStatementAndCaches(conn, sql, (byte)0);
     }
 
     /**
@@ -691,7 +692,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-            try (PreparedStatement stmt = prepareStatement(conn, sql, false)) {
+            try (PreparedStatement stmt = prepareStatement(conn, sql, false, (byte)0)) {
                 stmt.execute();
             }
         }
@@ -778,7 +779,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         H2Utils.setupConnection(conn, false, enforceJoinOrder, lazy);
 
-        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
+        final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true,
+            H2StatementCache.queryFlags(false, enforceJoinOrder, false));
 
         if (GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
@@ -871,7 +873,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final PreparedStatement stmt;
 
         try {
-            stmt = prepareStatement(conn, qry, true);
+            stmt = prepareStatement(conn, qry, true, (byte)0);
         }
         catch (SQLException e) {
             throw new IgniteSQLException(e);
@@ -892,7 +894,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final Connection conn = connMgr.connectionForThread().connection(schemaName);
 
-        final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
+        final PreparedStatement stmt = prepareStatementAndCaches(conn, qry, (byte)0);
 
         if (GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
@@ -939,11 +941,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public PreparedStatement preparedStatementWithParams(Connection conn, String sql, Collection<Object> params,
-        boolean useStmtCache) throws IgniteCheckedException {
+        boolean useStmtCache, byte stmtFlags) throws IgniteCheckedException {
         final PreparedStatement stmt;
 
         try {
-            stmt = prepareStatement(conn, sql, useStmtCache);
+            stmt = prepareStatement(conn, sql, useStmtCache, stmtFlags);
         }
         catch (SQLException e) {
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
@@ -1038,9 +1040,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public ResultSet executeSqlQueryWithTimer(Connection conn, String sql, @Nullable Collection<Object> params,
-        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, final H2QueryInfo qryInfo)
+        boolean useStmtCache, int timeoutMillis, @Nullable GridQueryCancel cancel, final H2QueryInfo qryInfo, byte stmtFlags)
         throws IgniteCheckedException {
-        return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache),
+        return executeSqlQueryWithTimer(preparedStatementWithParams(conn, sql, params, useStmtCache, stmtFlags),
             conn, sql, params, timeoutMillis, cancel, qryInfo);
     }
 
@@ -1419,7 +1421,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             PreparedStatement cachedStmt;
 
             if ((cachedStmt = cachedStatement(
-                connMgr.connectionForThread().connection(schemaName), qry.getSql())) != null) {
+                connMgr.connectionForThread().connection(schemaName), qry.getSql(),
+                H2StatementCache.queryFlags(qry))) != null) {
                 Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
 
                 // We may use this cached statement only for local queries and non queries.
@@ -1598,7 +1601,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         boolean loc = qry.isLocal();
 
-        PreparedStatement stmt = prepareStatementAndCaches(c, qry.getSql());
+        PreparedStatement stmt = prepareStatementAndCaches(c, qry.getSql(), H2StatementCache.queryFlags(qry));
 
         if (loc && GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
@@ -1672,8 +1675,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean hasTwoStep = !loc && prepared.isQuery();
 
         // Let's not cache multiple statements and distributed queries as whole two step query will be cached later on.
-        if (remainingSql != null || hasTwoStep)
-            connMgr.connectionForThread().statementCache().remove(schemaName, qry.getSql());
+        if (remainingSql != null || hasTwoStep) {
+            connMgr.connectionForThread().statementCache().remove(schemaName, qry.getSql(),
+                H2StatementCache.queryFlags(qry));
+        }
 
         if (!hasTwoStep)
             return new ParsingResult(prepared, newQry, remainingSql, null, null, null);
@@ -1811,12 +1816,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sqlQry Query.
      * @return H2 prepared statement.
      */
-    private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry) {
+    private PreparedStatement prepareStatementAndCaches(Connection c, String sqlQry, byte stmtFlags) {
         boolean cachesCreated = false;
 
         while (true) {
             try {
-                return prepareStatement(c, sqlQry, true);
+                return prepareStatement(c, sqlQry, true, stmtFlags);
             }
             catch (SQLException e) {
                 if (!cachesCreated && (
@@ -1858,7 +1863,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         H2Utils.setupConnection(conn, false, fldsQry.isEnforceJoinOrder());
 
         PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
-            Arrays.asList(fldsQry.getArgs()), true);
+            Arrays.asList(fldsQry.getArgs()), true, H2StatementCache.queryFlags(fldsQry));
 
         return dmlProc.mapDistributedUpdate(schemaName, stmt, fldsQry, filter, cancel, local);
     }

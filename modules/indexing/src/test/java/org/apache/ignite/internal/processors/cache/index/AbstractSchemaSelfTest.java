@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -347,12 +348,22 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
     }
 
     /**
+     * Execute SQL statement on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    protected List<List<?>> execute(Ignite node, String sql) {
+        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    }
+
+    /**
      * Get query processor.
      *
      * @param node Node.
      * @return Query processor.
      */
-    static GridQueryProcessor queryProcessor(Ignite node) {
+    public static GridQueryProcessor queryProcessor(Ignite node) {
         return ((IgniteEx)node).context().query();
     }
 

@@ -61,6 +61,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -231,6 +232,8 @@ public class CacheGroupContext {
         metrics = new CacheGroupMetricsImpl();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -325,6 +328,9 @@ public class CacheGroupContext {
 
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
+
+        if (!hasAtomicCaches)
+            hasAtomicCaches = cctx.config().getAtomicityMode() == ATOMIC;
     }
 
     /**
