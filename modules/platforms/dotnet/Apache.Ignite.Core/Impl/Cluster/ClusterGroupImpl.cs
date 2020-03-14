@@ -157,6 +157,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpEnableStatistics = 38;
 
+        /** */
+        private const int OpClearStatistics = 39;
+
         /** Initial Ignite instance. */
         private readonly IIgniteInternal _ignite;
         
@@ -479,9 +482,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritdoc /> */
-        public void ClearStatistics(IEnumerable<string> caches)
+        public void ClearStatistics(IEnumerable<string> cacheNames)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpClearStatistics, w => WriteStrings(w, cacheNames));
         }
 
         /// <summary>
@@ -604,7 +609,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            var x = GetEnumerableWriterAction(cacheNames, (writer, s) => writer.WriteString(s));
             DoOutOp(OpResetLostPartitions, w =>
             {
                 var pos = w.Stream.Position;
@@ -620,25 +624,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
                 w.Stream.WriteInt(pos, count);
             });
-        }
-
-        private static Action<BinaryWriter> GetEnumerableWriterAction<T>(IEnumerable<T> enumerable, Action<BinaryWriter, T> itemWriter)
-        {
-            return w =>
-            {
-                var pos = w.Stream.Position;
-
-                var count = 0;
-                w.WriteInt(count); // Reserve space.
-
-                foreach (var item in enumerable)
-                {
-                    itemWriter(w, item);
-                    count++;
-                }
-
-                w.Stream.WriteInt(pos, count);
-            };
         }
 
         /// <summary>
@@ -805,6 +790,22 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 
             return _nodes;
+        }
+
+        private static void WriteStrings(BinaryWriter w, IEnumerable<string> cacheNames)
+        {
+            var pos = w.Stream.Position;
+
+            var count = 0;
+            w.WriteInt(count);  // Reserve space.
+
+            foreach (var cacheName in cacheNames)
+            {
+                w.WriteString(cacheName);
+                count++;
+            }
+
+            w.Stream.WriteInt(pos, count);
         }
     }
 }

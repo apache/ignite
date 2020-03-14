@@ -181,14 +181,14 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// 
+        /// Test clearing cache metrics
         /// </summary>
         [Test]
-        public void TestClearStatistics()
+        public void TestCacheClearStatistics()
         {
-            var localIgnite = Ignition.GetIgnite();
-            var cacheName = "TestClearStatisticsCache";
-            var localCache = localIgnite.CreateCache<int, int>(new CacheConfiguration(cacheName)
+            var ignite = Ignition.GetIgnite();
+            var cacheName = "TestCacheClearStatistics";
+            var localCache = ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
             {
                 EnableStatistics = true
             });
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
             Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
 
-            var localKey = TestUtils.GetPrimaryKey(localIgnite, cacheName);
+            var localKey = TestUtils.GetPrimaryKey(ignite, cacheName);
 
             localCache.Put(localKey, 1);
             localCache.Get(localKey);
@@ -216,6 +216,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             localCache.ClearStatistics();
 
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
             var localMetrics1 = localCache.GetLocalMetrics();
             var cacheMetrics1 = remoteCache.GetLocalMetrics();
             var cacheMetrics2 = localCache.GetMetrics();
@@ -223,16 +224,18 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var metricsToAssert = new[]
             {
-                localMetrics1
+                localMetrics1,
+                cacheMetrics1,
+                cacheMetrics2,
+                metrics2
             };
 
             foreach (var metrics in metricsToAssert)
             {
                 Assert.IsTrue(metrics.IsStatisticsEnabled);
                 Assert.AreEqual(cacheName, metrics.CacheName);
-                Assert.AreEqual(0, smokeMetrics.CachePuts);
-                Assert.AreEqual(0, smokeMetrics.CacheSize);
-
+                Assert.AreEqual(0, metrics.CachePuts);
+                Assert.AreEqual(0, metrics.CacheGets);
             }
         }
 
