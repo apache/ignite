@@ -28,7 +28,12 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
+import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTxCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +41,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE_TASK;
+import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS_QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -48,6 +55,8 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
+import static org.apache.ignite.internal.sql.SqlKeyword.SCAN_QUERY;
+import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
@@ -55,6 +64,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.START;
 import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
+import static org.apache.ignite.internal.sql.SqlKeyword.TX;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlKeyword.USER;
 import static org.apache.ignite.internal.sql.SqlKeyword.WORK;
@@ -289,6 +299,21 @@ public class SqlParser {
             switch (lex.token()) {
                 case QUERY:
                     return new SqlKillQueryCommand().parse(lex);
+
+                case SCAN_QUERY:
+                    return new SqlKillScanQueryCommand().parse(lex);
+
+                case TX:
+                    return new SqlKillTxCommand().parse(lex);
+
+                case CONTINUOUS_QUERY:
+                    return new SqlKillContinuousQueryCommand().parse(lex);
+
+                case COMPUTE_TASK:
+                    return new SqlKillComputeTaskCommand().parse(lex);
+
+                case SERVICE:
+                    return new SqlKillServiceCommand().parse(lex);
             }
         }
 

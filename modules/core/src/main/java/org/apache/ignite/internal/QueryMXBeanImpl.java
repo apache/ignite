@@ -60,23 +60,7 @@ public class QueryMXBeanImpl implements QueryMXBean {
     @Override public void cancelContinuous(String routineId) {
         A.notNull(routineId, "routineId");
 
-        if (log.isInfoEnabled())
-            log.info("Killing continuous query[routineId=" + routineId + ']');
-
-        try {
-            IgniteClusterImpl cluster = ctx.cluster().get();
-
-            IgniteCompute compute = cluster.compute();
-
-            UUID nid = cluster.nodes().iterator().next().id();
-
-            compute.execute(new VisorContinuousQueryCancelTask(),
-                new VisorTaskArgument<>(nid,
-                    new VisorContinuousQueryCancelTaskArg(UUID.fromString(routineId)), false));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        cancelContinuous(UUID.fromString(routineId));
     }
 
     /** {@inheritDoc} */
@@ -111,6 +95,15 @@ public class QueryMXBeanImpl implements QueryMXBean {
         if (log.isInfoEnabled())
             log.info("Killing scan query[id=" + id + ",originNodeId=" + originNodeId + ']');
 
+        cancelScan(UUID.fromString(originNodeId), cacheName, id);
+    }
+
+    /**
+     * @param originNodeId
+     * @param cacheName
+     * @param id
+     */
+    public void cancelScan(UUID originNodeId, String cacheName, long id) {
         try {
             IgniteClusterImpl cluster = ctx.cluster().get();
 
@@ -120,12 +113,35 @@ public class QueryMXBeanImpl implements QueryMXBean {
 
             boolean res = compute.execute(new VisorScanQueryCancelTask(),
                 new VisorTaskArgument<>(nid,
-                    new VisorScanQueryCancelTaskArg(UUID.fromString(originNodeId), cacheName, id), false));
+                    new VisorScanQueryCancelTaskArg(originNodeId, cacheName, id), false));
 
             if (!res) {
                 log.warning("Query not found[originNodeId=" + originNodeId +
                     ",cacheName=" + cacheName + ",qryId=" + id + ']');
             }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * @param routineId
+     */
+    public void cancelContinuous(UUID routineId) {
+        if (log.isInfoEnabled())
+            log.info("Killing continuous query[routineId=" + routineId + ']');
+
+        try {
+            IgniteClusterImpl cluster = ctx.cluster().get();
+
+            IgniteCompute compute = cluster.compute();
+
+            UUID nid = cluster.nodes().iterator().next().id();
+
+            compute.execute(new VisorContinuousQueryCancelTask(),
+                new VisorTaskArgument<>(nid,
+                    new VisorContinuousQueryCancelTaskArg(routineId), false));
         }
         catch (Exception e) {
             throw new RuntimeException(e);

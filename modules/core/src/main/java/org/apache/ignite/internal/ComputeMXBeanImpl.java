@@ -44,8 +44,15 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     @Override public void cancel(String sessionId) {
         A.notNull(sessionId, "sessionId");
 
+        cancel(IgniteUuid.fromString(sessionId));
+    }
+
+    /**
+     * @param sessionId
+     */
+    public void cancel(IgniteUuid sessionId) {
         VisorComputeCancelSessionsTaskArg arg = new VisorComputeCancelSessionsTaskArg(
-            Collections.singleton(IgniteUuid.fromString(sessionId)));
+            Collections.singleton(sessionId));
 
         try {
             IgniteCompute compute = ctx.cluster().get().compute();

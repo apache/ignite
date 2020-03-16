@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -43,22 +44,22 @@ public class CancelCommandSQLTest extends GridCommonAbstractTest {
     public static final int  NODES_CNT = 3;
 
     /** */
-    public static final String KILL_SQL_QRY = "KILL QUERY ?";
+    public static final String KILL_SQL_QRY = "KILL QUERY";
 
     /** */
-    public static final String KILL_SCAN_QRY = "KILL SCAN_QUERY ?, ?, ?";
+    public static final String KILL_SCAN_QRY = "KILL SCAN_QUERY";
 
     /** */
-    public static final String KILL_TX_QRY = "KILL TX ?";
+    public static final String KILL_TX_QRY = "KILL TX";
 
     /** */
-    public static final String KILL_CQ_QRY = "KILL CONTINUOUS_QUERY ?";
+    public static final String KILL_CQ_QRY = "KILL CONTINUOUS_QUERY";
 
     /** */
-    public static final String KILL_COMPUTE_QRY = "KILL COMPUTE_TASK ?";
+    public static final String KILL_COMPUTE_QRY = "KILL COMPUTE_TASK";
 
     /** */
-    public static final String KILL_SVC_QRY = "KILL SERVICE ?";
+    public static final String KILL_SVC_QRY = "KILL SERVICE";
 
     /** */
     private static List<IgniteEx> srvs;
@@ -90,73 +91,73 @@ public class CancelCommandSQLTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelScanQuery() throws Exception {
-        doTestScanQueryCancel(cli, srvs, args -> execute(cli, KILL_SCAN_QRY, args.get1(), args.get2(), args.get3()));
+        doTestScanQueryCancel(cli, srvs, args -> execute(cli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelSQLQuery() throws Exception {
-        doTestCancelSQLQuery(cli, qryId -> execute(cli, KILL_SQL_QRY, qryId));
+        doTestCancelSQLQuery(cli, qryId -> execute(cli, KILL_SQL_QRY + " '" + qryId + "'"));
 
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelTx() throws Exception {
-        doTestCancelTx(cli, srvs, xid -> execute(cli, KILL_TX_QRY, xid));
+        doTestCancelTx(cli, srvs, xid -> execute(cli, KILL_TX_QRY + " '" + xid + "'"));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelContinuousQuery() throws Exception {
-        doTestCancelContinuousQuery(cli, srvs, routineId -> execute(cli, KILL_CQ_QRY, routineId.toString()));
+        doTestCancelContinuousQuery(cli, srvs, routineId -> execute(cli, KILL_CQ_QRY + " '" + routineId.toString() + "'"));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        doTestCancelComputeTask(cli, srvs, sessId -> execute(cli, KILL_COMPUTE_QRY, sessId));
+        doTestCancelComputeTask(cli, srvs, sessId -> execute(cli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelService() throws Exception {
-        doTestCancelService(cli, srvs.get(0), name -> execute(cli, KILL_SVC_QRY, name));
+        doTestCancelService(cli, srvs.get(0), name -> execute(cli, KILL_SVC_QRY + " '" + name + "'"));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownSQLQuery() throws Exception {
-        execute(cli, KILL_SQL_QRY, srvs.get(0).localNode().id().toString() + "_42'");
+        execute(cli, KILL_SQL_QRY + " '" + srvs.get(0).localNode().id().toString() + "_42'");
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownScanQuery() throws Exception {
-        execute(cli, KILL_SCAN_QRY, cli.localNode().id(), "unknown", 1L);
+        execute(cli, KILL_SCAN_QRY + " '" + cli.localNode().id() + "' 'unknown' 1");
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownTx() throws Exception {
-        execute(cli, KILL_TX_QRY, "unknown");
+        execute(cli, KILL_TX_QRY + " 'unknown'");
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownContinuousQuery() throws Exception {
-        execute(cli, KILL_CQ_QRY,  UUID.randomUUID().toString());
+        execute(cli, KILL_CQ_QRY + " '" + UUID.randomUUID() + "'");
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownComputeTask() throws Exception {
-        execute(cli, KILL_COMPUTE_QRY, UUID.randomUUID().toString());
+        execute(cli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownService() throws Exception {
-        execute(cli, KILL_SVC_QRY, "unknown");
+        execute(cli, KILL_SVC_QRY + " 'unknown'");
     }
 }

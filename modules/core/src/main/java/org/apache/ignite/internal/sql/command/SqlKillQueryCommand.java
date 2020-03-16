@@ -23,16 +23,20 @@ import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
 
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 
 /**
  * KILL QUERY command.
+ *
+ * @see QueryMXBean#cancelSQL(String)
+ * @see SqlQueryView#queryId()
  */
 public class SqlKillQueryCommand implements SqlCommand {
     /** */
     private static final String ASYNC = "ASYNC";
-
 
     /** Node query id. */
     private long nodeQryId;

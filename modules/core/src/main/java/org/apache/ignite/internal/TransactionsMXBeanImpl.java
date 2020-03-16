@@ -42,12 +42,12 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
  */
 public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** */
-    private final GridKernalContextImpl ctx;
+    private final GridKernalContext ctx;
 
     /**
      * @param ctx Context.
      */
-    public TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
+    public TransactionsMXBeanImpl(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 

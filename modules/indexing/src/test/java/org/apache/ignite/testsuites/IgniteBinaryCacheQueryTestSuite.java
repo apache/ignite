@@ -270,6 +270,7 @@ import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
 import org.apache.ignite.util.CancelCommandCommandShTest;
 import org.apache.ignite.util.CancelCommandMXBeanTest;
+import org.apache.ignite.util.CancelCommandSQLTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -602,6 +603,7 @@ import org.junit.runners.Suite;
     KillQueryErrorOnCancelTest.class,
     CancelCommandMXBeanTest.class,
     CancelCommandCommandShTest.class,
+    CancelCommandSQLTest.class,
 
     // Table statistics.
     RowCountTableStatisticsUsageTest.class,
