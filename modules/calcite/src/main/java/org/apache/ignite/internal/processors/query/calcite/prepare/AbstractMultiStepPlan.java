@@ -18,16 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -56,49 +52,32 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
 
     /** {@inheritDoc} */
     @Override public void init(MappingService mappingService, PlanningContext ctx) {
-        int i = 0;
-
         RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
 
-        while (true) {
-            try {
-                for (Fragment fragment : fragments)
-                    fragment.init(mappingService, ctx, mq);
+        for (int i = 0, j = 0; i < fragments.size();) {
+            Fragment fragment = fragments.get(i);
 
-                return;
+            try {
+                fragment.init(mappingService, ctx, mq);
+
+                i++;
             }
             catch (OptimisticPlanningException e) {
-                if (++i > 3)
+                if (++j > 3)
                     throw new IgniteSQLException("Failed to map query.", e);
 
-                Edge edge = e.edge();
+                replace(fragment, new FragmentSplitter().go(fragment, e.node(), mq));
 
-                RelNode parent = edge.parent();
-                RelNode child = edge.child();
-
-                RelOptCluster cluster = child.getCluster();
-                RelTraitSet traitSet = child.getTraitSet();
-
-                Fragment fragment = new Fragment(new IgniteSender(cluster, traitSet, child));
-
-                fragments.add(fragment);
-
-                if (parent != null)
-                    parent.replaceInput(edge.childIndex(), new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment));
-                else {
-                    // need to fix a distribution of a root of a fragment
-                    int idx = 0;
-
-                    for (; idx < fragments.size(); idx++) {
-                        if (fragments.get(idx).root() == child)
-                            break;
-                    }
-
-                    assert idx < fragments.size();
-
-                    fragments.set(idx, new Fragment(new IgniteReceiver(cluster, traitSet, child.getRowType(), fragment)));
-                }
+                i = 0; // restart init routine.
             }
         }
+    }
+
+    /** */
+    private void replace(Fragment fragment, List<Fragment> replacement) {
+        assert !F.isEmpty(replacement);
+
+        fragments.set(fragments.indexOf(fragment), F.first(replacement));
+        fragments.addAll(replacement.subList(1, replacement.size()));
     }
 }

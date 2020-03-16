@@ -67,23 +67,35 @@ public final class Commons {
     public static <T> List<T> intersect(List<T> left, List<T> right) {
         if (F.isEmpty(left) || F.isEmpty(right))
             return Collections.emptyList();
-        else if (left.size() > right.size())
-            return intersect0(right, left);
-        else
-            return intersect0(left, right);
+
+        return intersect0(left, right);
     }
 
-    /** */
-    private static <T> List<T> intersect0(List<T> left, List<T> right) {
-        List<T> res = new ArrayList<>(Math.min(left.size(), right.size()));
-        HashSet<T> set = new HashSet<>(left);
+    /**
+     * Intersects a set and a list.
+     *
+     * @return A List of unique entries that presented in both the given set and the given list.
+     */
+    public static <T> List<T> intersect(Set<T> set, List<T> list) {
+        if (F.isEmpty(set) || F.isEmpty(list))
+            return Collections.emptyList();
 
-        for (T t : right) {
+        List<T> res = new ArrayList<>(Math.min(set.size(), list.size()));
+
+        for (T t : list) {
             if (set.contains(t))
                 res.add(t);
         }
 
         return res;
+    }
+
+    /** */
+    private static <T> List<T> intersect0(@NotNull List<T> left, @NotNull List<T> right) {
+        if (left.size() > right.size())
+            return intersect0(right, left);
+
+        return intersect(new HashSet<>(left), right);
     }
 
     /**

@@ -59,6 +59,18 @@ public abstract class DistributionFunction implements Serializable {
     public abstract Destination destination(PartitionService partitionService, NodesMapping mapping, ImmutableIntList keys);
 
     /**
+     * Creates a partition.
+     *
+     * @param partitionService Affinity function source.
+     * @param partitionsCount Expected partitions count.
+     * @param keys Distribution keys.
+     * @return Partition function.
+     */
+    public ToIntFunction<Object> partitionFunction(PartitionService partitionService, int partitionsCount, ImmutableIntList keys) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @return Function name. This name used for equality checking and in {@link RelNode#getDigest()}.
      */
     public final String name(){
@@ -208,10 +220,12 @@ public abstract class DistributionFunction implements Serializable {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
             }
 
-            ToIntFunction<Object> rowToPart = DistributionFunction.rowToPart(
-                partitionService.partitionFunction(CU.UNDEFINED_CACHE_ID), k.toIntArray());
+            return new Partitioned(m.nodes(), assignments, partitionFunction(partitionService, assignments.size(), k));
+        }
 
-            return new Partitioned(m.nodes(), assignments, rowToPart);
+        /** {@inheritDoc} */
+        @Override public ToIntFunction<Object> partitionFunction(PartitionService partitionService, int partitionsCount, ImmutableIntList k) {
+            return DistributionFunction.rowToPart(partitionService.partitionFunction(CU.UNDEFINED_CACHE_ID), partitionsCount, k.toIntArray());
         }
 
         /** */
@@ -253,10 +267,12 @@ public abstract class DistributionFunction implements Serializable {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
             }
 
-            ToIntFunction<Object> rowToPart = DistributionFunction.rowToPart(
-                partitionService.partitionFunction(cacheId), k.toIntArray());
+            return new Partitioned(m.nodes(), assignments, partitionFunction(partitionService, assignments.size(), k));
+        }
 
-            return new Partitioned(m.nodes(), assignments, rowToPart);
+        /** {@inheritDoc} */
+        @Override public ToIntFunction<Object> partitionFunction(PartitionService partitionService, int partitionsCount, ImmutableIntList k) {
+            return DistributionFunction.rowToPart(partitionService.partitionFunction(cacheId), partitionsCount, k.toIntArray());
         }
 
         /** {@inheritDoc} */
@@ -266,7 +282,7 @@ public abstract class DistributionFunction implements Serializable {
     }
 
     /** */
-    private static ToIntFunction<Object> rowToPart(ToIntFunction<Object> keyToPart, int[] keys) {
+    private static ToIntFunction<Object> rowToPart(ToIntFunction<Object> keyToPart, int parts, int[] keys) {
         return r -> {
             Object[] row = (Object[]) r;
 
@@ -278,7 +294,7 @@ public abstract class DistributionFunction implements Serializable {
             for (int i = 1; i < keys.length; i++)
                 hash = 31 * hash + keyToPart.applyAsInt(row[keys[i]]);
 
-            return hash;
+            return U.safeAbs(hash) % parts;
         };
     }
 }

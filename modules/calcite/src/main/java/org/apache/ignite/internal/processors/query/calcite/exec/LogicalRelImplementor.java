@@ -97,7 +97,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         RelTarget target = rel.target();
-        IgniteDistribution distribution = rel.distribution();
+        IgniteDistribution distribution = rel.targetDistribution();
         Destination destination = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.

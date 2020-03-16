@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentInfo;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdFragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.metadata.LocationMappingException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
@@ -74,10 +73,10 @@ public class Fragment implements RelTargetAware {
      * @param ctx Planner context.
      * @param mq Metadata query used for data location calculation.
      */
-    public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) {
+    public void init(MappingService mappingService, PlanningContext ctx, RelMetadataQuery mq) throws OptimisticPlanningException {
         FragmentInfo info = IgniteMdFragmentInfo._fragmentInfo(root, mq);
 
-        mapping = fragmentMapping(mappingService, ctx, info, mq);
+        mapping = fragmentMapping(mappingService, ctx, info);
 
         if (F.isEmpty(info.targetAwareList()))
             return;
@@ -122,7 +121,7 @@ public class Fragment implements RelTargetAware {
     }
 
     /** */
-    private NodesMapping fragmentMapping(MappingService mappingService, PlanningContext ctx, FragmentInfo info, RelMetadataQuery mq) {
+    private NodesMapping fragmentMapping(MappingService mappingService, PlanningContext ctx, FragmentInfo info) throws OptimisticPlanningException {
         NodesMapping mapping;
 
         try {
@@ -131,7 +130,7 @@ public class Fragment implements RelTargetAware {
             else if (local())
                 mapping = localMapping(ctx);
             else {
-                RelDistribution.Type type = IgniteMdDistribution._distribution(root, mq).getType();
+                RelDistribution.Type type = ((IgniteSender)root).sourceDistribution().getType();
 
                 boolean single = type == SINGLETON || type == BROADCAST_DISTRIBUTED;
 
@@ -140,7 +139,7 @@ public class Fragment implements RelTargetAware {
             }
         }
         catch (LocationMappingException e) {
-            throw new OptimisticPlanningException("Failed to calculate physical distribution", new Edge(null, root, -1));
+            throw new OptimisticPlanningException("Failed to calculate physical distribution", root, e);
         }
 
         return mapping.deduplicate();
@@ -148,6 +147,6 @@ public class Fragment implements RelTargetAware {
 
     /** */
     private NodesMapping localMapping(PlanningContext ctx) {
-        return new NodesMapping(Collections.singletonList(ctx.localNodeId()), null, (byte) (NodesMapping.CLIENT | NodesMapping.DEDUPLICATED));
+        return new NodesMapping(Collections.singletonList(ctx.localNodeId()), null, NodesMapping.CLIENT);
     }
 }

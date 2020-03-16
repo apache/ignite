@@ -87,8 +87,15 @@ public class IgniteSender extends SingleRel implements IgniteRel, RelTargetAware
     /**
      * @return Node distribution.
      */
-    public IgniteDistribution distribution() {
+    public IgniteDistribution targetDistribution() {
         return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    /**
+     * @return Node distribution.
+     */
+    public IgniteDistribution sourceDistribution() {
+        return input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
     /**
