@@ -90,6 +90,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitForwardPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -511,6 +512,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case TRACKING_PAGE_DELTA:
                 return 4 + 8 + 8 + 8 + 8;
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                return 4 + 8;
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
                 return 4 + 8 + 8 + 8;
@@ -1102,6 +1106,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long lastSuccessfulSnapshotId0 = in.readLong();
 
                 res = new TrackingPageDeltaRecord(cacheId, pageId, pageIdToMark, nextSnapshotId0, lastSuccessfulSnapshotId0);
+
+                break;
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                res = new TrackingPageRepairDeltaRecord(cacheId, pageId);
 
                 break;
 
@@ -1714,8 +1726,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(tpDelta.pageId());
 
                 buf.putLong(tpDelta.pageIdToMark());
-                buf.putLong(tpDelta.nextSnapshotId());
-                buf.putLong(tpDelta.lastSuccessfulSnapshotId());
+                buf.putLong(tpDelta.nextSnapshotTag());
+                buf.putLong(tpDelta.lastSuccessfulSnapshotTag());
+
+                break;
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                TrackingPageRepairDeltaRecord tprDelta = (TrackingPageRepairDeltaRecord)rec;
+
+                buf.putInt(tprDelta.groupId());
+                buf.putLong(tprDelta.pageId());
 
                 break;
 
