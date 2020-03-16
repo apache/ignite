@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -218,10 +219,10 @@ public class IgniteDistributions {
         if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
             HashSet<DistributionFunction> factories = U.newHashSet(3);
 
-            if (leftIn.getKeys().equals(joinInfo.leftKeys))
+            if (Objects.equals(joinInfo.leftKeys, leftIn.getKeys()))
                 factories.add(leftIn.function());
 
-            if (rightIn.getKeys().equals(joinInfo.rightKeys))
+            if (Objects.equals(joinInfo.rightKeys, rightIn.getKeys()))
                 factories.add(rightIn.function());
 
             factories.add(HashDistribution.INSTANCE);
@@ -258,15 +259,20 @@ public class IgniteDistributions {
         IgniteDistribution newLeft, IgniteDistribution newRight) {
         int exch = 0;
 
-        if (!left.satisfies(newLeft))
+        if (needsExchange(left, newLeft))
             exch++;
 
-        if (!right.satisfies(newRight))
+        if (needsExchange(right, newRight))
             exch++;
 
         dst.add(new BiSuggestion(out, newLeft, newRight, exch));
 
         return exch;
+    }
+
+    /** */
+    private static boolean needsExchange(IgniteDistribution sourceDist, IgniteDistribution targetDist) {
+        return !sourceDist.satisfies(targetDist);
     }
 
     /** */

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.volcano.RelSubset;
-import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Join;
@@ -29,9 +28,7 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Edge;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -110,19 +107,22 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
             return left.merge(right);
         }
         catch (LocationMappingException e) {
+            String msg = "Failed to calculate physical distribution";
+
             // a replicated cache is cheaper to redistribute
             if (!left.mapping().hasPartitionedCaches())
-                throw planningException(rel, e, true);
+                throw new OptimisticPlanningException(msg, rel.getLeft(), e);
             else if (!right.mapping().hasPartitionedCaches())
-                throw planningException(rel, e, false);
+                throw new OptimisticPlanningException(msg, rel.getRight(), e);
+            else {
+                // both sub-trees have partitioned sources, less cost is better
+                RelOptCluster cluster = rel.getCluster();
 
-            // both sub-trees have partitioned sources, less cost is better
-            RelOptCluster cluster = rel.getCluster();
+                RelOptCost leftCost = rel.getLeft().computeSelfCost(cluster.getPlanner(), mq);
+                RelOptCost rightCost = rel.getRight().computeSelfCost(cluster.getPlanner(), mq);
 
-            RelOptCost leftCost = rel.getLeft().computeSelfCost(cluster.getPlanner(), mq);
-            RelOptCost rightCost = rel.getRight().computeSelfCost(cluster.getPlanner(), mq);
-
-            throw planningException(rel, e, leftCost.isLe(rightCost));
+                throw new OptimisticPlanningException(msg, leftCost.isLe(rightCost) ? rel.getLeft() : rel.getRight(), e);
+            }
         }
     }
 
@@ -130,7 +130,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
     public FragmentInfo fragmentInfo(IgniteReceiver rel, RelMetadataQuery mq) {
-        return new FragmentInfo(Pair.of(rel, rel.source()));
+        return new FragmentInfo(rel.source());
     }
 
     /**
@@ -155,15 +155,5 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      */
     public static FragmentInfo _fragmentInfo(RelNode rel, RelMetadataQuery mq) {
         return RelMetadataQueryEx.wrap(mq).getFragmentInfo(rel);
-    }
-
-    /** */
-    private static OptimisticPlanningException planningException(BiRel rel, Exception cause, boolean splitLeft) {
-        String msg = "Failed to calculate physical distribution";
-
-        if (splitLeft)
-            return new OptimisticPlanningException(msg, new Edge(rel, rel.getLeft(), 0), cause);
-
-        return new OptimisticPlanningException(msg, new Edge(rel, rel.getRight(), 1), cause);
     }
 }

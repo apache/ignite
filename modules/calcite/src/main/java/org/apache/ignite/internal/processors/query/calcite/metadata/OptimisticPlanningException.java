@@ -17,40 +17,30 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.Edge;
+import org.apache.calcite.rel.RelNode;
 
 /**
  *
  */
 public class OptimisticPlanningException extends RuntimeException{
     /** */
-    private final Edge edge;
+    private final RelNode node;
 
     /**
      *
      * @param message Message.
-     * @param edge Edge of query plan, where the exception was thrown.
+     * @param node Node of a query plan, where the exception was thrown.
      * @param cause Cause.
      */
-    public OptimisticPlanningException(String message, Edge edge, Throwable cause) {
+    public OptimisticPlanningException(String message, RelNode node, Throwable cause) {
         super(message, cause);
-        this.edge = edge;
+        this.node = node;
     }
 
     /**
-     *
-     * @param message Message.
-     * @param edge Edge of query plan, where the exception was thrown.
+     * @return Node of a query plan, where the exception was thrown.
      */
-    public OptimisticPlanningException(String message, Edge edge) {
-        super(message);
-        this.edge = edge;
-    }
-
-    /**
-     * @return Edge of query plan, where the exception was thrown.
-     */
-    public Edge edge() {
-        return edge;
+    public RelNode node() {
+        return node;
     }
 }

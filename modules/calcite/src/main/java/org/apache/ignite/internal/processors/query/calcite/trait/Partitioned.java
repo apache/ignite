@@ -41,7 +41,7 @@ public final class Partitioned implements Destination {
 
     /** {@inheritDoc} */
     @Override public List<UUID> targets(Object row) {
-        return assignments.get(partFun.applyAsInt(row) % assignments.size());
+        return assignments.get(partFun.applyAsInt(row));
     }
 
     /** {@inheritDoc} */

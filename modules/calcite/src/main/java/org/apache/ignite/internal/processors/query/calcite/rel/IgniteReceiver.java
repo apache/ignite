@@ -25,7 +25,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelSource;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  */
 public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     /** */
-    private final RelSource source;
+    private final Fragment source;
 
     /**
      * Creates a Receiver
@@ -42,9 +42,9 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
      * @param cluster  Cluster that this relational expression belongs to
      * @param traits   Traits of this relational expression
      * @param rowType  Output row type
-     * @param source   Remote sources information.
+     * @param source   Source fragment.
      */
-    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, RelSource source) {
+    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, Fragment source) {
         super(cluster, traits);
 
         this.rowType = rowType;
@@ -62,9 +62,9 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     }
 
     /**
-     * @return Remote sources information.
+     * @return Source fragment.
      */
-    public RelSource source() {
+    public Fragment source() {
         return source;
     }
 

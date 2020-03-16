@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -108,14 +107,11 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
         RelOptCluster cluster = rel.getCluster();
         IgniteRel input = visit((IgniteRel) rel.getInput());
 
-        RelTraitSet inTraits = input.getTraitSet();
-        RelTraitSet outTraits = rel.getTraitSet();
-
-        Fragment fragment = new Fragment(new IgniteSender(cluster, inTraits, input));
+        Fragment fragment = new Fragment(new IgniteSender(cluster, rel.getTraitSet(), input));
 
         fragments.add(fragment);
 
-        return new IgniteReceiver(cluster, outTraits, input.getRowType(), fragment);
+        return new IgniteReceiver(cluster, rel.getTraitSet(), input.getRowType(), fragment);
     }
 
     /**

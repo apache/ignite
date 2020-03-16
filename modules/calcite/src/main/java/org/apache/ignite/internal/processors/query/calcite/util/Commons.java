@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Primitive;
@@ -32,6 +33,7 @@ import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -65,23 +67,35 @@ public final class Commons {
     public static <T> List<T> intersect(List<T> left, List<T> right) {
         if (F.isEmpty(left) || F.isEmpty(right))
             return Collections.emptyList();
-        else if (left.size() > right.size())
-            return intersect0(right, left);
-        else
-            return intersect0(left, right);
+
+        return intersect0(left, right);
     }
 
-    /** */
-    private static <T> List<T> intersect0(List<T> left, List<T> right) {
-        List<T> res = new ArrayList<>(Math.min(left.size(), right.size()));
-        HashSet<T> set = new HashSet<>(left);
+    /**
+     * Intersects a set and a list.
+     *
+     * @return A List of unique entries that presented in both the given set and the given list.
+     */
+    public static <T> List<T> intersect(Set<T> set, List<T> list) {
+        if (F.isEmpty(set) || F.isEmpty(list))
+            return Collections.emptyList();
 
-        for (T t : right) {
+        List<T> res = new ArrayList<>(Math.min(set.size(), list.size()));
+
+        for (T t : list) {
             if (set.contains(t))
                 res.add(t);
         }
 
         return res;
+    }
+
+    /** */
+    private static <T> List<T> intersect0(@NotNull List<T> left, @NotNull List<T> right) {
+        if (left.size() > right.size())
+            return intersect0(right, left);
+
+        return intersect(new HashSet<>(left), right);
     }
 
     /**
@@ -201,10 +215,21 @@ public final class Commons {
 
     /** */
     public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
-        final RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
+        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
-        for (RelDataType type : types)
-            builder.addAll(type.getFieldList());
+        Set<String> names = new HashSet<>();
+
+        for (RelDataType type : types) {
+            for (RelDataTypeField field : type.getFieldList()) {
+                int idx = 0;
+                String fieldName = field.getName();
+
+                while (!names.add(fieldName))
+                    fieldName = field.getName() + idx++;
+
+                builder.add(fieldName, field.getType());
+            }
+        }
 
         return builder.build();
     }

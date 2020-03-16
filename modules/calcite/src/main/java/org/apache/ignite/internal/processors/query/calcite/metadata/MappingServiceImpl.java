@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -30,12 +32,15 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping.DEDUPLICATED;
-
 /**
  *
  */
 public class MappingServiceImpl extends AbstractService implements MappingService {
+    /**
+     * Max nodes count, used on to-hash or to-random redistribution.
+     */
+    private static final int MAX_BUCKETS_COUNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_MAX_BUCKETS_COUNT", 1024);
+
     /** */
     private GridDiscoveryManager discoveryManager;
 
@@ -62,17 +67,19 @@ public class MappingServiceImpl extends AbstractService implements MappingServic
     @Override public NodesMapping mapBalanced(@NotNull AffinityTopologyVersion topVer, int desiredCnt, @Nullable Predicate<ClusterNode> nodeFilter) {
         assert desiredCnt >= 0;
 
-        List<ClusterNode> nodes = discoveryManager.discoCache(topVer).serverNodes();
+        desiredCnt = desiredCnt == 0 ? MAX_BUCKETS_COUNT : Math.min(desiredCnt, MAX_BUCKETS_COUNT);
+
+        List<ClusterNode> nodes = new ArrayList<>(discoveryManager.discoCache(topVer).serverNodes());
 
         if (nodeFilter != null)
             nodes = nodes.stream().filter(nodeFilter).collect(Collectors.toList());
 
-        if (desiredCnt != 0 && desiredCnt < nodes.size()) {
+        if (desiredCnt < nodes.size()) {
             Collections.shuffle(nodes);
 
             nodes = nodes.subList(0, desiredCnt);
         }
 
-        return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, DEDUPLICATED);
+        return new NodesMapping(Commons.transform(nodes, ClusterNode::id), null, (byte) 0);
     }
 }

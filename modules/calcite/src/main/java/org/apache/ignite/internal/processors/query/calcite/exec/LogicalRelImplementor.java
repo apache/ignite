@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelSource;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -97,12 +97,11 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
         RelTarget target = rel.target();
-        long targetFragmentId = target.fragmentId();
-        IgniteDistribution distribution = target.distribution();
+        IgniteDistribution distribution = rel.targetDistribution();
         Destination destination = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, ctx.fragmentId(), targetFragmentId, destination);
+        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, ctx.fragmentId(), target.fragmentId(), destination);
         outbox.register(visit(rel.getInput()));
 
         mailboxRegistry.register(outbox);
@@ -167,7 +166,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
-        RelSource source = rel.source();
+        Fragment source = rel.source();
 
         // Corresponding outbox fragment ID is used as exchange ID as well.
         Inbox<Object[]> inbox = (Inbox<Object[]>) mailboxRegistry.register(new Inbox<>(ctx, exchangeService, mailboxRegistry, source.fragmentId(), source.fragmentId()));

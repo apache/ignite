@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.io.Serializable;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  *
  */
-public interface RelTarget {
+public interface RelTarget extends Serializable {
     /**
      * @return Target fragment ID.
      */
@@ -39,9 +39,4 @@ public interface RelTarget {
      * @return Target mapping.
      */
     NodesMapping mapping();
-
-    /**
-     * @return Target distribution.
-     */
-    IgniteDistribution distribution();
 }

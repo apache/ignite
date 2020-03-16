@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -64,6 +62,7 @@ public class NodesMapping implements Serializable {
     /** */
     private final byte flags;
 
+    /** */
     public NodesMapping(List<UUID> nodes, List<List<UUID>> assignments, byte flags) {
         this.nodes = nodes;
         this.assignments = assignments;
@@ -105,22 +104,19 @@ public class NodesMapping implements Serializable {
     public NodesMapping mergeWith(NodesMapping other) throws LocationMappingException {
         byte flags = (byte) (this.flags | other.flags);
 
+        List<UUID> nodes = intersectReplicated(this.nodes, other.nodes);
+
+        // if there is no moving partitions both assignments are identical.
+        List<List<UUID>> assignments = (flags & HAS_MOVING_PARTITIONS) == 0
+            ? U.firstNotNull(this.assignments, other.assignments)
+            : intersectPartitioned(this.assignments, other.assignments);
+
+        // In case all involved replicated caches are available on
+        // all nodes it's no need to check assignments against them.
         if ((flags & (PARTIALLY_REPLICATED | CLIENT)) == 0)
-            return new NodesMapping(U.firstNotNull(nodes, other.nodes), mergeAssignments(other, null), flags);
+            return new NodesMapping(nodes, assignments, flags);
 
-        List<UUID> nodes;
-
-        if (this.nodes == null)
-            nodes = other.nodes;
-        else if (other.nodes == null)
-            nodes = this.nodes;
-        else
-            nodes = Commons.intersect(this.nodes, other.nodes);
-
-        if (nodes != null && nodes.isEmpty())
-            throw new LocationMappingException("Failed to map fragment to location.");
-
-        return new NodesMapping(nodes, mergeAssignments(other, nodes), flags);
+        return new NodesMapping(nodes, intersectReplicatedPartitioned(nodes, assignments), flags);
     }
 
     /**
@@ -132,31 +128,32 @@ public class NodesMapping implements Serializable {
      * @return Nodes mapping, containing nodes, that actually will be in charge of query execution.
      */
     public NodesMapping deduplicate() {
-        if (!excessive())
+        if ((flags & DEDUPLICATED) == DEDUPLICATED)
             return this;
 
         if (assignments == null) {
-            UUID node = nodes.get(ThreadLocalRandom.current().nextInt(nodes.size()));
+            List<List<UUID>> assignments0 = new ArrayList<>(nodes.size());
 
-            return new NodesMapping(Collections.singletonList(node), null, (byte)(flags | DEDUPLICATED));
+            for (UUID node : nodes)
+                assignments0.add(F.asList(node));
+
+            return new NodesMapping(nodes, assignments0, (byte)(flags | DEDUPLICATED));
         }
 
-        HashSet<UUID> nodes0 = new HashSet<>();
+        HashSet<UUID> nodesSet = new HashSet<>();
+        ArrayList<UUID> nodes0 = new ArrayList<>();
         List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
 
         for (List<UUID> partNodes : assignments) {
             UUID node = F.first(partNodes);
 
-            if (node == null)
-                assignments0.add(Collections.emptyList());
-            else {
-                assignments0.add(Collections.singletonList(node));
+            assignments0.add(F.asList(node));
 
+            if (node != null && nodesSet.add(node))
                 nodes0.add(node);
-            }
         }
 
-        return new NodesMapping(new ArrayList<>(nodes0), assignments0, (byte)(flags | DEDUPLICATED));
+        return new NodesMapping(nodes0, assignments0, (byte)(flags | DEDUPLICATED));
     }
 
     /**
@@ -166,8 +163,7 @@ public class NodesMapping implements Serializable {
      * @return List of partitions to scan on the given node.
      */
     public int[] partitions(UUID node) {
-        if (assignments == null)
-            return null;
+        assert (flags & DEDUPLICATED) == DEDUPLICATED;
 
         GridIntList parts = new GridIntList(assignments.size());
 
@@ -178,13 +174,6 @@ public class NodesMapping implements Serializable {
         }
 
         return parts.array();
-    }
-
-    /**
-     * @return {@code True} if mapping is excessive.
-     */
-    public boolean excessive() {
-        return (flags & DEDUPLICATED) == 0;
     }
 
     /**
@@ -218,59 +207,56 @@ public class NodesMapping implements Serializable {
     }
 
     /** */
-    private List<List<UUID>> mergeAssignments(NodesMapping other, List<UUID> nodes) throws LocationMappingException {
-        byte flags = (byte) (this.flags | other.flags);
-        List<List<UUID>> left = assignments;
-        List<List<UUID>> right = other.assignments;
+    private List<UUID> intersectReplicated(List<UUID> left, List<UUID> right) throws LocationMappingException {
+        if (left == null || right == null)
+            return U.firstNotNull(left, right);
 
-        if (left == null && right == null)
-            return null; // nothing to intersect;
+        List<UUID> nodes = Commons.intersect(right, left);
 
-        if (left == null || right == null || (flags & HAS_MOVING_PARTITIONS) == 0) {
-            List<List<UUID>> assignments = U.firstNotNull(left, right);
+        if (F.isEmpty(nodes)) // replicated caches aren't co-located on all nodes.
+            throw new LocationMappingException("Failed to map fragment to location. Replicated query parts are not co-located on all nodes");
 
-            if (nodes == null)
-                return assignments;
+        return nodes;
+    }
 
-            List<List<UUID>> assignments0 = new ArrayList<>(assignments.size());
-            HashSet<UUID> nodesSet = new HashSet<>(nodes);
+    /** */
+    private List<List<UUID>> intersectPartitioned(List<List<UUID>> left, List<List<UUID>> right) throws LocationMappingException {
+        if (left == null || right == null)
+            return U.firstNotNull(left, right);
 
-            for (List<UUID> partNodes : assignments) {
-                List<UUID> partNodes0 = new ArrayList<>(partNodes.size());
+        assert left.size() == right.size();
 
-                for (UUID partNode : partNodes) {
-                    if (nodesSet.contains(partNode))
-                        partNodes0.add(partNode);
-                }
-
-                if (partNodes0.isEmpty()) // TODO check with partition filters
-                    throw new LocationMappingException("Failed to map fragment to location.");
-
-                assignments0.add(partNodes0);
-            }
-
-            return assignments0;
-        }
-
-        List<List<UUID>> assignments = new ArrayList<>(left.size());
-        HashSet<UUID> nodesSet = nodes != null ? new HashSet<>(nodes) : null;
+        List<List<UUID>> res = new ArrayList<>(left.size());
 
         for (int i = 0; i < left.size(); i++) {
-            List<UUID> leftNodes = left.get(i);
-            List<UUID> partNodes = new ArrayList<>(leftNodes.size());
-            HashSet<UUID> rightNodesSet = new HashSet<>(right.get(i));
+            List<UUID> partNodes = Commons.intersect(left.get(i), right.get(i));
 
-            for (UUID partNode : leftNodes) {
-                if (rightNodesSet.contains(partNode) && (nodesSet == null || nodesSet.contains(partNode)))
-                    partNodes.add(partNode);
-            }
+            if (partNodes.isEmpty()) // TODO check with partition filters
+                throw new LocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
 
-            if (partNodes.isEmpty())
-                throw new LocationMappingException("Failed to map fragment to location.");
-
-            assignments.add(partNodes);
+            res.add(partNodes);
         }
 
-        return assignments;
+        return res;
+    }
+
+    /** */
+    private List<List<UUID>> intersectReplicatedPartitioned(List<UUID> nodes, List<List<UUID>> assignments) throws LocationMappingException {
+        if (nodes == null || assignments == null)
+            return assignments;
+
+        HashSet<UUID> nodesSet = new HashSet<>(nodes);
+        List<List<UUID>> res = new ArrayList<>(assignments.size());
+
+        for (int i = 0; i < assignments.size(); i++) {
+            List<UUID> partNodes = Commons.intersect(nodesSet, assignments.get(i));
+
+            if (partNodes.isEmpty()) // TODO check with partition filters
+                throw new LocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
+
+            res.add(partNodes);
+        }
+
+        return res;
     }
 }

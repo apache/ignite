@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.util.Pair;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelSource;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RelTargetAware;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -33,7 +31,7 @@ public class FragmentInfo {
     private final NodesMapping mapping;
 
     /** */
-    private final ImmutableList<Pair<IgniteReceiver, RelSource>> sources;
+    private final ImmutableList<RelTargetAware> targetAwareList;
 
     /**
      * Constructs Values leaf fragment info.
@@ -45,10 +43,10 @@ public class FragmentInfo {
     /**
      * Constructs Receiver leaf fragment info.
      *
-     * @param source Pair of a Receiver relational node and its data source information.
+     * @param targetAware A node that needs target information.
      */
-    public FragmentInfo(Pair<IgniteReceiver, RelSource> source) {
-        this(ImmutableList.of(source), null);
+    public FragmentInfo(RelTargetAware targetAware) {
+        this(ImmutableList.of(targetAware), null);
     }
 
     /**
@@ -63,11 +61,11 @@ public class FragmentInfo {
     /**
      * Used on merge of two relational node tree edges.
      *
-     * @param sources Pairs of underlying Receiver relational nodes and theirs data source information.
+     * @param targetAwareList nodes that need target information.
      * @param mapping Nodes mapping, describing where interested data placed.
      */
-    public FragmentInfo(ImmutableList<Pair<IgniteReceiver, RelSource>> sources, NodesMapping mapping) {
-        this.sources = sources;
+    public FragmentInfo(ImmutableList<RelTargetAware> targetAwareList, NodesMapping mapping) {
+        this.targetAwareList = targetAwareList;
         this.mapping = mapping;
     }
 
@@ -86,10 +84,10 @@ public class FragmentInfo {
     }
 
     /**
-     * @return Pairs of underlying Receiver relational nodes and theirs data source information.
+     * @return Nodes that need target information..
      */
-    public ImmutableList<Pair<IgniteReceiver, RelSource>> sources() {
-        return sources;
+    public ImmutableList<RelTargetAware> targetAwareList() {
+        return targetAwareList;
     }
 
     /**
@@ -100,7 +98,7 @@ public class FragmentInfo {
      */
     public FragmentInfo merge(FragmentInfo other) throws LocationMappingException {
         return new FragmentInfo(
-            merge(sources(), other.sources()),
+            merge(targetAwareList(), other.targetAwareList()),
             merge(mapping(), other.mapping()));
     }
 
@@ -115,7 +113,7 @@ public class FragmentInfo {
             NodesMapping newMapping = mapping.prune(filter);
 
             if (newMapping != mapping)
-                return new FragmentInfo(sources, newMapping);
+                return new FragmentInfo(targetAwareList, newMapping);
         }
 
         return this;
