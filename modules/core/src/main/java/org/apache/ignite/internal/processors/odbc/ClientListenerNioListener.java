@@ -306,12 +306,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = null;
 
         try {
-            connCtx = prepareContext(ses, clientType);
+            connCtx = prepareContext(clientType);
 
             ensureClientPermissions(clientType);
 
             if (connCtx.isVersionSupported(ver)) {
-                connCtx.initializeFromHandshake(ver, reader);
+                connCtx.initializeFromHandshake(ses, ver, reader);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
@@ -367,15 +367,15 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @return Context.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(GridNioSession ses, byte clientType) throws IgniteCheckedException {
+    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
         long connId = nextConnectionId();
 
         switch (clientType) {
             case ODBC_CLIENT:
-                return new OdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new OdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case JDBC_CLIENT:
-                return new JdbcConnectionContext(ctx, ses, busyLock, connId, maxCursors);
+                return new JdbcConnectionContext(ctx, busyLock, connId, maxCursors);
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx, connId, maxCursors, thinCfg);
