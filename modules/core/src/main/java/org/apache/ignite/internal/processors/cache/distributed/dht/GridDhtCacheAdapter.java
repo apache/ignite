@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -76,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -105,12 +103,6 @@ import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Multi tx future holder. */
-    private ThreadLocal<IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
-
-    /** Multi tx futures. */
-    private ConcurrentMap<IgniteUuid, MultiUpdateFuture> multiTxFuts = new ConcurrentHashMap<>();
 
     /** Force key futures. */
     private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<?, ?>> forceKeyFuts = newMap();
@@ -425,112 +417,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** {@inheritDoc} */
     @Override public GridCachePreloader preloader() {
         return ctx.group().preloader();
-    }
-
-    /**
-     * @return Topology version future registered for multi-update.
-     */
-    @Nullable public GridDhtTopologyFuture multiUpdateTopologyFuture() {
-        IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
-
-        return tup == null ? null : tup.get2();
-    }
-
-    /**
-     * Starts multi-update lock. Will wait for topology future is ready.
-     *
-     * @return Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    public AffinityTopologyVersion beginMultiUpdate() throws IgniteCheckedException {
-        IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
-
-        if (tup != null)
-            throw new IgniteCheckedException("Nested multi-update locks are not supported");
-
-        GridDhtPartitionTopology top = ctx.group().topology();
-
-        top.readLock();
-
-        GridDhtTopologyFuture topFut;
-
-        AffinityTopologyVersion topVer;
-
-        try {
-            // While we are holding read lock, register lock future for partition release future.
-            IgniteUuid lockId = IgniteUuid.fromUuid(ctx.localNodeId());
-
-            topVer = top.readyTopologyVersion();
-
-            MultiUpdateFuture fut = new MultiUpdateFuture(topVer);
-
-            MultiUpdateFuture old = multiTxFuts.putIfAbsent(lockId, fut);
-
-            assert old == null;
-
-            topFut = top.topologyVersionFuture();
-
-            multiTxHolder.set(F.t(lockId, topFut));
-        }
-        finally {
-            top.readUnlock();
-        }
-
-        topFut.get();
-
-        return topVer;
-    }
-
-    /**
-     * Ends multi-update lock.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void endMultiUpdate() throws IgniteCheckedException {
-        IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture> tup = multiTxHolder.get();
-
-        if (tup == null)
-            throw new IgniteCheckedException("Multi-update was not started or released twice.");
-
-        ctx.group().topology().readLock();
-
-        try {
-            IgniteUuid lockId = tup.get1();
-
-            MultiUpdateFuture multiFut = multiTxFuts.remove(lockId);
-
-            multiTxHolder.set(null);
-
-            // Finish future.
-            multiFut.onDone(lockId);
-        }
-        finally {
-            ctx.group().topology().readUnlock();
-        }
-    }
-
-    /**
-     * Creates multi update finish future. Will return {@code null} if no multi-update locks are found.
-     *
-     * @param topVer Topology version.
-     * @return Finish future.
-     */
-    @Nullable public IgniteInternalFuture<?> multiUpdateFinishFuture(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<IgniteUuid, Object> fut = null;
-
-        for (MultiUpdateFuture multiFut : multiTxFuts.values()) {
-            if (multiFut.topologyVersion().compareTo(topVer) <= 0) {
-                if (fut == null)
-                    fut = new GridCompoundFuture<>();
-
-                fut.add(multiFut);
-            }
-        }
-
-        if (fut != null)
-            fut.markInitialized();
-
-        return fut;
     }
 
     /**

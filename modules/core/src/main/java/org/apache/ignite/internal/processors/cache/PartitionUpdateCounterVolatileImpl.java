@@ -38,7 +38,7 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
     /**
      * Initial counter is set to update with max sequence number after WAL recovery.
      */
-    private long initCntr;
+    private volatile long initCntr;
 
     /** */
     private final CacheGroupContext grp;
@@ -124,6 +124,11 @@ public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounte
         initCntr = 0;
 
         cntr.set(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetInitialCounter() {
+        initCntr = 0;
     }
 
     /** {@inheritDoc} */

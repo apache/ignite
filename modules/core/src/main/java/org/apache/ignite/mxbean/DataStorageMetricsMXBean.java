@@ -154,14 +154,11 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @MXBeanDescription(
         "Sets time interval for pages allocation and eviction monitoring purposes."
     )
-    @MXBeanParametersNames(
-        "rateTimeInterval"
-    )
-    @MXBeanParametersDescriptions(
-        "Time interval (in milliseconds) to set."
-    )
     @Deprecated
-    public void rateTimeInterval(long rateTimeInterval);
+    public void rateTimeInterval(
+        @MXBeanParameter(name = "rateTimeInterval", description = "Time interval (in milliseconds) to set.")
+            long rateTimeInterval
+    );
 
     /**
      * Sets a number of sub-intervals the whole {@link #rateTimeInterval(long)} will be split into to calculate
@@ -174,14 +171,10 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @MXBeanDescription(
         "Sets a number of sub-intervals to calculate allocation and eviction rates metrics."
     )
-    @MXBeanParametersNames(
-        "subInts"
-    )
-    @MXBeanParametersDescriptions(
-        "Number of subintervals to set."
-    )
     @Deprecated
-    public void subIntervals(int subInts);
+    public void subIntervals(
+        @MXBeanParameter(name = "subInts", description = "Number of subintervals to set.") int subInts
+    );
 
     /** {@inheritDoc} */
     @MXBeanDescription("Storage space allocated, in bytes.")

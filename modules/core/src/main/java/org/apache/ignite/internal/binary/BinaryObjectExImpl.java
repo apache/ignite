@@ -29,6 +29,8 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerInaccessibleClassException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteUuid;
@@ -228,7 +230,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             buf.a(" [idHash=").a(idHash).a(", hash=").a(hash);
 
             for (String name : meta.fieldNames()) {
-                Object val = field(ctx, name);
+                Object val = fieldForToString(ctx, name);
 
                 buf.a(", ").a(name).a('=');
 
@@ -239,6 +241,23 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         }
 
         return buf.toString();
+    }
+
+    /** */
+    private Object fieldForToString(BinaryReaderHandles ctx, String name) {
+        try {
+            return field(ctx, name);
+        }
+        catch (Exception e) {
+            OptimizedMarshallerInaccessibleClassException e1 =
+                X.cause(e, OptimizedMarshallerInaccessibleClassException.class);
+
+            String msg = "Failed to create a string representation";
+
+            return e1 != null
+                ? "(" + msg + ": class not found " + e1.inaccessibleClass() + ")"
+                : "(" + msg + ")";
+        }
     }
 
     /**

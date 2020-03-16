@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.RandomAccess;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -86,7 +85,7 @@ public class ReduceBlockList<Z> extends AbstractList<Z> implements RandomAccess 
      * @return Last block.
      */
     public List<Z> lastBlock() {
-        return ReduceIndex.last(blocks);
+        return blocks.get(blocks.size() - 1);
     }
 
     /**

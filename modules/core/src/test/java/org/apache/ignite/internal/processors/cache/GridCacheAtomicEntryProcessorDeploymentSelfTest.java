@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeSet;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -183,7 +183,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
             IgniteCache cache = getCache();
 
-            HashSet keys = new HashSet();
+            TreeSet keys = new TreeSet();
 
             for (int i = 0; i < 3; i++) {
                 String key = "key" + i;

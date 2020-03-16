@@ -50,7 +50,6 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
@@ -169,14 +168,12 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         initInternal(db);
 
         if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {
-            GridCacheProcessor gcProcessor = cctx.kernalContext().cache();
-
             if (partId == OLD_METASTORE_PARTITION)
-                gcProcessor.setTmpStorage(copyDataToTmpStorage());
-            else if (gcProcessor.getTmpStorage() != null) {
-                restoreDataFromTmpStorage(gcProcessor.getTmpStorage());
+                db.temporaryMetaStorage(copyDataToTmpStorage());
+            else if (db.temporaryMetaStorage() != null) {
+                restoreDataFromTmpStorage(db.temporaryMetaStorage());
 
-                gcProcessor.setTmpStorage(null);
+                db.temporaryMetaStorage(null);
 
                 db.addCheckpointListener(new DbCheckpointListener() {
                     /** {@inheritDoc} */

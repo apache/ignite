@@ -55,7 +55,6 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
         return cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalSegmentSize(4 * 1024 * 1024)
-            .setPageSize(1024)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(200 * 1024 * 1024)
                 .setPersistenceEnabled(true)));

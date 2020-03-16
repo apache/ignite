@@ -154,6 +154,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpDataStorageMetrics = 37;
 
+        /** */
+        private const int OpEnableStatistics = 38;
+
         /** Initial Ignite instance. */
         private readonly IIgniteInternal _ignite;
         
@@ -449,6 +452,30 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public IServices GetServices()
         {
             return _services.Value;
+        }
+
+        /** <inheritDoc /> */
+        public void EnableStatistics(IEnumerable<string> cacheNames, bool enabled)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpEnableStatistics, w =>
+            {
+                w.WriteBoolean(enabled);
+
+                var pos = w.Stream.Position;
+
+                var count = 0;
+                w.WriteInt(count);  // Reserve space.
+
+                foreach (var cacheName in cacheNames)
+                {
+                    w.WriteString(cacheName);
+                    count++;
+                }
+
+                w.Stream.WriteInt(pos, count);
+            });
         }
 
         /// <summary>

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -32,6 +33,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.G;
@@ -99,11 +101,20 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
         return getConfiguration(
             instanceName,
-            new TestSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, false, clientData)
+            securityPluginProvider(instanceName, clientData)
         ).setCacheConfiguration(
             new CacheConfiguration().setName(CACHE),
             new CacheConfiguration().setName(FORBIDDEN_CACHE)
         );
+    }
+
+    /**
+     * @param instanceName Ignite instance name.
+     * @param clientData Client data.
+     */
+    protected AbstractTestSecurityPluginProvider securityPluginProvider(String instanceName,
+        TestSecurityData... clientData) {
+        return new TestSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, false, clientData);
     }
 
     /** {@inheritDoc} */
@@ -218,12 +229,21 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /**
      * @param userName User name.
+     * @return Thin client for specified user.
      */
     private IgniteClient startClient(String userName) {
         return Ignition.startClient(
             new ClientConfiguration().setAddresses(Config.SERVER)
                 .setUserName(userName)
                 .setUserPassword("")
+                .setUserAttributes(userAttributres())
         );
+    }
+
+    /**
+     * @return User attributes.
+     */
+    protected Map<String, String> userAttributres() {
+        return null;
     }
 }
