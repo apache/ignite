@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.execute;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -128,36 +129,42 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownSQLQuery() throws Exception {
-        execute(cli, KILL_SQL_QRY + " '" + srvs.get(0).localNode().id().toString() + "_42'");
+        assertThrowsWithCause(() -> execute(cli, KILL_SQL_QRY + " '" + srvs.get(0).localNode().id().toString() + "_42'"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownScanQuery() throws Exception {
-        execute(cli, KILL_SCAN_QRY + " '" + cli.localNode().id() + "' 'unknown' 1");
+        assertThrowsWithCause(() -> execute(cli, KILL_SCAN_QRY + " '" + cli.localNode().id() + "' 'unknown' 1"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownTx() throws Exception {
-        execute(cli, KILL_TX_QRY + " 'unknown'");
+        assertThrowsWithCause(() -> execute(cli, KILL_TX_QRY + " 'unknown'"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownContinuousQuery() throws Exception {
-        execute(cli, KILL_CQ_QRY + " '" + UUID.randomUUID() + "'");
+        assertThrowsWithCause(() -> execute(cli, KILL_CQ_QRY + " '" + UUID.randomUUID() + "'"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownComputeTask() throws Exception {
-        execute(cli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
+        assertThrowsWithCause(() -> execute(cli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownService() throws Exception {
-        execute(cli, KILL_SVC_QRY + " 'unknown'");
+        assertThrowsWithCause(() -> execute(cli, KILL_SVC_QRY + " 'unknown'"),
+            RuntimeException.class);
     }
 }

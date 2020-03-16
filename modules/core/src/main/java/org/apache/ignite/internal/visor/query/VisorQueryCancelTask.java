@@ -22,15 +22,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Void> {
+public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,14 +50,19 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteException {
+        for (ComputeJobResult res : results) {
+            if (!res.isCancelled() && res.getData() != null && (Boolean)res.getData())
+                return true;
+        }
+
+        return false;
     }
 
     /**
      * Job to cancel queries on node.
      */
-    private static class VisorCancelQueriesJob extends VisorJob<VisorQueryCancelTaskArg, Void> {
+    private static class VisorCancelQueriesJob extends VisorJob<VisorQueryCancelTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -75,10 +77,8 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable VisorQueryCancelTaskArg arg) throws IgniteException {
-            ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
-
-            return null;
+        @Override protected Boolean run(@Nullable VisorQueryCancelTaskArg arg) throws IgniteException {
+            return ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
         }
     }
 }

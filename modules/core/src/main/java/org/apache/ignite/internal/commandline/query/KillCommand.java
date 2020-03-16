@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.commandline.query;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -38,6 +41,7 @@ import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
@@ -73,16 +77,51 @@ public class KillCommand implements Command<Object> {
     /** Task name. */
     private String taskName;
 
+    /** Subcommand. */
+    private KillQuerySubcommand cmd;
+
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            return executeTaskByNameOnNode(
+            Object res = executeTaskByNameOnNode(
                 client,
                 taskName,
                 taskArgs,
                 null,
                 clientCfg
             );
+
+            switch (cmd) {
+                case SCAN_QUERY:
+                case SQL_QUERY:
+                case CONTINUOUS_QUERY:
+                    if (!(boolean)res)
+                        throw new RuntimeException("Query not found.");
+
+                    break;
+
+                case COMPUTE:
+                    if (!(boolean)res)
+                        throw new RuntimeException("Compute task not found.");
+
+                    break;
+
+                case TRANSACTION:
+                    String xid = ((VisorTxTaskArg)taskArgs).getXid();
+
+                    if (!TransactionsMXBeanImpl.cancelTaskResult(xid, (Map<ClusterNode, VisorTxTaskResult>)res))
+                        throw new RuntimeException("Transaction not found.");
+
+                    break;
+
+                case SERVICE:
+                    if (!(boolean)res)
+                        throw new RuntimeException("Service not found or can't be canceled.");
+
+                    break;
+            }
+
+            return res;
         }
         catch (Throwable e) {
             logger.severe("Failed to perform operation.");
@@ -99,7 +138,7 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        KillQuerySubcommand cmd = of(argIter.nextArg("Expected type of resource to kill."));
+        cmd = of(argIter.nextArg("Expected type of resource to kill."));
 
         if (cmd == null)
             throw new IllegalArgumentException("Expected type of resource to kill.");

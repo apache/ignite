@@ -1067,15 +1067,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     public IgniteInternalFuture<?> stopRoutine(UUID routineId) {
-        return stopRoutine(routineId, false);
-    }
-
-    /**
-     * @param routineId Routine ID.
-     * @param force {@code True} if stop should be forced.
-     * @return Future.
-     */
-    public IgniteInternalFuture<?> stopRoutine(UUID routineId, boolean force) {
         assert routineId != null;
 
         boolean doStop = false;
@@ -1113,16 +1104,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     stop = routinesInfo.routineExists(routineId);
 
                 // Finish if routine is not found (wrong ID is provided).
-                if (!stop && !force) {
+                if (!stop && !rmtInfos.containsKey(routineId)) {
                     stopFuts.remove(routineId);
 
-                    fut.onDone();
+                    fut.onDone(new IgniteException("Routine not found."));
 
                     return fut;
                 }
 
                 try {
-                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId, force));
+                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId, !stop && rmtInfos.containsKey(routineId)));
                 }
                 catch (IgniteCheckedException e) {
                     fut.onDone(e);
@@ -1877,7 +1868,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param routineId Routine ID.
      */
     @SuppressWarnings("TooBroadScope")
-    private void unregisterRemote(UUID routineId) {
+    private boolean unregisterRemote(UUID routineId) {
         RemoteRoutineInfo remote;
         LocalRoutineInfo loc;
 
@@ -1904,6 +1895,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // Removes routine at node started it when stopRoutine called from another node.
             unregisterHandler(routineId, loc.hnd, false);
         }
+
+        return remote != null || loc != null;
     }
 
     /**

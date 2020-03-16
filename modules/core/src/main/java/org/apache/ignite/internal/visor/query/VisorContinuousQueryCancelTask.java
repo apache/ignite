@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContinuousQueryCancelTaskArg, Void> {
+public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContinuousQueryCancelTaskArg, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContin
     /**
      * Job to cancel scan queries on node.
      */
-    private static class VisorContinuousQueryCancelJob extends VisorJob<VisorContinuousQueryCancelTaskArg, Void> {
+    private static class VisorContinuousQueryCancelJob extends VisorJob<VisorContinuousQueryCancelTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,21 +59,21 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContin
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable VisorContinuousQueryCancelTaskArg arg) throws IgniteException {
+        @Override protected Boolean run(@Nullable VisorContinuousQueryCancelTaskArg arg) throws IgniteException {
             IgniteLogger log = ignite.log().getLogger(VisorContinuousQueryCancelJob.class);
 
             log.info("Cancelling continuous query[routineId=" + arg.getRoutineId() + ']');
 
             try {
-                IgniteInternalFuture<?> fut = ignite.context().continuous().stopRoutine(arg.getRoutineId(), true);
+                IgniteInternalFuture<?> fut = ignite.context().continuous().stopRoutine(arg.getRoutineId());
 
                 fut.get();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                return false;
             }
 
-            return null;
+            return true;
         }
     }
 }

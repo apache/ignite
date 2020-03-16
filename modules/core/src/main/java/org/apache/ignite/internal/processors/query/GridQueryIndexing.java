@@ -369,8 +369,9 @@ public interface GridQueryIndexing {
      * Cancel specified queries.
      *
      * @param queries Queries ID's to cancel.
+     * @return {@code True} if some query are canceled, {@code false} otherwise.
      */
-    public void cancelQueries(Collection<Long> queries);
+    public boolean cancelQueries(Collection<Long> queries);
 
     /**
      * Cancels all executing queries.

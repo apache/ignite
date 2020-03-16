@@ -20,8 +20,10 @@ package org.apache.ignite.internal;
 import java.util.UUID;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
@@ -52,18 +54,23 @@ public class ServiceMXBeanImpl implements ServiceMXBean {
         if (log.isInfoEnabled())
             log.info("Canceling service[name=" + name + ']');
 
+        boolean res;
+
         try {
             IgniteClusterImpl cluster = ctx.cluster().get();
 
             IgniteCompute compute = cluster.compute();
 
-            UUID nid = cluster.nodes().iterator().next().id();
+            ClusterNode srv = U.randomServerNode(ctx);
 
-            compute.execute(new VisorCancelServiceTask(),
-                new VisorTaskArgument<>(nid, new VisorCancelServiceTaskArg(name), false));
+            res = compute.execute(new VisorCancelServiceTask(),
+                new VisorTaskArgument<>(srv.id(), new VisorCancelServiceTaskArg(name), false));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        if (!res)
+            throw new RuntimeException("Service not found or can't be canceled[name=" + name + ']');
     }
 }

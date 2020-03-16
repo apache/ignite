@@ -53,17 +53,20 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
      * @param sessionId Session id.
      */
     public void cancel(IgniteUuid sessionId) {
-        VisorComputeCancelSessionsTaskArg arg = new VisorComputeCancelSessionsTaskArg(
-            Collections.singleton(sessionId));
+        boolean res;
 
         try {
             IgniteCompute compute = ctx.cluster().get().compute();
 
-            compute.execute(new VisorComputeCancelSessionsTask(),
-                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
+            res = compute.execute(new VisorComputeCancelSessionsTask(),
+                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(),
+                    new VisorComputeCancelSessionsTaskArg(Collections.singleton(sessionId)), false));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        if (!res)
+            throw new RuntimeException("Compute task not found[sessionId=" + sessionId + ']');
     }
 }

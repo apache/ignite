@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.cache.Cache;
@@ -54,6 +55,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.client.Config.DEFAULT_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -361,7 +363,7 @@ class KillCommandsTests {
 
         IgniteInternalFuture<?> fut = runAsync(svc::doTheJob);
 
-        svcStartBarrier.await();
+        svcStartBarrier.await(TIMEOUT, MILLISECONDS);
 
         svcCanceler.accept(SVC_NAME);
 
@@ -382,9 +384,9 @@ class KillCommandsTests {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             try {
-                svcCancelBarrier.await();
+                svcCancelBarrier.await(TIMEOUT, MILLISECONDS);
             }
-            catch (InterruptedException | BrokenBarrierException e) {
+            catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -402,11 +404,11 @@ class KillCommandsTests {
         /** {@inheritDoc} */
         @Override public void doTheJob() {
             try {
-                svcStartBarrier.await();
+                svcStartBarrier.await(TIMEOUT, MILLISECONDS);
 
-                svcCancelBarrier.await();
+                svcCancelBarrier.await(TIMEOUT, MILLISECONDS);
             }
-            catch (InterruptedException | BrokenBarrierException e) {
+            catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
                 throw new RuntimeException(e);
             }
         }

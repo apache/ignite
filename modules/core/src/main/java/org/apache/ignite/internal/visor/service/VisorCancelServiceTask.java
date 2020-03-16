@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.service;
 
+import java.util.Optional;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteServices;
@@ -25,13 +26,14 @@ import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.services.ServiceDescriptor;
 
 /**
  * Task for cancel services with specified name.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Void> {
+public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +45,7 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
     /**
      * Job for cancel services with specified name.
      */
-    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Void> {
+    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -58,19 +60,30 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(final VisorCancelServiceTaskArg arg) {
+        @Override protected Boolean run(final VisorCancelServiceTaskArg arg) {
             IgniteServices services = ignite.services();
 
+            String svcName = arg.getName();
+
+            Optional<ServiceDescriptor> svc = services.serviceDescriptors().stream()
+                .filter(d -> d.name().equalsIgnoreCase(svcName))
+                .findFirst();
+
+            if (!svc.isPresent())
+                return false;
+
             try {
-                services.cancel(arg.getName());
+                services.cancel(svcName);
             }
             catch (IgniteException e) {
                 IgniteLogger log = ignite.log().getLogger(VisorCancelServiceTask.class);
 
                 log.warning("Error on service cance.", e);
+
+                return false;
             }
 
-            return null;
+            return true;
         }
 
         /** {@inheritDoc} */

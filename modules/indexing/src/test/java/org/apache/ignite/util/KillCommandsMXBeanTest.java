@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -147,37 +148,43 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownSQLQuery() throws Exception {
-        qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42");
+        assertThrowsWithCause(() -> qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownScanQuery() throws Exception {
-        qryMBean.cancelScan(srvs.get(0).localNode().id().toString(), "unknown", 1L);
+        assertThrowsWithCause(() -> qryMBean.cancelScan(srvs.get(0).localNode().id().toString(), "unknown", 1L),
+            RuntimeException.class);
 
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownTx() throws Exception {
-        txMBean.cancel("unknown");
+        assertThrowsWithCause(() -> txMBean.cancel("unknown"),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownContinuousQuery() throws Exception {
-        qryMBean.cancelContinuous(UUID.randomUUID().toString());
+        assertThrowsWithCause(() -> qryMBean.cancelContinuous(UUID.randomUUID().toString()),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownComputeTask() throws Exception {
-        computeMBean.cancel(IgniteUuid.randomUuid().toString());
+        assertThrowsWithCause(() -> computeMBean.cancel(IgniteUuid.randomUuid().toString()),
+            RuntimeException.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownService() throws Exception {
-        svcMxBean.cancel("unknown");
+        assertThrowsWithCause(() -> svcMxBean.cancel("unknown"),
+            RuntimeException.class);
     }
 }

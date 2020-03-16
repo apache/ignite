@@ -28,6 +28,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -131,7 +132,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownSQLQuery() throws Exception {
         int res = execute("--kill", "sql", srvs.get(0).localNode().id().toString() + "_42");
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 
     /** @throws Exception If failed. */
@@ -139,7 +140,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownScanQuery() throws Exception {
         int res = execute("--kill", "scan", srvs.get(0).localNode().id().toString(), "unknown", "1");
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 
     /** @throws Exception If failed. */
@@ -147,7 +148,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownTx() throws Exception {
         int res = execute("--kill", "tx", "unknown");
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 
     /** @throws Exception If failed. */
@@ -155,7 +156,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownContinuousQuery() throws Exception {
         int res = execute("--kill", "continuous", UUID.randomUUID().toString());
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 
     /** @throws Exception If failed. */
@@ -163,7 +164,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownComputeTask() throws Exception {
         int res = execute("--kill", "compute", IgniteUuid.randomUuid().toString());
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 
     /** @throws Exception If failed. */
@@ -171,6 +172,6 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownService() throws Exception {
         int res = execute("--kill", "service", "unknown");
 
-        assertEquals(EXIT_CODE_OK, res);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 }
