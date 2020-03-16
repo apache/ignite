@@ -80,12 +80,12 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         }
 
         switch (costFuncType) {
-            case COMPATIBLE_8_7_12:
+            case COMPATIBLE_8_5_17:
                 constFunc = this::getCostRangeIndex_8_7_12;
 
                 break;
 
-            case COMPATIBLE_8_7_6:
+            case COMPATIBLE_8_5_13:
                 constFunc = this::getCostRangeIndex_8_7_6;
 
                 break;
@@ -628,11 +628,11 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         /** Last. */
         LAST,
 
-        /** Compatible with ver. 8.7.12. */
-        COMPATIBLE_8_7_12,
+        /** Compatible with ver. 8.5.16. */
+        COMPATIBLE_8_5_17,
 
-        /** Compatible with ver. 8.7.6. */
-        COMPATIBLE_8_7_6
+        /** Compatible with ver. 8.5.13. */
+        COMPATIBLE_8_5_13
     }
 
     /**

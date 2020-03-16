@@ -123,8 +123,8 @@ public class ChooseIndexTest extends AbstractIndexingCommonTest {
 
     /**
      */
-    public void testCompatible_8_7_12() throws Exception {
-        withSystemProperty(IGNITE_INDEX_COST_FUNCTION, "COMPATIBLE_8_7_12");
+    public void testCompatible_8_5_17() throws Exception {
+        withSystemProperty(IGNITE_INDEX_COST_FUNCTION, "COMPATIBLE_8_5_17");
 
         init();
 
@@ -136,8 +136,8 @@ public class ChooseIndexTest extends AbstractIndexingCommonTest {
 
     /**
      */
-    public void testCompatible_8_7_6() throws Exception {
-        withSystemProperty(IGNITE_INDEX_COST_FUNCTION, "COMPATIBLE_8_7_6");
+    public void testCompatible_8_5_13() throws Exception {
+        withSystemProperty(IGNITE_INDEX_COST_FUNCTION, "COMPATIBLE_8_5_13");
 
         init();
 
