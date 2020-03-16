@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_
  * @see QueryMXBean#cancelSQL(String)
  * @see SqlQueryView#queryId()
  */
-public class SqlKillQueryCommand implements SqlCommand {
+public class SqlKillQueryCommand extends SchemalessCommand {
     /** */
     private static final String ASYNC = "ASYNC";
 
@@ -105,16 +105,6 @@ public class SqlKillQueryCommand implements SqlCommand {
         catch (Exception ignore) {
             return null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
     }
 
     /**

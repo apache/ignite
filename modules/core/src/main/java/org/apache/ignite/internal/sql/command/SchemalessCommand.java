@@ -15,24 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+abstract class SchemalessCommand implements SqlCommand {
 
-/**
- * Compute MXBean interface.
- */
-public interface ComputeMXBean {
-    /**
-     * Kills compute task by the session idenitifier.
-     *
-     * @param sessionId Session id.
-     * @see ComputeTaskView#sessionId()
-     * @see ComputeJobView#sessionId()
-     */
-    @MXBeanDescription("Kills compute task by the session idenitifier.")
-    public void cancel(
-        @MXBeanParameter(name = "sessionId", description = "Session identifier.") String sessionId
-    );
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
+    }
 }

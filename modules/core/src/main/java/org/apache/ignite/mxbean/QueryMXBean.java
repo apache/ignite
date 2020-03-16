@@ -26,6 +26,8 @@ import org.apache.ignite.spi.systemview.view.SqlQueryView;
  */
 public interface QueryMXBean {
     /**
+     * Kills continuous query by the identifier.
+     *
      * @param routineId Continuous query id.
      * @see ContinuousQueryView#routineId()
      */
@@ -35,6 +37,8 @@ public interface QueryMXBean {
     );
 
     /**
+     * Kills SQL query by the identifier.
+     *
      * @param id SQL query id.
      * @see SqlQueryView#queryId()
      */
@@ -44,11 +48,16 @@ public interface QueryMXBean {
     );
 
     /**
+     * Kills scan query by the identifiers.
+     *
      * @param originNodeId Originating node id.
      * @param cacheName Cache name.
      * @param id Scan query id.
+     * @see ScanQueryView#originNodeId()
+     * @see ScanQueryView#cacheName()
      * @see ScanQueryView#queryId()
      */
+    @MXBeanDescription("Kills scan query by the identifiers.")
     void cancelScan(
         @MXBeanParameter(name = "originNodeId", description = "Originating node ID.") String originNodeId,
         @MXBeanParameter(name = "cacheName", description = "Cache name.") String cacheName,

@@ -29,7 +29,7 @@ import org.apache.ignite.spi.systemview.view.TransactionView;
  * @see TransactionsMXBean#cancel(String)
  * @see TransactionView#xid()
  */
-public class SqlKillTxCommand implements SqlCommand {
+public class SqlKillTxCommand extends SchemalessCommand {
     private String xid;
 
     /** {@inheritDoc} */
@@ -48,15 +48,5 @@ public class SqlKillTxCommand implements SqlCommand {
     /** @return Xid. */
     public String getXid() {
         return xid;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
     }
 }

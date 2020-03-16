@@ -29,7 +29,7 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
  * @see ServiceMXBean#cancel(String)
  * @see ServiceView#name()
  */
-public class SqlKillServiceCommand implements SqlCommand {
+public class SqlKillServiceCommand extends SchemalessCommand {
     /** Service name. */
     private String name;
 
@@ -49,15 +49,5 @@ public class SqlKillServiceCommand implements SqlCommand {
     /** @return Service name. */
     public String getName() {
         return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
     }
 }

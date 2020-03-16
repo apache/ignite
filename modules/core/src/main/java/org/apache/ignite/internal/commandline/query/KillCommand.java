@@ -39,6 +39,10 @@ import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
 
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL_QUERY;
@@ -53,6 +57,15 @@ import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.o
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 import static org.apache.ignite.internal.visor.tx.VisorTxOperation.KILL;
 
+/**
+ * control.sh kill command.
+ *
+ * @see KillQuerySubcommand
+ * @see QueryMXBean
+ * @see ComputeMXBean
+ * @see TransactionsMXBean
+ * @see ServiceMXBean
+ */
 public class KillCommand implements Command<Object> {
     /** Command argument. */
     private Object taskArgs;

@@ -32,7 +32,7 @@ import org.apache.ignite.spi.systemview.view.ScanQueryView;
  * @see ScanQueryView#cacheName()
  * @see ScanQueryView#queryId()
  */
-public class SqlKillScanQueryCommand implements SqlCommand {
+public class SqlKillScanQueryCommand extends SchemalessCommand {
     public static final String KILL_SCAN_QRY_FORMAT =
         "Format of the query is KILL SCAN_QUERY '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1";
 
@@ -83,15 +83,5 @@ public class SqlKillScanQueryCommand implements SqlCommand {
     /** @return Query id. */
     public long getQryId() {
         return qryId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
     }
 }

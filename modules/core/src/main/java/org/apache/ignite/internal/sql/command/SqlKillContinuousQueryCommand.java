@@ -30,7 +30,7 @@ import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
  * @see QueryMXBean#cancelContinuous(String)
  * @see ContinuousQueryView#routineId()
  */
-public class SqlKillContinuousQueryCommand implements SqlCommand {
+public class SqlKillContinuousQueryCommand extends SchemalessCommand {
     /** Routine id. */
     private UUID routineId;
 
@@ -50,15 +50,5 @@ public class SqlKillContinuousQueryCommand implements SqlCommand {
     /** @return Routine id. */
     public UUID getRoutineId() {
         return routineId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
     }
 }

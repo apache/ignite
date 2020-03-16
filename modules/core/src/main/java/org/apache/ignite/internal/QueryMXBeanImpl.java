@@ -99,9 +99,11 @@ public class QueryMXBeanImpl implements QueryMXBean {
     }
 
     /**
-     * @param originNodeId
-     * @param cacheName
-     * @param id
+     * Kills scan query by the identifiers.
+     *
+     * @param originNodeId Originating node id.
+     * @param cacheName Cache name.
+     * @param id Scan query id.
      */
     public void cancelScan(UUID originNodeId, String cacheName, long id) {
         try {
@@ -126,7 +128,9 @@ public class QueryMXBeanImpl implements QueryMXBean {
     }
 
     /**
-     * @param routineId
+     * Kills continuous query by the identifier.
+     *
+     * @param routineId Routine id.
      */
     public void cancelContinuous(UUID routineId) {
         if (log.isInfoEnabled())

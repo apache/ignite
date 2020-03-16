@@ -48,7 +48,9 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     }
 
     /**
-     * @param sessionId
+     * Kills compute task by the session idenitifier.
+     *
+     * @param sessionId Session id.
      */
     public void cancel(IgniteUuid sessionId) {
         VisorComputeCancelSessionsTaskArg arg = new VisorComputeCancelSessionsTaskArg(

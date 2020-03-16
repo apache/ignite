@@ -153,6 +153,18 @@ public class IgniteMBeansManager {
         TransactionsMXBean txMXBean = new TransactionsMXBeanImpl(ctx);
         registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TransactionsMXBean.class);
 
+        // Queries management
+        QueryMXBean qryMXBean = new QueryMXBeanImpl(ctx);
+        registerMBean("Query", qryMXBean.getClass().getSimpleName(), qryMXBean, QueryMXBean.class);
+
+        // Compute task management
+        ComputeMXBean computeMXBean = new ComputeMXBeanImpl(ctx);
+        registerMBean("Compute", computeMXBean.getClass().getSimpleName(), computeMXBean, ComputeMXBean.class);
+
+        // Service management
+        ServiceMXBean serviceMXBean = new ServiceMXBeanImpl(ctx);
+        registerMBean("Service", serviceMXBean.getClass().getSimpleName(), serviceMXBean, ServiceMXBean.class);
+
         // Data storage
         DataStorageMXBean dataStorageMXBean = new DataStorageMXBeanImpl(ctx);
         registerMBean("DataStorage", dataStorageMXBean.getClass().getSimpleName(), dataStorageMXBean, DataStorageMXBean.class);
@@ -170,18 +182,6 @@ public class IgniteMBeansManager {
         // Metrics configuration
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);
         registerMBean("Metrics", metricsMxBean.getClass().getSimpleName(), metricsMxBean, MetricsMxBean.class);
-
-        // Queries management
-        QueryMXBean qryMXBean = new QueryMXBeanImpl(ctx);
-        registerMBean("Query", qryMXBean.getClass().getSimpleName(), qryMXBean, QueryMXBean.class);
-
-        // Compute task management
-        ComputeMXBean computeMXBean = new ComputeMXBeanImpl(ctx);
-        registerMBean("Compute", computeMXBean.getClass().getSimpleName(), computeMXBean, ComputeMXBean.class);
-
-        // Service management
-        ServiceMXBean serviceMXBean = new ServiceMXBeanImpl(ctx);
-        registerMBean("Service", serviceMXBean.getClass().getSimpleName(), serviceMXBean, ServiceMXBean.class);
 
         // Executors
         registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);
