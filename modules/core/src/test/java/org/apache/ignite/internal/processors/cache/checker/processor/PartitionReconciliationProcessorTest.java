@@ -85,7 +85,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 /**
- * Isolation test for {@link PartitionReconciliationProcessor}.
+ * Isolated test for {@link PartitionReconciliationProcessor}.
  */
 public class PartitionReconciliationProcessorTest extends TestCase {
     /** Default cache. */
@@ -94,14 +94,10 @@ public class PartitionReconciliationProcessorTest extends TestCase {
     /** Partition id. */
     private static final int PARTITION_ID = 123;
 
-    /**
-     *
-     */
+    /** */
     private static final long SESSION_ID = 123;
 
-    /**
-     *
-     */
+    /** */
     private static final int MAX_RECHECK_ATTEMPTS = 3;
 
     /**
@@ -145,7 +141,7 @@ public class PartitionReconciliationProcessorTest extends TestCase {
     }
 
     /**
-     * Test that recheck stops if result is empty.
+     * Tests that recheck stops if result is empty.
      */
     @Test
     public void testRecheckShouldFinishWithoutActionIfResultEmpty() throws IgniteCheckedException {
@@ -167,7 +163,7 @@ public class PartitionReconciliationProcessorTest extends TestCase {
     }
 
     /**
-     * Test that recheck stops if all conflicts resolved.
+     * Tests that recheck stops if all conflicts resolved.
      */
     @Test
     public void testRecheckShouldFinishWithoutActionIfConflictWasSolved() throws IgniteCheckedException {
@@ -315,22 +311,16 @@ public class PartitionReconciliationProcessorTest extends TestCase {
     }
 
     /**
-     *
+     * Mocked partition reconciliation processor for testing purposes.
      */
     private static class MockedProcessor extends PartitionReconciliationProcessor {
-        /**
-         *
-         */
+        /** */
         private final AbstractPipelineProcessor mock = mock(AbstractPipelineProcessor.class);
 
-        /**
-         *
-         */
+        /** */
         private final ConcurrentMap<Class, Object> computeResults = new ConcurrentHashMap<>();
 
-        /**
-         *
-         */
+        /** */
         public volatile boolean useRealScheduler = false;
 
         /**
@@ -429,8 +419,16 @@ public class PartitionReconciliationProcessorTest extends TestCase {
             int recheckAttempts,
             int recheckDelay
         ) throws IgniteCheckedException {
-            super(SESSION_ID, ignite, caches, fixMode, parallelismLevel, batchSize, recheckAttempts,
-                RepairAlgorithm.MAJORITY, recheckDelay);
+            super(SESSION_ID,
+                ignite,
+                caches,
+                null,
+                fixMode,
+                RepairAlgorithm.MAJORITY,
+                parallelismLevel,
+                batchSize,
+                recheckAttempts,
+                recheckDelay);
         }
 
         /** {@inheritDoc} */

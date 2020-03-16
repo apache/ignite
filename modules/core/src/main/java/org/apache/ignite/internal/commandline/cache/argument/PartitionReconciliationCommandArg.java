@@ -25,7 +25,6 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationRepairMeta;
 import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
 
-
 /**
  * {@link CacheSubcommands#PARTITION_RECONCILIATION} command arguments.
  */
@@ -35,6 +34,14 @@ public enum PartitionReconciliationCommandArg implements CommandArg {
      * while repairing doubtful keys: options {@link PartitionReconciliationRepairMeta#repairAlg()}.
      */
     REPAIR("--repair", RepairAlgorithm.defaultValue()),
+
+    /**
+     * This mode allows checking and repairing only partitions that did not pass the validation,
+     * which includes validation of update counters and partition sizes, during the last partitions map exchange.
+     *
+     * See also GridDhtPartitionsStateValidator#validatePartitionCountersAndSizes
+     */
+    FAST_CHECK("--fast-check", Boolean.FALSE),
 
     /** If {@code true} - print data to result with sensitive information: keys and values. */
     INCLUDE_SENSITIVE("--include-sensitive", Boolean.FALSE),
@@ -58,11 +65,11 @@ public enum PartitionReconciliationCommandArg implements CommandArg {
     private final String name;
 
     /** Default value. */
-    private Object dfltVal;
+    private final Object dfltVal;
 
 
     /**
-     * Default constructor.
+     * Creates a new instance of partition reconciliation argument.
      *
      * @param name command name.
      * @param dfltVal Default value of command.
@@ -73,7 +80,7 @@ public enum PartitionReconciliationCommandArg implements CommandArg {
     }
 
     /**
-     * @return List of args.
+     * @return List of arguments.
      */
     public static Set<String> args() {
         return Arrays.stream(PartitionReconciliationCommandArg.values())
