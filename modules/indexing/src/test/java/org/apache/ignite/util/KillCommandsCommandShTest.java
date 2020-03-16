@@ -28,16 +28,16 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.util.CancelCommandTests.PAGE_SZ;
-import static org.apache.ignite.util.CancelCommandTests.doTestCancelComputeTask;
-import static org.apache.ignite.util.CancelCommandTests.doTestCancelContinuousQuery;
-import static org.apache.ignite.util.CancelCommandTests.doTestCancelSQLQuery;
-import static org.apache.ignite.util.CancelCommandTests.doTestCancelService;
-import static org.apache.ignite.util.CancelCommandTests.doTestCancelTx;
-import static org.apache.ignite.util.CancelCommandTests.doTestScanQueryCancel;
+import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
+import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via control.sh. */
-public class CancelCommandCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
+public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** */
     private static List<IgniteEx> srvs;
 

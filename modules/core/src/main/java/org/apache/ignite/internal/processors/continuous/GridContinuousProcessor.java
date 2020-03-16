@@ -1063,7 +1063,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param routineId Consume ID.
+     * @param routineId Routine ID.
      * @return Future.
      */
     public IgniteInternalFuture<?> stopRoutine(UUID routineId) {
@@ -1071,7 +1071,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param routineId Consume ID.
+     * @param routineId Routine ID.
      * @param force {@code True} if stop should be forced.
      * @return Future.
      */

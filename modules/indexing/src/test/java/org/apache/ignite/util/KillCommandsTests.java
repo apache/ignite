@@ -70,7 +70,7 @@ import static org.junit.Assert.fail;
 /**
  * General tests for the cancel command.
  */
-public class CancelCommandTests {
+class KillCommandsTests {
     /** */
     public static final String SVC_NAME = "my-svc";
 
@@ -85,7 +85,6 @@ public class CancelCommandTests {
 
     /** */
     private static CyclicBarrier svcCancelBarrier;
-
 
     /**
      * Test cancel of the scan query.
