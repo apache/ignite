@@ -513,4 +513,11 @@ public class GridH2RowDescriptor {
 
         return colId;
     }
+
+    /**
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor() {
+        return tbl;
+    }
 }

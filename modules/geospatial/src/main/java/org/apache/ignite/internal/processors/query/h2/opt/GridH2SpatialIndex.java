@@ -102,6 +102,8 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      */
     @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
+        super(tbl);
+
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
 

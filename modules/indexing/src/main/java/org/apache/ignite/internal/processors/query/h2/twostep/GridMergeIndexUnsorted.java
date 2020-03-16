@@ -39,8 +39,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 
-import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
-
 /**
  * Unsorted merge index.
  */
@@ -121,7 +119,7 @@ public final class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        return getTreeIndexCost(this, masks, getRowCountApproximation(), filters, filter, sortOrder, true, allColumnsSet);
+        return costRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true, allColumnsSet);
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ScanIndex;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.ddl.CreateTableData;
@@ -34,8 +33,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableType;
-
-import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
 
 /**
  * Merge table for distributed queries.
@@ -197,7 +194,7 @@ public class GridMergeTable extends TableBase {
             SortOrder sortOrder, HashSet<Column> allColumnsSet) {
             long rows = getRowCountApproximation();
 
-            return getTreeIndexCost(this, masks, rows, filters, filter, sortOrder, true, allColumnsSet);
+            return costRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
         }
     }
 }

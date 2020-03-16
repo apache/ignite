@@ -36,11 +36,11 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.opt.H2IndexCostedBase;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
@@ -59,7 +59,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * Merge index.
  */
 @SuppressWarnings("AtomicFieldUpdaterIssues")
-public abstract class GridMergeIndex extends BaseIndex {
+public abstract class GridMergeIndex extends H2IndexCostedBase {
     /** */
     private static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
@@ -145,6 +145,8 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param ctx Context.
      */
     protected GridMergeIndex(GridKernalContext ctx) {
+        super(ctx);
+
         this.ctx = ctx;
 
         fetched = new BlockList<>(PREFETCH_SIZE);

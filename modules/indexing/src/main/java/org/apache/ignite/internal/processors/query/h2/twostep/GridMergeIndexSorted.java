@@ -49,7 +49,6 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyIterator;
-import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase.bubbleUp;
 
 /**
@@ -190,7 +189,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        return getTreeIndexCost(this, masks, getRowCountApproximation(), filters, filter, sortOrder, false, allColumnsSet);
+        return costRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false, allColumnsSet);
     }
 
     /** {@inheritDoc} */
