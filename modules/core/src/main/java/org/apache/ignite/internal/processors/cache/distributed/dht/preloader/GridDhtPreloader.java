@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -40,11 +42,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -217,6 +221,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
+        GridIntList skippedPartitionsLackHistSupplier = new GridIntList();
+
+        GridIntList skippedPartitionsCleared = new GridIntList();
+
         for (int p = 0; p < partitions; p++) {
             if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
@@ -261,7 +269,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part.resetUpdateCounter();
                 }
 
-                assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
+                if (part.state() != MOVING && part.state() != OWNING) {
+                    throw new AssertionError("Partition has invalid state for rebalance "
+                        + aff.topologyVersion() + " " + part);
+                }
 
                 ClusterNode histSupplier = null;
 
@@ -287,13 +298,20 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     }
 
                     // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
-                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
+                    msg.partitions().
+                        addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
                     // If for some reason (for example if supplier fails and new supplier is elected) partition is
                     // assigned for full rebalance force clearing if not yet set.
                     if (grp.persistenceEnabled() && exchFut != null && !exchFut.isClearingPartition(grp, p))
                         part.clearAsync();
+
+                    if (histSupplier == null)
+                        skippedPartitionsLackHistSupplier.add(p);
+
+                    if (histSupplier != null && exchFut.isClearingPartition(grp, p))
+                        skippedPartitionsCleared.add(p);
 
                     List<ClusterNode> picked = remoteOwners(p, topVer);
 
@@ -326,6 +344,24 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         msg.partitions().addFull(p);
                     }
                 }
+            }
+        }
+
+        if (log.isInfoEnabled()) {
+            if (!skippedPartitionsLackHistSupplier.isEmpty()) {
+                log.info("Unable to perform historical rebalance cause " +
+                    "history supplier is not available [grpId=" + grp.groupId() + ", grpName=" + grp.name() +
+                    ", parts=" + S.compact(
+                        Arrays.stream(skippedPartitionsLackHistSupplier.array()).boxed().collect(Collectors.toList())) +
+                    ", topVer=" + topVer + ']');
+            }
+
+            if (!skippedPartitionsCleared.isEmpty()) {
+                log.info("Unable to perform historical rebalance because clearing is required for partitions" +
+                    "[grpId=" + grp.groupId() + ", grpName=" + grp.name() +
+                    ", parts=" + S.compact(
+                        Arrays.stream(skippedPartitionsCleared.array()).boxed().collect(Collectors.toList())) +
+                    ", topVer=" + topVer + ']');
             }
         }
 

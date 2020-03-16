@@ -3153,24 +3153,44 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (localReserved != null) {
                 Long localHistCntr = localReserved.get(p);
 
-                if (localHistCntr != null && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
+                if (localHistCntr != null && localHistCntr <= minCntr) {
+                    if (maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                        partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
-                    haveHistory.add(p);
+                        haveHistory.add(p);
 
-                    continue;
+                        continue;
+                    }
+                    else {
+                        if (log.isInfoEnabled()) {
+                            log.info("Historical rebalance is not possible because no suitable supplier exists " +
+                                "[nodeId=" + cctx.localNodeId() + ", grpId=" + top.groupId() +
+                                ", grpName=" + cctx.cache().cacheGroupDescriptor(top.groupId()).groupName() +
+                                ", part=" + p + ", localHistCntr=" + localHistCntr + ", minCntr=" + minCntr);
+                        }
+                    }
                 }
             }
 
             for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
-                if (histCntr != null && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                    partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
+                if (histCntr != null && histCntr <= minCntr) {
+                    if (maxCntrObj.nodes.contains(e0.getKey())) {
+                        partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
 
-                    haveHistory.add(p);
+                        haveHistory.add(p);
 
-                    break;
+                        break;
+                    }
+                    else {
+                        if (log.isInfoEnabled()) {
+                            log.info("Historical rebalance is not possible because no suitable supplier exists " +
+                                "[nodeId=" + e0.getKey() + ", grpId=" + top.groupId() +
+                                ", grpName=" + cctx.cache().cacheGroupDescriptor(top.groupId()).groupName() +
+                                ", part=" + p + ", histCntr=" + histCntr + ", minCntr=" + minCntr);
+                        }
+                    }
                 }
             }
         }
