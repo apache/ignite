@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.sql.command;
 
+/**
+ * Helper class for a schemaless SQL commands.
+ */
 abstract class SchemalessCommand implements SqlCommand {
-
     /** {@inheritDoc} */
     @Override public String schemaName() {
         return null;

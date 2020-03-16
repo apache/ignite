@@ -29,22 +29,12 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
 /**
  * CREATE USER command.
  */
-public class SqlCreateUserCommand implements SqlCommand {
+public class SqlCreateUserCommand extends SchemalessCommand {
     /** User name. */
     private String userName;
 
     /** User's password. */
     private String passwd;
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
-    }
 
     /**
      * @return User name.
