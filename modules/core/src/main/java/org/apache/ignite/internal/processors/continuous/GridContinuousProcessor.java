@@ -1866,7 +1866,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param routineId Routine ID.
      */
     @SuppressWarnings("TooBroadScope")
-    private boolean unregisterRemote(UUID routineId) {
+    private void unregisterRemote(UUID routineId) {
         RemoteRoutineInfo remote;
         LocalRoutineInfo loc;
 
@@ -1893,8 +1893,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // Removes routine at node started it when stopRoutine called from another node.
             unregisterHandler(routineId, loc.hnd, false);
         }
-
-        return remote != null || loc != null;
     }
 
     /**
