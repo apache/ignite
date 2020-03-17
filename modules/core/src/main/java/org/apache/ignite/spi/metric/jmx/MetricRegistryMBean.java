@@ -37,6 +37,8 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 import static java.util.Arrays.binarySearch;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.HISTOGRAM_NAME_DIVIDER;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.INF;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
 /**
@@ -156,21 +158,19 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         int highBoundIdx;
         int lowBoundIdx;
 
-        boolean isInf = name.endsWith("_inf");
+        boolean isInf = name.endsWith(INF);
 
         if (isInf) {
             highBoundIdx = name.length() - 4;
-
-            lowBoundIdx = name.lastIndexOf('_', name.length() - 5);
         }
         else {
-            highBoundIdx = name.lastIndexOf('_');
+            highBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER);
 
             if (highBoundIdx == -1)
                 return null;
-
-            lowBoundIdx = name.lastIndexOf('_', highBoundIdx - 1);
         }
+
+        lowBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER, highBoundIdx - 1);
 
         if (lowBoundIdx == -1)
             return null;
