@@ -17,47 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.file.DirectoryStream;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.*;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -69,11 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.*;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
@@ -91,11 +53,26 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.file.DirectoryStream;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.*;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
 /**
@@ -217,15 +194,15 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         // Collection of pairs group and appropratate cache partition to be snapshotted.
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
             (GridCacheDatabaseSharedManager)cctx0.database(),
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
-            parts,
+                parts,
             cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME, parts.keySet()));
 
         snpFut.get();
@@ -265,8 +242,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -289,8 +266,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             dbMgr,
             ig.context().cache().context().localNodeId(),
             SNAPSHOT_NAME,
-            parts,
-            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
+                parts,
+            new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                 @Override
                 public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
@@ -383,8 +360,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
             (GridCacheDatabaseSharedManager)cctx0.database(),
@@ -403,12 +380,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-
-        Set<Integer> ints = new HashSet<>();
-        ints.add(0);
-
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.of(ints));
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), new HashSet<>(Collections.singletonList(0)));
 
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
@@ -417,7 +390,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
             parts,
-            new DeleagateSnapshotFileSender(log, cctx0.snapshotMgr().snapshotExecutorService(),
+            new DeleagateSnapshotSender(log, cctx0.snapshotMgr().snapshotExecutorService(),
                 cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
@@ -680,8 +653,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        Map<Integer, Optional<Set<Integer>>> parts = new HashMap<>();
-        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), Optional.empty());
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         IgniteSnapshotManager mgr = ig.context()
             .cache()
@@ -693,23 +666,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
-            SNAPSHOT_NAME,
-            parts,
-            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
-                @Override
-                public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                    try {
-                        U.await(cpLatch);
+                (GridCacheDatabaseSharedManager) cctx0.database(),
+                cctx0.localNodeId(),
+                SNAPSHOT_NAME,
+                parts,
+                new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
+                    @Override
+                    public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                        try {
+                            U.await(cpLatch);
 
-                        delegate.sendPart0(part, cacheDirName, pair, length);
+                            delegate.sendPart0(part, cacheDirName, pair, length);
+                        } catch (IgniteInterruptedCheckedException e) {
+                            throw new IgniteException(e);
+                        }
                     }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            });
+                });
 
         IgniteCache<?, ?> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -804,8 +776,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         GridCacheDatabaseSharedManager dbMgr,
         UUID srcNodeId,
         String snpName,
-        Map<Integer, Optional<Set<Integer>>> parts,
-        SnapshotFileSender snpSndr
+        Map<Integer, Set<Integer>> parts,
+        SnapshotSender snpSndr
     ) throws IgniteCheckedException{
         SnapshotFutureTask snpFutTask = snpMgr.registerSnapshotTask(snpName, srcNodeId, parts, snpSndr);
 
@@ -881,14 +853,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DeleagateSnapshotFileSender extends SnapshotFileSender {
+    private static class DeleagateSnapshotSender extends SnapshotSender {
         /** Delegate call to. */
-        protected final SnapshotFileSender delegate;
+        protected final SnapshotSender delegate;
 
         /**
          * @param delegate Delegate call to.
          */
-        public DeleagateSnapshotFileSender(IgniteLogger log, Executor exec, SnapshotFileSender delegate) {
+        public DeleagateSnapshotSender(IgniteLogger log, Executor exec, SnapshotSender delegate) {
             super(log, exec);
 
             this.delegate = delegate;
