@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security;
 
 import java.security.Security;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
@@ -51,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
@@ -112,8 +109,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
-        ClusterNode node = Optional
-            .ofNullable(ctx.discovery().node(subjId))
+        ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
             .orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
         SecurityContext res = node != null ? securityContext(node) : securityContext(subjId);
@@ -122,22 +118,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
             throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
 
         return withContext(res);
-    }
-
-    /**
-     * Resolves cluster node by its ID.
-     *
-     * @param nodeId Node id.
-     * @throws IllegalStateException If node with provided ID doesn't exist.
-     */
-    private ClusterNode findNode(UUID nodeId) {
-        ClusterNode node = Optional.ofNullable(ctx.discovery().node(nodeId))
-            .orElseGet(() -> ctx.discovery().historicalNode(nodeId));
-
-        if (node == null)
-            throw new IllegalStateException("Failed to find node with given ID for security context setup: " + nodeId);
-
-        return node;
     }
 
     /** {@inheritDoc} */
@@ -177,20 +157,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
         throws IgniteCheckedException {
-        SecurityContext res = secPrc.authenticateNode(node, cred);
-
-        if (res != null) {
-            Map<String, Object> attrs = new HashMap<>(node.attributes());
-
-            attrs.put(ATTR_SECURITY_SUBJECT_ID, res.subject().id());
-
-            if (node instanceof IgniteClusterNode)
-                ((IgniteClusterNode)node).setAttributes(attrs);
-            else
-                throw new IgniteCheckedException("Node must implement interface IgniteClusterNode.");
-        }
-
-        return res;
+        return secPrc.authenticateNode(node, cred);
     }
 
     /** {@inheritDoc} */
@@ -277,21 +244,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         }
     }
 
-    /**
-     * Gets security subject id associated with node.
-     *
-     * @param node Cluster node.
-     * @return Security subject id.
-     */
-    private UUID subjectId(ClusterNode node) {
-        return node.attribute(ATTR_SECURITY_SUBJECT_ID);
-    }
-
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         clearPackageAccessProperty();
 
-        nodesSecCtxs.remove(subjectId(ctx.discovery().localNode()));
+        nodesSecCtxs.remove(ctx.localNodeId());
         secPrc.stop(cancel);
     }
 

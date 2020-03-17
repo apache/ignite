@@ -41,7 +41,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_ID;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
 /**
@@ -187,9 +186,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        UUID subjId = ctx.discovery().localNode().attribute(ATTR_SECURITY_SUBJECT_ID);
-
-        SECURITY_CONTEXTS.remove(subjId);
         PERMS.remove(nodeSecData.credentials());
         SANDBOX_PERMS.remove(nodeSecData.credentials());
 
