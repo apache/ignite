@@ -557,6 +557,16 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return igniteInstanceName;
     }
 
+    /** @return Start time in milliseconds. */
+    long startTimestamp() {
+        return startTime;
+    }
+
+    /** @return String representation of the start time. */
+    String startTimeFormatted() {
+        return DateFormat.getDateTimeInstance().format(new Date(startTime));
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isRebalanceEnabled() {
         return ctx.cache().context().isRebalanceEnabled();
@@ -565,6 +575,238 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** {@inheritDoc} */
     @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
+    }
+
+    /** @return The uptime in milliseconds. */
+    long upTime() {
+        return U.currentTimeMillis() - startTime;
+    }
+
+    /** @return Number of long JVM pauses. */
+    long longJVMPausesCount() {
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesCount() : 0;
+    }
+
+    /** @return Total duration of long JVM pauses.  */
+    long longJVMPausesTotalDuration() {
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesTotalDuration() : 0;
+    }
+
+    /** @return Last events of long JVM pauses. */
+    Map<Long, Long> longJVMPauseLastEvents() {
+        return longJVMPauseDetector != null ? longJVMPauseDetector.longPauseEvents() : Collections.emptyMap();
+    }
+
+    /** @return String representation of the uptime. */
+    String upTimeFormatted() {
+        return X.timeSpan2DHMSM(upTime());
+    }
+
+    /** @return String representation of version of current Ignite instance. */
+    String fullVersion() {
+        return VER_STR + '-' + BUILD_TSTAMP_STR;
+    }
+
+    /** @return String representation of the checkpoint SPI. */
+    String checkpointSpiFormatted() {
+        assert cfg != null;
+
+        return Arrays.toString(cfg.getCheckpointSpi());
+    }
+
+    /** @return String representation of current coordinator. */
+    String currentCoordinatorFormatted() {
+        ClusterNode node = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+
+        if (node == null)
+            return "";
+
+        return new StringBuilder()
+            .append(node.addresses())
+            .append(COORDINATOR_PROPERTIES_SEPARATOR)
+            .append(node.id())
+            .append(COORDINATOR_PROPERTIES_SEPARATOR)
+            .append(node.order())
+            .append(COORDINATOR_PROPERTIES_SEPARATOR)
+            .append(node.hostNames())
+            .toString();
+    }
+
+    /** @return {@code True} if current node is in the baseline. {@code False} otherwise. */
+    boolean nodeInBaseline() {
+        ctx.gateway().readLockAnyway();
+
+        try {
+            if (ctx.gateway().getState() != STARTED)
+                return false;
+
+            ClusterNode locNode = localNode();
+
+            if (locNode.isClient() || locNode.isDaemon())
+                return false;
+
+            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+            return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
+        }
+        finally {
+            ctx.gateway().readUnlock();
+        }
+    }
+
+    /** @return String representation of the communication SPI. */
+    String communicationSpiFormatted() {
+        assert cfg != null;
+
+        return cfg.getCommunicationSpi().toString();
+    }
+
+    /** @return String representation of the deployment SPI. */
+    String deploymentSpiFormatted() {
+        assert cfg != null;
+
+        return cfg.getDeploymentSpi().toString();
+    }
+
+    /** @return String representation of the discovery SPI. */
+    String discoverySpiFormatted() {
+        assert cfg != null;
+
+        return cfg.getDiscoverySpi().toString();
+    }
+
+    /** @return String representation of the storage SPI. */
+    String eventStorageSpiFormatted() {
+        assert cfg != null;
+
+        return cfg.getEventStorageSpi().toString();
+    }
+
+    /** @return String representation of the collision SPI. */
+    String collisionSpiFormatted() {
+        assert cfg != null;
+
+        return cfg.getCollisionSpi().toString();
+    }
+
+    /** @return String representation of the failover SPI. */
+    String failoverSpiFormatted() {
+        assert cfg != null;
+
+        return Arrays.toString(cfg.getFailoverSpi());
+    }
+
+    /** @return String representation of the balancing SPI. */
+    String loadBalancingSpiFormatted() {
+        assert cfg != null;
+
+        return Arrays.toString(cfg.getLoadBalancingSpi());
+    }
+
+    /** @return Information of the OS. */
+    String osInformation() {
+        return U.osString();
+    }
+
+    /** @return Information of the JDK. */
+    String jdkInformation() {
+        return U.jdkString();
+    }
+
+    /** @return OS user name. */
+    String osUser() {
+        return System.getProperty("user.name");
+    }
+
+    /** Prints errors. */
+    void printLastErrors() {
+        ctx.exceptionRegistry().printErrors(log);
+    }
+
+    /** @return Name of the VM. */
+    public String vmName() {
+        return ManagementFactory.getRuntimeMXBean().getName();
+    }
+
+    /** @return Thread number of the public thread pool. */
+    String executorServiceFormatted() {
+        assert cfg != null;
+
+        return String.valueOf(cfg.getPublicThreadPoolSize());
+    }
+
+    /** @return Path to Ignite home. */
+    String igniteHome() {
+        assert cfg != null;
+
+        return cfg.getIgniteHome();
+    }
+
+    /** @return String representation of the MBean server. */
+    String mbeanServerFormatted() {
+        assert cfg != null;
+
+        return cfg.getMBeanServer().toString();
+    }
+
+    /** @return Id of the local node. */
+    public UUID getLocalNodeId() {
+        assert cfg != null;
+
+        return cfg.getNodeId();
+    }
+
+    /** @return List of the user attributes. */
+    List<String> userAttributesFormatted() {
+        assert cfg != null;
+
+        return (List<String>)F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override public String apply(Map.Entry<String, ?> e) {
+                return e.getKey() + ", " + e.getValue().toString();
+            }
+        });
+    }
+
+    /**
+     * @return String representation of the grid logger.
+     */
+    String gridLoggerFormatted() {
+        assert cfg != null;
+
+        return cfg.getGridLogger().toString();
+    }
+
+    /** @return {@code True} if peer class loading is enabled. {@code False} otherwise. */
+    boolean peerClassLoadingEnabled() {
+        assert cfg != null;
+
+        return cfg.isPeerClassLoadingEnabled();
+    }
+
+    /** @return String representation of the lifecycle beans. */
+    List<String> lifecycleBeansFormatted() {
+        LifecycleBean[] beans = cfg.getLifecycleBeans();
+
+        if (F.isEmpty(beans))
+            return Collections.emptyList();
+        else {
+            List<String> res = new ArrayList<>(beans.length);
+
+            for (LifecycleBean bean : beans)
+                res.add(String.valueOf(bean));
+
+            return res;
+        }
+    }
+
+    /** @return String representation of the cluster state. */
+    String clusterState() {
+        return ctx.state().clusterState().state().toString();
+    }
+
+    /** @return Last time of change of the cluster state. */
+    long lastClusterStateChangeTime() {
+        return ctx.state().lastStateChangeTime();
     }
 
     /**
@@ -2913,6 +3155,26 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return cfg.getGridLogger();
     }
 
+    /**
+     * This method allows manually remove the checkpoint with given {@code key}.
+     *
+     * @param key Checkpoint key.
+     * @return {@code true} if specified checkpoint was indeed removed, {@code false}
+     *      otherwise.
+     */
+    boolean removeCheckpoint(String key) {
+        guard();
+
+        try {
+            checkClusterState();
+
+            return ctx.checkpoint().removeCheckpoint(key);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean eventUserRecordable(int type) {
         guard();
@@ -3303,26 +3565,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (!cache.context().isNear())
             throw new IgniteCheckedException("Failed to start near cache " +
                 "(a cache with the same name without near cache is already started)");
-    }
-
-    /**
-     * This method allows manually remove the checkpoint with given {@code key}.
-     *
-     * @param key Checkpoint key.
-     * @return {@code true} if specified checkpoint was indeed removed, {@code false}
-     *      otherwise.
-     */
-    boolean removeCheckpoint(String key) {
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.checkpoint().removeCheckpoint(key);
-        }
-        finally {
-            unguard();
-        }
     }
 
     /** {@inheritDoc} */
@@ -4436,306 +4678,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         reg.register("loadBalancingSpiFormatted", this::loadBalancingSpiFormatted, String.class,
             LOAD_BALANCING_SPI_FORMATTED_DESC);
-    }
-
-    /**
-     * @return String representation of version of current Ignite instance.
-     */
-    String fullVersion() {
-        return VER_STR + '-' + BUILD_TSTAMP_STR;
-    }
-
-    /**
-     * @return String representation of the start time.
-     */
-    String startTimeFormatted() {
-        return DateFormat.getDateTimeInstance().format(new Date(startTime));
-    }
-
-    /**
-     * @return Start time in milliseconds.
-     */
-    long startTimestamp() {
-        return startTime;
-    }
-
-    /**
-     * @return The uptime in milliseconds.
-     */
-    long upTime() {
-        return U.currentTimeMillis() - startTime;
-    }
-
-    /**
-     * @return String representation of the uptime.
-     */
-    String upTimeFormatted() {
-        return X.timeSpan2DHMSM(upTime());
-    }
-
-    /**
-     * @return OS user name.
-     */
-    String osUser() {
-        return System.getProperty("user.name");
-    }
-
-    /**
-     * @return Name of the VM.
-     */
-    public String vmName() {
-        return ManagementFactory.getRuntimeMXBean().getName();
-    }
-
-    /**
-     * @return String representation of current coordinator.
-     */
-    public String currentCoordinatorFormatted() {
-        ClusterNode node = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
-
-        if (node == null)
-            return "";
-
-        return new StringBuilder()
-            .append(node.addresses())
-            .append(COORDINATOR_PROPERTIES_SEPARATOR)
-            .append(node.id())
-            .append(COORDINATOR_PROPERTIES_SEPARATOR)
-            .append(node.order())
-            .append(COORDINATOR_PROPERTIES_SEPARATOR)
-            .append(node.hostNames())
-            .toString();
-    }
-
-    /**
-     * @return {@code True} if current node is in the baseline. {@code False} otherwise.
-     */
-    boolean nodeInBaseline() {
-        ctx.gateway().readLockAnyway();
-
-        try {
-            if (ctx.gateway().getState() != STARTED)
-                return false;
-
-            ClusterNode locNode = localNode();
-
-            if (locNode.isClient() || locNode.isDaemon())
-                return false;
-
-            DiscoveryDataClusterState clusterState = ctx.state().clusterState();
-
-            return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
-        }
-        finally {
-            ctx.gateway().readUnlock();
-        }
-    }
-
-    /**
-     * @return Number of long JVM pauses.
-     */
-    long longJVMPausesCount() {
-        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesCount() : 0;
-    }
-
-    /**
-     * @return Total duration of long JVM pauses.
-     */
-    long longJVMPausesTotalDuration() {
-        return longJVMPauseDetector != null ? longJVMPauseDetector.longPausesTotalDuration() : 0;
-    }
-
-    /**
-     * @return Last events of long JVM pauses.
-     */
-    Map<Long, Long> longJVMPauseLastEvents() {
-        return longJVMPauseDetector != null ? longJVMPauseDetector.longPauseEvents() : Collections.emptyMap();
-    }
-
-    /**
-     * @return List of the user attributes.
-     */
-    List<String> userAttributesFormatted() {
-        assert cfg != null;
-
-        return (List<String>)F.transform(cfg.getUserAttributes().entrySet(),
-            new C1<Map.Entry<String, ?>, String>() {
-                @Override public String apply(Map.Entry<String, ?> e) {
-                    return e.getKey() + ", " + e.getValue().toString();
-                }
-            });
-    }
-
-    /**
-     * @return String representation of the grid logger.
-     */
-    String gridLoggerFormatted() {
-        assert cfg != null;
-
-        return cfg.getGridLogger().toString();
-    }
-
-    /**
-     * @return Thread number of the public thread pool.
-     */
-    String executorServiceFormatted() {
-        assert cfg != null;
-
-        return String.valueOf(cfg.getPublicThreadPoolSize());
-    }
-
-    /**
-     * @return Path to Ignite home.
-     */
-    String igniteHome() {
-        assert cfg != null;
-
-        return cfg.getIgniteHome();
-    }
-
-    /**
-     * @return String representation of the MBean server.
-     */
-    String mbeanServerFormatted() {
-        assert cfg != null;
-
-        return cfg.getMBeanServer().toString();
-    }
-
-    /**
-     * @return {@code True} if peer class loading is enabled. {@code False} otherwise.
-     */
-    boolean peerClassLoadingEnabled() {
-        assert cfg != null;
-
-        return cfg.isPeerClassLoadingEnabled();
-    }
-
-    /**
-     * @return String representation of the lifecycle beans.
-     */
-    List<String> lifecycleBeansFormatted() {
-        LifecycleBean[] beans = cfg.getLifecycleBeans();
-
-        if (F.isEmpty(beans))
-            return Collections.emptyList();
-        else {
-            List<String> res = new ArrayList<>(beans.length);
-
-            for (LifecycleBean bean : beans)
-                res.add(String.valueOf(bean));
-
-            return res;
-        }
-    }
-
-    /**
-     * @return String representation of the checkpoint SPI.
-     */
-    String checkpointSpiFormatted() {
-        assert cfg != null;
-
-        return Arrays.toString(cfg.getCheckpointSpi());
-    }
-
-    /**
-     * @return String representation of the communication SPI.
-     */
-    String communicationSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getCommunicationSpi().toString();
-    }
-
-    /**
-     * @return String representation of the deployment SPI.
-     */
-    String deploymentSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getDeploymentSpi().toString();
-    }
-
-    /**
-     * @return String representation of the discovery SPI.
-     */
-    String discoverySpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getDiscoverySpi().toString();
-    }
-
-    /**
-     * @return String representation of the storage SPI.
-     */
-    String eventStorageSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getEventStorageSpi().toString();
-    }
-
-    /**
-     * @return String representation of the collision SPI.
-     */
-    String collisionSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getCollisionSpi().toString();
-    }
-
-    /**
-     * @return String representation of the failover SPI.
-     */
-    String failoverSpiFormatted() {
-        assert cfg != null;
-
-        return Arrays.toString(cfg.getFailoverSpi());
-    }
-
-    /**
-     * @return String representation of the balancing SPI.
-     */
-    String loadBalancingSpiFormatted() {
-        assert cfg != null;
-
-        return Arrays.toString(cfg.getLoadBalancingSpi());
-    }
-
-    /**
-     * @return Information of the OS.
-     */
-    String osInformation() {
-        return U.osString();
-    }
-
-    /**
-     * @return Information of the JDK.
-     */
-    String jdkInformation() {
-        return U.jdkString();
-    }
-
-    /**
-     * @return Last time of change of the cluster state.
-     */
-    long lastClusterStateChangeTime() {
-        return ctx.state().clusterState().lastStateChangeTime();
-    }
-
-    /**
-     * @return String representation of the cluster state.
-     */
-    String clusterState() {
-        return ctx.state().clusterState().state().toString();
-    }
-
-    /**
-     * @return Id of the local node.
-     */
-    public UUID getLocalNodeId() {
-        assert cfg != null;
-
-        return cfg.getNodeId();
     }
 
     /**

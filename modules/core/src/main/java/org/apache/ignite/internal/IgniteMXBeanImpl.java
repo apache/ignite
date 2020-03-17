@@ -7,7 +7,6 @@ import java.util.UUID;
 import javax.management.JMException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -23,28 +22,16 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     /** Ignite core to work with. */
     private final IgniteKernal kernal;
 
-    /** Logger, same as for IgniteKernal. */
-    private final IgniteLogger log;
-
     /**
      * @param kernal Ignite kernel to work with.
      */
     public IgniteMXBeanImpl(IgniteKernal kernal) {
         this.kernal = kernal;
-
-        this.log = kernal.context().log(IgniteKernal.class);
     }
 
     /** {@inheritDoc} */
     @Override public boolean active() {
-        kernal.context().gateway().readLock();
-
-        try {
-            return kernal.context().state().publicApiActiveState(true);
-        }
-        finally {
-            kernal.context().gateway().readUnlock();
-        }
+        return kernal.active();
     }
 
     /** {@inheritDoc} */
@@ -164,7 +151,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public void printLastErrors() {
-        kernal.context().exceptionRegistry().printErrors(log);
+        kernal.printLastErrors();
     }
 
     /** {@inheritDoc} */
@@ -331,7 +318,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean isRebalanceEnabled() {
-        return kernal.context().cache().context().isRebalanceEnabled();
+        return kernal.isRebalanceEnabled();
     }
 
     /** {@inheritDoc} */

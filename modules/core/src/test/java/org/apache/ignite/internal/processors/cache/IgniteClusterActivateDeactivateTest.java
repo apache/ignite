@@ -224,7 +224,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testDeactivateNonPersistent() throws Exception {
+    public void testDeactivateThroughMXBean() throws Exception {
         Ignite ignite = startGrids(2);
 
         IgniteMXBean mxBean = getMxBean(getTestIgniteInstanceName(0), "Kernal", "IgniteKernal", IgniteMXBean.class);
