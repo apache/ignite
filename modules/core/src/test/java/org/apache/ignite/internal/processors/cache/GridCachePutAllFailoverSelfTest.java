@@ -367,7 +367,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                 for (Ignite g : runningWorkers) {
                     IgniteKernal k = (IgniteKernal)g;
 
-                    info(">>>> Entries on node: " + k.getLocalNodeId());
+                    info(">>>> Entries on node: " + k.localNodeId());
 
                     GridCacheAdapter<Object, Object> cache = k.internalCache("partitioned");
 

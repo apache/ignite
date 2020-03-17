@@ -191,7 +191,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        return kernal.getLocalNodeId();
+        return kernal.localNodeId();
     }
 
     /** {@inheritDoc} */

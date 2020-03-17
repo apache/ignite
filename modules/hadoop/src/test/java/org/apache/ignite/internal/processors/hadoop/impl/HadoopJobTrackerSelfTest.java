@@ -228,7 +228,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
                 assertFalse(fut.isDone());
             else {
                 info("Waiting for status future completion on node [idx=" + i + ", nodeId=" +
-                    kernal.getLocalNodeId() + ']');
+                    kernal.localNodeId() + ']');
 
                 fut.get();
             }

@@ -757,7 +757,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** @return Id of the local node. */
-    public UUID getLocalNodeId() {
+    public UUID localNodeId() {
         assert cfg != null;
 
         return cfg.getNodeId();
@@ -4645,7 +4645,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         reg.register("mBeanServerFormatted", this::mbeanServerFormatted, String.class,
             MBEAN_SERVER_FORMATTED_DESC);
 
-        reg.register("localNodeId", this::getLocalNodeId, UUID.class, LOC_NODE_ID_DESC);
+        reg.register("localNodeId", this::localNodeId, UUID.class, LOC_NODE_ID_DESC);
 
         reg.register("isPeerClassLoadingEnabled", this::peerClassLoadingEnabled, Boolean.class,
             IS_PEER_CLS_LOADING_ENABLED_DESC);
