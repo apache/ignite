@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp;
+package org.apache.ignite.internal.util.nio.impl;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -132,6 +133,11 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     /** {@inheritDoc} */
     @Override public boolean accepted() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Certificate[] certificates() {
+        return null;
     }
 
     /** {@inheritDoc} */
