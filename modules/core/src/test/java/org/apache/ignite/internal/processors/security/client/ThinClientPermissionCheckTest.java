@@ -70,10 +70,10 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     private static final String CLIENT_CACHE_TASK_OPER = "client_task_oper";
 
     /** Cache. */
-    private static final String CACHE = "TEST_CACHE";
+    protected static final String CACHE = "TEST_CACHE";
 
     /** Forbidden cache. */
-    private static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
+    protected static final String FORBIDDEN_CACHE = "FORBIDDEN_TEST_CACHE";
 
     /** Cache to test system oper permissions. */
     private static final String DYNAMIC_CACHE = "DYNAMIC_TEST_CACHE";
@@ -103,10 +103,15 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         return getConfiguration(
             instanceName,
             securityPluginProvider(instanceName, clientData)
-        ).setCacheConfiguration(
-            new CacheConfiguration().setName(CACHE).setCacheMode(CacheMode.REPLICATED),
+        ).setCacheConfiguration(cacheConfigurations());
+    }
+
+    /** Gets cache configurations */
+    protected CacheConfiguration[] cacheConfigurations(){
+        return new CacheConfiguration[]{
+            new CacheConfiguration().setName(CACHE),
             new CacheConfiguration().setName(FORBIDDEN_CACHE)
-        );
+        };
     }
 
     /**
@@ -120,8 +125,6 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridAllowAll("srv");
-
         startGrid(
             getConfiguration(
                 new TestSecurityData(CLIENT,

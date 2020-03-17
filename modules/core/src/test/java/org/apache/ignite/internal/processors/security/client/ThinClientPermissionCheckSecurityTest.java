@@ -32,7 +32,6 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-@Ignore
 public class ThinClientPermissionCheckSecurityTest extends ThinClientPermissionCheckTest {
     /** {@inheritDoc} */
     @Override protected AbstractTestSecurityPluginProvider securityPluginProvider(String instanceName,
