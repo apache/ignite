@@ -132,7 +132,8 @@ public class IgniteMBeansManager {
             return;
 
         // Kernal
-        registerMBean("Kernal", IgniteKernal.class.getSimpleName(), new IgniteMXBeanImpl(kernal), IgniteMXBean.class);
+        IgniteMXBean kernalMXBean = new IgniteMXBeanImpl(kernal);
+        registerMBean("Kernal", IgniteKernal.class.getSimpleName(), kernalMXBean, IgniteMXBean.class);
 
         // Metrics
         ClusterMetricsMXBean locMetricsBean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery());
