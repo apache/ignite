@@ -124,12 +124,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static final String REGISTRY_NAME = "test_registry";
 
-    /** */
-    private static final String VALID_HISTOGRAM_NAME = "testhist";
-
-    /** */
-    private static final String INVALID_HISTOGRAM_NAME = "test_hist";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -559,6 +553,29 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(1L, bean.getAttribute("histogram_with_underscore_0_50"));
         assertEquals(2L, bean.getAttribute("histogram_with_underscore_50_500"));
         assertEquals(3L, bean.getAttribute("histogram_with_underscore_500_inf"));
+    }
+
+    /** */
+    @Test
+    public void testJmxHistogramNamesExport() throws Exception {
+        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
+
+        String simpleName = "testhist";
+        String nameWithUnderscore = "test_hist";
+
+        reg.histogram(simpleName, new long[] {10, 100}, null);
+        reg.histogram(nameWithUnderscore, new long[] {10, 100}, null);
+
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, REGISTRY_NAME);
+
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 0 + '_' + 10));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 0 + '_' + 10));
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(nameWithUnderscore + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(nameWithUnderscore + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(simpleName + '_' + 100 + "_inf"));
+        assertEquals(0L, mbn.getAttribute(simpleName + '_' + 100 + "_inf"));
     }
 
     /** */
@@ -997,25 +1014,6 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         ));
 
         assertEquals(2, view.size());
-    }
-
-    @Test
-    public void testHistogramNames() throws Exception {
-        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
-
-        reg.histogram(VALID_HISTOGRAM_NAME, new long[] {10, 100}, null);
-        reg.histogram(INVALID_HISTOGRAM_NAME, new long[] {10, 100}, null);
-
-        DynamicMBean mbn = metricRegistry(ignite.name(), null, REGISTRY_NAME);
-
-        assertNotNull(mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 0 + '_' + 10));
-        assertEquals(0L, mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 0 + '_' + 10));
-        assertNotNull(mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
-        assertEquals(0L, mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
-        assertNotNull(mbn.getAttribute(INVALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
-        assertEquals(0L, mbn.getAttribute(INVALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
-        assertNotNull(mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 100 + "_inf"));
-        assertEquals(0L, mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 100 + "_inf"));
     }
 
     /** */
