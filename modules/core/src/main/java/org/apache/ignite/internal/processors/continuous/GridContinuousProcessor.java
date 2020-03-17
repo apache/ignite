@@ -1113,7 +1113,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
 
                 try {
-                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId, !stop && rmtInfos.containsKey(routineId)));
+                    ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
                 }
                 catch (IgniteCheckedException e) {
                     fut.onDone(e);
@@ -1342,11 +1342,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param msg Message/
      */
     private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
-        if (!snd.id().equals(ctx.localNodeId()) || msg.force()) {
-            UUID routineId = msg.routineId();
+        UUID routineId = msg.routineId();
 
-            unregisterRemote(routineId);
-        }
+        unregisterRemote(routineId);
 
         for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
             if (clientInfo.remove(msg.routineId()) != null)

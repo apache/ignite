@@ -29,24 +29,11 @@ public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@code True} if stop should be forced. */
-    private boolean force;
-
     /**
      * @param routineId Routine id.
-     * @param {@code True} if stop should be forced.
      */
-    public StopRoutineDiscoveryMessage(UUID routineId, boolean force) {
+    public StopRoutineDiscoveryMessage(UUID routineId) {
         super(routineId);
-
-        this.force = force;
-    }
-
-    /**
-     * @return {@code True} if stop should be forced.
-     */
-    public boolean force() {
-        return force;
     }
 
     /** {@inheritDoc} */
