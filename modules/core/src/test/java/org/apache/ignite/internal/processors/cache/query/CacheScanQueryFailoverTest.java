@@ -26,8 +26,8 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -51,7 +51,6 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.CONC_DESTROY_MSG;
 
 /**
  * ScanQuery failover test. Tests scenario where user supplied closures throw unhandled errors.
@@ -173,14 +172,14 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         // Force checkpoint to destroy evicted partitions store.
         forceCheckpoint(grid0);
 
-        GridTestUtils.assertThrowsAnyCause(log, iter1::next, IgniteCheckedException.class, CONC_DESTROY_MSG);
+        GridTestUtils.assertThrowsAnyCause(log, iter1::next, IgniteException.class, "Failed to get next data row");
 
         GridTestUtils.assertThrowsAnyCause(log, () -> {
             while (iter2.hasNext())
                 iter2.next();
 
             return null;
-        }, IgniteCheckedException.class, CONC_DESTROY_MSG);
+        }, IgniteException.class, "Failed to get next data row");
     }
 
     /**
