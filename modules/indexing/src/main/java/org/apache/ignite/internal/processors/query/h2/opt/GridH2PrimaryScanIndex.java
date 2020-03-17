@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashSet;
 import org.h2.engine.Session;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.TableFilter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
-
-import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
 
 /**
  * Wrapper type for primary key.
@@ -73,7 +70,7 @@ public class GridH2PrimaryScanIndex extends GridH2ScanIndex<GridH2IndexBase> {
         SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rows = getRowCountApproximation();
 
-        double baseCost = getTreeIndexCost(this, masks, rows, filters, filter, sortOrder, true, allColumnsSet);
+        double baseCost = costRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
 
         int mul = delegate().getDistributedMultiplier(ses, filters, filter);
 

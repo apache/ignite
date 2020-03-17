@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.Future;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
 import org.h2.index.IndexLookupBatch;
@@ -32,17 +34,11 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.Future;
-
-import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
-
 /**
  * Allows to have 'free' index for alias columns
  * Delegates the calls to underlying normal index
  */
-public class GridH2ProxyIndex extends BaseIndex {
+public class GridH2ProxyIndex extends H2IndexCostedBase {
 
     /** Underlying normal index */
     protected Index idx;
@@ -58,6 +54,7 @@ public class GridH2ProxyIndex extends BaseIndex {
                             String name,
                             List<IndexColumn> colsList,
                             Index idx) {
+        super(tbl);
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
@@ -105,7 +102,7 @@ public class GridH2ProxyIndex extends BaseIndex {
     @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getTreeIndexCost(this, masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = costRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = ((GridH2IndexBase)idx).getDistributedMultiplier(session, filters, filter);
 

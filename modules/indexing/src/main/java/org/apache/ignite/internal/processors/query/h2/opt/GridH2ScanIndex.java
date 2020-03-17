@@ -37,7 +37,7 @@ import org.h2.table.TableFilter;
 /**
  * Scan index base class.
  */
-public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
+public abstract class GridH2ScanIndex<D extends BaseIndex> extends H2IndexCostedBase {
     /** */
     private static final IndexType TYPE = IndexType.createScan(false);
 
@@ -48,6 +48,8 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
      * @param delegate Delegate.
      */
     public GridH2ScanIndex(D delegate) {
+        super(delegate.getTable() instanceof GridH2Table ? (GridH2Table)delegate.getTable() : null);
+
         this.delegate = delegate;
     }
 

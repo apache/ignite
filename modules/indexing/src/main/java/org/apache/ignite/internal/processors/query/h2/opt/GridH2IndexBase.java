@@ -62,7 +62,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.IndexCondition;
 import org.h2.index.IndexLookupBatch;
@@ -94,7 +93,7 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends BaseIndex {
+public abstract class GridH2IndexBase extends H2IndexCostedBase {
     /** */
     private static final Object EXPLICIT_NULL = new Object();
 
@@ -115,6 +114,15 @@ public abstract class GridH2IndexBase extends BaseIndex {
     };
 
     protected GridCacheContext<?, ?> ctx;
+
+    /**
+     * Constructor.
+     *
+     * @param tbl Table.
+     */
+    protected GridH2IndexBase(GridH2Table tbl) {
+        super(tbl);
+    }
 
     /**
      * @param tbl Table.

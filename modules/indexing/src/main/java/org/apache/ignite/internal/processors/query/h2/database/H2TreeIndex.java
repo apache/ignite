@@ -53,11 +53,8 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.h2.engine.Constants;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
-import org.h2.index.IndexCondition;
 import org.h2.index.IndexType;
 import org.h2.index.SingleRowCursor;
 import org.h2.message.DbException;
@@ -172,6 +169,8 @@ public class H2TreeIndex extends GridH2IndexBase {
         int segmentsCnt,
         IgniteLogger log
     ) throws IgniteCheckedException {
+        super(tbl);
+
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
@@ -432,164 +431,11 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getTreeIndexCost(this, masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = costRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 
         return mul * baseCost;
-    }
-
-    /**
-     * This method is taken from the newer version of h2. It is here because the
-     * current cost estimation method contains some bugs.
-     * @param idx Index.
-     * @param masks Masks.
-     * @param rowCount Row count.
-     * @param filters Filters.
-     * @param filter Filter.
-     * @param sortOrder Sort order.
-     * @param isScanIndex Scan index flag.
-     * @param allColumnsSet Columns set.
-     * @return Index lookup cost.
-     */
-     public static long getTreeIndexCost(BaseIndex idx, int[] masks, long rowCount,
-        TableFilter[] filters, int filter, SortOrder sortOrder,
-        boolean isScanIndex, HashSet<Column> allColumnsSet) {
-        rowCount += Constants.COST_ROW_OFFSET;
-        int totalSelectivity = 0;
-        long rowsCost = rowCount;
-        if (masks != null) {
-            int i = 0, len = idx.getColumns().length;
-            boolean tryAdditional = false;
-            while (i < len) {
-                Column column = idx.getColumns()[i++];
-                int index = column.getColumnId();
-                int mask = masks[index];
-                if ((mask & IndexCondition.EQUALITY) == IndexCondition.EQUALITY) {
-                    if (i == len && idx.getIndexType().isUnique()) {
-                        rowsCost = 3;
-                        break;
-                    }
-                    totalSelectivity = 100 - ((100 - totalSelectivity) *
-                        (100 - column.getSelectivity()) / 100);
-                    long distinctRows = rowCount * totalSelectivity / 100;
-                    if (distinctRows <= 0) {
-                        distinctRows = 1;
-                    }
-                    rowsCost = 2 + Math.max(rowCount / distinctRows, 1);
-                } else if ((mask & IndexCondition.RANGE) == IndexCondition.RANGE) {
-                    rowsCost = 2 + rowsCost / 4;
-                    tryAdditional = true;
-                    break;
-                } else if ((mask & IndexCondition.START) == IndexCondition.START) {
-                    rowsCost = 2 + rowsCost / 3;
-                    tryAdditional = true;
-                    break;
-                } else if ((mask & IndexCondition.END) == IndexCondition.END) {
-                    rowsCost = rowsCost / 3;
-                    tryAdditional = true;
-                    break;
-                } else {
-                    if (mask == 0) {
-                        // Adjust counter of used columns (i)
-                        i--;
-                    }
-                    break;
-                }
-            }
-            // Some additional columns can still be used
-            if (tryAdditional) {
-                while (i < len && masks[idx.getColumns()[i].getColumnId()] != 0) {
-                    i++;
-                    rowsCost--;
-                }
-            }
-            // Increase cost of indexes with additional unused columns
-            rowsCost += len - i;
-        }
-        // If the ORDER BY clause matches the ordering of this index,
-        // it will be cheaper than another index, so adjust the cost
-        // accordingly.
-        long sortingCost = 0;
-        if (sortOrder != null) {
-            sortingCost = 100 + rowCount / 10;
-        }
-        if (sortOrder != null && !isScanIndex) {
-            boolean sortOrderMatches = true;
-            int coveringCount = 0;
-            int[] sortTypes = sortOrder.getSortTypes();
-            TableFilter tableFilter = filters == null ? null : filters[filter];
-            for (int i = 0, len = sortTypes.length; i < len; i++) {
-                if (i >= idx.getIndexColumns().length) {
-                    // We can still use this index if we are sorting by more
-                    // than it's columns, it's just that the coveringCount
-                    // is lower than with an index that contains
-                    // more of the order by columns.
-                    break;
-                }
-                Column col = sortOrder.getColumn(i, tableFilter);
-                if (col == null) {
-                    sortOrderMatches = false;
-                    break;
-                }
-                IndexColumn indexCol = idx.getIndexColumns()[i];
-                if (!col.equals(indexCol.column)) {
-                    sortOrderMatches = false;
-                    break;
-                }
-                int sortType = sortTypes[i];
-                if (sortType != indexCol.sortType) {
-                    sortOrderMatches = false;
-                    break;
-                }
-                coveringCount++;
-            }
-            if (sortOrderMatches) {
-                // "coveringCount" makes sure that when we have two
-                // or more covering indexes, we choose the one
-                // that covers more.
-                sortingCost = 100 - coveringCount;
-            }
-        }
-        // If we have two indexes with the same cost, and one of the indexes can
-        // satisfy the query without needing to read from the primary table
-        // (scan index), make that one slightly lower cost.
-        boolean needsToReadFromScanIndex = true;
-        if (!isScanIndex && allColumnsSet != null && !allColumnsSet.isEmpty()) {
-            boolean foundAllColumnsWeNeed = true;
-            for (Column c : allColumnsSet) {
-                if (c.getTable() == idx.getTable()) {
-                    boolean found = false;
-                    for (Column c2 : idx.getColumns()) {
-                        if (c == c2) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        foundAllColumnsWeNeed = false;
-                        break;
-                    }
-                }
-            }
-            if (foundAllColumnsWeNeed) {
-                needsToReadFromScanIndex = false;
-            }
-        }
-        long rc;
-        if (isScanIndex) {
-            rc = rowsCost + sortingCost + 20;
-        } else if (needsToReadFromScanIndex) {
-            rc = rowsCost + rowsCost + sortingCost + 20;
-        } else {
-            // The (20-x) calculation makes sure that when we pick a covering
-            // index, we pick the covering index that has the smallest number of
-            // columns (the more columns we have in index - the higher cost).
-            // This is faster because a smaller index will fit into fewer data
-            // blocks.
-            rc = rowsCost + sortingCost + idx.getColumns().length;
-        }
-        return rc;
     }
 
     /** {@inheritDoc} */

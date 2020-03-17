@@ -1218,6 +1218,18 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING = "IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING";
 
     /**
+     * Choose the index cost function. May be used to compatibility with old version
+     * .
+     * The possible values:
+     *         - "LAST",
+     *         - "COMPATIBLE_8_5_17",
+     *         - COMPATIBLE_8_5_13
+     *
+     * The last cost function is used by default.
+     */
+    public static final String IGNITE_INDEX_COST_FUNCTION = "IGNITE_INDEX_COST_FUNCTION";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

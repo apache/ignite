@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.apache.ignite.internal.processors.query.h2.opt.H2IndexCostedBase;
 import org.h2.engine.Session;
-import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
@@ -31,14 +33,10 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
-import java.util.HashSet;
-
-import static org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex.getTreeIndexCost;
-
 /**
  * Meta view H2 index.
  */
-public class SqlSystemIndex extends BaseIndex {
+public class SqlSystemIndex extends H2IndexCostedBase {
     /** Distributed view cost multiplier. */
     private static final int DISTRIBUTED_MUL = 100;
 
@@ -47,6 +45,8 @@ public class SqlSystemIndex extends BaseIndex {
      * @param col Column.
      */
     SqlSystemIndex(SqlSystemTable tbl, Column... col) {
+        super((GridKernalContext)null);
+
         IndexColumn[] idxCols;
 
         if (col != null && col.length > 0)
@@ -86,7 +86,7 @@ public class SqlSystemIndex extends BaseIndex {
         HashSet<Column> allColsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getTreeIndexCost(this, masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
+        double baseCost = costRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
         if (((SqlSystemTable)table).view.isDistributed())
             baseCost = baseCost * DISTRIBUTED_MUL;

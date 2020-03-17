@@ -348,4 +348,11 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         U.closeQuiet(luceneIdx);
     }
+
+    /**
+     * @return Indexing.
+     */
+    public IgniteH2Indexing indexing() {
+        return idx;
+    }
 }

@@ -66,6 +66,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         String name,
         List<IndexColumn> colsList
     ) {
+        super(tbl);
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 

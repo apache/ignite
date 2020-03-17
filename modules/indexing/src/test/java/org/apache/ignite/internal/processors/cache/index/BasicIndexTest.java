@@ -890,9 +890,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         String sqlIdx2 = String.format("create index \"idx2\" on %s(LANG, ADDRESS)", TEST_TBL_NAME);
 
         qryProc.querySqlFields(new SqlFieldsQuery(sqlIdx2), true).getAll();
-        // _key_PK used.
-        assertTrue(checkIdxUsed(qryProc, "idx2", TEST_TBL_NAME, "FIRST_NAME",
-            "LAST_NAME", "LANG", "ADDRESS"));
+
         // _key_PK used.
         assertTrue(checkIdxUsed(qryProc, null, TEST_TBL_NAME, "FIRST_NAME",
             "LAST_NAME", "LANG", "ADDRESS"));
