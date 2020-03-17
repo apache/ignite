@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.io.File.separatorChar;
+import static org.apache.ignite.internal.processors.cache.checker.objects.ReconciliationAffectedEntries.getConflictsAsString;
 import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.createLocalResultFile;
 import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.mapPartitionReconciliation;
 import static org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationSkippedEntityHolder.SkippingReason.KEY_WAS_NOT_REPAIRED;
@@ -503,7 +504,7 @@ public interface ReconciliationResultCollector {
                     out.println(partId);
 
                     for (PartitionReconciliationDataRowMeta row : meta)
-                        out.print(ReconciliationAffectedEntries.conflicts(row, nodesIdsToConsistentIdsMap, true));
+                        out.print(getConflictsAsString(row, nodesIdsToConsistentIdsMap, true));
                 }
                 catch (IOException e) {
                     log.error("Cannot store partition's data [cacheName=" + cacheName + ", partId" + partId + ']');

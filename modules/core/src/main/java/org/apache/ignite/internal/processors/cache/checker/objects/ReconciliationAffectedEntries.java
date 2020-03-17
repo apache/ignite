@@ -134,7 +134,7 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
             printer.accept("\t\t\t<nodeConsistentId>, <nodeId>: <value> <version>\n");
             printer.accept("\t\t\t...\n");
             printer.accept("\t\t\t<info on whether confilct is fixed>\n\n");
-            printer.accept(conflicts(inconsistentKeys, includeSensitive));
+            printer.accept(getConflictsAsString(inconsistentKeys, includeSensitive));
         }
 
         if (skippedCaches != null && !skippedCaches.isEmpty()) {
@@ -192,10 +192,12 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
     }
 
     /**
-     * @param keys Keys.
+     * Returns string representation of the given {@code keys}.
+     *
+     * @param keys Inconsistent keys.
      * @param includeSensitive Include sensitive.
      */
-    private String conflicts(
+    private String getConflictsAsString(
         Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> keys,
         boolean includeSensitive
     ) {
@@ -209,7 +211,7 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
             for (Map.Entry<Integer, List<PartitionReconciliationDataRowMeta>> partEntry : cacheEntry.getValue().entrySet()) {
                 Integer part = partEntry.getKey();
 
-                res.append(conflicts(part, partEntry.getValue(), nodesIdsToConsistentIdsMap, includeSensitive));
+                res.append(getConflictsAsString(part, partEntry.getValue(), nodesIdsToConsistentIdsMap, includeSensitive));
             }
         }
 
@@ -217,12 +219,14 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
     }
 
     /**
+     * Returns string representation of the given {@code rows}.
+     *
      * @param partId Partitions id.
      * @param rows Collection of data rows.
      * @param nodesIdsToConsistentIdsMap Mapping node ids to consistent ids.
      * @param includeSensitive Include sensitive.
      */
-    private String conflicts(
+    private String getConflictsAsString(
         int partId,
         List<PartitionReconciliationDataRowMeta> rows,
         Map<UUID, String> nodesIdsToConsistentIdsMap,
@@ -233,17 +237,19 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
         res.append('\t').append(partId).append('\n');
 
         for (PartitionReconciliationDataRowMeta row : rows)
-            res.append(conflicts(row, nodesIdsToConsistentIdsMap, includeSensitive));
+            res.append(getConflictsAsString(row, nodesIdsToConsistentIdsMap, includeSensitive));
 
         return res.toString();
     }
 
     /**
+     * Returns string representation of the given {@code row}.
+     *
      * @param row Data row.
      * @param nodesIdsToConsistentIdsMap Mapping node ids to consistent ids.
      * @param includeSensitive Include sensitive.
      */
-    public static String conflicts(
+    public static String getConflictsAsString(
         PartitionReconciliationDataRowMeta row,
         Map<UUID, String> nodesIdsToConsistentIdsMap,
         boolean includeSensitive
