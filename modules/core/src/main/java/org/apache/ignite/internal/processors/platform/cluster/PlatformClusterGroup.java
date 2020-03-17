@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -155,7 +156,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_ENABLE_STATISTICS = 38;
 
     /** */
-    private static final int OP_CLEAR_STATISTICS = 37;
+    private static final int OP_CLEAR_STATISTICS = 39;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -349,13 +350,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
 
             case OP_RESET_LOST_PARTITIONS: {
-                int cnt = reader.readInt();
-
-                Collection<String> cacheNames = new ArrayList<>(cnt);
-
-                for (int i = 0; i < cnt; i++) {
-                    cacheNames.add(reader.readString());
-                }
+                Collection<String> cacheNames = readStrings(reader);
 
                 platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
 
@@ -365,13 +360,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             case OP_ENABLE_STATISTICS: {
                 boolean enabled = reader.readBoolean();
 
-                int cnt = reader.readInt();
-
-                Collection<String> cacheNames = new ArrayList<>(cnt);
-
-                for (int i = 0; i < cnt; i++) {
-                    cacheNames.add(reader.readString());
-                }
+                Collection<String> cacheNames = readStrings(reader);
 
                 platformCtx.kernalContext().grid().cluster().enableStatistics(cacheNames, enabled);
 
@@ -379,18 +368,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             }
 
             case OP_CLEAR_STATISTICS:{
-                assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
+                Collection<String> cacheNames = readStrings(reader);
 
-                int cnt = reader.readInt();
-
-                Collection<String> cacheNames = new ArrayList<>(cnt);
-
-                for (int i = 0; i < cnt; i++) {
-                    cacheNames.add(reader.readString());
-                }
-
-
-                ((IgniteCluster)prj).clearStatistics(cacheNames);
+                platformCtx.kernalContext().grid().cluster().clearStatistics(cacheNames);
 
                 return TRUE;
             }
@@ -658,4 +638,24 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         writer.writeLong(metrics.getLastCheckpointDataPagesNumber());
         writer.writeLong(metrics.getLastCheckpointCopiedOnWritePagesNumber());
     }
+
+    /**
+     * Reads collection of strings
+     *
+     * @param reader Reader.
+     */
+    private Collection<String> readStrings(BinaryRawReader reader) {
+        assert reader != null;
+
+        int cnt = reader.readInt();
+
+        Collection<String> cacheNames = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++) {
+            cacheNames.add(reader.readString());
+        }
+
+        return cacheNames;
+    }
+
 }

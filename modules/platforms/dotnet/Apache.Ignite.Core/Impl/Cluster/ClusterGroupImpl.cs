@@ -462,23 +462,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            DoOutOp(OpEnableStatistics, w =>
-            {
-                w.WriteBoolean(enabled);
-
-                var pos = w.Stream.Position;
-
-                var count = 0;
-                w.WriteInt(count);  // Reserve space.
-
-                foreach (var cacheName in cacheNames)
+            DoOutOp(OpEnableStatistics,
+                w =>
                 {
-                    w.WriteString(cacheName);
-                    count++;
-                }
+                    w.WriteBoolean(enabled);
 
-                w.Stream.WriteInt(pos, count);
-            });
+                    WriteStrings(w, cacheNames);
+                });
         }
 
         /** <inheritdoc /> */
@@ -609,21 +599,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            DoOutOp(OpResetLostPartitions, w =>
-            {
-                var pos = w.Stream.Position;
-
-                var count = 0;
-                w.WriteInt(count);  // Reserve space.
-
-                foreach (var cacheName in cacheNames)
-                {
-                    w.WriteString(cacheName);
-                    count++;
-                }
-
-                w.Stream.WriteInt(pos, count);
-            });
+            DoOutOp(OpResetLostPartitions, w => WriteStrings(w, cacheNames));
         }
 
         /// <summary>
