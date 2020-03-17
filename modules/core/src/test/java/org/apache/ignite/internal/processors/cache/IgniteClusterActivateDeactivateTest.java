@@ -230,15 +230,15 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         IgniteMXBean mxBean = getMxBean(getTestIgniteInstanceName(0), "Kernal", "IgniteKernal", IgniteMXBean.class);
 
         if (persistenceEnabled()) {
-            ignite.cluster().state(ACTIVE, false);
+            ignite.cluster().state(ACTIVE);
 
             assertEquals(ACTIVE, ignite.cluster().state());
 
-            ignite.cluster().state(INACTIVE, false);
+            ignite.cluster().state(INACTIVE);
 
             assertEquals(INACTIVE, ignite.cluster().state());
 
-            ignite.cluster().state(ACTIVE, false);
+            ignite.cluster().state(ACTIVE);
 
             assertEquals(ACTIVE, ignite.cluster().state());
 
@@ -246,7 +246,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             assertEquals(INACTIVE, ignite.cluster().state());
 
-            ignite.cluster().state(ACTIVE, false);
+            ignite.cluster().state(ACTIVE);
 
             assertEquals(ACTIVE, ignite.cluster().state());
 
@@ -256,7 +256,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
         else {
             assertThrows(null, () -> {
-                ignite.cluster().state(INACTIVE, false);
+                ignite.cluster().state(INACTIVE);
 
                 return null;
             }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
@@ -284,14 +284,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
                 return null;
             }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-
-            ignite.cluster().state(INACTIVE, true);
-
-            assertEquals(INACTIVE, ignite.cluster().state());
-
-            ignite.cluster().state(ACTIVE, false);
 
             assertEquals(ACTIVE, ignite.cluster().state());
 

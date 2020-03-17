@@ -315,7 +315,18 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     @Override public void clusterState(String state, boolean forceDeactivation) {
         ClusterState newState = ClusterState.valueOf(state);
 
-        kernal.cluster().state(newState, forceDeactivation);
+        kernal.context().gateway().readLock();
+
+        try {
+            kernal.context().state().changeGlobalState(newState, forceDeactivation, kernal.context().cluster().get()
+                .forServers().nodes(), false).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            kernal.context().gateway().readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
