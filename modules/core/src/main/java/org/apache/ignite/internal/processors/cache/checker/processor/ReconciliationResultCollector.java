@@ -458,7 +458,6 @@ public interface ReconciliationResultCollector {
             out.println();
             out.println("INCONSISTENT KEYS: " + inconsistentKeyCnt);
             out.println();
-            out.println();
 
             out.println("<cacheName>");
             out.println("\t<partitionId>");
