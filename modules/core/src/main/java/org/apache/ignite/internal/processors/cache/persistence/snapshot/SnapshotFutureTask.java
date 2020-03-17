@@ -17,31 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -72,10 +47,24 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.*;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
@@ -99,7 +88,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     private final File tmpTaskWorkDir;
 
     /** Local buffer to perpform copy-on-write operations for {@link PageStoreSerialWriter}. */
-    private final ThreadLocal<ByteBuffer> localBuff;
+    private final ThreadLocal<ByteBuffer> locBuff;
 
     /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
@@ -120,10 +109,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** Snapshot data sender. */
     @GridToStringExclude
-    private final SnapshotFileSender snpSndr;
+    private final SnapshotSender snpSndr;
 
     /**
-     * Initial map of cache groups and its partitions to include into snapshot. If array of partitions
+     * Requested map of cache groups and its partitions to include into snapshot. If array of partitions
      * is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
      * In this case if all of partitions have OWNING state the index partition also will be included.
      * <p>
@@ -138,7 +127,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** Checkpoint end future. */
     private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
 
-    /** Future to wait until checkpoint mark pahse will be finished and snapshot tasks scheduled. */
+    /** Future to wait until checkpoint mark phase will be finished and snapshot tasks scheduled. */
     private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
 
     /** Absolute snapshot storage path. */
@@ -174,13 +163,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         onDone(e);
         parts = null;
         ioFactory = null;
-        localBuff = null;
+        locBuff = null;
     }
 
     /**
      * @param snpName Unique identifier of snapshot task.
      * @param ioFactory Factory to working with delta as file storage.
-     * @param parts Map of cache groups and its partitions to include into snapshot, if array of partitions
+     * @param parts Map of cache groups and its partitions to include into snapshot, if set of partitions
      * is {@code null} than all OWNING partitions for given cache groups will be included into snapshot.
      */
     public SnapshotFutureTask(
@@ -189,9 +178,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         String snpName,
         File tmpWorkDir,
         FileIOFactory ioFactory,
-        SnapshotFileSender snpSndr,
+        SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
-        ThreadLocal<ByteBuffer> localBuff
+        ThreadLocal<ByteBuffer> locBuff
     ) {
         A.notNull(snpName, "Snapshot name cannot be empty or null");
         A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
@@ -205,11 +194,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
         this.snpSndr = snpSndr;
         this.ioFactory = ioFactory;
-        this.localBuff = localBuff;
+        this.locBuff = locBuff;
     }
 
     /**
-     * @return Node id which triggers this operation..
+     * @return Node id which triggers this operation.
      */
     public UUID sourceNodeId() {
         return srcNodeId;
@@ -218,12 +207,12 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /**
      * @return Type of snapshot operation.
      */
-    public Class<? extends SnapshotFileSender> type() {
+    public Class<? extends SnapshotSender> type() {
         return snpSndr.getClass();
     }
 
     /**
-     * @return List of partitions to be processed.
+     * @return Set of cache groups included into snapshot operation.
      */
     public Set<Integer> affectedCacheGroups() {
         return parts.keySet();
@@ -322,7 +311,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 ((GridCacheDatabaseSharedManager)cctx.database()).removeCheckpointListener(this)
             );
 
-            // Listener will be removed right after first execution
+            // Listener will be removed right after first execution.
             ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(this);
 
             if (log.isInfoEnabled()) {
@@ -363,7 +352,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 Iterator<GridDhtLocalPartition> iter;
 
-                if (e.getValue() == null)
+                if (grpParts == null)
                     iter = top.currentLocalPartitions().iterator();
                 else {
                     if (grpParts.contains(INDEX_PARTITION)) {
@@ -377,12 +366,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 Set<Integer> owning = processed.computeIfAbsent(grpId, g -> new HashSet<>());
                 Set<Integer> missed = new HashSet<>();
 
-                // Iterate over partition in particular cache group
+                // Iterate over partitions in particular cache group.
                 while (iter.hasNext()) {
                     GridDhtLocalPartition part = iter.next();
 
-                    // Partition can be reserved.
-                    // Partition can be MOVING\RENTING states.
+                    // Partition can be in MOVING\RENTING states.
                     // Index partition will be excluded if not all partition OWNING.
                     // There is no data assigned to partition, thus it haven't been created yet.
                     if (part.state() == GridDhtPartitionState.OWNING)
@@ -391,9 +379,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                         missed.add(part.id());
                 }
 
-                if (grpParts == null) {
+                if (grpParts != null) {
                     // Partition has been provided for cache group, but some of them are not in OWNING state.
-                    // Exit with an error
+                    // Exit with an error.
                     if (!missed.isEmpty()) {
                         throw new IgniteCheckedException("Snapshot operation cancelled due to " +
                             "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
@@ -435,7 +423,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                                 partId),
                             ioFactory,
                             store.pages(),
-                            localBuff));
+                                locBuff));
 
                     partFileLengths.put(pair, store.size());
                 }
@@ -693,7 +681,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             File deltaFile,
             FileIOFactory factory,
             int allocPages,
-            ThreadLocal<ByteBuffer> localBuff
+            ThreadLocal<ByteBuffer> locBuff
         ) {
             assert store != null;
 
@@ -704,7 +692,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             this.exCons = exCons;
             this.log = log.getLogger(PageStoreSerialWriter.class);
             this.store = store;
-            this.localBuff = localBuff;
+            this.localBuff = locBuff;
             // It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.

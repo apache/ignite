@@ -274,7 +274,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             ig.context().cache().context().localNodeId(),
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+            new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override
                 public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
@@ -394,7 +394,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
             parts,
-            new DeleagateSnapshotFileSender(log, cctx0.snapshotMgr().snapshotExecutorService(),
+            new DeleagateSnapshotSender(log, cctx0.snapshotMgr().snapshotExecutorService(),
                 cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
@@ -671,7 +671,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             cctx0.localNodeId(),
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            new DeleagateSnapshotFileSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
+            new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override
                 public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
@@ -733,7 +733,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         UUID srcNodeId,
         String snpName,
         Map<Integer, Set<Integer>> parts,
-        SnapshotFileSender snpSndr
+        SnapshotSender snpSndr
     ) throws IgniteCheckedException{
         SnapshotFutureTask snpFutTask = snpMgr.registerSnapshotTask(snpName, srcNodeId, parts, snpSndr);
 
@@ -789,14 +789,14 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class DeleagateSnapshotFileSender extends SnapshotFileSender {
+    private static class DeleagateSnapshotSender extends SnapshotSender {
         /** Delegate call to. */
-        protected final SnapshotFileSender delegate;
+        protected final SnapshotSender delegate;
 
         /**
          * @param delegate Delegate call to.
          */
-        public DeleagateSnapshotFileSender(IgniteLogger log, Executor exec, SnapshotFileSender delegate) {
+        public DeleagateSnapshotSender(IgniteLogger log, Executor exec, SnapshotSender delegate) {
             super(log, exec);
 
             this.delegate = delegate;

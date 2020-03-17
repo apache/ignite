@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -31,10 +24,18 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 /**
  *
  */
-abstract class SnapshotFileSender {
+abstract class SnapshotSender {
     /** Busy processing lock. */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -50,9 +51,9 @@ abstract class SnapshotFileSender {
     /**
      * @param log Ignite logger to use.
      */
-    protected SnapshotFileSender(IgniteLogger log, Executor exec) {
+    protected SnapshotSender(IgniteLogger log, Executor exec) {
         this.exec = exec;
-        this.log = log.getLogger(SnapshotFileSender.class);
+        this.log = log.getLogger(SnapshotSender.class);
     }
 
     /**
