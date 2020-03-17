@@ -362,7 +362,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     iter = F.iterator(grpParts, top::localPartition, false);
                 }
 
-                Set<Integer> owning = processed.computeIfAbsent(grpId, g -> new HashSet<>());
+                Set<Integer> owning = new HashSet<>();
                 Set<Integer> missed = new HashSet<>();
 
                 // Iterate over partitions in particular cache group.
@@ -398,6 +398,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     else if (missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
                         owning.add(INDEX_PARTITION);
                 }
+
+                processed.put(grpId, owning);
             }
 
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
