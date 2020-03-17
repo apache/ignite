@@ -768,20 +768,25 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return _nodes;
         }
 
-        private static void WriteStrings(BinaryWriter w, IEnumerable<string> cacheNames)
+        /// <summary>
+        /// Writes strings
+        /// </summary>
+        /// <param name="writer">Writer</param>
+        /// <param name="strings">Strings</param>
+        private static void WriteStrings(BinaryWriter writer, IEnumerable<string> strings)
         {
-            var pos = w.Stream.Position;
+            var pos = writer.Stream.Position;
 
             var count = 0;
-            w.WriteInt(count);  // Reserve space.
+            writer.WriteInt(count);  // Reserve space.
 
-            foreach (var cacheName in cacheNames)
+            foreach (var cacheName in strings)
             {
-                w.WriteString(cacheName);
+                writer.WriteString(cacheName);
                 count++;
             }
 
-            w.Stream.WriteInt(pos, count);
+            writer.Stream.WriteInt(pos, count);
         }
     }
 }

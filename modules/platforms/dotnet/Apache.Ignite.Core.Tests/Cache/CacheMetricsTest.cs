@@ -186,59 +186,52 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCacheClearStatistics()
         {
-            var ignite = Ignition.GetIgnite();
-            var cacheName = "TestCacheClearStatistics";
-            var localCache = ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
-            {
-                EnableStatistics = true
-            });
-
-            var remoteIgnite = Ignition.GetIgnite(SecondGridName);
-            var remoteCache = remoteIgnite.GetCache<int, int>(cacheName);
-
-            Assert.IsTrue(localCache.GetConfiguration().EnableStatistics);
-            Assert.IsTrue(remoteCache.GetConfiguration().EnableStatistics);
-
-            var localKey = TestUtils.GetPrimaryKey(ignite, cacheName);
-
-            localCache.Put(localKey, 1);
-            localCache.Get(localKey);
-
-            var remoteKey = TestUtils.GetPrimaryKey(remoteIgnite, cacheName);
-            remoteCache.Put(remoteKey, 2);
-            remoteCache.Get(remoteKey);
-
-            // Wait for metrics to propagate.
-            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
-            var smokeMetrics = localCache.GetMetrics();
-            Assert.AreEqual(2, smokeMetrics.Size);
-            Assert.AreEqual(2, smokeMetrics.CacheGets);
-
-            localCache.ClearStatistics();
-
-            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
-            var localMetrics1 = localCache.GetLocalMetrics();
-            var cacheMetrics1 = remoteCache.GetLocalMetrics();
-            var cacheMetrics2 = localCache.GetMetrics();
-            var metrics2 = remoteCache.GetMetrics();
-
-            var metricsToAssert = new[]
-            {
-                localMetrics1,
-                cacheMetrics1,
-                cacheMetrics2,
-                metrics2
-            };
-
-            foreach (var metrics in metricsToAssert)
-            {
-                Assert.IsTrue(metrics.IsStatisticsEnabled);
-                Assert.AreEqual(cacheName, metrics.CacheName);
-                Assert.AreEqual(0, metrics.CachePuts);
-                Assert.AreEqual(0, metrics.CacheGets);
-            }
+            TestClearStatistics("TestCacheClearStatistics", cache => cache.ClearStatistics());
         }
 
+        /// <summary>
+        /// Tests the cache metrics enable/disable for cluster group
+        /// </summary>
+        [Test]
+        public void TestClusterGroupClearStatistics()
+        {
+            var cacheName = "TestClusterGroupClearStatistics";
+            TestClearStatistics(
+                cacheName,
+                cache => cache.Ignite.GetCluster().ClearStatistics(new[] {cacheName}));
+        }
+        
+        /// <summary>
+        /// Tests that empty cache names can be passed to <see cref="IClusterGroup.ClearStatistics"/>
+        /// </summary>
+        [Test]
+        public void  TestClusterClearStatisticsAllowsEmptyCacheNames()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterClearStatisticsAllowsEmptyCacheNames"));
+            var cluster = ignite.GetCluster();
+        
+            Assert.DoesNotThrow(() => cluster.ClearStatistics(Enumerable.Empty<string>()));
+        }
+        
+        /// <summary>
+        /// Tests exception when invalid cache name is passed to <see cref="IClusterGroup.ClearStatistics"/>
+        /// </summary>
+        [Test]
+        public void TestClusterClearStatisticsThrowsOnInvalidCacheName()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterClearStatisticsThrowsOnInvalidCacheName"));
+            var cluster = ignite.GetCluster();
+        
+            var invalidCacheName = "clusterEnableStatsInvalidName";
+        
+            var msg = Assert.Throws<IgniteException>(
+                () => cluster.ClearStatistics(new[] {invalidCacheName})).Message;
+            Assert.IsTrue(msg.Contains(invalidCacheName));
+            Assert.IsTrue(msg.Contains("One or more cache descriptors not found"));
+        }
+        
         /// <summary>
         /// Tests the metrics propagation.
         /// </summary>
@@ -415,6 +408,36 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(0, metrics.CacheSize);
             Assert.AreEqual(0, metrics.CacheGets);
             Assert.AreEqual(0, metrics.CachePuts);
+        }
+
+        /// <summary>
+        /// Creates a cache, performs some actions, clears statistics, validates
+        /// </summary>
+        private static void TestClearStatistics(string cacheName, Action<ICache<int, int>> clearStatistics)
+        {
+            var ignite = Ignition.GetIgnite();
+            var cache = ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = true
+            });
+
+            var key = 1;
+            cache.Put(key, 1);
+            cache.Get(key);
+
+            // Wait for metrics to propagate.
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            var smokeMetrics = cache.GetMetrics();
+            Assert.AreEqual(1, smokeMetrics.CacheGets);
+            Assert.AreEqual(1, smokeMetrics.CachePuts);
+
+            clearStatistics(cache);
+
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+
+            var metrics = cache.GetMetrics();
+            Assert.AreEqual(0, metrics.CachePuts);
+            Assert.AreEqual(0, metrics.CacheGets);
         }
     }
 }
