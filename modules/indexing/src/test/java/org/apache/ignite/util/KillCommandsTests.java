@@ -83,10 +83,10 @@ class KillCommandsTests {
     public static final int TIMEOUT = 10_000;
 
     /** */
-    private static CyclicBarrier svcStartBarrier;
+    private static volatile CyclicBarrier svcStartBarrier;
 
     /** */
-    private static CyclicBarrier svcCancelBarrier;
+    private static volatile CyclicBarrier svcCancelBarrier;
 
     /**
      * Test cancel of the scan query.
@@ -384,7 +384,8 @@ class KillCommandsTests {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             try {
-                svcCancelBarrier.await(TIMEOUT, MILLISECONDS);
+                if (svcCancelBarrier != null)
+                    svcCancelBarrier.await(TIMEOUT, MILLISECONDS);
             }
             catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
                 throw new RuntimeException(e);
