@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
