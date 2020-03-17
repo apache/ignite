@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.OptimisticPlanningException;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -52,7 +52,7 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
 
     /** {@inheritDoc} */
     @Override public void init(MappingService mappingService, PlanningContext ctx) {
-        RelMetadataQueryEx mq = RelMetadataQueryEx.instance();
+        RelMetadataQuery mq = F.first(fragments).root().getCluster().getMetadataQuery();
 
         for (int i = 0, j = 0; i < fragments.size();) {
             Fragment fragment = fragments.get(i);

@@ -141,7 +141,6 @@
         <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
-        <calcite.version>1.21.0</calcite.version>
 
         <!--Spark 2.4 version support -->
         <spark24.hadoop.version>2.6.5</spark24.hadoop.version>

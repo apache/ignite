@@ -23,6 +23,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Module specific package versions -->
+    <properties>
+        <calcite.version>1.22.0</calcite.version>
+        <guava.version>19.0</guava.version>
+        <janino.version>3.0.11</janino.version>
+    </properties>
+
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
@@ -55,6 +62,24 @@
             <groupId>org.apache.calcite</groupId>
             <artifactId>calcite-core</artifactId>
             <version>${calcite.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>commons-compiler</artifactId>
+            <version>${janino.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
         </dependency>
 
         <dependency>

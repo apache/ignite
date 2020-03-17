@@ -25,7 +25,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.commons.codec.Charsets;
-import org.apache.commons.lang.text.StrBuilder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /** */
@@ -122,7 +121,7 @@ public class CharacterType extends BasicType implements CharacterDataType {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StrBuilder sb = new StrBuilder(toString(false));
+        StringBuilder sb = new StringBuilder(toString(false));
 
         if (charset != null)
             sb.append(" CHARACTER SET \"")
