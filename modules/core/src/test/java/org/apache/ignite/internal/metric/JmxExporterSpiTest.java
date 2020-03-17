@@ -121,6 +121,15 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
 
+    /** */
+    private static final String REGISTRY_NAME = "test_registry";
+
+    /** */
+    private static final String VALID_HISTOGRAM_NAME = "testhist";
+
+    /** */
+    private static final String INVALID_HISTOGRAM_NAME = "test_hist";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -508,6 +517,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(Long.valueOf(2), searchHistogram("histogram_50_500", mreg));
         assertEquals(Long.valueOf(3), searchHistogram("histogram_500_inf", mreg));
 
+        assertEquals(Long.valueOf(1), searchHistogram("histogram_with_underscore_0_50", mreg));
+        assertEquals(Long.valueOf(2), searchHistogram("histogram_with_underscore_50_500", mreg));
+        assertEquals(Long.valueOf(3), searchHistogram("histogram_with_underscore_500_inf", mreg));
+
         assertNull(searchHistogram("unknown", mreg));
         assertNull(searchHistogram("unknown_0", mreg));
         assertNull(searchHistogram("unknown_0_50", mreg));
@@ -520,6 +533,10 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertNull(searchHistogram("histogram_0_100", mreg));
         assertNull(searchHistogram("histogram_0_inf", mreg));
         assertNull(searchHistogram("histogram_0_500", mreg));
+
+        assertNull(searchHistogram("histogram_with_underscore_0_100", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_inf", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0_500", mreg));
     }
 
     /** */
@@ -533,11 +550,15 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         MBeanAttributeInfo[] attrs = bean.getMBeanInfo().getAttributes();
 
-        assertEquals(3, attrs.length);
+        assertEquals(6, attrs.length);
 
         assertEquals(1L, bean.getAttribute("histogram_0_50"));
         assertEquals(2L, bean.getAttribute("histogram_50_500"));
         assertEquals(3L, bean.getAttribute("histogram_500_inf"));
+
+        assertEquals(1L, bean.getAttribute("histogram_with_underscore_0_50"));
+        assertEquals(2L, bean.getAttribute("histogram_with_underscore_50_500"));
+        assertEquals(3L, bean.getAttribute("histogram_with_underscore_500_inf"));
     }
 
     /** */
@@ -978,11 +999,39 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(2, view.size());
     }
 
+    @Test
+    public void testHistogramNames() throws Exception {
+        MetricRegistry reg = ignite.context().metric().registry(REGISTRY_NAME);
+
+        reg.histogram(VALID_HISTOGRAM_NAME, new long[] {10, 100}, null);
+        reg.histogram(INVALID_HISTOGRAM_NAME, new long[] {10, 100}, null);
+
+        DynamicMBean mbn = metricRegistry(ignite.name(), null, REGISTRY_NAME);
+
+        assertNotNull(mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 0 + '_' + 10));
+        assertEquals(0L, mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 0 + '_' + 10));
+        assertNotNull(mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(INVALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
+        assertEquals(0L, mbn.getAttribute(INVALID_HISTOGRAM_NAME + '_' + 10 + '_' + 100));
+        assertNotNull(mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 100 + "_inf"));
+        assertEquals(0L, mbn.getAttribute(VALID_HISTOGRAM_NAME + '_' + 100 + "_inf"));
+    }
+
     /** */
     private void createTestHistogram(MetricRegistry mreg) {
         long[] bounds = new long[] {50, 500};
 
         HistogramMetricImpl histogram = mreg.histogram("histogram", bounds, null);
+
+        histogram.value(10);
+        histogram.value(51);
+        histogram.value(60);
+        histogram.value(600);
+        histogram.value(600);
+        histogram.value(600);
+
+        histogram = mreg.histogram("histogram_with_underscore", bounds, null);
 
         histogram.value(10);
         histogram.value(51);
