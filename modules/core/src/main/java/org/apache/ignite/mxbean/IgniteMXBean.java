@@ -687,7 +687,7 @@ public interface IgniteMXBean {
      * <b>NOTE:</b>
      * Deactivation clears in-memory caches (without persistence) including the system caches.
      *
-     * @param state             String representation of new cluster state.
+     * @param state String representation of new cluster state.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @throws IgniteCheckedException if deactivation stopped.
      */
