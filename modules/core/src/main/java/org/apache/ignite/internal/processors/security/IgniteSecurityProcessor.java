@@ -21,7 +21,6 @@ import java.security.Security;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +37,6 @@ import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -50,6 +48,7 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_ID;
@@ -80,8 +79,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
 
-    /** Map of security contexts. Key is the node's id. */
-    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
+    /** Map of node's security contexts. Key is the node's id. */
+    private final Map<UUID, SecurityContext> nodesSecCtxs = new ConcurrentHashMap<>();
 
     /** Instance of IgniteSandbox. */
     private IgniteSandbox sandbox;
@@ -113,7 +112,16 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
-        return withContext(securityContext(subjId));
+        ClusterNode node = Optional
+            .ofNullable(ctx.discovery().node(subjId))
+            .orElseGet(() -> ctx.discovery().historicalNode(subjId));
+
+        SecurityContext res = node != null ? securityContext(node) : securityContext(subjId);
+
+        if (res == null)
+            throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
+
+        return withContext(res);
     }
 
     /**
@@ -143,22 +151,27 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(UUID subjId) {
-        Objects.requireNonNull(subjId, "Parameter 'subjId' cannot be null.");
-
-        return secCtxs.computeIfAbsent(subjId,
-            id -> {
-                SecurityContext res = secPrc.securityContext(id);
-
-                if (res == null)
-                    res = nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), findNode(id));
-
-                return res;
-            });
+        return secPrc.securityContext(requireNonNull(subjId, "Parameter 'subjId' cannot be null."));
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(ClusterNode node) {
-        return securityContext(subjectId(node));
+        requireNonNull(node, "Parameter 'node' cannot be null.");
+
+        return nodesSecCtxs.computeIfAbsent(node.id(),
+            id -> {
+                byte[] subjBytes = node.attribute(ATTR_SECURITY_SUBJECT_V2);
+
+                if (subjBytes == null)
+                    throw new SecurityException("Security context isn't certain.");
+
+                try {
+                    return U.unmarshal(marsh, subjBytes, U.resolveClassLoader(ctx.config()));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new SecurityException("Failed to get security context.", e);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -202,7 +215,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
-        secCtxs.remove(subjId);
         secPrc.onSessionExpired(subjId);
     }
 
@@ -266,28 +278,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /**
-     * Gets the node's security context.
-     *
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     * @param node Node.
-     * @return Node's security context.
-     */
-    private SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
-        byte[] subjBytes = node.attribute(ATTR_SECURITY_SUBJECT_V2);
-
-        if (subjBytes == null)
-            throw new SecurityException("Security context isn't certain.");
-
-        try {
-            return U.unmarshal(marsh, subjBytes, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SecurityException("Failed to get security context.", e);
-        }
-    }
-
-    /**
      * Gets security subject id associated with node.
      *
      * @param node Cluster node.
@@ -301,7 +291,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         clearPackageAccessProperty();
 
-        secCtxs.remove(subjectId(ctx.discovery().localNode()));
+        nodesSecCtxs.remove(subjectId(ctx.discovery().localNode()));
         secPrc.stop(cancel);
     }
 
@@ -326,7 +316,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         ctx.event().addDiscoveryEventListener(
-            (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
+            (evt, discoCache) -> nodesSecCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
         );
 
         secPrc.onKernalStart(active);

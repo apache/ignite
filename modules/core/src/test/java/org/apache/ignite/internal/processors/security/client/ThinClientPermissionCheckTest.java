@@ -25,13 +25,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -103,7 +104,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
             instanceName,
             securityPluginProvider(instanceName, clientData)
         ).setCacheConfiguration(
-            new CacheConfiguration().setName(CACHE),
+            new CacheConfiguration().setName(CACHE).setCacheMode(CacheMode.REPLICATED),
             new CacheConfiguration().setName(FORBIDDEN_CACHE)
         );
     }
@@ -119,7 +120,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgniteEx ignite = startGrid(
+        startGridAllowAll("srv");
+
+        startGrid(
             getConfiguration(
                 new TestSecurityData(CLIENT,
                     SecurityPermissionSetBuilder.create().defaultAllowAll(false)
@@ -140,9 +143,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
                         .build()
                 )
             )
-        );
-
-        ignite.cluster().active(true);
+        ).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
