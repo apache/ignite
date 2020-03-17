@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
@@ -34,13 +35,14 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 
 import static java.lang.Thread.currentThread;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.processors.query.h2.LongRunningQueryManager.LONG_QUERY_EXEC_MSG;
 
 /**
@@ -141,6 +143,72 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         testLog().registerListener(logLsnr);
 
         sqlCheckLongRunning();
+
+        assertTrue(logLsnr.check());
+    }
+
+    /**
+     * Test checks the correctness of query plan when displaying errors
+     * about long queries.
+     */
+    public void testCorrectPlan() {
+        LogListener logLsnr = LogListener
+            .matches("Long running query is finished")
+            .andMatches(logStr -> logStr.contains("TEST.TEST2_F0_F1_IDX"))
+            .build();
+
+        testLog().registerListener(logLsnr);
+
+        sql("CREATE TABLE TEST2 (ID INT PRIMARY KEY, F0 VARCHAR, F1 VARCHAR);");
+
+        for (int i = 0; i < KEY_CNT; i++) {
+            sql("INSERT INTO TEST2 (ID, F0, F1) VALUES (?, ?, ?);",
+                i,
+                UUID.randomUUID().toString().toUpperCase(),
+                UUID.randomUUID().toString().toUpperCase());
+        }
+
+        sql("CREATE INDEX TEST2_F0_F1_IDX ON TEST2 (F0, F1)");
+
+        sql(
+            "SELECT COUNT(*), sleep_func(8000) FROM TEST2 USE INDEX (TEST2_F0_F1_IDX) " +
+                "WHERE (F0 LIKE ?) AND (F1 LIKE ?);",
+            "A%", "B%").getAll();
+
+
+        assertTrue(logLsnr.check());
+    }
+
+
+    /**
+     * Test checks the query plan is hidden when IGNITE_TO_STRING_INCLUDE_SENSITIVE sets to false.
+     */
+    public void testHiddenPlan() {
+        withSystemProperty(IGNITE_TO_STRING_INCLUDE_SENSITIVE, "false");
+
+        LogListener logLsnr = LogListener
+            .matches("Long running query is finished")
+            .andMatches(logStr -> logStr.contains("plan=<sensitive info is hidden>"))
+            .build();
+
+        testLog().registerListener(logLsnr);
+
+        sql("CREATE TABLE TEST2 (ID INT PRIMARY KEY, F0 VARCHAR, F1 VARCHAR);");
+
+        for (int i = 0; i < KEY_CNT; i++) {
+            sql("INSERT INTO TEST2 (ID, F0, F1) VALUES (?, ?, ?);",
+                i,
+                UUID.randomUUID().toString().toUpperCase(),
+                UUID.randomUUID().toString().toUpperCase());
+        }
+
+        sql("CREATE INDEX TEST2_F0_F1_IDX ON TEST2 (F0, F1)");
+
+        sql(
+            "SELECT COUNT(*), sleep_func(8000) FROM TEST2 USE INDEX (TEST2_F0_F1_IDX) " +
+                "WHERE (F0 LIKE ?) AND (F1 LIKE ?);",
+            "A%", "B%").getAll();
+
 
         assertTrue(logLsnr.check());
     }
