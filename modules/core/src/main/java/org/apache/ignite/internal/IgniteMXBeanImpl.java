@@ -323,6 +323,6 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
-        kernal.context().cache().context().rebalanceEnabled(rebalanceEnabled);
+        kernal.rebalanceEnabled(rebalanceEnabled);
     }
 }
