@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -752,10 +751,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             new SequentialExecutorWrapper(log, snpRunner),
             () -> relativeNodePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
-            errMsg -> cctx.gridIO().sendToCustomTopic(rmtNodeId,
-                DFLT_INITIAL_SNAPSHOT_TOPIC,
-                new SnapshotResponseMessage(snpName, errMsg),
-                SYSTEM_POOL),
             snpName);
     }
 
@@ -972,9 +967,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /** The sender which sends files to remote node. */
         private final GridIoManager.TransmissionSender sndr;
 
-        /** Error handler which will be triggered in case of transmission sender not started yet. */
-        private final IgniteThrowableConsumer<String> errHnd;
-
         /** Relative node path initializer. */
         private final IgniteThrowableSupplier<String> initPath;
 
@@ -987,7 +979,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         /**
          * @param log Ignite logger.
          * @param sndr File sender instance.
-         * @param errHnd Snapshot error handler if transmission sender not started yet.
          * @param snpName Snapshot name.
          */
         public RemoteSnapshotSender(
@@ -995,13 +986,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
             Executor exec,
             IgniteThrowableSupplier<String> initPath,
             GridIoManager.TransmissionSender sndr,
-            IgniteThrowableConsumer<String> errHnd,
             String snpName
         ) {
             super(log, exec);
 
             this.sndr = sndr;
-            this.errHnd = errHnd;
             this.snpName = snpName;
             this.initPath = initPath;
         }
@@ -1082,14 +1071,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void close0(@Nullable Throwable th) {
-            try {
-                if (th != null && !sndr.opened())
-                    errHnd.accept(th.getMessage());
-            }
-            catch (IgniteCheckedException e) {
-                th.addSuppressed(e);
-            }
-
             U.closeQuiet(sndr);
 
             if (th == null) {
