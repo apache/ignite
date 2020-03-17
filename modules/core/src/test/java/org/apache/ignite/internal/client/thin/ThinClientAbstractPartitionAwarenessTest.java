@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -106,6 +107,10 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         super.afterTest();
 
         opsQueue.clear();
+
+        U.closeQuiet(client);
+
+        client = null;
     }
 
     /**
@@ -286,6 +291,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         /** Channel configuration. */
         private final ClientChannelConfiguration cfg;
 
+        /** Channel is closed. */
+        private volatile boolean closed;
+
         /**
          * @param cfg Config.
          */
@@ -312,6 +320,20 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            super.close();
+
+            closed = true;
+        }
+
+        /**
+         * Channel is closed.
+         */
+        public boolean isClosed() {
+            return closed;
         }
 
         /** {@inheritDoc} */
