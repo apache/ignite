@@ -177,8 +177,12 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
         return (T)attrs.get(name);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setAttributes(Map<String, Object> attrs) {
+    /**
+     * Sets node attributes.
+     *
+     * @param attrs Node attributes.
+     */
+    void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
     }
 

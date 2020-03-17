@@ -263,8 +263,12 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         });
     }
 
-    /** {@inheritDoc} */
-    @Override public void setAttributes(Map<String, Object> attrs) {
+    /**
+     * Sets node attributes.
+     *
+     * @param attrs Node attributes.
+     */
+    public void setAttributes(Map<String, Object> attrs) {
         this.attrs = U.sealMap(attrs);
     }
 

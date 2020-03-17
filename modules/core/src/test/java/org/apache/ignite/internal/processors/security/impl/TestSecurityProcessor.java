@@ -115,15 +115,17 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
             ((SecurityBasicPermissionSet) perms).setDefaultAllowAll(true);
         }
 
-        return registerSecurityContext(new TestSecurityContext(
-            new TestSecuritySubject()
-                .setType(ctx.subjectType())
-                .setId(ctx.subjectId())
-                .setAddr(ctx.address())
-                .setLogin(ctx.credentials().getLogin())
-                .setPerms(perms)
-                .sandboxPermissions(SANDBOX_PERMS.get(ctx.credentials()))
-        ));
+        return registerSecurityContext(
+            new TestSecurityContext(
+                new TestSecuritySubject()
+                    .setType(ctx.subjectType())
+                    .setId(ctx.subjectId())
+                    .setAddr(ctx.address())
+                    .setLogin(ctx.credentials().getLogin())
+                    .setPerms(perms)
+                    .sandboxPermissions(SANDBOX_PERMS.get(ctx.credentials()))
+            )
+        );
     }
 
     /** Registers SecurityContext in inner map. */

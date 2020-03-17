@@ -58,11 +58,4 @@ public interface IgniteClusterNode extends ClusterNode {
      * @param cacheMetrics Cache metrics.
      */
     public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics);
-
-    /**
-     * Sets node attributes.
-     *
-     * @param attrs Node attributes.
-     */
-    public void setAttributes(Map<String, Object> attrs);
 }

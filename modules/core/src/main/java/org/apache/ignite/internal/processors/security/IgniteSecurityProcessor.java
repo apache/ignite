@@ -248,7 +248,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         clearPackageAccessProperty();
 
-        nodesSecCtxs.remove(ctx.localNodeId());
         secPrc.stop(cancel);
     }
 
