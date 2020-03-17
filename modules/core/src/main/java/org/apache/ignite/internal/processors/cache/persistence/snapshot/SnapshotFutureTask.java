@@ -407,6 +407,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
+                if (gctx == null) {
+                    throw new IgniteCheckedException("Cache group context has not found " +
+                            "due to the cache group is stopped: " + grpId);
+                }
+
                 for (int partId : e.getValue()) {
                     GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
