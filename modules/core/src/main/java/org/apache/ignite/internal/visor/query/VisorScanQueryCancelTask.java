@@ -94,7 +94,7 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
                 return false;
             }
 
-            return ctx.queries().cancelScanQuery(arg.getOriginNodeId(), arg.getQueryId());
+            return ctx.queries().removeQueryResult(arg.getOriginNodeId(), arg.getQueryId());
         }
     }
 }

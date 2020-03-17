@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
@@ -61,10 +58,8 @@ public class ServiceMXBeanImpl implements ServiceMXBean {
 
             IgniteCompute compute = cluster.compute();
 
-            ClusterNode srv = U.randomServerNode(ctx);
-
             res = compute.execute(new VisorCancelServiceTask(),
-                new VisorTaskArgument<>(srv.id(), new VisorCancelServiceTaskArg(name), false));
+                new VisorTaskArgument<>(ctx.localNodeId(), new VisorCancelServiceTaskArg(name), false));
         }
         catch (Exception e) {
             throw new RuntimeException(e);

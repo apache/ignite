@@ -1509,29 +1509,32 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param reqId Request ID.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
+    public boolean removeQueryResult(@Nullable UUID sndId, long reqId) {
         if (sndId == null)
-            return;
+            return false;
 
         RequestFutureMap futs = qryIters.get(sndId);
 
-        if (futs != null) {
-            IgniteInternalFuture<QueryResult<K, V>> fut;
+        if (futs == null)
+            return false;
 
-            synchronized (futs) {
-                fut = futs.remove(reqId);
+        IgniteInternalFuture<QueryResult<K, V>> fut;
+
+        synchronized (futs) {
+            fut = futs.remove(reqId);
+        }
+
+        if (fut != null) {
+            try {
+                fut.get().closeIfNotShared(recipient(sndId, reqId));
             }
-
-            if (fut != null) {
-                try {
-                    fut.get().closeIfNotShared(recipient(sndId, reqId));
-                }
-                catch (IgniteCheckedException e) {
-                    if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
-                        U.error(log, "Failed to close iterator.", e);
-                }
+            catch (IgniteCheckedException e) {
+                if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
+                    U.error(log, "Failed to close iterator.", e);
             }
         }
+
+        return true;
     }
 
     /**
@@ -1960,21 +1963,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * Cancel scan query.
-     *
-     * @param origNodeId Originating node id.
-     * @param qryId Query id.
-     */
-    public boolean cancelScanQuery(UUID origNodeId, long qryId) {
-        RequestFutureMap futs = qryIters.get(origNodeId);
-
-        if (futs == null)
-            return false;
-
-        return futs.remove(qryId) != null;
     }
 
     /**

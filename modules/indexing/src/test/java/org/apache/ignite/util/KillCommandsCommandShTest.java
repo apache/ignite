@@ -51,7 +51,6 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         for (int i = 0; i < SERVER_NODE_CNT; i++)
             srvs.add(grid(i));
 
-        System.out.println("CancelCommandCommandShTest.beforeTestsStarted");
         IgniteCache<Object, Object> cache = client.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));

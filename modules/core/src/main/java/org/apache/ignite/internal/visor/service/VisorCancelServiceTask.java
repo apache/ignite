@@ -78,7 +78,7 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
             catch (IgniteException e) {
                 IgniteLogger log = ignite.log().getLogger(VisorCancelServiceTask.class);
 
-                log.warning("Error on service cance.", e);
+                log.warning("Error on service cancel.", e);
 
                 return false;
             }
