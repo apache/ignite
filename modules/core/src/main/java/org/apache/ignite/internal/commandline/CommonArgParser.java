@@ -64,6 +64,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
+    /** Option is used to print error trace stack. */
+    public static final String CMD_PRINT_ERR_STACK_TRACE = "--print-err-stack-trace";
+
     // SSL configuration section
 
     /** */
@@ -107,6 +110,7 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_USER);
 
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+        AUX_COMMANDS.add(CMD_PRINT_ERR_STACK_TRACE);
 
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
@@ -158,6 +162,7 @@ public class CommonArgParser {
         list.add(optional(CMD_PASSWORD, "PASSWORD"));
         list.add(optional(CMD_PING_INTERVAL, "PING_INTERVAL"));
         list.add(optional(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+        list.add(optional(CMD_PRINT_ERR_STACK_TRACE));
         list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
         list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
         list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
