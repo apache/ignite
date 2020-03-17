@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -28,30 +29,36 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * See {@link RelMetadataQuery}
  */
 public class RelMetadataQueryEx extends RelMetadataQuery {
-    /** */
-    private static final RelMetadataQueryEx PROTO = new RelMetadataQueryEx();
-
-    /** */
-    public static final JaninoRelMetadataProvider PROVIDER = JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER);
-
     static {
-        PROVIDER.register(ImmutableList.of(
+        JaninoRelMetadataProvider.DEFAULT.register(
+            ImmutableList.of(
                 IgniteExchange.class,
                 IgniteReceiver.class,
                 IgniteSender.class,
                 IgniteFilter.class,
                 IgniteProject.class,
                 IgniteJoin.class,
-                IgniteTableScan.class));
+                IgniteTableScan.class,
+                IgniteValues.class,
+                IgniteTableModify.class));
     }
+
+    /** */
+    private static final IgniteMetadata.FragmentMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
+        initialHandler(IgniteMetadata.FragmentMetadata.Handler.class);
+
+    /** */
+    private static final IgniteMetadata.DerivedDistribution.Handler DERIVED_DISTRIBUTIONS_INITIAL_HANDLER =
+        initialHandler(IgniteMetadata.DerivedDistribution.Handler.class);
 
     /** */
     private IgniteMetadata.FragmentMetadata.Handler sourceDistributionHandler;
@@ -64,52 +71,29 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
      *
      * @return return Metadata query instance.
      */
-    @SuppressWarnings("MethodOverridesStaticMethodOfSuperclass")
-    public static RelMetadataQueryEx instance() {
-        return new RelMetadataQueryEx(PROTO);
+    public static RelMetadataQueryEx create() {
+        return create(IgniteMetadata.METADATA_PROVIDER);
     }
 
     /**
-     * Wraps an original metadata query instance and reuses its prepared handlers.
+     * Factory method.
      *
-     * @param mq Original metadata query instance.
-     * @return Wrapped metadata query instance.
+     * @return return Metadata query instance.
      */
-    public static RelMetadataQueryEx wrap(@NotNull RelMetadataQuery mq) {
-        if (mq.getClass() == RelMetadataQueryEx.class)
-            return (RelMetadataQueryEx) mq;
-
-        return new RelMetadataQueryEx(mq);
+    public static RelMetadataQueryEx create(RelMetadataProvider metadataProvider) {
+        THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(metadataProvider));
+        try {
+            return new RelMetadataQueryEx();
+        }
+        finally {
+            THREAD_PROVIDERS.remove();
+        }
     }
 
-    /**
-     * @param parent Parent metadata query instance.
-     */
-    private RelMetadataQueryEx(@NotNull RelMetadataQueryEx parent) {
-        super(PROVIDER, parent);
-
-        sourceDistributionHandler = parent.sourceDistributionHandler;
-        derivedDistributionsHandler = parent.derivedDistributionsHandler;
-    }
-
-    /**
-     * @param parent Parent metadata query instance.
-     */
-    private RelMetadataQueryEx(@NotNull RelMetadataQuery parent) {
-        super(PROVIDER, parent);
-
-        sourceDistributionHandler = PROTO.sourceDistributionHandler;
-        derivedDistributionsHandler = PROTO.derivedDistributionsHandler;
-    }
-
-    /**
-     * Constructs query prototype.
-     */
+    /** */
     private RelMetadataQueryEx() {
-        super(JaninoRelMetadataProvider.DEFAULT, RelMetadataQuery.EMPTY);
-
-        sourceDistributionHandler = initialHandler(IgniteMetadata.FragmentMetadata.Handler.class);
-        derivedDistributionsHandler = initialHandler(IgniteMetadata.DerivedDistribution.Handler.class);
+        sourceDistributionHandler = SOURCE_DISTRIBUTION_INITIAL_HANDLER;
+        derivedDistributionsHandler = DERIVED_DISTRIBUTIONS_INITIAL_HANDLER;
     }
 
     /**

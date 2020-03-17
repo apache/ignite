@@ -102,7 +102,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return new SqlSelect(SqlParserPos.ZERO, null, selectList, sourceTable,
-            call.getCondition(), null, null, null, null, null, null);
+            call.getCondition(), null, null, null, null, null, null, null);
     }
 
     /** {@inheritDoc} */
@@ -120,7 +120,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return new SqlSelect(SqlParserPos.ZERO, null, selectList, sourceTable,
-            call.getCondition(), null, null, null, null, null, null);
+            call.getCondition(), null, null, null, null, null, null, null);
     }
 
     /** {@inheritDoc} */

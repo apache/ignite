@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.commons.lang.text.StrBuilder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
@@ -130,7 +129,7 @@ public class BasicType implements DataType, Externalizable {
 
     /** */
     protected String toString(boolean withNullability) {
-        StrBuilder sb = new StrBuilder(typeName.name());
+        StringBuilder sb = new StringBuilder(typeName.name());
 
         boolean printPrecision = precision != PRECISION_NOT_SPECIFIED;
         boolean printScale = scale != SCALE_NOT_SPECIFIED;

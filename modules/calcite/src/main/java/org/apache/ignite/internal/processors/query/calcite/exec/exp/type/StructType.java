@@ -22,7 +22,6 @@ import java.util.Map;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.commons.lang.text.StrBuilder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
@@ -78,7 +77,7 @@ public class StructType implements DataType {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StrBuilder sb = new StrBuilder("Row(");
+        StringBuilder sb = new StringBuilder("Row(");
 
         boolean first = true;
 

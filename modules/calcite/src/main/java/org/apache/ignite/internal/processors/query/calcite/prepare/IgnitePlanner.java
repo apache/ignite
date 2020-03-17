@@ -34,9 +34,6 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
-import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexExecutor;
@@ -58,6 +55,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
@@ -224,18 +222,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
-        RelMetadataProvider clusterProvider = rel.getCluster().getMetadataProvider();
-        JaninoRelMetadataProvider threadProvider = RelMetadataQuery.THREAD_PROVIDERS.get();
-        try {
-            rel.getCluster().setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
-            RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(rel.getCluster().getMetadataProvider()));
-
-            return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
-        }
-        finally {
-            rel.getCluster().setMetadataProvider(clusterProvider);
-            RelMetadataQuery.THREAD_PROVIDERS.set(threadProvider);
-        }
+        return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /**
@@ -247,18 +234,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return The root of the new RelNode tree.
      */
     public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel)  {
-        RelMetadataProvider clusterProvider = rel.getCluster().getMetadataProvider();
-        JaninoRelMetadataProvider threadProvider = RelMetadataQuery.THREAD_PROVIDERS.get();
-        try {
-            rel.getCluster().setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
-            RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(rel.getCluster().getMetadataProvider()));
-
-            return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
-        }
-        finally {
-            rel.getCluster().setMetadataProvider(clusterProvider);
-            RelMetadataQuery.THREAD_PROVIDERS.set(threadProvider);
-        }
+        return (T) phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
     /** {@inheritDoc} */
@@ -290,7 +266,10 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** Creates a cluster. */
     RelOptCluster createCluster() {
         RelOptCluster cluster = RelOptCluster.create(planner(), rexBuilder);
-        cluster.setMetadataProvider(IgniteMetadata.METADATA_PROVIDER);
+
+        cluster.setMetadataProvider(new CachingRelMetadataProvider(IgniteMetadata.METADATA_PROVIDER, planner()));
+        cluster.setMetadataQuerySupplier(RelMetadataQueryEx::create);
+
         return cluster;
     }
 

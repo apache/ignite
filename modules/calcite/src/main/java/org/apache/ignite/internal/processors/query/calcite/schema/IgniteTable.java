@@ -234,7 +234,12 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
 
         /** {@inheritDoc} */
         @Override public boolean isKey(ImmutableBitSet columns) {
-            return false;
+            return false; // TODO
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<ImmutableBitSet> getKeys() {
+            return null; // TODO
         }
 
         /** {@inheritDoc} */

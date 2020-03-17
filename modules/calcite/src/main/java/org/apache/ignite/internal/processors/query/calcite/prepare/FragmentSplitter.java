@@ -24,8 +24,8 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
@@ -43,7 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
  */
 public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     /** */
-    private RelMetadataQueryEx mq;
+    private RelMetadataQuery mq;
 
     /** */
     private List<Fragment> fragments;
@@ -52,7 +52,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     private RelNode cutPoint;
 
     /** */
-    public List<Fragment> go(Fragment fragment, RelNode cutPoint, RelMetadataQueryEx mq) {
+    public List<Fragment> go(Fragment fragment, RelNode cutPoint, RelMetadataQuery mq) {
         this.cutPoint = cutPoint;
         this.mq = mq;
 

@@ -98,8 +98,6 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * information will be recalculated for all fragments.
      */
     public FragmentInfo fragmentInfo(Join rel, RelMetadataQuery mq) {
-        mq = RelMetadataQueryEx.wrap(mq);
-
         FragmentInfo left = _fragmentInfo(rel.getLeft(), mq);
         FragmentInfo right = _fragmentInfo(rel.getRight(), mq);
 
@@ -154,6 +152,8 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * @return Fragment meta information.
      */
     public static FragmentInfo _fragmentInfo(RelNode rel, RelMetadataQuery mq) {
-        return RelMetadataQueryEx.wrap(mq).getFragmentInfo(rel);
+        assert mq instanceof RelMetadataQueryEx;
+
+        return ((RelMetadataQueryEx) mq).getFragmentInfo(rel);
     }
 }

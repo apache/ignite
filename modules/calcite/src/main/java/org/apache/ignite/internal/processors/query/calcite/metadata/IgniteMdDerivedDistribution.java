@@ -203,6 +203,8 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
 
     /** */
     private static List<IgniteDistribution> _deriveDistributions(RelNode rel, RelMetadataQuery mq) {
-        return RelMetadataQueryEx.wrap(mq).derivedDistributions(rel);
+        assert mq instanceof RelMetadataQueryEx;
+
+        return ((RelMetadataQueryEx) mq).derivedDistributions(rel);
     }
 }

@@ -34,8 +34,6 @@ import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.JaninoRelMetadataProvider;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.sql.SqlNode;
@@ -70,7 +68,6 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCancelRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
@@ -348,13 +345,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params) {
         PlanningContext pctx = createContext(ctx, schema, query, params);
-        RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER));
-        try (IgnitePlanner ignored = pctx.planner()) {
-            return Commons.transform(prepare(pctx), p -> executeSingle(UUID.randomUUID(), pctx, p));
-        }
-        finally {
-            RelMetadataQuery.THREAD_PROVIDERS.remove();
-        }
+
+        return Commons.transform(prepare(pctx), p -> executeSingle(UUID.randomUUID(), pctx, p));
     }
 
     /** {@inheritDoc} */
@@ -726,7 +718,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
         assert nodeId != null && msg != null;
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());
-        RelMetadataQuery.THREAD_PROVIDERS.set(JaninoRelMetadataProvider.of(IgniteMetadata.METADATA_PROVIDER));
+
         try {
             ExecutionContext execCtx = new ExecutionContext(
                 taskExecutor(),
@@ -765,9 +757,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
             if (ex instanceof Error)
                 throw (Error)ex;
-        }
-        finally {
-            RelMetadataQuery.THREAD_PROVIDERS.remove();
         }
     }
 

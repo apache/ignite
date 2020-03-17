@@ -49,8 +49,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.calcite.rel.RelDistribution.Type.ANY;
-
 /**
  * Implementation class for {@link RelMetadataQuery#distribution(RelNode)} method call.
  */
@@ -75,6 +73,13 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      */
     public IgniteDistribution distribution(RelNode rel, RelMetadataQuery mq) {
         return DistributionTraitDef.INSTANCE.getDefault();
+    }
+
+    /**
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     */
+    public IgniteDistribution distribution(IgniteRel rel, RelMetadataQuery mq) {
+        return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
     }
 
     /**
@@ -141,13 +146,6 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
     }
 
     /**
-     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
-     */
-    public IgniteDistribution distribution(IgniteRel rel, RelMetadataQuery mq) {
-        throw new AssertionError("Unexpected node: " + rel);
-    }
-
-    /**
      * @return Values relational node distribution.
      */
     public static IgniteDistribution values(RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples) {
@@ -196,10 +194,7 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * @return Actual distribution of the given relational node.
      */
     public static IgniteDistribution _distribution(RelNode rel, RelMetadataQuery mq) {
-        IgniteDistribution distr = rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-
-        if (distr.getType() != ANY)
-            return distr;
+        assert mq instanceof RelMetadataQueryEx;
 
         return (IgniteDistribution) mq.distribution(rel);
     }
