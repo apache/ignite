@@ -22,11 +22,16 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     /** Ignite core to work with. */
     private final IgniteKernal kernal;
 
+    /** Ignite kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * @param kernal Ignite kernel to work with.
      */
     public IgniteMXBeanImpl(IgniteKernal kernal) {
         this.kernal = kernal;
+
+        this.ctx = kernal.context();
     }
 
     /** {@inheritDoc} */
@@ -252,12 +257,12 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean pingNodeByAddress(String host) {
-        kernal.context().gateway().readLock();
+        ctx.gateway().readLock();
 
         try {
             for (ClusterNode n : kernal.cluster().nodes())
                 if (n.addresses().contains(host))
-                    return kernal.context().discovery().pingNode(n.id());
+                    return ctx.discovery().pingNode(n.id());
 
             return false;
         }
@@ -265,7 +270,7 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
             throw U.convertException(e);
         }
         finally {
-            kernal.context().gateway().readUnlock();
+            ctx.gateway().readUnlock();
         }
     }
 
@@ -284,13 +289,13 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
         int payLoadSize,
         boolean procFromNioThread
     ) {
-        kernal.context().io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize,
-            procFromNioThread, new ArrayList(kernal.context().cluster().get().forServers().forRemotes().nodes()));
+        ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize,
+            procFromNioThread, new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
     }
 
     /** {@inheritDoc} */
     @Override public void clearNodeLocalMap() {
-        kernal.context().cluster().get().clearNodeMap();
+        ctx.cluster().get().clearNodeMap();
     }
 
     /** {@inheritDoc} */
@@ -302,17 +307,17 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     @Override public void clusterState(String state, boolean forceDeactivation) {
         ClusterState newState = ClusterState.valueOf(state);
 
-        kernal.context().gateway().readLock();
+        ctx.gateway().readLock();
 
         try {
-            kernal.context().state().changeGlobalState(newState, forceDeactivation, kernal.context().cluster().get()
+            ctx.state().changeGlobalState(newState, forceDeactivation, ctx.cluster().get()
                 .forServers().nodes(), false).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
         finally {
-            kernal.context().gateway().readUnlock();
+            ctx.gateway().readUnlock();
         }
     }
 

@@ -234,35 +234,15 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             assertEquals(ACTIVE, ignite.cluster().state());
 
-            ignite.cluster().state(INACTIVE);
-
-            assertEquals(INACTIVE, ignite.cluster().state());
-
-            ignite.cluster().state(ACTIVE);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-
             mxBean.active(false);
 
             assertEquals(INACTIVE, ignite.cluster().state());
 
-            ignite.cluster().state(ACTIVE);
+            mxBean.active(true);
 
             assertEquals(ACTIVE, ignite.cluster().state());
-
-            mxBean.clusterState(INACTIVE.toString(), false);
-
-            assertEquals(INACTIVE, ignite.cluster().state());
         }
         else {
-            assertThrows(null, () -> {
-                ignite.cluster().state(INACTIVE);
-
-                return null;
-            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-
             assertThrows(null, () -> {
                 mxBean.active(false);
 
