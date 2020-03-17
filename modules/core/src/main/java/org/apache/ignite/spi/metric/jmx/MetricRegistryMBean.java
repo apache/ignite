@@ -156,7 +156,6 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
      */
     public static Long searchHistogram(String name, ReadOnlyMetricRegistry mreg) {
         int highBoundIdx;
-        int lowBoundIdx;
 
         boolean isInf = name.endsWith(INF);
 
@@ -170,7 +169,7 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
                 return null;
         }
 
-        lowBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER, highBoundIdx - 1);
+        int lowBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER, highBoundIdx - 1);
 
         if (lowBoundIdx == -1)
             return null;
