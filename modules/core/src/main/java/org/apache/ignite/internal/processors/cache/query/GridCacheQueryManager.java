@@ -1515,26 +1515,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         RequestFutureMap futs = qryIters.get(sndId);
 
-        if (futs == null)
-            return false;
+        if (futs != null) {
+            IgniteInternalFuture<QueryResult<K, V>> fut;
 
-        IgniteInternalFuture<QueryResult<K, V>> fut;
+            synchronized (futs) {
+                fut = futs.remove(reqId);
+            }
 
-        synchronized (futs) {
-            fut = futs.remove(reqId);
+            if (fut != null) {
+                try {
+                    fut.get().closeIfNotShared(recipient(sndId, reqId));
+                }
+                catch (IgniteCheckedException e) {
+                    if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
+                        U.error(log, "Failed to close iterator.", e);
+                }
+
+                return true;
+            }
         }
 
-        if (fut != null) {
-            try {
-                fut.get().closeIfNotShared(recipient(sndId, reqId));
-            }
-            catch (IgniteCheckedException e) {
-                if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
-                    U.error(log, "Failed to close iterator.", e);
-            }
-        }
-
-        return true;
+        return false;
     }
 
     /**
