@@ -419,8 +419,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                             () -> cpEndFut0.isDone() && !cpEndFut0.isCompletedExceptionally(),
                             stopping,
                             this::acceptException,
-                            partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())),
-                                partId),
+                            partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())), partId),
                             ioFactory,
                             store.pages(),
                                 locBuff));
@@ -647,7 +646,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         /** {@code true} if need the original page from PageStore instead of given buffer. */
         private final BooleanSupplier checkpointComplete;
 
-        /** {@code true} if snapshot process is stopping or alredy stopped. */
+        /** {@code true} if snapshot process is stopping or already stopped. */
         private final BooleanSupplier interrupt;
 
         /** Callback to stop snapshot if an error occurred. */
@@ -657,10 +656,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
          * Array of bits. 1 - means pages written, 0 - the otherwise.
          * Size of array can be estimated only under checkpoint write lock.
          */
-        private final AtomicBitSet pagesWrittenBits;
+        private final AtomicBitSet writtenPages;
 
-        /** IO over the underlying file */
-        private volatile FileIO fileIo;
+        /** IO over the underlying delta file. */
+        private volatile FileIO deltaFileIo;
 
         /** {@code true} if partition file has been copied to external resource. */
         private volatile boolean partProcessed;
@@ -696,7 +695,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             // It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
-            pagesWrittenBits = new AtomicBitSet(allocPages);
+            writtenPages = new AtomicBitSet(allocPages);
 
             store.addWriteListener(this);
         }
@@ -727,15 +726,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             assert buf.position() == 0 : buf.position();
             assert buf.order() == ByteOrder.nativeOrder() : buf.order();
 
-            if (fileIo == null) {
+            if (deltaFileIo == null) {
                 lock.writeLock().lock();
 
                 try {
                     if (stopped())
                         return;
 
-                    if (fileIo == null)
-                        fileIo = factory.create(deltaFile);
+                    if (deltaFileIo == null)
+                        deltaFileIo = factory.create(deltaFile);
                 }
                 catch (IOException e) {
                     exCons.accept(e);
@@ -755,7 +754,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     int pageIdx = PageIdUtils.pageIndex(pageId);
 
                     // Page already written.
-                    if (!pagesWrittenBits.touch(pageIdx))
+                    if (!writtenPages.touch(pageIdx))
                         return;
 
                     final ByteBuffer locBuf = localBuff.get();
@@ -772,7 +771,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     writePage0(pageId, locBuf);
                 }
                 else {
-                    // Direct buffre is needs to be written, associated checkpoint not finished yet.
+                    // Direct buffer is needs to be written, associated checkpoint not finished yet.
                     writePage0(pageId, buf);
                 }
             }
@@ -790,7 +789,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
          * @throws IOException If page writing failed (IO error occurred).
          */
         private void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
-            assert fileIo != null : "Delta pages storage is not inited: " + this;
+            assert deltaFileIo != null : "Delta pages storage is not inited: " + this;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                 + " should be same with " + ByteOrder.nativeOrder();
@@ -798,7 +797,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             if (log.isDebugEnabled()) {
                 log.debug("onPageWrite [pageId=" + pageId +
                     ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
-                    ", fileSize=" + fileIo.size() +
+                    ", fileSize=" + deltaFileIo.size() +
                     ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) +
                     ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
 
@@ -806,7 +805,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             }
 
             // Write buffer to the end of the file.
-            fileIo.writeFully(pageBuf);
+            deltaFileIo.writeFully(pageBuf);
         }
 
         /** {@inheritDoc} */
@@ -814,9 +813,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             lock.writeLock().lock();
 
             try {
-                U.closeQuiet(fileIo);
+                U.closeQuiet(deltaFileIo);
 
-                fileIo = null;
+                deltaFileIo = null;
 
                 store.removeWriteListener(this);
             }
