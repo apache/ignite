@@ -742,6 +742,13 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return cfg.getIgniteHome();
     }
 
+    /** @return String representation of the grid logger. */
+    String gridLoggerFormatted() {
+        assert cfg != null;
+
+        return cfg.getGridLogger().toString();
+    }
+
     /** @return String representation of the MBean server. */
     String mbeanServerFormatted() {
         assert cfg != null;
@@ -765,15 +772,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
-    }
-
-    /**
-     * @return String representation of the grid logger.
-     */
-    String gridLoggerFormatted() {
-        assert cfg != null;
-
-        return cfg.getGridLogger().toString();
     }
 
     /** @return {@code True} if peer class loading is enabled. {@code False} otherwise. */
