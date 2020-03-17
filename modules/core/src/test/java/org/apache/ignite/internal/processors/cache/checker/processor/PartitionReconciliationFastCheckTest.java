@@ -39,7 +39,8 @@ import org.apache.ignite.internal.visor.checker.VisorPartitionReconciliationTask
 
 import static org.apache.ignite.TestStorageUtils.corruptDataEntry;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.PLANNED;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.SCHEDULED;
 
 /**
  * Test fast-check mode of partition reconciliation utility.
@@ -104,7 +105,7 @@ public class PartitionReconciliationFastCheckTest extends PartitionReconciliatio
 
         // Count all planned batches.
         ReconciliationEventListener evtsLsnr = (stage, workload) -> {
-            if (stage == PLANNED && workload instanceof Batch)
+            if (stage == SCHEDULED && workload instanceof Batch)
                 batchCnt.incrementAndGet();
         };
 
@@ -130,7 +131,7 @@ public class PartitionReconciliationFastCheckTest extends PartitionReconciliatio
 
         // Count all planned batches.
         ReconciliationEventListener evtsLsnr = (stage, workload) -> {
-            if (stage == PLANNED && workload instanceof Batch) {
+            if (stage == SCHEDULED && workload instanceof Batch) {
                 Batch batch = (Batch)workload;
 
                 partMap.put(batch.partitionId(), batch.partitionId());
@@ -176,7 +177,7 @@ public class PartitionReconciliationFastCheckTest extends PartitionReconciliatio
 
         // Count all planned batches.
         ReconciliationEventListener evtsLsnr = (stage, workload) -> {
-            if (stage == PLANNED && workload instanceof Batch) {
+            if (stage == SCHEDULED && workload instanceof Batch) {
                 Batch batch = (Batch)workload;
 
                 partMap.put(batch.partitionId(), batch.partitionId());
