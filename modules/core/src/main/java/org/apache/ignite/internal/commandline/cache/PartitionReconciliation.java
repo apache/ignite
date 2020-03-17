@@ -105,7 +105,7 @@ public class PartitionReconciliation implements Command<PartitionReconciliation.
 
         paramsDesc.put(FAST_CHECK.toString(),
             "This option allows checking and repairing only partitions that did not pass validation" +
-                " during the last partition map exchnage, otherwise all partitions will ba taken into account.");
+                " during the last partition map exchange, otherwise, all partitions will be taken into account.");
 
         paramsDesc.put(REPAIR.toString(),
             "If present, fix all inconsistent data. Specifies which repair algorithm to use for doubtful keys. The following values can be used: "
