@@ -1449,7 +1449,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             ignite.cluster().state(ACTIVE);
         }
         else {
-            assertThrows(null, () -> {
+            assertThrows(log, () -> {
                 deactivator.run();
 
                 return null;
