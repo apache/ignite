@@ -1006,9 +1006,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Check if the tree is getting destroyed.
      */
-    protected final void checkDestroyed() {
+    protected final void checkDestroyed() throws IgniteCheckedException {
         if (destroyed.get())
-            throw new IllegalStateException(CONC_DESTROY_MSG + getName());
+            throw new IgniteCheckedException(CONC_DESTROY_MSG + getName());
     }
 
     /** {@inheritDoc} */
@@ -5404,6 +5404,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         final boolean nextPage(L lastRow) throws IgniteCheckedException {
+            checkDestroyed();
+
             updateLowerBound(lastRow);
 
             for (;;) {

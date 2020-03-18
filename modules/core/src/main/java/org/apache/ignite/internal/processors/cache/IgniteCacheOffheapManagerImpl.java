@@ -922,40 +922,46 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return true;
 
                 while (true) {
-                    if (cur == null) {
-                        if (dataIt.hasNext()) {
-                            CacheDataStore ds = dataIt.next();
+                    try {
+                        if (cur == null) {
+                            if (dataIt.hasNext()) {
+                                CacheDataStore ds = dataIt.next();
 
-                            curPart = ds.partId();
+                                curPart = ds.partId();
 
-                            // Data page scan is disabled by default for scan queries.
-                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998
-                            CacheDataTree.setDataPageScanEnabled(false);
+                                // Data page scan is disabled by default for scan queries.
+                                // TODO https://issues.apache.org/jira/browse/IGNITE-11998
+                                CacheDataTree.setDataPageScanEnabled(false);
 
-                            try {
-                                if (mvccSnapshot == null)
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
-                                else {
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ?
-                                        ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                try {
+                                    if (mvccSnapshot == null)
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                                    else {
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ?
+                                            ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                    }
+                                }
+                                finally {
+                                    CacheDataTree.setDataPageScanEnabled(false);
                                 }
                             }
-                            finally {
-                                CacheDataTree.setDataPageScanEnabled(false);
-                            }
+                            else
+                                break;
+                        }
+
+                        if (cur.next()) {
+                            next = cur.get();
+                            next.key().partition(curPart);
+
+                            break;
                         }
                         else
-                            break;
+                            cur = null;
                     }
-
-                    if (cur.next()) {
-                        next = cur.get();
-                        next.key().partition(curPart);
-
-                        break;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteCheckedException("Failed to get next data row due to underlying cursor " +
+                            "invalidation", ex);
                     }
-                    else
-                        cur = null;
                 }
 
                 return next != null;
@@ -2940,6 +2946,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             if (exception.get() != null)
                 throw new IgniteCheckedException("Failed to destroy store", exception.get());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void markDestroyed() {
+            dataTree.markDestroyed();
         }
 
         /** {@inheritDoc} */
