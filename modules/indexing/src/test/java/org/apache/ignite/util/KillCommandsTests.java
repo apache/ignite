@@ -50,13 +50,11 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.client.Config.DEFAULT_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -73,19 +71,22 @@ import static org.junit.Assert.fail;
  * General tests for the cancel command.
  */
 class KillCommandsTests {
-    /** */
+    /** Service name. */
     public static final String SVC_NAME = "my-svc";
 
-    /** */
+    /** Cache name. */
+    public static final String DEFAULT_CACHE_NAME = "default";
+
+    /** Page size. */
     public static final int PAGE_SZ = 5;
 
-    /** */
+    /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
-    /** */
+    /** Service start barrier. */
     private static volatile CyclicBarrier svcStartBarrier;
 
-    /** */
+    /** Service cancel barriers. */
     private static volatile CyclicBarrier svcCancelBarrier;
 
     /**
@@ -96,7 +97,7 @@ class KillCommandsTests {
      * @param qryCanceler Query cancel closure.
      */
     public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs, Consumer<T3<UUID, String, Long>> qryCanceler) {
-        IgniteCache<Object, Object> cache = cli.cache(GridAbstractTest.DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
         Iterator<Cache.Entry<Object, Object>> iter1 = qry1.iterator();

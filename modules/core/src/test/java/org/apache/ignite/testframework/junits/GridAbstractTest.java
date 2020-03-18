@@ -195,7 +195,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** */
-    public static final String DEFAULT_CACHE_NAME = "default";
+    protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Sustains {@link #beforeTestsStarted()} and {@link #afterTestsStopped()} methods execution.*/
     @ClassRule public static final TestRule firstLastTestRule = RuleChain

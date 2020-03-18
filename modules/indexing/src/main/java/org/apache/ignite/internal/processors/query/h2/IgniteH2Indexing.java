@@ -2506,7 +2506,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public boolean cancelQuery(long id) {
-        return runningQryMgr.cancel(id);
+        try {
+            return runningQryMgr.cancel(id);
+        }
+        catch (IgniteException e) {
+            log.warning("Query cancel error.", e);
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
