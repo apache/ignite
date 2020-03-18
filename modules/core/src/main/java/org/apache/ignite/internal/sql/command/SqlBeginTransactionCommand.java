@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * BEGIN [TRANSACTION] command.
  */
-public class SqlBeginTransactionCommand extends SchemalessCommand {
+public class SqlBeginTransactionCommand implements SqlCommand {
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         return this;

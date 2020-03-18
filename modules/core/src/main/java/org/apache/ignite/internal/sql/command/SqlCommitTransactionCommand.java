@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * COMMIT command.
  */
-public class SqlCommitTransactionCommand extends SchemalessCommand {
+public class SqlCommitTransactionCommand implements SqlCommand {
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         return this;

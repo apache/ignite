@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 /**
  * SET STREAMING command.
  */
-public class SqlSetStreamingCommand extends SchemalessCommand {
+public class SqlSetStreamingCommand implements SqlCommand {
     /** Default batch size for driver. */
     private static final int DFLT_STREAM_BATCH_SIZE = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE * 4;
 

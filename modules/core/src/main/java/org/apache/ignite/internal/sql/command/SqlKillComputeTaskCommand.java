@@ -32,7 +32,7 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
  * @see ComputeJobView#sessionId()
  * @see ComputeTaskView#sessionId()
  */
-public class SqlKillComputeTaskCommand extends SchemalessCommand {
+public class SqlKillComputeTaskCommand implements SqlCommand {
     /** Session id. */
     private IgniteUuid sessionId;
 

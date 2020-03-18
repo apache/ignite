@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * ROLLBACK command.
  */
-public class SqlRollbackTransactionCommand extends SchemalessCommand {
+public class SqlRollbackTransactionCommand implements SqlCommand {
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         return this;

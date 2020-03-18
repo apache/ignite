@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
 /**
  * CREATE USER command.
  */
-public class SqlCreateUserCommand extends SchemalessCommand {
+public class SqlCreateUserCommand implements SqlCommand {
     /** User name. */
     private String userName;
 

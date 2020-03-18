@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * DROP USER command.
  */
-public class SqlDropUserCommand extends SchemalessCommand {
+public class SqlDropUserCommand implements SqlCommand {
     /** User name. */
     private String userName;
 
