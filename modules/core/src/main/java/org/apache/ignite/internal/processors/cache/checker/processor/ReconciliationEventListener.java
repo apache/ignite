@@ -17,30 +17,57 @@
 
 package org.apache.ignite.internal.processors.cache.checker.processor;
 
+import java.util.Objects;
+
 /**
- * Description of contract for {@link ReconciliationEventListener}.
+ * This listener allows tracking the lifecycle stages of a workload.
  */
+@FunctionalInterface
 public interface ReconciliationEventListener {
     /**
-     * State of workload lifecycle.
+     * Workload lifecycle stages.
      */
     enum WorkLoadStage {
-        /**
-         * It means that workload added to queue.
-         */
-        PLANNED,
-        /**
-         * It means that a compute result fetched and ready to process.
-         */
-        RESULT_READY,
-        /**
-         * It means that processing finished.
-         */
-        FINISHING
+        /** Workload is scheduled for processing. */
+        SCHEDULED,
+
+        /** Workload is ready to be processed. */
+        BEFORE_PROCESSING,
+
+        /** Workload has been processed and the processing result is ready to be used. */
+        READY,
+
+        /** Processing of the workload is completed. */
+        FINISHED
     }
 
     /**
-     * Process event.
+     * Callbeck for processing the given {@code stage} event of the correcponding {@code workload}.
+     *
+     * @param stage Workload lifecycle stage.
+     * @param workload Workload.
      */
     void onEvent(WorkLoadStage stage, PipelineWorkload workload);
+
+    /**
+     * Returns a composed ReconciliationEventListener that performs, in sequence, this
+     * operation followed by the {@code after} operation. If performing either
+     * operation throws an exception, it is relayed to the caller of the
+     * composed operation.  If performing this operation throws an exception,
+     * the {@code after} operation will not be performed.
+     *
+     * @param after Listener to be called after this listener.
+     * @return Composed {@code ReconciliationEventListener} that performs in sequence this
+     *      listener followed by the {@code after} listener.
+     * @throws NullPointerException If {@code after} is null.
+     */
+    default ReconciliationEventListener andThen(ReconciliationEventListener after) {
+        Objects.requireNonNull(after);
+
+        return (stage, workload) -> {
+            onEvent(stage, workload);
+
+            after.onEvent(stage, workload);
+        };
+    }
 }

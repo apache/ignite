@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.checker.ConsistencyCheckUtilsTest;
 import org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationBinaryObjectsTest;
+import org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationCompactCollectorTest;
 import org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationFastCheckTest;
 import org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationFixStressTest;
 import org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationFullFixStressTest;
@@ -76,6 +77,7 @@ public class PartitionReconciliationTestSuite extends TestSuite {
         suite.addTestSuite(RepairRequestTaskTest.class);
         suite.addTestSuite(ReconciliationResourceLimitedJobTest.class);
         suite.addTestSuite(PartitionReconciliationFastCheckTest.class);
+        suite.addTestSuite(PartitionReconciliationCompactCollectorTest.class);
 
         return suite;
     }

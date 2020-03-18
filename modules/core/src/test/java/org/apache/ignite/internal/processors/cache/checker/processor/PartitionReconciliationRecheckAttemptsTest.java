@@ -37,8 +37,8 @@ import org.apache.ignite.internal.visor.checker.VisorPartitionReconciliationTask
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHING;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.RESULT_READY;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHED;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.READY;
 
 /**
  * Tests count of calls the recheck process with different inputs.
@@ -123,7 +123,7 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         waitKeyReporation = new CountDownLatch(1);
 
         ReconciliationEventListenerProvider.defaultListenerInstance((stage, workload) -> {
-            if (stage.equals(RESULT_READY) && workload instanceof RecheckRequest) {
+            if (stage.equals(READY) && workload instanceof RecheckRequest) {
                 int attempt = recheckAttempts.computeIfAbsent(workload.workloadChainId(), (key) -> new AtomicInteger(0)).incrementAndGet();
 
                 if (attempt == 2)
@@ -149,7 +149,6 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         builder.repair(false);
         builder.parallelism(1);
         builder.caches(Collections.singleton(DEFAULT_CACHE_NAME));
-        builder.locOutput(true);
         builder.recheckAttempts(3);
         builder.recheckDelay(0);
 
@@ -176,7 +175,7 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         final ConcurrentMap<UUID, AtomicInteger> recheckAttempts = new ConcurrentHashMap<>();
 
         ReconciliationEventListenerProvider.defaultListenerInstance((stage, workload) -> {
-            if (stage.equals(FINISHING) && workload instanceof RecheckRequest)
+            if (stage.equals(FINISHED) && workload instanceof RecheckRequest)
                 recheckAttempts.computeIfAbsent(workload.workloadChainId(), (key) -> new AtomicInteger(0)).incrementAndGet();
         });
 
@@ -190,7 +189,6 @@ public class PartitionReconciliationRecheckAttemptsTest extends PartitionReconci
         builder.repair(false);
         builder.parallelism(1);
         builder.caches(Collections.singleton(DEFAULT_CACHE_NAME));
-        builder.locOutput(true);
         builder.recheckAttempts(attempts);
         builder.recheckDelay(0);
 

@@ -274,7 +274,7 @@ public class PartitionReconciliationProcessorTest extends TestCase {
         MockedProcessor processor = MockedProcessor.create(true);
         processor.useRealScheduler = true;
         processor.registerListener((stage, workload) -> {
-            if (stage.equals(ReconciliationEventListener.WorkLoadStage.RESULT_READY))
+            if (stage.equals(ReconciliationEventListener.WorkLoadStage.READY))
                 evtHist.add(workload.getClass().getName());
         });
 
@@ -428,13 +428,15 @@ public class PartitionReconciliationProcessorTest extends TestCase {
                 parallelismLevel,
                 batchSize,
                 recheckAttempts,
-                recheckDelay);
+                recheckDelay,
+                false,
+                true);
         }
 
         /** {@inheritDoc} */
         @Override
         protected <T extends CachePartitionRequest, R> void compute(
-            Class<? extends ComputeTask<T, ExecutionResult<R>>> taskCls, T arg,
+            Class<? extends ComputeTask<T, ExecutionResult<R>>> taskCls, T workload,
             IgniteInClosure<? super R> lsnr) throws InterruptedException {
 
             if (this.parallelismLevel == 0) {
@@ -443,14 +445,14 @@ public class PartitionReconciliationProcessorTest extends TestCase {
                 if (res == null)
                     throw new IllegalStateException("Please add result for: " + taskCls.getSimpleName());
 
-                evtLsnr.onEvent(ReconciliationEventListener.WorkLoadStage.RESULT_READY, arg);
+                evtLsnr.onEvent(ReconciliationEventListener.WorkLoadStage.READY, workload);
 
                 lsnr.apply(res.result());
 
-                evtLsnr.onEvent(ReconciliationEventListener.WorkLoadStage.FINISHING, arg);
+                evtLsnr.onEvent(ReconciliationEventListener.WorkLoadStage.FINISHED, workload);
             }
             else
-                super.compute(taskCls, arg, lsnr);
+                super.compute(taskCls, workload, lsnr);
         }
 
         /** {@inheritDoc} */

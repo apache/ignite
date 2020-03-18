@@ -39,9 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Result with lists of broken and fixed, skipped entries.
  */
 public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
-    /**
-     *
-     */
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** A sequence of characters that is used to hide sensitive data in case of non-includeSensitive mode. */
@@ -136,7 +134,7 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
             printer.accept("\t\t\t<nodeConsistentId>, <nodeId>: <value> <version>\n");
             printer.accept("\t\t\t...\n");
             printer.accept("\t\t\t<info on whether confilct is fixed>\n\n");
-            printer.accept(conflicts(inconsistentKeys, includeSensitive));
+            printer.accept(getConflictsAsString(inconsistentKeys, includeSensitive));
         }
 
         if (skippedCaches != null && !skippedCaches.isEmpty()) {
@@ -194,53 +192,85 @@ public class ReconciliationAffectedEntries extends IgniteDataTransferObject {
     }
 
     /**
-     * @param keys Keys.
+     * Returns string representation of the given {@code keys}.
+     *
+     * @param keys Inconsistent keys.
      * @param includeSensitive Include sensitive.
      */
-    private String conflicts(
+    private String getConflictsAsString(
         Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> keys,
         boolean includeSensitive
     ) {
         StringBuilder res = new StringBuilder();
 
-        for (Map.Entry<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>>
-            cacheBoundedInconsistentKeysEntry : keys.entrySet()) {
+        for (Map.Entry<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> cacheEntry : keys.entrySet()) {
+            String cacheName = cacheEntry.getKey();
 
-            String cacheName = cacheBoundedInconsistentKeysEntry.getKey();
+            res.append(cacheName).append('\n');
 
-            res.append(cacheName).append("\n");
+            for (Map.Entry<Integer, List<PartitionReconciliationDataRowMeta>> partEntry : cacheEntry.getValue().entrySet()) {
+                Integer part = partEntry.getKey();
 
-            for (Map.Entry<Integer, List<PartitionReconciliationDataRowMeta>> partitionBoundedInconsistentKeysEntry
-                : cacheBoundedInconsistentKeysEntry.getValue().entrySet()) {
-                Integer part = partitionBoundedInconsistentKeysEntry.getKey();
-
-                res.append("\t")
-                    .append(part)
-                    .append("\n");
-
-                for (PartitionReconciliationDataRowMeta inconsistentDataRow :
-                    partitionBoundedInconsistentKeysEntry.getValue()) {
-                    res.append("\t\t")
-                        .append(inconsistentDataRow.keyMeta().stringView(includeSensitive))
-                        .append("\n");
-
-                    for (Map.Entry<UUID, PartitionReconciliationValueMeta> valMap :
-                        inconsistentDataRow.valueMeta().entrySet()) {
-                        res.append("\t\t\t")
-                            .append(nodesIdsToConsistentIdsMap.get(valMap.getKey()))
-                            .append(" ")
-                            .append(U.id8(valMap.getKey()))
-                            .append(valMap.getValue() != null ? ": " + valMap.getValue().stringView(includeSensitive) : "")
-                            .append("\n");
-                    }
-
-                    if (inconsistentDataRow.repairMeta() != null) {
-                        res.append("\n\t\t\t")
-                            .append(inconsistentDataRow.repairMeta().stringView(includeSensitive))
-                            .append("\n\n");
-                    }
-                }
+                res.append(getConflictsAsString(part, partEntry.getValue(), nodesIdsToConsistentIdsMap, includeSensitive));
             }
+        }
+
+        return res.toString();
+    }
+
+    /**
+     * Returns string representation of the given {@code rows}.
+     *
+     * @param partId Partitions id.
+     * @param rows Collection of data rows.
+     * @param nodesIdsToConsistentIdsMap Mapping node ids to consistent ids.
+     * @param includeSensitive Include sensitive.
+     */
+    private String getConflictsAsString(
+        int partId,
+        List<PartitionReconciliationDataRowMeta> rows,
+        Map<UUID, String> nodesIdsToConsistentIdsMap,
+        boolean includeSensitive
+    ) {
+        StringBuilder res = new StringBuilder();
+
+        res.append('\t').append(partId).append('\n');
+
+        for (PartitionReconciliationDataRowMeta row : rows)
+            res.append(getConflictsAsString(row, nodesIdsToConsistentIdsMap, includeSensitive));
+
+        return res.toString();
+    }
+
+    /**
+     * Returns string representation of the given {@code row}.
+     *
+     * @param row Data row.
+     * @param nodesIdsToConsistentIdsMap Mapping node ids to consistent ids.
+     * @param includeSensitive Include sensitive.
+     */
+    public static String getConflictsAsString(
+        PartitionReconciliationDataRowMeta row,
+        Map<UUID, String> nodesIdsToConsistentIdsMap,
+        boolean includeSensitive
+    ) {
+        StringBuilder res = new StringBuilder();
+
+        res.append("\t\t").append(row.keyMeta().stringView(includeSensitive)).append('\n');
+
+        for (Map.Entry<UUID, PartitionReconciliationValueMeta> valMap : row.valueMeta().entrySet()) {
+            res.append("\t\t\t")
+                .append(nodesIdsToConsistentIdsMap.get(valMap.getKey()))
+                .append(" ")
+                .append(U.id8(valMap.getKey()))
+                .append(valMap.getValue() != null ? ": " + valMap.getValue().stringView(includeSensitive) : "")
+                .append('\n');
+        }
+
+        if (row.repairMeta() != null) {
+            res.append("\n\t\t\t")
+                .append(row.repairMeta().stringView(includeSensitive))
+                .append("\n\n");
         }
 
         return res.toString();

@@ -24,7 +24,7 @@ Arguments: --cache help --yes
     Verify whether there are inconsistent entries for the specified caches and print out the differences if any. Fix inconsistency if --repairargument is presented. When no parameters are specified, all user caches are verified. Cache filtering options configure the set of caches that will be processed by partition-reconciliation command. If cache names are specified, in form of regular expressions, only matching caches will be verified.
 
     Parameters:
-      --fast-check         - This option allows checking and repairing only partitions that did not pass validation during the last partition map exchnage, otherwise all partitions will ba taken into account.
+      --fast-check         - This option allows checking and repairing only partitions that did not pass validation during the last partition map exchange, otherwise, all partitions will be taken into account.
       --parallelism        - Maximum number of threads that can be involved in partition reconciliation activities on one node. Default value equals number of cores.
       --include-sensitive  - Print data to result with sensitive information: keys and values. Default value is false.
       --repair             - If present, fix all inconsistent data. Specifies which repair algorithm to use for doubtful keys. The following values can be used: [LATEST, PRIMARY, MAJORITY, REMOVE, PRINT_ONLY]. Default value is PRINT_ONLY.

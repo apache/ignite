@@ -39,9 +39,10 @@ import org.apache.ignite.internal.processors.cache.checker.util.DelayedHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHING;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.PLANNED;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.RESULT_READY;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.BEFORE_PROCESSING;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHED;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.READY;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.SCHEDULED;
 
 /**
  * Abstraction for the control unit of work.
@@ -113,6 +114,13 @@ public class AbstractPipelineProcessor {
     }
 
     /**
+     * @return Returns session identifier.
+     */
+    public long sessionId() {
+        return sesId;
+    }
+
+    /**
      * @return true if current topology version isn't equal start topology.
      */
     protected boolean topologyChanged() throws IgniteCheckedException {
@@ -174,17 +182,21 @@ public class AbstractPipelineProcessor {
      * Executes the given task.
      *
      * @param taskCls Task class.
-     * @param arg Argument.
+     * @param workload Argument.
      * @param lsnr Listener.
      */
     protected <T extends CachePartitionRequest, R> void compute(
         Class<? extends ComputeTask<T, ExecutionResult<R>>> taskCls,
-        T arg,
+        T workload,
         IgniteInClosure<? super R> lsnr
     ) throws InterruptedException {
         liveListeners.acquire();
 
-        ignite.compute(partOwners(arg.cacheName(), arg.partitionId())).executeAsync(taskCls, arg).listen(fut -> {
+        ClusterGroup grp = partOwners(workload.cacheName(), workload.partitionId());
+
+        evtLsnr.onEvent(BEFORE_PROCESSING, workload);
+
+        ignite.compute(grp).executeAsync(taskCls, workload).listen(fut -> {
             try {
                 ExecutionResult<R> res;
 
@@ -205,11 +217,11 @@ public class AbstractPipelineProcessor {
                     return;
                 }
 
-                evtLsnr.onEvent(RESULT_READY, arg);
+                evtLsnr.onEvent(READY, workload);
 
                 lsnr.apply(res.result());
 
-                evtLsnr.onEvent(FINISHING, arg);
+                evtLsnr.onEvent(FINISHED, workload);
             }
             finally {
                 liveListeners.release();
@@ -230,7 +242,7 @@ public class AbstractPipelineProcessor {
      * Schedules with minimal finish time -1;
      */
     protected void scheduleHighPriority(PipelineWorkload task) {
-        evtLsnr.onEvent(PLANNED, task);
+        evtLsnr.onEvent(SCHEDULED, task);
 
         highPriorityQueue.offer(new DelayedHolder<>(-1, task));
     }
@@ -245,7 +257,7 @@ public class AbstractPipelineProcessor {
     protected void schedule(PipelineWorkload task, long duration, TimeUnit timeUnit) {
         long finishTime = U.currentTimeMillis() + timeUnit.toMillis(duration);
 
-        evtLsnr.onEvent(PLANNED, task);
+        evtLsnr.onEvent(SCHEDULED, task);
 
         queue.offer(new DelayedHolder<>(finishTime, task));
     }

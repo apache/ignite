@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.ThrowUp;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationProcessor.TOPOLOGY_CHANGE_MSG;
-import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHING;
+import static org.apache.ignite.internal.processors.cache.checker.processor.ReconciliationEventListener.WorkLoadStage.FINISHED;
 
 /**
  * Tests different scenario of interruption of repair stage.
@@ -278,7 +278,7 @@ public class PartitionReconciliationInterruptionRepairTest extends PartitionReco
                 }
             }
 
-            if (stage.equals(FINISHING) && workload instanceof RepairRequest)
+            if (stage.equals(FINISHED) && workload instanceof RepairRequest)
                 firstRecheckFinished.countDown();
         });
 

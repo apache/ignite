@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.verify.checker.tasks;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -54,7 +51,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.internal.processors.cache.checker.processor.PartitionReconciliationProcessor.ERROR_REASON;
-import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.createLocalResultFile;
 
 /**
  * The main task which services {@link PartitionReconciliationProcessor} per nodes.
@@ -237,7 +233,7 @@ public class PartitionReconciliationProcessorTask extends ComputeTaskAdapter<Vis
             }
 
             try {
-                ExecutionResult<ReconciliationAffectedEntries> reconciliationRes = new PartitionReconciliationProcessor(
+                PartitionReconciliationProcessor proc = new PartitionReconciliationProcessor(
                     sesId,
                     ignite,
                     caches,
@@ -247,18 +243,15 @@ public class PartitionReconciliationProcessorTask extends ComputeTaskAdapter<Vis
                     reconciliationTaskArg.parallelism(),
                     reconciliationTaskArg.batchSize(),
                     reconciliationTaskArg.recheckAttempts(),
-                    reconciliationTaskArg.recheckDelay()
-                ).execute();
+                    reconciliationTaskArg.recheckDelay(),
+                    !reconciliationTaskArg.locOutput(),
+                    reconciliationTaskArg.includeSensitive());
 
-                String path = localPrint(reconciliationRes.result());
+                ExecutionResult<ReconciliationAffectedEntries> reconciliationRes = proc.execute();
 
-                return new T2<>(
-                    path,
-                    reconciliationTaskArg.locOutput() ? reconciliationRes : new ExecutionResult<>(new ReconciliationAffectedEntriesExtended(
-                        reconciliationRes.result().inconsistentKeysCount(),
-                        reconciliationRes.result().skippedEntriesCount(),
-                        reconciliationRes.result().skippedEntriesCount()), reconciliationRes.errorMessage())
-                );
+                File path = proc.collector().flushResultsToFile(startTime);
+
+                return new T2<>((path != null)? path.getAbsolutePath() : null, reconciliationRes);
             }
             catch (Exception e) {
                 String msg = "Reconciliation job failed on node [id=" + ignite.localNode().id() + "]. ";
@@ -266,37 +259,6 @@ public class PartitionReconciliationProcessorTask extends ComputeTaskAdapter<Vis
 
                 throw new IgniteException(msg + String.format(ERROR_REASON, e.getMessage(), e.getClass()), e);
             }
-        }
-
-        /**
-         * Does print local result.
-         *
-         * @return link to file with result.
-         */
-        private String localPrint(ReconciliationAffectedEntries reconciliationRes) {
-            if (reconciliationRes != null && !reconciliationRes.isEmpty()) {
-                try {
-                    File file = createLocalResultFile(ignite.context().discovery().localNode(), startTime);
-
-                    try (PrintWriter pw = new PrintWriter(file)) {
-                        reconciliationRes.print(pw::write, reconciliationTaskArg.includeSensitive());
-
-                        pw.flush();
-
-                        return file.getAbsolutePath();
-                    }
-                    catch (IOException e) {
-                        log.error("Unable to write report to file " + e.getMessage());
-                    }
-                }
-                catch (IgniteCheckedException | IOException e) {
-                    log.error("Unable to create file " + e.getMessage());
-                }
-
-                reconciliationRes.print(log::info, reconciliationTaskArg.includeSensitive());
-            }
-
-            return null;
         }
     }
 

@@ -20,23 +20,20 @@ package org.apache.ignite.internal.processors.cache.checker.processor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.checker.objects.ExecutionResult;
@@ -52,23 +49,14 @@ import org.apache.ignite.internal.processors.cache.checker.processor.workload.Re
 import org.apache.ignite.internal.processors.cache.checker.tasks.CollectPartitionKeysByBatchTask;
 import org.apache.ignite.internal.processors.cache.checker.tasks.CollectPartitionKeysByRecheckRequestTask;
 import org.apache.ignite.internal.processors.cache.checker.tasks.RepairRequestTask;
-import org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils;
-import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationDataRowMeta;
-import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationKeyMeta;
-import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationRepairMeta;
-import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationSkippedEntityHolder;
-import org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationValueMeta;
 import org.apache.ignite.internal.processors.cache.verify.RepairAlgorithm;
-import org.apache.ignite.internal.processors.cache.verify.RepairMeta;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.Collections.EMPTY_SET;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.checkConflicts;
-import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.mapPartitionReconciliation;
 import static org.apache.ignite.internal.processors.cache.checker.util.ConsistencyCheckUtils.unmarshalKey;
-import static org.apache.ignite.internal.processors.cache.verify.PartitionReconciliationSkippedEntityHolder.SkippingReason.KEY_WAS_NOT_REPAIRED;
 
 /**
  * The base point of partition reconciliation processing.
@@ -90,13 +78,16 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     /** Error reason. */
     public static final String ERROR_REASON = "Reason [msg=%s, exception=%s]";
 
+    /** Work progress print interval. */
+    private final long workProgressPrintInterval = getLong("WORK_PROGRESS_PRINT_INTERVAL", 1000 * 60 * 3);
+
     /** Recheck delay seconds. */
     private final int recheckDelay;
 
     /** Caches. */
     private final Collection<String> caches;
 
-    /** If {@code true} - Partition Reconciliation&Fix: update from Primary partition. */
+    /** Indicates that inconsistent key values should be repaired in accordance with {@link #repairAlg}. */
     private final boolean repair;
 
     /**
@@ -117,14 +108,11 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
      */
     private final RepairAlgorithm repairAlg;
 
-    /** Keys that were detected as incosistent during the reconciliation process. */
-    private final Map<String, Map<Integer, List<PartitionReconciliationDataRowMeta>>> inconsistentKeys = new HashMap<>();
+    /** Tracks workload chains based on its lifecycle. */
+    private final WorkloadTracker workloadTracker = new WorkloadTracker();
 
-    /** Entries that were detected as inconsistent but weren't repaired due to some reason. */
-    private final Map<String, Map<Integer, Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>>>> skippedEntries = new HashMap<>();
-
-    /** Progress tracker. */
-    private final WorkProgress workProgress = new WorkProgress();
+    /** Results collector. */
+    final ReconciliationResultCollector collector;
 
     /**
      * Creates a new instance of Partition reconciliation processor.
@@ -140,6 +128,8 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
      * @param recheckAttempts Amount of potentially inconsistent keys recheck attempts.
      * @param repairAlg Repair algorithm to be used to fix inconsistency.
      * @param recheckDelay Specifies the time interval between two consequent attempts to check keys.
+     * @param compact {@code true} if the result should be returned in compact form.
+     * @param includeSensitive {@code true} if sensitive information should be included in the result.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public PartitionReconciliationProcessor(
@@ -152,7 +142,9 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
         int parallelismLevel,
         int batchSize,
         int recheckAttempts,
-        int recheckDelay
+        int recheckDelay,
+        boolean compact,
+        boolean includeSensitive
     ) throws IgniteCheckedException {
         super(sesId, ignite, parallelismLevel);
 
@@ -163,6 +155,12 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
         this.batchSize = batchSize;
         this.recheckAttempts = recheckAttempts;
         this.repairAlg = repairAlg;
+
+        registerListener(workloadTracker.andThen(evtLsnr));
+
+        collector = (compact)?
+            new ReconciliationResultCollector.Compact(ignite, log, sesId, includeSensitive) :
+            new ReconciliationResultCollector.Simple(ignite, log, includeSensitive);
     }
 
     /**
@@ -195,13 +193,16 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                 int[] partitions = partitions(cache);
 
                 for (int partId : partitions) {
-                    schedule(new Batch(sesId, UUID.randomUUID(), cache, partId, null));
+                    Batch workload = new Batch(sesId, UUID.randomUUID(), cache, partId, null);
 
-                    workProgress.assignWork();
+                    workloadTracker.addTrackingChain(workload);
+
+                    schedule(workload);
                 }
             }
 
             boolean live = false;
+            long lastUpdateTime = 0;
 
             while (!isEmpty() || (live = hasLiveHandlers())) {
                 if (topologyChanged())
@@ -219,9 +220,21 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                     continue;
                 }
 
-                PipelineWorkload workload = takeTask();
+                long currTimeMillis = System.currentTimeMillis();
 
-                workProgress.printWorkProgress();
+                if (currTimeMillis >= lastUpdateTime + workProgressPrintInterval) {
+                    if (log.isInfoEnabled()) {
+                        log.info(String.format(
+                            WORK_PROGRESS_MSG,
+                            sesId,
+                            workloadTracker.totalChains(),
+                            workloadTracker.remaningChains()));
+                    }
+
+                    lastUpdateTime = currTimeMillis;
+                }
+
+                PipelineWorkload workload = takeTask();
 
                 if (workload instanceof Batch)
                     handle((Batch)workload);
@@ -238,7 +251,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                 }
             }
 
-            return new ExecutionResult<>(prepareResult());
+            return new ExecutionResult<>(collector.result());
         }
         catch (InterruptedException | IgniteException e) {
             String errMsg = "Partition reconciliation was interrupted.";
@@ -247,15 +260,22 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
 
             log.warning(errMsg, e);
 
-            return new ExecutionResult<>(prepareResult(), errMsg + ' ' + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
+            return new ExecutionResult<>(collector.result(), errMsg + ' ' + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
         }
         catch (Exception e) {
             String errMsg = "Unexpected error.";
 
             log.error(errMsg, e);
 
-            return new ExecutionResult<>(prepareResult(), errMsg + ' ' + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
+            return new ExecutionResult<>(collector.result(), errMsg + ' ' + String.format(ERROR_REASON, e.getMessage(), e.getClass()));
         }
+    }
+
+    /**
+     * @return Reconciliation result collector which can be used to store the result to a file.
+     */
+    public ReconciliationResultCollector collector() {
+        return collector;
     }
 
     /**
@@ -339,9 +359,11 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                             actualKeys, workload.repairAttempt()));
                     }
                     else {
-                        addToPrintResult(workload.cacheName(), workload.partitionId(), conflicts, actualKeys);
-
-                        workProgress.completeWork();
+                        collector.appendConflictedEntries(
+                            workload.cacheName(),
+                            workload.partitionId(),
+                            conflicts,
+                            actualKeys);
                     }
                 }
             });
@@ -357,7 +379,7 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                 workload.repairAttempt()),
             repairRes -> {
                 if (!repairRes.repairedKeys().isEmpty())
-                    addToPrintResult(workload.cacheName(), workload.partitionId(), repairRes.repairedKeys());
+                    collector.appendRepairedEntries(workload.cacheName(), workload.partitionId(), repairRes.repairedKeys());
 
                 if (!repairRes.keysToRepair().isEmpty()) {
                     // Repack recheck keys.
@@ -394,51 +416,9 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
                                 recheckAttempts,
                                 workload.repairAttempt() + 1
                             ));
-
-                        return;
                     }
                 }
-
-                workProgress.completeWork();
             });
-    }
-
-    /**
-     * Adds skipped keys to the total result.
-     */
-    private void addToPrintSkippedEntriesResult(
-        String cacheName,
-        int partId,
-        Map<VersionedKey, Map<UUID, VersionedValue>> skippedKeys
-    ) {
-        CacheObjectContext ctx = ignite.cachex(cacheName).context().cacheObjectContext();
-
-        synchronized (skippedEntries) {
-            Set<PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta>> data = new HashSet<>();
-
-            for (VersionedKey keyVersion : skippedKeys.keySet()) {
-                try {
-                    byte[] bytes = keyVersion.key().valueBytes(ctx);
-                    String strVal = ConsistencyCheckUtils.objectStringView(ctx, keyVersion.key().value(ctx, false));
-
-                    PartitionReconciliationSkippedEntityHolder<PartitionReconciliationKeyMeta> holder
-                        = new PartitionReconciliationSkippedEntityHolder<>(
-                        new PartitionReconciliationKeyMeta(bytes, strVal),
-                        KEY_WAS_NOT_REPAIRED
-                    );
-
-                    data.add(holder);
-                }
-                catch (Exception e) {
-                    log.error("Serialization problem.", e);
-                }
-            }
-
-            skippedEntries
-                .computeIfAbsent(cacheName, k -> new HashMap<>())
-                .computeIfAbsent(partId, l -> new HashSet<>())
-                .addAll(data);
-        }
     }
 
     /**
@@ -465,178 +445,138 @@ public class PartitionReconciliationProcessor extends AbstractPipelineProcessor 
     }
 
     /**
-     * Adds processed keys to the total result.
+     * This class allows tracking workload chains based on its lifecycle.
      */
-    private void addToPrintResult(
-        String cacheName,
-        int partId,
-        Map<KeyCacheObject, Map<UUID, GridCacheVersion>> conflicts,
-        Map<KeyCacheObject, Map<UUID, VersionedValue>> actualKeys
-    ) {
-        CacheObjectContext ctx = ignite.cachex(cacheName).context().cacheObjectContext();
+    private class WorkloadTracker implements ReconciliationEventListener {
+        /** Map of trackable chains. */
+        private final Map<UUID, ChainDescriptor> chanIds = new ConcurrentHashMap<>();
 
-        synchronized (inconsistentKeys) {
-            try {
-                inconsistentKeys.computeIfAbsent(cacheName, k -> new HashMap<>())
-                    .computeIfAbsent(partId, k -> new ArrayList<>())
-                    .addAll(mapPartitionReconciliation(conflicts, actualKeys, ctx));
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Broken key can't be added to result. ", e);
-            }
-        }
-    }
+        /** Total number of tracked chains. */
+        private final AtomicInteger trackedChainsCnt = new AtomicInteger();
 
-    /**
-     * Add data to print result.
-     *
-     * @param cacheName Cache name.
-     * @param partId Partition Id.
-     * @param repairedKeys Repaired keys.
-     */
-    private void addToPrintResult(
-        String cacheName,
-        int partId,
-        Map<VersionedKey, RepairMeta> repairedKeys
-    ) {
-        CacheObjectContext ctx = ignite.cachex(cacheName).context().cacheObjectContext();
+        /** Number of completed chains. */
+        private final AtomicInteger completedChainsCnt = new AtomicInteger();
 
-        synchronized (inconsistentKeys) {
-            try {
-                List<PartitionReconciliationDataRowMeta> res = new ArrayList<>();
+        /** {@inheritDoc} */
+        @Override public void onEvent(WorkLoadStage stage, PipelineWorkload workload) {
+            switch (stage) {
+                case SCHEDULED:
+                    attachWorkload(workload);
 
-                for (Map.Entry<VersionedKey, RepairMeta> entry : repairedKeys.entrySet()) {
-                    Map<UUID, PartitionReconciliationValueMeta> valMap = new HashMap<>();
+                    break;
 
-                    for (Map.Entry<UUID, VersionedValue> uuidBasedEntry : entry.getValue().getPreviousValue().entrySet()) {
-                        Optional<CacheObject> cacheObjOpt = Optional.ofNullable(uuidBasedEntry.getValue().value());
+                case FINISHED:
+                    detachWorkload(workload);
 
-                        valMap.put(
-                            uuidBasedEntry.getKey(),
-                            cacheObjOpt.isPresent() ?
-                                new PartitionReconciliationValueMeta(
-                                    cacheObjOpt.get().valueBytes(ctx),
-                                    cacheObjOpt.map(o -> ConsistencyCheckUtils.objectStringView(ctx, o)).orElse(null),
-                                    uuidBasedEntry.getValue().version())
-                                :
-                                null);
-                    }
-
-                    KeyCacheObject key = entry.getKey().key();
-
-                    key.finishUnmarshal(ctx, null);
-
-                    RepairMeta repairMeta = entry.getValue();
-
-                    Optional<CacheObject> cacheObjRepairValOpt = Optional.ofNullable(repairMeta.value());
-
-                    res.add(
-                        new PartitionReconciliationDataRowMeta(
-                            new PartitionReconciliationKeyMeta(
-                                key.valueBytes(ctx),
-                                ConsistencyCheckUtils.objectStringView(ctx, key)),
-                            valMap,
-                            new PartitionReconciliationRepairMeta(
-                                repairMeta.fixed(),
-                                cacheObjRepairValOpt.isPresent() ?
-                                    new PartitionReconciliationValueMeta(
-                                        cacheObjRepairValOpt.get().valueBytes(ctx),
-                                        cacheObjRepairValOpt.map(o -> ConsistencyCheckUtils.objectStringView(ctx, o)).orElse(null),
-                                        null)
-                                    :
-                                    null,
-                                repairMeta.repairAlg())));
-                }
-
-                inconsistentKeys.computeIfAbsent(cacheName, k -> new HashMap<>())
-                    .computeIfAbsent(partId, k -> new ArrayList<>())
-                    .addAll(res);
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Broken key can't be added to result. ", e);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private ReconciliationAffectedEntries prepareResult() {
-        synchronized (inconsistentKeys) {
-            synchronized (skippedEntries) {
-                return new ReconciliationAffectedEntries(
-                    ignite.cluster().nodes().stream().collect(Collectors.toMap(
-                        ClusterNode::id,
-                        n -> n.consistentId().toString())),
-                    inconsistentKeys,
-                    skippedEntries
-                );
-            }
-        }
-    }
-
-    /**
-     * Reconciliation local progress tracker.
-     */
-    private class WorkProgress {
-        /** Work progress print interval. */
-        private final long workProgressPrintInterval = getLong("WORK_PROGRESS_PRINT_INTERVAL", 1000 * 60 * 3);
-
-        /**
-         * The full amount of work.
-         */
-        private long total;
-
-        /**
-         * The remaining amount of work.
-         */
-        private long remaining;
-
-        /**
-         * Last print time.
-         */
-        private long printedTime;
-
-        /**
-         * Prints progress to log.
-         */
-        public void printWorkProgress() {
-            long currTimeMillis = System.currentTimeMillis();
-
-            if (currTimeMillis >= printedTime + workProgressPrintInterval) {
-                log.info(String.format(WORK_PROGRESS_MSG, sesId, workProgress.total(), workProgress.remaining()));
-
-                printedTime = currTimeMillis;
+                    break;
+                default:
+                    // There is no need to process other stages.
             }
         }
 
         /**
-         * Add additional work.
+         * @return Total number of tracked chains.
          */
-        public void assignWork() {
-            total++;
-            remaining++;
+        public Integer totalChains() {
+            return trackedChainsCnt.get();
         }
 
         /**
-         * Accept a unit of work.
+         * @return Number of chains that are not completed yet.
          */
-        public void completeWork() {
-            remaining--;
+        public Integer remaningChains() {
+            return trackedChainsCnt.get() - completedChainsCnt.get();
         }
 
         /**
-         * The full amount of work.
+         * Adds the provided chain to a set of trackable chains.
+         *
+         * @param batch Chain to track.
          */
-        public long total() {
-            return total;
+        public void addTrackingChain(Batch batch) {
+            assert batch.sessionId() == sesId : "New tracking chain does not correspond to the current session " +
+                "[currSesId=" + sesId + ", chainSesId=" + batch.sessionId() + ", chainId=" + batch.workloadChainId() + ']';
+
+            chanIds.putIfAbsent(
+                batch.workloadChainId(),
+                new ChainDescriptor(batch.workloadChainId(), batch.cacheName(), batch.partitionId()));
+
+            trackedChainsCnt.incrementAndGet();
         }
 
         /**
-         * The remaining amount of work.
+         * Incremets the number of workloads for the corresponding chain if it is trackable.
+         *
+         * @param workload Workload to add.
          */
-        public long remaining() {
-            return remaining;
+        private void attachWorkload(PipelineWorkload workload) {
+            // It should be guaranteed that the workload can be scheduled
+            // strictly before its parent workload is finished.
+            Optional.ofNullable(chanIds.get(workload.workloadChainId()))
+                .map(d -> d.workloadCnt.incrementAndGet());
+        }
+
+        /**
+         * Decrements the number of workloads for the corresponding chain if it is trackable
+         *
+         * If the given workload is the last one for corresponding chain
+         * then {@link #onChainCompleted(UUID, String, int)} is triggered.
+         *
+         * @param workload Workload to detach.
+         */
+        private void detachWorkload(PipelineWorkload workload) {
+            // It should be guaranteed that the workload can be finished
+            // strictly after all subsequent workloads are scheduled.
+            ChainDescriptor desc = chanIds.get(workload.workloadChainId());
+
+            if (desc != null && desc.workloadCnt.decrementAndGet() == 0) {
+                completedChainsCnt.incrementAndGet();
+
+                chanIds.remove(desc.chainId);
+
+                onChainCompleted(desc.chainId, desc.cacheName, desc.partId);
+            }
+        }
+
+        /**
+         * Callback that is triggered when the partition completelly processed.
+         *
+         * @param chainId Chain id.
+         * @param cacheName Cache name.
+         * @param partId Partition id.
+         */
+        private void onChainCompleted(UUID chainId, String cacheName, int partId) {
+            collector.onPartitionProcessed(cacheName, partId);
+        }
+
+        /**
+         * Workload chain descriptor.
+         */
+        private class ChainDescriptor {
+            /** Chain identifier. */
+            private final UUID chainId;
+
+            /** Cache name. */
+            private final String cacheName;
+
+            /** Partition identifier. */
+            private final int partId;
+
+            /** Workload counter. */
+            private final AtomicInteger workloadCnt = new AtomicInteger();
+
+            /**
+             * Creates a new instance of chain descriptor.
+             *
+             * @param chainId Chain id.
+             * @param cacheName Cache name.
+             * @param partId Partition id.
+             */
+            ChainDescriptor(UUID chainId, String cacheName, int partId) {
+                this.chainId = chainId;
+                this.cacheName = cacheName;
+                this.partId = partId;
+            }
         }
     }
 }
