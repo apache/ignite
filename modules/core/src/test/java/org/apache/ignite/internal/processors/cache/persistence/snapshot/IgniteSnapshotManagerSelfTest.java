@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,10 +71,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -87,6 +84,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_LOCAL_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -133,31 +131,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
 
-    /**
-     * Calculate CRC for all partition files of specified cache.
-     *
-     * @param cacheDir Cache directory to iterate over partition files.
-     * @return The map of [fileName, checksum].
-     * @throws IgniteCheckedException If fails.
-     */
-    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
-        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
 
-        Map<String, Integer> result = new HashMap<>();
-
-        try {
-            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
-            ) {
-                for (Path path : partFiles)
-                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
-            }
-
-            return result;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_LOCAL_SNAPSHOT_DIRECTORY, false));
     }
 
     /** */
@@ -187,18 +165,15 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
         // Start grid node with data before each test.
-        IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
-
-        for (int i = CACHE_KEYS_RANGE; i < 2048; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
+        IgniteEx ig = startGridWithCache(defaultCacheCfg, 2048);
 
         try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 2048; i++)
+            for (int i = 2048; i < 4096; i++)
                 ds.addData(i, new TestOrderItem(i, i));
         }
 
         try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 2048; i++)
+            for (int i = 4096; i < 8192; i++)
                 ds.addData(i, new TestOrderItem(i, i) {
                     @Override public String toString() {
                         return "_" + super.toString();
@@ -223,22 +198,30 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .pageStore())
             .cacheWorkDir(defaultCacheCfg);
 
+        // Checkpoint forces on cluster deactivation (currently only single node in cluster),
+        // so we must have the same data in snapshotted partitions and thouse which left
+        // after node stop.
         stopGrid(ig.name());
 
-        // Calculate CRCs
-        final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
+        // Calculate CRCs.
+        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
 
         String nodePath = relativeNodePath(ig.context().pdsFolderResolver().resolveFolders());
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
-            Paths.get(cctx0.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
-        );
+        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
+            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(cctx0.snapshotMgr()
+                .snapshotLocalDir(SNAPSHOT_NAME)
+                .getAbsolutePath(),
+                nodePath,
+                false),
+                cacheDirName(defaultCacheCfg)));
 
-        assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
+        assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
+            origPartCRCs, snpPartCRCs);
 
         File snpWorkDir = cctx0.snapshotMgr().snapshotTempDir();
 
-        assertEquals("Snapshot working directory must be cleand after usage", 0, snpWorkDir.listFiles().length);
+        assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
     }
 
     /**
@@ -246,7 +229,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSnapshotLocalPartitionsNextCpStarted() throws Exception {
-        final int value_multiplier = 2;
+        final int cache_val_factor = 2;
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
@@ -262,12 +245,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .context()
             .database();
 
-        File cpDir = dbMgr.checkpointDirectory();
-        File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-
-        // Change data before backup
+        // Change data before backup.
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
+            ig.cache(DEFAULT_CACHE_NAME).put(i, cache_val_factor * i);
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(mgr,
             dbMgr,
@@ -289,35 +269,27 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-
         dbMgr.forceCheckpoint("snapshot is ready to be created")
             .futureFor(CheckpointState.MARKER_STORED_TO_DISK)
             .get();
 
-        // Change data after backup
+        // Change data after backup.
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 3 * i);
 
-        // Backup on the next checkpoint must copy page before write it to partition
-        CheckpointProgress cpFut = ig.context()
-            .cache()
-            .context()
-            .database()
-            .forceCheckpoint("second cp");
-
-        cpFut.futureFor(CheckpointState.FINISHED).get();
+        // Backup on the next checkpoint must copy page before write it to partition.
+        forceCheckpoint(ig);
 
         slowCopy.countDown();
 
         snpFut.get();
 
         // Now can stop the node and check created backups.
-
         stopGrid(0);
 
-        IgniteUtils.delete(cpDir);
-        IgniteUtils.delete(walDir);
+        cleanPersistenceDir(ig.name());
 
+        // Start Ignite instance from snapshot directory.
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
             .setWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
 
@@ -327,7 +299,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
             assertEquals("snapshot data consistency violation [key=" + i + ']',
-                i * value_multiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+                i * cache_val_factor, ig2.cache(DEFAULT_CACHE_NAME).get(i));
         }
     }
 
@@ -341,7 +313,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        // Change data after backup
+        // Change data after backup.
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
@@ -747,6 +719,33 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         snpFutTask.awaitStarted();
 
         return snpFutTask;
+    }
+
+    /**
+     * Calculate CRC for all partition files of specified cache.
+     *
+     * @param cacheDir Cache directory to iterate over partition files.
+     * @return The map of [fileName, checksum].
+     * @throws IgniteCheckedException If fails.
+     */
+    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
+        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
+
+        Map<String, Integer> result = new HashMap<>();
+
+        try {
+            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
+            ) {
+                for (Path path : partFiles)
+                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+            }
+
+            return result;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
