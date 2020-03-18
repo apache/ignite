@@ -224,53 +224,21 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testDeactivateThroughMXBean() throws Exception {
-        Ignite ignite = startGrids(2);
+    public void testDeactivateMXBean() throws Exception {
+        Ignite ignite = startGrids(1);
 
         IgniteMXBean mxBean = getMxBean(getTestIgniteInstanceName(0), "Kernal", "IgniteKernal", IgniteMXBean.class);
 
-        if (persistenceEnabled()) {
+        if (persistenceEnabled())
             ignite.cluster().state(ACTIVE);
 
-            assertEquals(ACTIVE, ignite.cluster().state());
+        checkDeactivation(ignite, () -> mxBean.active(false), false, () -> mxBean.active(true));
 
-            mxBean.active(false);
+        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name()), false, () -> mxBean.active(true));
 
-            assertEquals(INACTIVE, ignite.cluster().state());
+        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), false), false, () -> mxBean.active(true));
 
-            mxBean.active(true);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-        }
-        else {
-            assertThrows(null, () -> {
-                mxBean.active(false);
-
-                return null;
-            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-
-            assertThrows(null, () -> {
-                mxBean.clusterState(INACTIVE.name());
-
-                return null;
-            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-
-            assertThrows(null, () -> {
-                mxBean.clusterState(INACTIVE.name(), false);
-
-                return null;
-            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
-
-            assertEquals(ACTIVE, ignite.cluster().state());
-
-            mxBean.clusterState(INACTIVE.name(), true);
-
-            assertEquals(INACTIVE, ignite.cluster().state());
-        }
+        checkDeactivation(ignite, () -> mxBean.clusterState(INACTIVE.name(), true), true, () -> mxBean.active(true));
     }
 
     /**
@@ -1820,5 +1788,34 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 throw new IgniteException(e);
             }
         }, "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber);
+    }
+
+    /**
+     * Checks proper cluster deactivation or stopped deactivation.
+     *
+     * @param ignite Ignite instance.
+     * @param deactivator Deactivation call to check.
+     * @param forceDeactivation {@code True} if {@code deactivator} is forced.
+     * @param activator Activation call to reactivate cluster.
+     */
+    private void checkDeactivation(Ignite ignite, Runnable deactivator, boolean forceDeactivation, Runnable activator) {
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        if (persistenceEnabled() || forceDeactivation) {
+            deactivator.run();
+
+            assertEquals(INACTIVE, ignite.cluster().state());
+
+            activator.run();
+        }
+        else {
+            assertThrows(null, () -> {
+                deactivator.run();
+
+                return null;
+            }, IgniteException.class, DATA_LOST_ON_DEACTIVATION_WARNING);
+        }
+
+        assertEquals(ACTIVE, ignite.cluster().state());
     }
 }
