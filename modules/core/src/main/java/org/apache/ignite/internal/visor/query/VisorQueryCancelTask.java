@@ -72,13 +72,13 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCancelQueriesJob(@Nullable VisorQueryCancelTaskArg arg, boolean debug) {
+        protected VisorCancelQueriesJob(VisorQueryCancelTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(@Nullable VisorQueryCancelTaskArg arg) throws IgniteException {
-            return ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
+        @Override protected Boolean run(VisorQueryCancelTaskArg arg) throws IgniteException {
+            return ignite.context().query().cancelQuery(arg.getQueryId());
         }
     }
 }

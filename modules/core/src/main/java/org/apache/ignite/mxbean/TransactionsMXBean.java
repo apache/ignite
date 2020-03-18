@@ -66,9 +66,10 @@ public interface TransactionsMXBean {
      * @see TransactionView#xid()
      */
     @MXBeanDescription("Kills transactions by the identifier.")
-    @MXBeanParametersNames("xid")
-    @MXBeanParametersDescriptions("Transaction XID.")
-    public void cancel(String xid);
+    public void cancel(
+        @MXBeanParameter(name = "xid", description = "Transaction XID.")
+        String xid
+    );
 
     /**
      * Gets transaction timeout on partition map exchange.

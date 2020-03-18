@@ -39,6 +39,7 @@ import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
 import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
@@ -49,7 +50,7 @@ import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
-import static org.apache.ignite.internal.commandline.CommandList.KILL_QUERY;
+import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.CONTINUOUS_QUERY;
@@ -59,7 +60,6 @@ import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.S
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.TRANSACTION;
 import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.of;
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
-import static org.apache.ignite.internal.visor.tx.VisorTxOperation.KILL;
 
 /**
  * control.sh kill command.
@@ -190,7 +190,8 @@ public class KillCommand implements Command<Object> {
             case TRANSACTION:
                 String xid = argIter.nextArg("Expected transaction id.");
 
-                taskArgs = new VisorTxTaskArg(KILL, null, null, null, null, null, null, xid, null, null, null);
+                taskArgs = new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, xid, null,
+                    null, null);
 
                 taskName = VisorTxTask.class.getName();
 
@@ -207,20 +208,20 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Kill scan query by node id, cache name and query id:", KILL_QUERY, SCAN_QUERY.toString(),
+        Command.usage(logger, "Kill scan query by node id, cache name and query id:", KILL, SCAN_QUERY.toString(),
             "origin_node_id", "cache_name", "query_id");
-        Command.usage(logger, "Kill continuous query by routine id:", KILL_QUERY, CONTINUOUS_QUERY.toString(),
+        Command.usage(logger, "Kill continuous query by routine id:", KILL, CONTINUOUS_QUERY.toString(),
             "routine_id");
-        Command.usage(logger, "Kill sql query by query id:", KILL_QUERY, SQL_QUERY.toString(),
+        Command.usage(logger, "Kill sql query by query id:", KILL, SQL_QUERY.toString(),
             "query_id");
-        Command.usage(logger, "Kill compute task by session id:", KILL_QUERY, COMPUTE.toString(),
+        Command.usage(logger, "Kill compute task by session id:", KILL, COMPUTE.toString(),
             "session_id");
-        Command.usage(logger, "Kill transaction by xid:", KILL_QUERY, TRANSACTION.toString(), "xid");
-        Command.usage(logger, "Kill service by name:", KILL_QUERY, SERVICE.toString(), "name");
+        Command.usage(logger, "Kill transaction by xid:", KILL, TRANSACTION.toString(), "xid");
+        Command.usage(logger, "Kill service by name:", KILL, SERVICE.toString(), "name");
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return KILL_QUERY.toCommandName();
+        return KILL.toCommandName();
     }
 }

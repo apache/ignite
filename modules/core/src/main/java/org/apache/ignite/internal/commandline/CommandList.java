@@ -56,8 +56,8 @@ public enum CommandList {
     /** Encryption features command. */
     ENCRYPTION("--encryption", new EncryptionCommand()),
 
-    /** Encryption features command. */
-    KILL_QUERY("--kill", new KillCommand());
+    /** Kill command. */
+    KILL("--kill", new KillCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

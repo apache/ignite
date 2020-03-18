@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
@@ -72,8 +73,6 @@ public class QueryMXBeanImpl implements QueryMXBean {
         if (log.isInfoEnabled())
             log.info("Killing sql query[id=" + id + ']');
 
-        boolean res;
-
         try {
             IgniteClusterImpl cluster = ctx.cluster().get();
 
@@ -82,15 +81,16 @@ public class QueryMXBeanImpl implements QueryMXBean {
             if (ids == null)
                 throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
-            res = cluster.compute().execute(new VisorQueryCancelTask(),
+            boolean res = cluster.compute().execute(new VisorQueryCancelTask(),
                 new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get1(), ids.get2()), false));
+
+            if (!res)
+                throw new RuntimeException("Query not found[id=" + id + ']');
         }
-        catch (Exception e) {
+        catch (IgniteException e) {
             throw new RuntimeException(e);
         }
 
-        if (!res)
-            throw new RuntimeException("Query not found[id=" + id + ']');
     }
 
     /** {@inheritDoc} */
@@ -113,8 +113,6 @@ public class QueryMXBeanImpl implements QueryMXBean {
      * @param id Scan query id.
      */
     public void cancelScan(UUID originNodeId, String cacheName, long id) {
-        boolean res;
-
         try {
             IgniteClusterImpl cluster = ctx.cluster().get();
 
@@ -122,17 +120,17 @@ public class QueryMXBeanImpl implements QueryMXBean {
 
             IgniteCompute compute = cluster.compute();
 
-            res = compute.execute(new VisorScanQueryCancelTask(),
+            boolean res = compute.execute(new VisorScanQueryCancelTask(),
                 new VisorTaskArgument<>(srv.id(),
                     new VisorScanQueryCancelTaskArg(originNodeId, cacheName, id), false));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
-        if (!res) {
-            throw new RuntimeException("Query not found[originNodeId=" + originNodeId +
-                ",cacheName=" + cacheName + ",qryId=" + id + ']');
+            if (!res) {
+                throw new RuntimeException("Query not found[originNodeId=" + originNodeId +
+                    ",cacheName=" + cacheName + ",qryId=" + id + ']');
+            }
+        }
+        catch (IgniteException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -145,8 +143,6 @@ public class QueryMXBeanImpl implements QueryMXBean {
         if (log.isInfoEnabled())
             log.info("Killing continuous query[routineId=" + routineId + ']');
 
-        boolean res;
-
         try {
             IgniteClusterImpl cluster = ctx.cluster().get();
 
@@ -154,15 +150,15 @@ public class QueryMXBeanImpl implements QueryMXBean {
 
             ClusterNode srv = U.randomServerNode(ctx);
 
-            res = compute.execute(new VisorContinuousQueryCancelTask(),
+            boolean res = compute.execute(new VisorContinuousQueryCancelTask(),
                 new VisorTaskArgument<>(srv.id(),
                     new VisorContinuousQueryCancelTaskArg(routineId), false));
+
+            if (!res)
+                throw new RuntimeException("Query not found[routineId=" + routineId + ']');
         }
-        catch (Exception e) {
+        catch (IgniteException e) {
             throw new RuntimeException(e);
         }
-
-        if (!res)
-            throw new RuntimeException("Query not found[routineId=" + routineId + ']');
     }
 }

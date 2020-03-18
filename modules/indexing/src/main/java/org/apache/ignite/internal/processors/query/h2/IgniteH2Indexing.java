@@ -2505,16 +2505,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancelQueries(Collection<Long> queries) {
-        if (F.isEmpty(queries))
-            return false;
-
-        boolean res = false;
-
-        for (Long qryId : queries)
-            res |= runningQryMgr.cancel(qryId);
-
-        return res;
+    @Override public boolean cancelQuery(long id) {
+        return runningQryMgr.cancel(id);
     }
 
     /** {@inheritDoc} */

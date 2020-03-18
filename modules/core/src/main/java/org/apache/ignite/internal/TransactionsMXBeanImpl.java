@@ -123,20 +123,13 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     @Override public void cancel(String xid) {
         A.notNull(xid, "xid");
 
-        boolean res = false;
+        IgniteCompute compute = ctx.cluster().get().compute();
 
-        try {
-            IgniteCompute compute = ctx.cluster().get().compute();
+        Map<ClusterNode, VisorTxTaskResult> taskRes = compute.execute(new VisorTxTask(),
+            new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
+                1, null, null, null, null, null, xid, null, null, null), false));
 
-            Map<ClusterNode, VisorTxTaskResult> taskRes = compute.execute(new VisorTxTask(),
-                new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
-                    1, null, null, null, null, null, xid, null, null, null), false));
-
-            res = cancelTaskResult(xid, taskRes);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        boolean res = cancelTaskResult(xid, taskRes);
 
         if (!res)
             throw new RuntimeException("Transaction not found[xid=" + xid + ']');
