@@ -420,7 +420,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 if (gctx == null) {
                     throw new IgniteCheckedException("Cache group context has not found " +
-                            "due to the cache group is stopped: " + grpId);
+                        "due to the cache group is stopped: " + grpId);
                 }
 
                 for (int partId : e.getValue()) {
@@ -429,8 +429,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId);
 
                     partDeltaWriters.put(pair,
-                            new PageStoreSerialWriter(store,
-                                    partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())), partId)));
+                        new PageStoreSerialWriter(store,
+                            partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())), partId)));
 
                     partFileLengths.put(pair, store.size());
                 }
@@ -643,7 +643,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
         private final BooleanSupplier checkpointComplete = () ->
-                cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
+            cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
 
         /**
          * Array of bits. 1 - means pages written, 0 - the otherwise.

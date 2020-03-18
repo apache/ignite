@@ -720,7 +720,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                     ioFactory,
                     snpSndr,
                     parts,
-                        locBuff));
+                    locBuff));
 
             if (prev != null)
                 return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
