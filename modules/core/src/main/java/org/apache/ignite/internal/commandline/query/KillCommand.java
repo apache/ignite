@@ -109,7 +109,7 @@ public class KillCommand implements Command<Object> {
                 case TRANSACTION:
                     String xid = ((VisorTxTaskArg)taskArgs).getXid();
 
-                    if (!TransactionsMXBeanImpl.cancelTaskResult(xid, (Map<ClusterNode, VisorTxTaskResult>)res))
+                    if (!TransactionsMXBeanImpl.isXidFound(xid, (Map<ClusterNode, VisorTxTaskResult>)res))
                         throw new RuntimeException("Transaction not found.");
 
                     break;

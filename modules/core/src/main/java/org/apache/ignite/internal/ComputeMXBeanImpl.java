@@ -31,7 +31,7 @@ import org.apache.ignite.mxbean.ComputeMXBean;
  * ComputeMXBean implementation.
  */
 public class ComputeMXBeanImpl implements ComputeMXBean {
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
     /**

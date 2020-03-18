@@ -30,6 +30,7 @@ import org.apache.ignite.spi.systemview.view.TransactionView;
  * @see TransactionView#xid()
  */
 public class SqlKillTxCommand extends SchemalessCommand {
+    /** Transaction xid. */
     private String xid;
 
     /** {@inheritDoc} */

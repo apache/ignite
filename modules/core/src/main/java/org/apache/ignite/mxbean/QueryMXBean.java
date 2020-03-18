@@ -61,6 +61,6 @@ public interface QueryMXBean {
     void cancelScan(
         @MXBeanParameter(name = "originNodeId", description = "Originating node ID.") String originNodeId,
         @MXBeanParameter(name = "cacheName", description = "Cache name.") String cacheName,
-        @MXBeanParameter(name = "id", description = "SQL query id.") Long id
+        @MXBeanParameter(name = "id", description = "Scan query id.") Long id
     );
 }

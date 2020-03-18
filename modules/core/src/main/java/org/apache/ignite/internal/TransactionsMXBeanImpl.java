@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
  * TransactionsMXBean implementation.
  */
 public class TransactionsMXBeanImpl implements TransactionsMXBean {
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
     /**
@@ -129,18 +129,20 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
             new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
                 1, null, null, null, null, null, xid, null, null, null), false));
 
-        boolean res = cancelTaskResult(xid, taskRes);
+        boolean res = isXidFound(xid, taskRes);
 
         if (!res)
             throw new RuntimeException("Transaction not found[xid=" + xid + ']');
     }
 
     /**
+     * Determine if task results contains information about xid.
+     *
      * @param xid Xid.
      * @param taskRes {@code VisorTxTask} results.
      * @return {@code True} if {@code xid} was found in task results.
      */
-    public static boolean cancelTaskResult(String xid, Map<ClusterNode, VisorTxTaskResult> taskRes) {
+    public static boolean isXidFound(String xid, Map<ClusterNode, VisorTxTaskResult> taskRes) {
         if (!isEmpty(taskRes)) {
             for (VisorTxTaskResult singleRes : taskRes.values()) {
                 if (isEmpty(singleRes.getInfos()))

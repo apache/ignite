@@ -31,10 +31,10 @@ import org.apache.ignite.mxbean.ServiceMXBean;
  * ServiceMXBean implementation.
  */
 public class ServiceMXBeanImpl implements ServiceMXBean {
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** */
+    /** Logger. */
     private final IgniteLogger log;
 
     /**

@@ -33,6 +33,7 @@ import org.apache.ignite.spi.systemview.view.ScanQueryView;
  * @see ScanQueryView#queryId()
  */
 public class SqlKillScanQueryCommand extends SchemalessCommand {
+    /** KILL SCAN_QUERY format message. */
     public static final String KILL_SCAN_QRY_FORMAT =
         "Format of the query is KILL SCAN_QUERY '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1";
 

@@ -41,14 +41,14 @@ import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGl
  * QueryMXBean implementation.
  */
 public class QueryMXBeanImpl implements QueryMXBean {
-    /** */
+    /** Global query id format. */
     public static final String EXPECTED_GLOBAL_QRY_ID_FORMAT = "Global query id should have format " +
         "'{node_id}_{query_id}', e.g. '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321'";
 
-    /** */
+    /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** */
+    /** Logger. */
     private final IgniteLogger log;
 
     /**

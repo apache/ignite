@@ -62,10 +62,12 @@ public interface TransactionsMXBean {
     );
 
     /**
+     * Kills transactions by the xid.
+     *
      * @param xid Transaction xid.
      * @see TransactionView#xid()
      */
-    @MXBeanDescription("Kills transactions by the identifier.")
+    @MXBeanDescription("Kills transactions by the xid.")
     public void cancel(
         @MXBeanParameter(name = "xid", description = "Transaction XID.")
         String xid
