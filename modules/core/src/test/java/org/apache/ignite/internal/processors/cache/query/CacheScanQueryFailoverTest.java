@@ -34,7 +34,6 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -140,7 +139,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
 
         IgniteEx grid0 = startGrid(getConfiguration("grid0").setDataStorageConfiguration(dsCfg));
 
-        grid0.cluster().state(ClusterState.ACTIVE);
+        grid0.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache1 = grid0.getOrCreateCache(
             new CacheConfiguration<Integer, Integer>("cache1")

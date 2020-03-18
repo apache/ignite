@@ -2487,7 +2487,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @return {@code True} if state was changed.
      */
-    private boolean markDestroyed() {
+    public boolean markDestroyed() {
         return destroyed.compareAndSet(false, true);
     }
 
