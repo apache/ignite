@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -240,36 +241,29 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         log.error("Exception occurred during snapshot operation", th);
     }
 
-    /**
-     * Close snapshot operation and release resources being used.
-     */
-    private void close() {
-        if (isDone())
-            return;
+    /** {@inheritDoc} */
+    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+        for (PageStoreSerialWriter writer : partDeltaWriters.values())
+            U.closeQuiet(writer);
 
-        Throwable err0 = err.get();
+        snpSndr.close(err);
 
-        if (onDone(true, err0)) {
-            for (PageStoreSerialWriter writer : partDeltaWriters.values())
-                U.closeQuiet(writer);
+        if (tmpSnpDir != null)
+            U.delete(tmpSnpDir);
 
-            snpSndr.close(err0);
-
-            if (tmpSnpDir != null)
-                U.delete(tmpSnpDir);
-
-            // Delete snapshot directory if no other files exists.
-            try {
-                if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || err0 != null)
-                    U.delete(tmpTaskWorkDir.toPath());
-            }
-            catch (IOException e) {
-                log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
-            }
-
-            if (err0 != null)
-                startedFut.onDone(err0);
+        // Delete snapshot directory if no other files exists.
+        try {
+            if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || err != null)
+                U.delete(tmpTaskWorkDir.toPath());
         }
+        catch (IOException e) {
+            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
+        }
+
+        if (err != null)
+            startedFut.onDone(err);
+
+        return super.onDone(res, err);
     }
 
     /**
@@ -589,16 +583,20 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      * @return Future which will be completed when operations truhly stopped.
      */
     public synchronized CompletableFuture<Void> closeAsync() {
-        if (closeFut == null)
-            closeFut = CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
+        if (closeFut == null) {
+            Throwable err0 = err.get();
+
+            closeFut = CompletableFuture.runAsync(() -> onDone(true, err0),
+                cctx.kernalContext().getSystemExecutorService());
+        }
 
         return closeFut;
     }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
-        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process: "
-            + snpName));
+        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process " +
+            "[snpName=" + snpName + ']'));
 
         try {
             closeAsync().get();

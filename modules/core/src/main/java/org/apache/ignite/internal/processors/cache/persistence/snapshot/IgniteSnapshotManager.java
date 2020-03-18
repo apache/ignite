@@ -867,7 +867,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean cancel() {
-            if (onCancelled()) {
+            return onCancelled();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+            assert err != null || cancel || stores.isEmpty() : "Not all file storages processed: " + stores;
+
+            rmtSnpReq.compareAndSet(this, null);
+
+            if (err != null || cancel) {
                 // Close non finished file storages.
                 for (Map.Entry<GroupPartitionId, FilePageStore> entry : stores.entrySet()) {
                     FilePageStore store = entry.getValue();
@@ -881,14 +890,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 }
             }
 
-            return isCancelled();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-            assert err != null || cancel || stores.isEmpty() : "Not all file storages processed: " + stores;
-
-            rmtSnpReq.compareAndSet(this, null);
+            U.delete(Paths.get(tmpWorkDir.getAbsolutePath(), snpName));
 
             return super.onDone(res, err, cancel);
         }

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -88,6 +91,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_LOCA
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_WORK_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
 /**
@@ -147,7 +151,20 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     /** */
     @After
     public void afterTestSnapshot() throws Exception {
-        stopAllGrids();
+        try {
+            for (Ignite ig : G.allGrids()) {
+                File storeWorkDir = ((FilePageStoreManager)((IgniteEx)ig).context()
+                    .cache().context().pageStore()).workDir();
+
+                Path snpTempDir = Paths.get(storeWorkDir.getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY);
+
+                assertTrue("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
+                    F.isEmptyDirectory(snpTempDir));
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** {@inheritDoc} */
@@ -303,12 +320,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
-    @Test(expected = IgniteCheckedException.class)
+    /** */
+    @Test
     public void testSnapshotLocalPartitionNotEnoughSpace() throws Exception {
-        final AtomicInteger throwCntr = new AtomicInteger();
+        String err_msg = "Test exception. Not enough space.";
+        AtomicInteger throwCntr = new AtomicInteger();
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
@@ -329,7 +345,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
-                                throw new IOException("Test exception. Not enough space.");
+                                throw new IOException(err_msg);
 
                             return super.writeFully(srcBuf);
                         }
@@ -346,14 +362,17 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME));
 
-        snpFut.get();
+        // Check the right exception thrown.
+        GridTestUtils.assertThrowsAnyCause(log,
+            snpFut::get,
+            IOException.class,
+            err_msg);
     }
 
-    /**
-     *
-     */
-    @Test(expected = IgniteCheckedException.class)
+    /** */
+    @Test
     public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
+        String err_msg = "Test. Fail to copy partition: ";
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
@@ -370,13 +389,16 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
-                        throw new IgniteException("Test. Fail to copy partition: " + pair);
+                        throw new IgniteException(err_msg + pair);
 
                     delegate.sendPart0(part, cacheDirName, pair, length);
                 }
             });
 
-        fut.get();
+        GridTestUtils.assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            err_msg);
     }
 
     /**
