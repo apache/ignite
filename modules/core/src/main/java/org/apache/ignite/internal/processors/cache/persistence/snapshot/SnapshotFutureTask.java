@@ -143,17 +143,14 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** Absolute snapshot storage path. */
     private File tmpSnpDir;
 
-    /** {@code true} if operation has been cancelled. */
-    private volatile boolean cancelled;
+    /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
+    private volatile CompletableFuture<Void> closeFut;
 
     /** An exception which has been ocurred during snapshot processing. */
     private final AtomicReference<Throwable> err = new AtomicReference<>();
 
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
-
-    /** Flag indicates the task must be interrupted. */
-    private final BooleanSupplier stopping = () -> cancelled || err.get() != null;
 
     /**
      * @param e Finished snapshot tosk future with particular exception.
@@ -252,7 +249,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         Throwable err0 = err.get();
 
-        if (onDone(true, err0, cancelled)) {
+        if (onDone(true, err0)) {
             for (PageStoreSerialWriter writer : partDeltaWriters.values())
                 U.closeQuiet(writer);
 
@@ -283,10 +280,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     }
 
     /**
+     * @return {@code true} if current task requested to be stopped.
+     */
+    private boolean stopping() {
+        return err.get() != null;
+    }
+
+    /**
      * Initiates snapshot task.
      */
     public void start() {
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         try {
@@ -336,7 +340,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         ctx.finishedStateFut().listen(f -> {
@@ -350,7 +354,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) {
         // Write lock is helded. Partition pages counters has been collected under write lock.
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         try {
@@ -443,7 +447,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         // Snapshot task is now started since checkpoint writelock released.
@@ -559,7 +563,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 assert t == null : "Excepction must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
-                close();
+                closeAsync();
             });
     }
 
@@ -569,7 +573,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      */
     private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
-            if (stopping.getAsBoolean())
+            if (stopping())
                 return;
 
             try {
@@ -584,14 +588,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /**
      * @return Future which will be completed when operations truhly stopped.
      */
-    public CompletableFuture<Void> closeAsync() {
-        // Execute on SYSTEM_POOL
-        return CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
+    public synchronized CompletableFuture<Void> closeAsync() {
+        if (closeFut == null)
+            closeFut = CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
+
+        return closeFut;
     }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
-        cancelled = true;
+        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process: "
+            + snpName));
 
         try {
             closeAsync().get();
@@ -679,7 +686,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
          * @return {@code true} if writer is stopped and cannot write pages.
          */
         public boolean stopped() {
-            return (checkpointComplete.getAsBoolean() && partProcessed) || stopping.getAsBoolean();
+            return (checkpointComplete.getAsBoolean() && partProcessed) || stopping();
         }
 
         /**
