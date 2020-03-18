@@ -872,8 +872,7 @@
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
                                         <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_cache_help.output</exclude><!--test depends on file content-->
-                                        <exclude>src/test/resources/org.apache.ignite.util/control.sh_help.output</exclude><!--test depends on file content-->
+                                        <exclude>src/test/resources/org.apache.ignite.util/*.output</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
