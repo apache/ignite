@@ -28,7 +28,7 @@
 
     <New id="httpsCfg" class="org.eclipse.jetty.server.HttpConfiguration">
         <Set name="secureScheme">https</Set>
-        <Set name="securePort"><SystemProperty name="IGNITE_JETTY_PORT" default="8080"/></Set>
+        <Set name="securePort"><SystemProperty name="IGNITE_JETTY_PORT" default="8091"/></Set>
         <Set name="sendServerVersion">true</Set>
         <Set name="sendDateHeader">true</Set>
         <Call name="addCustomizer">
@@ -36,10 +36,13 @@
         </Call>
     </New>
 
-    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
-        <Set name="keyStorePath">modules/web-console/web-agent/src/test/resources/server.jks</Set>
+    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+        <Set name="keyStorePath"><SystemProperty
+                name="IGNITE_HOME" default="${IGNITE_HOME}"/>/modules/clients/src/test/keystore/server.jks</Set>
         <Set name="keyStorePassword">123456</Set>
-        <Set name="trustStorePath">modules/web-console/web-agent/src/test/resources/ca.jks</Set>
+        <Set name="keyManagerPassword">123456</Set>
+        <Set name="trustStorePath"><SystemProperty
+                name="IGNITE_HOME" default="${IGNITE_HOME}"/>/modules/clients/src/test/keystore/trust-both.jks</Set>
         <Set name="trustStorePassword">123456</Set>
         <Set name="needClientAuth">true</Set>
     </New>
@@ -66,7 +69,7 @@
                     </Array>
                 </Arg>
                 <Set name="host"><SystemProperty name="IGNITE_JETTY_HOST" default="localhost"/></Set>
-                <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="8080"/></Set>
+                <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="8091"/></Set>
                 <Set name="idleTimeout">30000</Set>
                 <Set name="reuseAddress">true</Set>
             </New>
