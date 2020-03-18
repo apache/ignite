@@ -159,9 +159,8 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
 
         boolean isInf = name.endsWith(INF);
 
-        if (isInf) {
+        if (isInf)
             highBoundIdx = name.length() - 4;
-        }
         else {
             highBoundIdx = name.lastIndexOf(HISTOGRAM_NAME_DIVIDER);
 
