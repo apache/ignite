@@ -266,6 +266,5 @@ namespace Apache.Ignite.Core.Cluster
         /// <param name="caches">Collection of cache names.</param>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         void ClearStatistics(IEnumerable<string> caches);
-
     }
 }
