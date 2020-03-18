@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.springdata;
 
+import java.util.Collection;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonExpressionRepository;
@@ -108,5 +110,18 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
         catch (UnsupportedOperationException e) {
             //excepted
         }
+    }
+
+    @Test
+    public void testCacheCount() {
+        Ignite ignite = ctx.getBean(Ignite.class);
+
+        Collection<String> cacheNames = ignite.cacheNames();
+
+        assertFalse("The SpEL \"#{cacheNames.personCacheName}\" isn't processed!",
+            cacheNames.contains("#{cacheNames.personCacheName}"));
+
+        assertTrue("Cache \"PersonCache\" isn't found!",
+            cacheNames.contains("PersonCache"));
     }
 }
