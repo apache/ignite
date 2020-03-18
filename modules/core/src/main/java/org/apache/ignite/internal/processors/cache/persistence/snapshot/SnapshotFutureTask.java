@@ -17,6 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -47,23 +71,10 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BooleanSupplier;
-
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.*;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
@@ -714,9 +725,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 if (stopped())
                     return;
 
-                if (checkpointComplete.getAsBoolean()) {
-                    int pageIdx = PageIdUtils.pageIndex(pageId);
+                int pageIdx = PageIdUtils.pageIndex(pageId);
 
+                if (checkpointComplete.getAsBoolean()) {
                     // Page already written.
                     if (!writtenPages.touch(pageIdx))
                         return;
@@ -737,6 +748,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 else {
                     // Direct buffer is needs to be written, associated checkpoint not finished yet.
                     writePage0(pageId, buf);
+
+                    // Page marked as written to delta file, so there is no need to
+                    // copy it from file when the first checkpoint associated with
+                    // current snapshot task ends.
+                    writtenPages.touch(pageIdx);
                 }
             }
             catch (Throwable ex) {
