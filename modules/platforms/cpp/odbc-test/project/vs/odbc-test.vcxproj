@@ -202,6 +202,7 @@
     <ClCompile Include="..\..\src\sql_value_expressions_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
+    <ClCompile Include="..\..\src\test_server.cpp" />
     <ClCompile Include="..\..\src\test_utils.cpp" />
     <ClCompile Include="..\..\src\types_test.cpp" />
     <ClCompile Include="..\..\src\utility_test.cpp" />
@@ -211,6 +212,7 @@
     <ClInclude Include="..\..\include\odbc_test_suite.h" />
     <ClInclude Include="..\..\include\sql_test_suite_fixture.h" />
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
+    <ClInclude Include="..\..\include\test_server.h" />
     <ClInclude Include="..\..\include\test_type.h" />
     <ClInclude Include="..\..\include\test_utils.h" />
   </ItemGroup>

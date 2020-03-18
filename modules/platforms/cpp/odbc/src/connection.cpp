@@ -202,7 +202,9 @@ namespace ignite
             {
                 AddStatusRecord(SqlState::S08003_NOT_CONNECTED, "Connection is not open.");
 
-                return SqlResult::AI_ERROR;
+                // It is important to return SUCCESS_WITH_INFO and not ERROR here, as if we return an error, Windows
+                // Driver Manager may decide that connection is not valid anymore which results in memory leak.
+                return SqlResult::AI_SUCCESS_WITH_INFO;
             }
 
             Close();
