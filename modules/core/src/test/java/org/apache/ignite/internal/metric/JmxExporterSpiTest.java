@@ -528,6 +528,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertNull(searchHistogram("histogram_0_inf", mreg));
         assertNull(searchHistogram("histogram_0_500", mreg));
 
+        assertNull(searchHistogram("histogram_with_underscore", mreg));
+        assertNull(searchHistogram("histogram_with_underscore_0", mreg));
         assertNull(searchHistogram("histogram_with_underscore_0_100", mreg));
         assertNull(searchHistogram("histogram_with_underscore_0_inf", mreg));
         assertNull(searchHistogram("histogram_with_underscore_0_500", mreg));

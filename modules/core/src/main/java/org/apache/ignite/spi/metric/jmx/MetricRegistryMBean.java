@@ -184,7 +184,14 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
         long[] bounds = h.bounds();
         long[] values = h.value();
 
-        long lowBound = Long.parseLong(name.substring(lowBoundIdx + 1, highBoundIdx));
+        long lowBound;
+
+        try {
+            lowBound = Long.parseLong(name.substring(lowBoundIdx + 1, highBoundIdx));
+        }
+        catch (NumberFormatException e) {
+            return null;
+        }
 
         if (isInf) {
             if (bounds[bounds.length - 1] == lowBound)
@@ -193,7 +200,14 @@ public class MetricRegistryMBean extends ReadOnlyDynamicMBean {
             return null;
         }
 
-        long highBound = Long.parseLong(name.substring(highBoundIdx + 1));
+        long highBound;
+
+        try {
+            highBound = Long.parseLong(name.substring(highBoundIdx + 1));
+        }
+        catch (NumberFormatException e) {
+            return null;
+        }
 
         int idx = binarySearch(bounds, highBound);
 
