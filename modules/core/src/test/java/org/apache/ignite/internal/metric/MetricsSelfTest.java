@@ -345,9 +345,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     public void testHistogramNames() throws Exception {
         HistogramMetricImpl h = new HistogramMetricImpl("test", null, new long[]{10, 50, 500});
 
-        Map<String, T2<long[], String[]>> cache = new HashMap<>();
-
-        String[] names = histogramBucketNames(h, cache);
+        String[] names = histogramBucketNames(h);
 
         assertArrayEquals(new String[] {
             "test_0_10",
@@ -355,8 +353,6 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
             "test_50_500",
             "test_500_inf"
         }, names);
-
-        assertTrue("Computed values should be cached", names == histogramBucketNames(h, cache));
     }
 
     /** */
