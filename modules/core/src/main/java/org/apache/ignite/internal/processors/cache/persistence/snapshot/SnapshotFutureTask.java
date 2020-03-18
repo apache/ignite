@@ -17,6 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -47,23 +71,10 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.BooleanSupplier;
-
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.*;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
@@ -132,17 +143,14 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** Absolute snapshot storage path. */
     private File tmpSnpDir;
 
-    /** {@code true} if operation has been cancelled. */
-    private volatile boolean cancelled;
+    /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
+    private volatile CompletableFuture<Void> closeFut;
 
     /** An exception which has been ocurred during snapshot processing. */
     private final AtomicReference<Throwable> err = new AtomicReference<>();
 
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
-
-    /** Flag indicates the task must be interrupted. */
-    private final BooleanSupplier stopping = () -> cancelled || err.get() != null;
 
     /**
      * @param e Finished snapshot tosk future with particular exception.
@@ -248,7 +256,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         Throwable err0 = err.get();
 
-        if (onDone(true, err0, cancelled)) {
+        if (onDone(true, err0)) {
             for (PageStoreSerialWriter writer : partDeltaWriters.values())
                 U.closeQuiet(writer);
 
@@ -279,10 +287,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     }
 
     /**
+     * @return {@code true} if current task requested to be stopped.
+     */
+    private boolean stopping() {
+        return err.get() != null;
+    }
+
+    /**
      * Initiates snapshot task.
      */
     public void start() {
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         try {
@@ -332,7 +347,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) {
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         ctx.finishedStateFut().listen(f -> {
@@ -346,7 +361,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) {
         // Write lock is helded. Partition pages counters has been collected under write lock.
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         try {
@@ -416,7 +431,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 if (gctx == null) {
                     throw new IgniteCheckedException("Cache group context has not found " +
-                            "due to the cache group is stopped: " + grpId);
+                        "due to the cache group is stopped: " + grpId);
                 }
 
                 for (int partId : e.getValue()) {
@@ -425,8 +440,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId);
 
                     partDeltaWriters.put(pair,
-                            new PageStoreSerialWriter(store,
-                                    partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())), partId)));
+                        new PageStoreSerialWriter(store,
+                            partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())), partId)));
 
                     partFileLengths.put(pair, store.size());
                 }
@@ -439,7 +454,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        if (stopping.getAsBoolean())
+        if (stopping())
             return;
 
         // Snapshot task is now started since checkpoint writelock released.
@@ -555,7 +570,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 assert t == null : "Excepction must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
-                close();
+                closeAsync();
             });
     }
 
@@ -565,7 +580,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      */
     private Runnable wrapExceptionIfStarted(IgniteThrowableRunner exec) {
         return () -> {
-            if (stopping.getAsBoolean())
+            if (stopping())
                 return;
 
             try {
@@ -580,14 +595,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /**
      * @return Future which will be completed when operations truhly stopped.
      */
-    public CompletableFuture<Void> closeAsync() {
-        // Execute on SYSTEM_POOL
-        return CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
+    public synchronized CompletableFuture<Void> closeAsync() {
+        if (closeFut == null)
+            closeFut = CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
+
+        return closeFut;
     }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
-        cancelled = true;
+        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process: "
+            + snpName));
 
         try {
             closeAsync().get();
@@ -639,7 +657,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
         private final BooleanSupplier checkpointComplete = () ->
-                cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
+            cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
 
         /**
          * Array of bits. 1 - means pages written, 0 - the otherwise.
@@ -675,7 +693,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
          * @return {@code true} if writer is stopped and cannot write pages.
          */
         public boolean stopped() {
-            return (checkpointComplete.getAsBoolean() && partProcessed) || stopping.getAsBoolean();
+            return (checkpointComplete.getAsBoolean() && partProcessed) || stopping();
         }
 
         /**
@@ -721,9 +739,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 if (stopped())
                     return;
 
-                if (checkpointComplete.getAsBoolean()) {
-                    int pageIdx = PageIdUtils.pageIndex(pageId);
+                int pageIdx = PageIdUtils.pageIndex(pageId);
 
+                if (checkpointComplete.getAsBoolean()) {
                     // Page already written.
                     if (!writtenPages.touch(pageIdx))
                         return;
@@ -744,6 +762,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 else {
                     // Direct buffer is needs to be written, associated checkpoint not finished yet.
                     writePage0(pageId, buf);
+
+                    // Page marked as written to delta file, so there is no need to
+                    // copy it from file when the first checkpoint associated with
+                    // current snapshot task ends.
+                    writtenPages.touch(pageIdx);
                 }
             }
             catch (Throwable ex) {
