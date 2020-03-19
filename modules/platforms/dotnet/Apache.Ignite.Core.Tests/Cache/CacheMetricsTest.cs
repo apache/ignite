@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Tests the cache metrics enable/disable for cluster group
+        /// Tests clearing cache metrics for cluster group
         /// </summary>
         [Test]
         public void TestClusterGroupClearStatistics()

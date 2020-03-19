@@ -657,5 +657,4 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
         return cacheNames;
     }
-
 }
