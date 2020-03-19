@@ -17,11 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import javax.cache.expiry.EternalExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -66,18 +73,22 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Tests that partitions validation is triggered and the corresponding message is logged.
      *
+     * @throws Exception If failed.
      */
     public void testShouldPrintMessageIfPartitionHasOtherCounter() throws Exception {
-        doTest(new CacheConfiguration<>(CACHE_1).setBackups(1), true);
+        doTest(new CacheConfiguration<Integer, Integer>(CACHE_1).setBackups(1), true);
     }
 
     /**
+     * Tests that partitions validation is not triggered when custom expiry policy is explicitly used.
      *
+     * @throws Exception If failed.
      */
     public void testShouldNotPrintMessageIfPartitionHasOtherCounterButHasCustomExpiryPolicy() throws Exception {
         doTest(
-            new CacheConfiguration<>(CACHE_1)
+            new CacheConfiguration<Integer, Integer>(CACHE_1)
                 .setBackups(1)
                 .setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1))),
             false
@@ -85,12 +96,60 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
     }
 
     /**
-     * @param cacheCfg Cache config.
-     * @param msgExp Message expected.
+     * Tests that partitions validation is triggered and the corresponding message is logged
+     * when eternal policy is explicitly used.
+     *
+     * @throws Exception If failed.
      */
-    private void doTest(CacheConfiguration<Object, Object> cacheCfg, boolean msgExp) throws Exception {
-        LogListener lsnr = LogListener.matches(s -> s.startsWith(String.format(PARTITION_STATE_FAILED_MSG, CACHE_1, ANY_MSG)))
-            .times(msgExp ? 1 : 0).build();
+    public void testShouldPrintMessageWhenEternalExpiryPolicyIsExplicitlyUsed() throws Exception {
+        doTest(
+            new CacheConfiguration<Integer, Integer>(CACHE_1)
+                .setBackups(1)
+                .setExpiryPolicyFactory(EternalExpiryPolicy.factoryOf()),
+            true
+        );
+    }
+
+    /**
+     * Tests that partitions validation is not triggered when a cache in the cache group (at least one of them)
+     * uses custom expiry policy.
+     */
+    public void testShouldNotPrintMessageIfPartitionHasOtherCounterButHasCustomExpiryPolicyCacheGroup() throws Exception {
+        String grpName = "test-group";
+
+        CacheConfiguration<Integer, Integer> cfg1 = new CacheConfiguration<Integer, Integer>("cache-1")
+            .setBackups(1)
+            .setGroupName(grpName);
+
+        CacheConfiguration<Integer, Integer> cfg2 = new CacheConfiguration<Integer, Integer>("cache-2")
+            .setBackups(1)
+            .setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)))
+            .setGroupName(grpName);
+
+        doTest(Arrays.asList(cfg1, cfg2), false);
+    }
+
+    /**
+     * @param cacheCfg Cache configuration.
+     * @param msgExp {@code true} if warning message is expected.
+     * @throws Exception If failed.
+     */
+    private void doTest(CacheConfiguration<Integer, Integer> cacheCfg, boolean msgExp) throws Exception {
+        doTest(Collections.singletonList(cacheCfg), msgExp);
+    }
+
+    /**
+     * @param cfgs Cache configurations.
+     * @param msgExp {@code true} if warning message is expected.
+     * @throws Exception If failed.
+     */
+    private void doTest(List<CacheConfiguration<Integer, Integer>> cfgs, boolean msgExp) throws Exception {
+        String name = (cfgs.size() == 1)? cfgs.get(0).getName() : cfgs.get(0).getGroupName();
+
+        LogListener lsnr = LogListener
+            .matches(s -> s.startsWith(String.format(PARTITION_STATE_FAILED_MSG, name, ANY_MSG)))
+            .times(msgExp ? 1 : 0)
+            .build();
 
         log.registerListener(lsnr);
 
@@ -100,20 +159,33 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
 
         node1.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = node1.getOrCreateCache(cacheCfg);
 
-        Set<Integer> clearKeys = new HashSet<>();
+        List<IgniteCache<Integer, Integer>> caches = cfgs.stream()
+            .map(cfg -> node1.getOrCreateCache(cfg)).collect(Collectors.toList());
 
-        for (int i = 0; i < 100; i++) {
-            cache.put(i, i);
+        Map<String, Set<Integer>> clearKeys = new HashMap<>();
 
-            if (node2.affinity(CACHE_1).isPrimary(node2.localNode(), i))
-                clearKeys.add(i);
+        for (IgniteCache<Integer, Integer> cache : caches) {
+            String cacheName = cache.getName();
+
+            Set<Integer> clr = new HashSet<>();
+
+            for (int i = 0; i < 100; i++) {
+                cache.put(i, i);
+
+                if (node2.affinity(cacheName).isPrimary(node2.localNode(), i))
+                    clr.add(i);
+            }
+
+            clearKeys.put(cacheName, clr);
         }
 
-        node2.context().cache().cache(CACHE_1).clearLocallyAll(clearKeys, true, true, true);
+        for (IgniteCache<Integer, Integer> c : caches) {
+            node2.context().cache().cache(c.getName())
+                .clearLocallyAll(clearKeys.get(c.getName()), true, true, true);
+        }
 
-        //do exchange for validation trigger
+        // Trigger partition map exchange and therefore trigger partitions validation.
         startGrid(2);
 
         awaitPartitionMapExchange();
