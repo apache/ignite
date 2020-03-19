@@ -89,7 +89,8 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setConsistentId(name);
+        if (name.equals("client"))
+            cfg.setClientMode(true);
 
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
