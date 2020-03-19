@@ -36,7 +36,10 @@ public class MetricUtils {
     public static final String SEPARATOR = ".";
 
     /** Histogram metric last interval high bound. */
-    public static final String INF = "inf";
+    public static final String INF = "_inf";
+
+    /** Histogram name divider. */
+    public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
     /**
      * Builds metric name. Each parameter will separated by '.' char.
@@ -158,12 +161,12 @@ public class MetricUtils {
         long min = 0;
 
         for (int i = 0; i < bounds.length; i++) {
-            names[i] = name + '_' + min + '_' + bounds[i];
+            names[i] = name + HISTOGRAM_NAME_DIVIDER + min + HISTOGRAM_NAME_DIVIDER + bounds[i];
 
             min = bounds[i];
         }
 
-        names[bounds.length] = name + '_' + min + '_' + INF;
+        names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
         cache.put(name, new T2<>(bounds, names));
 

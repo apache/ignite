@@ -65,7 +65,7 @@
                         </Item>
                         <Item>
                             <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                                <Ref refid="httpsCfg"/>
+                                <Arg><Ref refid="httpsCfg"/></Arg>
                             </New>
                         </Item>
                     </Array>

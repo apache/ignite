@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents information of a progress of a given checkpoint and
@@ -29,4 +30,18 @@ public interface CheckpointProgress {
 
     /** */
     public GridFutureAdapter futureFor(CheckpointState state);
+
+    /**
+     * Mark this checkpoint execution as failed.
+     *
+     * @param error Causal error of fail.
+     */
+    public void fail(Throwable error);
+
+    /**
+     * Changing checkpoint state if order of state is correct.
+     *
+     * @param newState New checkpoint state.
+     */
+    public void transitTo(@NotNull CheckpointState newState);
 }
