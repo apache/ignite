@@ -140,7 +140,7 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
         }
 
         if (!F.isEmpty(res))
-            return new ArrayList<>();
+            return new ArrayList<>(res);
 
         if ((newSubset = subset(rel, Convention.NONE)) != null) {
             for (RelNode rel0 : newSubset.getRels())
