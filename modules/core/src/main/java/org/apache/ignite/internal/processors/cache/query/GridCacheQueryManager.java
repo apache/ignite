@@ -1524,11 +1524,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     fut.get().closeIfNotShared(recipient(sndId, reqId));
                 }
                 catch (IgniteCheckedException e) {
-                    if (!X.hasCause(e, GridDhtUnreservedPartitionException.class)) {
+                    if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
                         U.error(log, "Failed to close iterator.", e);
-
-                        return false;
-                    }
                 }
 
                 return true;
