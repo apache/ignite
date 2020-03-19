@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelTraitSet;
 
 /**
  * Ignite convention trait.
@@ -35,11 +34,5 @@ public class IgniteConvention extends Convention.Impl {
     /** {@inheritDoc} */
     @Override public ConventionTraitDef getTraitDef() {
         return ConventionTraitDef.INSTANCE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean useAbstractConvertersForConversion(RelTraitSet fromTraits, RelTraitSet toTraits) {
-        // use converters for physical nodes only.
-        return toTraits.contains(INSTANCE) && fromTraits.contains(INSTANCE);
     }
 }
