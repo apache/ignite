@@ -44,6 +44,7 @@ public class ValuesConverterRule extends RelOptRule {
         LogicalValues rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
+
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(IgniteMdDistribution.values(rel.getRowType(), rel.getTuples()));

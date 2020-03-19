@@ -45,8 +45,11 @@ public class TableModifyConverterRule extends RelOptRule {
         LogicalTableModify rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
-        RelNode input = RuleUtils.changeTraits(
-            convert(rel.getInput(), IgniteConvention.INSTANCE), IgniteDistributions.single());
+
+        RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
+
+        input = RuleUtils.changeTraits(input, IgniteDistributions.single());
+
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single());

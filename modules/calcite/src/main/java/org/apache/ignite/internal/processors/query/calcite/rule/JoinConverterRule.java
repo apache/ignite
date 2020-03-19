@@ -49,8 +49,12 @@ public class JoinConverterRule extends RelOptRule {
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.single());
-        RelNode left = RuleUtils.changeTraits(convert(rel.getLeft(), IgniteConvention.INSTANCE), IgniteDistributions.single());
-        RelNode right = RuleUtils.changeTraits(convert(rel.getRight(), IgniteConvention.INSTANCE), IgniteDistributions.single());
+
+        RelNode left = convert(rel.getLeft(), IgniteConvention.INSTANCE);
+        left = RuleUtils.changeTraits(left, IgniteDistributions.single());
+
+        RelNode right = convert(rel.getRight(), IgniteConvention.INSTANCE);
+        right = RuleUtils.changeTraits(right, IgniteDistributions.single());
 
         RuleUtils.transformTo(call,
             new IgniteJoin(cluster, traits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType()));

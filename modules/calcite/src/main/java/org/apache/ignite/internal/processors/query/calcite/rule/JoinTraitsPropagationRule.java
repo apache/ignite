@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
@@ -44,19 +47,18 @@ public class JoinTraitsPropagationRule extends RelOptRule {
     @Override public void onMatch(RelOptRuleCall call) {
         IgniteJoin proto = call.rel(0);
 
-        RelNode left = convert(proto.getLeft(), proto.getLeft().getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.any()));
-
-        RelNode right = convert(proto.getRight(), proto.getRight().getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.any()));
-
-        List<IgniteDistributions.BiSuggestion> suggests = IgniteDistributions.suggestJoin(left, right, proto.analyzeCondition(), proto.getJoinType());
-
-        List<RelNode> newRels = new ArrayList<>(suggests.size());
+        RelNode left = proto.getLeft();
+        RelNode right = proto.getRight();
 
         RelOptCluster cluster = proto.getCluster();
+        RexNode condition = proto.getCondition();
+        Set<CorrelationId> variablesSet = proto.getVariablesSet();
+        JoinRelType joinType = proto.getJoinType();
+
+        List<IgniteDistributions.BiSuggestion> suggests = IgniteDistributions.suggestJoin(
+            left, right, proto.analyzeCondition(), joinType);
+
+        List<RelNode> newRels = new ArrayList<>(suggests.size());
 
         for (IgniteDistributions.BiSuggestion suggest : suggests) {
             RelTraitSet traits = proto.getTraitSet().replace(suggest.out());
@@ -64,7 +66,8 @@ public class JoinTraitsPropagationRule extends RelOptRule {
             RelNode left0 = RuleUtils.changeTraits(left, suggest.left());
             RelNode right0 = RuleUtils.changeTraits(right, suggest.right());
 
-            newRels.add(new IgniteJoin(cluster, traits, left0, right0, proto.getCondition(), proto.getVariablesSet(), proto.getJoinType()));
+            newRels.add(new IgniteJoin(cluster, traits, left0, right0,
+                condition, variablesSet, joinType));
         }
 
         RuleUtils.transformTo(call, newRels);

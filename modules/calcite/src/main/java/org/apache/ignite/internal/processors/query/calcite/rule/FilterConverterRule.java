@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -44,10 +45,12 @@ public class FilterConverterRule extends RelOptRule {
         LogicalFilter rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
+        RelMetadataQuery mq = cluster.getMetadataQuery();
+
         RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteMdDistribution.filter(cluster.getMetadataQuery(), input, rel.getCondition()));
+            .replace(IgniteMdDistribution.filter(mq, input, rel.getCondition()));
 
         RuleUtils.transformTo(call,
             new IgniteFilter(cluster, traits, input, rel.getCondition()));

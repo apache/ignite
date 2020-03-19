@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -44,10 +45,12 @@ public class ProjectConverterRule extends RelOptRule {
         LogicalProject rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
+        RelMetadataQuery mq = cluster.getMetadataQuery();
+
         RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteMdDistribution.project(cluster.getMetadataQuery(), input, rel.getProjects()));
+            .replace(IgniteMdDistribution.project(mq, input, rel.getProjects()));
 
         RuleUtils.transformTo(call,
             new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));
