@@ -1015,7 +1015,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return bltNodes;
     }
 
-    /** {@inheritDoc} */
     public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
