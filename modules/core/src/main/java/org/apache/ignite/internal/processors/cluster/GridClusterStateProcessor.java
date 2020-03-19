@@ -941,6 +941,70 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
     }
 
+    /** */
+    private BaselineTopology calculateNewBaselineTopology(
+        ClusterState state,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology
+    ) {
+        BaselineTopology newBlt;
+
+        BaselineTopology currBlt = globalState.baselineTopology();
+
+        int newBltId = 0;
+
+        if (currBlt != null)
+            newBltId = ClusterState.active(state) ? currBlt.id() + 1 : currBlt.id();
+
+        if (baselineNodes != null && !baselineNodes.isEmpty()) {
+            List<BaselineNode> baselineNodes0 = new ArrayList<>();
+
+            for (BaselineNode node : baselineNodes) {
+                if (node instanceof ClusterNode) {
+                    ClusterNode clusterNode = (ClusterNode) node;
+
+                    if (!clusterNode.isClient() && !clusterNode.isDaemon())
+                        baselineNodes0.add(node);
+                }
+                else
+                    baselineNodes0.add(node);
+            }
+
+            baselineNodes = baselineNodes0;
+        }
+
+        if (forceChangeBaselineTopology)
+            newBlt = BaselineTopology.build(baselineNodes, newBltId);
+        else if (ClusterState.active(state)) {
+            if (baselineNodes == null)
+                baselineNodes = baselineNodes();
+
+            if (currBlt == null)
+                newBlt = BaselineTopology.build(baselineNodes, newBltId);
+            else {
+                newBlt = currBlt;
+
+                newBlt.updateHistory(baselineNodes);
+            }
+        }
+        else
+            newBlt = null;
+
+        return newBlt;
+    }
+
+    /** */
+    private Collection<BaselineNode> baselineNodes() {
+        List<ClusterNode> clNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        ArrayList<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
+
+        for (ClusterNode clNode : clNodes)
+            bltNodes.add(clNode);
+
+        return bltNodes;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
@@ -949,7 +1013,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ?
+        BaselineTopology blt = (compatibilityMode && !forceChangeBaselineTopology) ?
             null :
             calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
 
@@ -959,7 +1023,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
 
         if (ctx.isDaemon() || ctx.clientNode())
-            return sendComputeChangeGlobalState(state, forceDeactivation, newBlt, forceChangeBaselineTopology);
+            return sendComputeChangeGlobalState(state, forceDeactivation, blt, forceChangeBaselineTopology);
 
         if (cacheProc.transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null) {
             return new GridFinishedFuture<>(
@@ -971,7 +1035,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState curState = globalState;
 
         if (!curState.transition() && curState.state() == state) {
-            if (!ClusterState.active(state) || BaselineTopology.equals(curState.baselineTopology(), newBlt))
+            if (!ClusterState.active(state) || BaselineTopology.equals(curState.baselineTopology(), blt))
                 return new GridFinishedFuture<>();
         }
 
@@ -1040,7 +1104,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             storedCfgs,
             state,
             forceDeactivation,
-            newBlt,
+            blt,
             forceChangeBaselineTopology,
             System.currentTimeMillis()
         );
@@ -1048,7 +1112,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
         try {
-            U.log(log, "Sending " + prettyStr(state) + " request with BaselineTopology " + newBlt);
+            U.log(log, "Sending " + prettyStr(state) + " request with BaselineTopology " + blt);
 
             ctx.discovery().sendCustomEvent(msg);
 
@@ -1065,70 +1129,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return resFut;
-    }
-
-    /** */
-    private BaselineTopology calculateNewBaselineTopology(
-        ClusterState state,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        BaselineTopology newBlt;
-
-        BaselineTopology currBlt = globalState.baselineTopology();
-
-        int newBltId = 0;
-
-        if (currBlt != null)
-            newBltId = ClusterState.active(state) ? currBlt.id() + 1 : currBlt.id();
-
-        if (baselineNodes != null && !baselineNodes.isEmpty()) {
-            List<BaselineNode> baselineNodes0 = new ArrayList<>();
-
-            for (BaselineNode node : baselineNodes) {
-                if (node instanceof ClusterNode) {
-                    ClusterNode clusterNode = (ClusterNode) node;
-
-                    if (!clusterNode.isClient() && !clusterNode.isDaemon())
-                        baselineNodes0.add(node);
-                }
-                else
-                    baselineNodes0.add(node);
-            }
-
-            baselineNodes = baselineNodes0;
-        }
-
-        if (forceChangeBaselineTopology)
-            newBlt = BaselineTopology.build(baselineNodes, newBltId);
-        else if (ClusterState.active(state)) {
-            if (baselineNodes == null)
-                baselineNodes = baselineNodes();
-
-            if (currBlt == null)
-                newBlt = BaselineTopology.build(baselineNodes, newBltId);
-            else {
-                newBlt = currBlt;
-
-                newBlt.updateHistory(baselineNodes);
-            }
-        }
-        else
-            newBlt = null;
-
-        return newBlt;
-    }
-
-    /** */
-    private Collection<BaselineNode> baselineNodes() {
-        List<ClusterNode> clNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
-
-        ArrayList<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
-
-        for (ClusterNode clNode : clNodes)
-            bltNodes.add(clNode);
-
-        return bltNodes;
     }
 
     /** {@inheritDoc} */
