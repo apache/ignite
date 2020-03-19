@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,23 +27,22 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 /**
  * Tests for checking rebalance log messages.
  */
 public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
     /** */
-    public static final int CHECKPOINT_FREQUENCY = 100;
+    private static final int CHECKPOINT_FREQUENCY = 100;
 
     /** Test logger. */
     private final ListeningTestLogger srvLog = new ListeningTestLogger(false, log);
 
     /** */
-    public static final int KEYS_LOW_BORDER = 100;
+    private static final int KEYS_LOW_BORDER = 100;
 
     /** */
-    public static final int KEYS_UPPER_BORDER = 200;
+    private static final int KEYS_UPPER_BORDER = 200;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -106,13 +106,12 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
      *      </ul>
      * @throws Exception If failed.
      */
-    @Test
     public void testHistoricalRebalanceLogMsg() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "1");
 
         LogListener expMsgsLsnr = LogListener.
             matches("Following partitions were reserved for potential history rebalance [grpId=1813188848," +
-                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").times(3).
+                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").times(4).
             andMatches("fullPartitions=[], histPartitions=[0-7]").times(2).build();
 
         LogListener unexpectedMessagesLsnr =
@@ -150,7 +149,6 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
      *      </ul>
      * @throws Exception If failed.
      */
-    @Test
     public void testFullRebalanceLogMsgs() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "500000");
         LogListener expMsgsLsnr = LogListener.
