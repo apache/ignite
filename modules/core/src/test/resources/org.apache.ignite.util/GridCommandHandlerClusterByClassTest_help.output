@@ -68,7 +68,7 @@ This utility can do the following commands:
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
-  Kill user initiated task:
+  Kill user-initiated task:
     control.(sh|bat) --kill operation
 
     Operations:
