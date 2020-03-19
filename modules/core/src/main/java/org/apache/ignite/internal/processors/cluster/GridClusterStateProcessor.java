@@ -470,7 +470,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 && !inMemoryMode
                 && isBaselineSatisfied(state.baselineTopology(), discoCache.serverNodes())
             )
-                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false, false);
+                changeGlobalState(targetState, true, state.baselineTopology().currentBaseline(), false);
         }
 
         return null;
@@ -939,6 +939,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (readOnly)
                 ctx.cache().context().database().forceCheckpoint("Cluster read-only mode enabled");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> changeGlobalState(
+        ClusterState state,
+        boolean forceDeactivation,
+        Collection<? extends BaselineNode> baselineNodes,
+        boolean forceChangeBaselineTopology
+    ) {
+        return changeGlobalState(state, forceDeactivation, baselineNodes, forceChangeBaselineTopology, false);
     }
 
     /** */
@@ -1988,8 +1998,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     state,
                     forceDeactivation,
                     baselineTopology != null ? baselineTopology.currentBaseline() : null,
-                    forceChangeBaselineTopology,
-                    false
+                    forceChangeBaselineTopology
                 ).get();
             }
             catch (IgniteCheckedException ex) {
