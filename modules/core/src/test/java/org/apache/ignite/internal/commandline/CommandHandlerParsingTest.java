@@ -601,10 +601,10 @@ public class CommandHandlerParsingTest {
      * Checks that parse arguments fails with {@code exception} and {@code failMsg} message.
      *
      * @param failMsg Exception message (optional).
-     * @param exception Exception class.
+     * @param cls Exception class.
      * @param args Incoming arguments.
      */
-    private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> exception, String... args) {
-        assertThrows(null, () -> parseArgs(asList(args)), exception, failMsg);
+    private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> cls, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), cls, failMsg);
     }
 }

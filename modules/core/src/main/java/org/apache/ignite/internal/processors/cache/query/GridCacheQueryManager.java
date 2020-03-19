@@ -1509,10 +1509,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param reqId Request ID.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    public boolean removeQueryResult(@Nullable UUID sndId, long reqId) {
-        if (sndId == null)
-            return false;
-
+    public boolean removeQueryResult(UUID sndId, long reqId) {
         RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs != null) {
@@ -1527,8 +1524,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     fut.get().closeIfNotShared(recipient(sndId, reqId));
                 }
                 catch (IgniteCheckedException e) {
-                    if (!X.hasCause(e, GridDhtUnreservedPartitionException.class))
+                    if (!X.hasCause(e, GridDhtUnreservedPartitionException.class)) {
                         U.error(log, "Failed to close iterator.", e);
+
+                        return false;
+                    }
                 }
 
                 return true;

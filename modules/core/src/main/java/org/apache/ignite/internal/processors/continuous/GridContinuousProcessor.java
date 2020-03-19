@@ -258,7 +258,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (ctx.isStopping())
                         return;
 
-                    processStopRequest(snd, msg);
+                    processStopRequest(msg);
                 }
             });
 
@@ -1338,10 +1338,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param snd Sender node.
-     * @param msg Message/
+     * @param msg Message.
      */
-    private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
+    private void processStopRequest(StopRoutineDiscoveryMessage msg) {
         UUID routineId = msg.routineId();
 
         unregisterRemote(routineId);
