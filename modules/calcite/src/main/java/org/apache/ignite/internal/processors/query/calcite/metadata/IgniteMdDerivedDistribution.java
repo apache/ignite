@@ -148,7 +148,7 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
         }
 
         if (!F.isEmpty(res))
-            return new ArrayList<>();
+            return new ArrayList<>(res);
 
         return Collections.emptyList();
     }

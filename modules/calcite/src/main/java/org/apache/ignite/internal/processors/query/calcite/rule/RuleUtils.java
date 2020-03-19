@@ -123,7 +123,9 @@ public class RuleUtils {
 
     /** */
     private static RelNode changeRootTraits(RelNode rel) {
-        return changeTraits(rel, rel.getCluster().getPlanner().getRoot().getTraitSet());
+        RelTraitSet rootTraits = rel.getCluster().getPlanner().getRoot().getTraitSet();
+
+        return changeTraits(rel, rootTraits);
     }
 
     /** */
