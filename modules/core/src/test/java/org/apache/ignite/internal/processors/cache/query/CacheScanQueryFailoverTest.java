@@ -91,6 +91,9 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(name);
 
+        if (name.equals("client"))
+            cfg.setClientMode(true);
+
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
         return cfg;
