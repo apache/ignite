@@ -91,7 +91,8 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * Cancels query.
      */
     public void cancel() {
-        failReason = new QueryCancelledException();
+        if (failReason == null)
+            failReason = new QueryCancelledException();
 
         close();
     }
