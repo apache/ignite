@@ -79,7 +79,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected boolean isRemoteJvm(String igniteInstanceName) {
-        if(igniteInstanceName.equals("client") || igniteInstanceName.equals("server"))
+        if(igniteInstanceName.equals("client") || igniteInstanceName.equals("server") || igniteInstanceName.startsWith("grid"))
             return false;
         else
             return super.isRemoteJvm(igniteInstanceName);
@@ -90,9 +90,6 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
         cfg.setConsistentId(name);
-
-        if (name.equals("client"))
-            cfg.setClientMode(true);
 
         cfg.setFailureHandler(new StopNodeOrHaltFailureHandler());
 
