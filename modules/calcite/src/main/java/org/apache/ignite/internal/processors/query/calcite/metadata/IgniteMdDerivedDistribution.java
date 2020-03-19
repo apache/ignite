@@ -171,11 +171,10 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
     public List<IgniteDistribution> deriveDistributions(LogicalJoin rel, RelMetadataQuery mq) {
-        List<IgniteDistribution> left = _deriveDistributions(rel.getLeft(), mq);
-        List<IgniteDistribution> right = _deriveDistributions(rel.getRight(), mq);
+        List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
+            rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
 
-        return Commons.transform(IgniteDistributions.suggestJoin(left, right, rel.analyzeCondition(), rel.getJoinType()),
-            IgniteDistributions.BiSuggestion::out);
+        return Commons.transform(suggestions, IgniteDistributions.BiSuggestion::out);
     }
 
     /** */

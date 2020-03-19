@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
@@ -34,7 +32,7 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AnyDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.BroadcastDistribution;
@@ -157,7 +155,16 @@ public class IgniteDistributions {
     public static List<BiSuggestion> suggestJoin(RelNode left, RelNode right, JoinInfo joinInfo, JoinRelType joinType) {
         RelMetadataQuery mq = left.getCluster().getMetadataQuery();
 
-        return suggestJoin(extractDistributions(left, mq), extractDistributions(right, mq), joinInfo, joinType);
+        List<IgniteDistribution> leftIn = IgniteMdDerivedDistribution._deriveDistributions(left, mq);
+        List<IgniteDistribution> rightIn = IgniteMdDerivedDistribution._deriveDistributions(right, mq);
+
+        Map<BiSuggestion, Integer> suggestions = new LinkedHashMap<>();
+
+        for (IgniteDistribution leftIn0 : leftIn)
+            for (IgniteDistribution rightIn0 : rightIn)
+                suggestions = suggestJoin0(suggestions, leftIn0, rightIn0, joinInfo, joinType);
+
+        return sorted(suggestions);
     }
 
     /**
@@ -172,26 +179,6 @@ public class IgniteDistributions {
     public static List<BiSuggestion> suggestJoin(IgniteDistribution leftIn, IgniteDistribution rightIn,
         JoinInfo joinInfo, JoinRelType joinType) {
         return sorted(suggestJoin0(new LinkedHashMap<>(), leftIn, rightIn, joinInfo, joinType));
-    }
-
-    /**
-     * Suggests possible join distributions.
-     *
-     * @param leftIn Left distributions.
-     * @param rightIn Right distributions.
-     * @param joinInfo Join info.
-     * @param joinType Join type.
-     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
-     */
-    public static List<BiSuggestion> suggestJoin(List<IgniteDistribution> leftIn, List<IgniteDistribution> rightIn,
-        JoinInfo joinInfo, JoinRelType joinType) {
-        Map<BiSuggestion, Integer> suggestions = new LinkedHashMap<>();
-
-        for (IgniteDistribution leftIn0 : leftIn)
-            for (IgniteDistribution rightIn0 : rightIn)
-                suggestions = suggestJoin0(suggestions, leftIn0, rightIn0, joinInfo, joinType);
-
-        return sorted(suggestions);
     }
 
     /**
@@ -301,25 +288,14 @@ public class IgniteDistributions {
     }
 
     /** */
-    private static List<IgniteDistribution> extractDistributions(RelNode rel, RelMetadataQuery mq) {
-        if (!(rel instanceof RelSubset))
-            return ImmutableList.of(IgniteMdDistribution._distribution(rel, mq));
-
-        HashSet<IgniteDistribution> distrs = new HashSet<>();
-
-        for (RelNode rel0 : ((RelSubset) rel).getRels())
-            distrs.add(IgniteMdDistribution._distribution(rel0, mq));
-
-        return new ArrayList<>(distrs);
-    }
-
-    /** */
     private static List<BiSuggestion> sorted(Map<BiSuggestion, Integer> src) {
         if (BEST_CNT > 0) {
             List<Map.Entry<BiSuggestion, Integer>> entries = new ArrayList<>(src.entrySet());
+
             entries.sort(Map.Entry.comparingByValue());
 
-            entries = entries.size() < BEST_CNT ? entries : entries.subList(0, BEST_CNT);
+            if (entries.size() >= BEST_CNT)
+                entries = entries.subList(0, BEST_CNT);
 
             return Commons.transform(entries, Map.Entry::getKey);
         }
