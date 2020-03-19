@@ -1016,7 +1016,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> changeGlobalState(
+    public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
         Collection<? extends BaselineNode> baselineNodes,
