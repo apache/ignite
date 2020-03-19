@@ -69,41 +69,46 @@ This utility can do the following commands:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
   Kill user initiated task:
-    control.(sh|bat) --kill [scan ORIGIN_NODE_ID CACHE_NAME QUERY_ID] [continuous ROUTINE_ID] [sql QUERY_ID] [compute SESSION_ID] [tx XID] [service NAME]
+    control.(sh|bat) --kill operation
 
-    Parameters:
-      scan            - Scan query.
+    Operations:
+      Scan query:
+        scan ORIGIN_NODE_ID CACHE_NAME QUERY_ID
 
-      Parameters:
-        ORIGIN_NODE_ID  - query originating node ID.
-        CACHE_NAME      - cache name.
-        QUERY_ID        - query identifier.
+        Parameters:
+          ORIGIN_NODE_ID  - query originating node ID.
+          CACHE_NAME      - cache name.
+          QUERY_ID        - query identifier.
 
-      continuous       - Continuous query.
+      Continuous query:
+        continuous ROUTINE_ID
 
-      Parameters:
-        ROUTINE_ID      - routine identifier.
+        Parameters:
+          ROUTINE_ID      - routine identifier.
 
-      sql             - SQL query.
+      SQL query:
+        sql QUERY_ID
 
-      Parameters:
-        QUERY_ID        - routine identifier.
+        Parameters:
+          QUERY_ID        - routine identifier.
 
-      compute         - Compute task.
+      Compute task:
+        compute SESSION_ID
 
-      Parameters:
-        SESSION_ID      - task session identifier.
+        Parameters:
+          SESSION_ID      - task session identifier.
 
-      tx              - Transaction.
+      Transaction:
+        tx XID
 
-      Parameters:
-        XID             - transaction identifier.
+        Parameters:
+          XID             - transaction identifier.
 
-      service         - Service.
+      Service:
+        service NAME
 
-      Parameters:
-        NAME            - Service name.
-
+        Parameters:
+          NAME            - Service name.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
