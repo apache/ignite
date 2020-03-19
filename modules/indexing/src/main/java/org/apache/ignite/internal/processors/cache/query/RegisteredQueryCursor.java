@@ -48,11 +48,12 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
      * @param runningQryMgr Running query manager.
+     * @param lazy Lazy mode flag.
      * @param qryId Registered running query id.
      */
     public RegisteredQueryCursor(Iterable<T> iterExec, GridQueryCancel cancel, RunningQueryManager runningQryMgr,
-        Long qryId) {
-        super(iterExec, cancel);
+        boolean lazy, Long qryId) {
+        super(iterExec, cancel, true, lazy);
 
         assert runningQryMgr != null;
         assert qryId != null;
@@ -64,7 +65,10 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** {@inheritDoc} */
     @Override protected Iterator<T> iter() {
         try {
-            return super.iter();
+            if (lazy())
+                return new RegisteredIterator(super.iter());
+            else
+                return super.iter();
         }
         catch (Exception e) {
             failReason = e;
@@ -78,9 +82,9 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        unregisterQuery();
-
         super.close();
+
+        unregisterQuery();
     }
 
     /**
@@ -98,5 +102,50 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     private void unregisterQuery(){
         if (unregistered.compareAndSet(false, true))
             runningQryMgr.unregister(qryId, failReason);
+    }
+
+    /**
+     *
+     */
+    private class RegisteredIterator implements Iterator<T> {
+        /** Delegate iterator. */
+        final Iterator<T> delegateIt;
+
+        /**
+         * @param it Result set iterator.
+         */
+        private RegisteredIterator(Iterator<T> it) {
+            delegateIt = it;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            try {
+                return delegateIt.hasNext();
+            }
+            catch (Exception e) {
+                failReason = e;
+
+                if (QueryUtils.wasCancelled(failReason))
+                    unregisterQuery();
+
+                throw e;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public T next() {
+            try {
+                return delegateIt.next();
+            }
+            catch (Exception e) {
+                failReason = e;
+
+                if (QueryUtils.wasCancelled(failReason))
+                    unregisterQuery();
+
+                throw e;
+            }
+        }
     }
 }

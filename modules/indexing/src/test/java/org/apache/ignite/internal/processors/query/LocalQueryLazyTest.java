@@ -92,7 +92,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
         for (int i = 0; i < QRY_CNT; ++i) {
             iters[i] = sql("SELECT * FROM test").iterator();
 
-            ResultInterface res = GridTestUtils.getFieldValueHierarchy(iters[i], "iter", "iter", "res");
+            ResultInterface res = GridTestUtils.getFieldValueHierarchy(iters[i], "iter", "delegateIt", "iter", "res");
 
             assertTrue("Unexpected result type " + res.getClass(), res instanceof LazyResult);
         }
