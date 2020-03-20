@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 
@@ -42,8 +41,11 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     private static List<IgniteEx> srvs;
 
-    /** */
-    private static IgniteEx cli;
+    /** Client that starts task. */
+    private static IgniteEx startCli;
+
+    /** Client that kill task. */
+    private static IgniteEx killCli;
 
     /** */
     private static ComputeMXBean computeMBean;
@@ -57,32 +59,32 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++)
             srvs.add(grid(i));
 
-        cli = startClientGrid("client");
+        startCli = startClientGrid("startClient");
+        killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
 
-        IgniteCache<Object, Object> cache = cli.getOrCreateCache(
+        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
 
-        computeMBean = getMxBean(cli.name(), "Compute",
+        computeMBean = getMxBean(killCli.name(), "Compute",
             ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        doTestCancelComputeTask(cli, srvs, sessId ->
+        doTestCancelComputeTask(startCli, srvs, sessId ->
             computeMBean.cancel(sessId));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownComputeTask() throws Exception {
-        assertThrowsWithCause(() -> computeMBean.cancel(IgniteUuid.randomUuid().toString()),
-            RuntimeException.class);
+        computeMBean.cancel(IgniteUuid.randomUuid().toString());
     }
 }

@@ -29,7 +29,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.execute;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 
@@ -44,8 +43,11 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** */
     private static List<IgniteEx> srvs;
 
-    /** */
-    private static IgniteEx cli;
+    /** Client that starts tasks. */
+    private static IgniteEx startCli;
+
+    /** Client that kills tasks. */
+    private static IgniteEx killCli;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -56,11 +58,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++)
             srvs.add(grid(i));
 
-        cli = startClientGrid("client");
+        startCli = startClientGrid("startClient");
+        killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
 
-        IgniteCache<Object, Object> cache = cli.getOrCreateCache(
+        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
@@ -71,13 +74,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        doTestCancelComputeTask(cli, srvs, sessId -> execute(cli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
+        doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownComputeTask() throws Exception {
-        assertThrowsWithCause(() -> execute(cli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'"),
-            RuntimeException.class);
+        execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
     }
 }

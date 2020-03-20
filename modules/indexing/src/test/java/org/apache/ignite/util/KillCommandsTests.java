@@ -46,11 +46,12 @@ class KillCommandsTests {
     /**
      * Test cancel of the compute task.
      *
-     * @param cli Client node.
+     * @param cli Client node that starts tasks.
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    public static void doTestCancelComputeTask(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> qryCanceler) throws Exception {
+    public static void doTestCancelComputeTask(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> qryCanceler)
+        throws Exception {
         IgniteFuture<Collection<Integer>> fut = cli.compute().broadcastAsync(() -> {
             Thread.sleep(10 * TIMEOUT);
 
@@ -62,15 +63,16 @@ class KillCommandsTests {
         String[] id = new String[1];
 
         boolean res = waitForCondition(() -> {
-            List<List<?>> tasks = SqlViewExporterSpiTest.execute(srvs.get(0), "SELECT SESSION_ID FROM SYS.JOBS");
+            for (IgniteEx srv : srvs) {
+                List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
 
-            if (tasks.size() == 1) {
-                id[0] = (String)tasks.get(0).get(0);
-
-                return true;
+                if (tasks.size() == 1)
+                    id[0] = (String)tasks.get(0).get(0);
+                else
+                    return false;
             }
 
-            return false;
+            return true;
         }, TIMEOUT);
 
         assertTrue(res);

@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
@@ -51,18 +55,18 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     /**
      * Kills compute task by the session idenitifier.
      *
-     * @param sessionId Session id.
+     * @param sesId Session id.
      */
-    public void cancel(IgniteUuid sessionId) {
+    public void cancel(IgniteUuid sesId) {
         try {
             IgniteCompute compute = ctx.cluster().get().compute();
 
-            boolean res = compute.execute(new VisorComputeCancelSessionsTask(),
-                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(),
-                    new VisorComputeCancelSessionsTaskArg(Collections.singleton(sessionId)), false));
+            Collection<UUID> nodes =
+                ctx.cluster().get().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
 
-            if (!res)
-                throw new RuntimeException("Compute task not found[sessionId=" + sessionId + ']');
+            compute.execute(new VisorComputeCancelSessionsTask(),
+                new VisorTaskArgument<>(nodes, new VisorComputeCancelSessionsTaskArg(Collections.singleton(sesId)),
+                    false));
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);
