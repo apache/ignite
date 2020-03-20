@@ -112,7 +112,8 @@ public class RuleUtils {
     }
 
     /** */
-    @SuppressWarnings({"rawtypes", "unchecked"}) public static RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
         RelTraitSet fromTraits = rel.getTraitSet();
 
         if (fromTraits.satisfies(toTraits))

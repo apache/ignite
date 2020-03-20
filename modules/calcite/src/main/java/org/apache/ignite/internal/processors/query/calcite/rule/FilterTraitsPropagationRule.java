@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -43,30 +40,16 @@ public class FilterTraitsPropagationRule extends RelOptRule {
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        IgniteFilter proto = call.rel(0);
-        RelSubset inputSubset = call.rel(1);
+        IgniteFilter rel = call.rel(0);
+        RelNode input = call.rel(1);
 
-        RelOptCluster cluster = proto.getCluster();
+        RelOptCluster cluster = rel.getCluster();
         RelMetadataQuery mq = cluster.getMetadataQuery();
 
-        List<RelNode> subsetNodes = inputSubset.getRelList();
-        HashSet<RelTraitSet> processed = new HashSet<>(subsetNodes.size());
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(IgniteMdDistribution.filter(mq, input, rel.getCondition()));
 
-        List<RelNode> newRels = new ArrayList<>(subsetNodes.size());
-
-        for (RelNode subsetNode : subsetNodes) {
-            RelTraitSet inputTraits = subsetNode.getTraitSet();
-
-            if (!processed.add(inputTraits))
-                continue;
-
-            RelNode input = convert(inputSubset, inputTraits);
-            RelTraitSet traits = proto.getTraitSet()
-                .replace(IgniteMdDistribution.filter(mq, input, proto.getCondition()));
-
-            newRels.add(new IgniteFilter(cluster, traits, input, proto.getCondition()));
-        }
-
-        RuleUtils.transformTo(call, newRels);
+        RuleUtils.transformTo(call,
+            new IgniteFilter(cluster, traits, input, rel.getCondition()));
     }
 }

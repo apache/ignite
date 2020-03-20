@@ -25,7 +25,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
  * Ignite Join converter.
@@ -46,15 +45,10 @@ public class JoinConverterRule extends RelOptRule {
         LogicalJoin rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.single());
-
         RelNode left = convert(rel.getLeft(), IgniteConvention.INSTANCE);
-        left = RuleUtils.changeTraits(left, IgniteDistributions.single());
-
         RelNode right = convert(rel.getRight(), IgniteConvention.INSTANCE);
-        right = RuleUtils.changeTraits(right, IgniteDistributions.single());
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(IgniteConvention.INSTANCE);
 
         RuleUtils.transformTo(call,
             new IgniteJoin(cluster, traits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType()));

@@ -52,7 +52,7 @@ public class TableModifyConverterRule extends RelOptRule {
 
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.single());
+            .replace(IgniteDistributions.single()); // TODO move to IgniteMdDistributions
 
         RuleUtils.transformTo(call,
             new IgniteTableModify(cluster, traits, rel.getTable(), rel.getCatalogReader(), input,

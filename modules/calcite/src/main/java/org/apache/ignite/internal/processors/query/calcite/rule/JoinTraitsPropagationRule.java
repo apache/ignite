@@ -45,23 +45,23 @@ public class JoinTraitsPropagationRule extends RelOptRule {
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        IgniteJoin proto = call.rel(0);
+        IgniteJoin rel = call.rel(0);
 
-        RelNode left = proto.getLeft();
-        RelNode right = proto.getRight();
+        RelNode left = rel.getLeft();
+        RelNode right = rel.getRight();
 
-        RelOptCluster cluster = proto.getCluster();
-        RexNode condition = proto.getCondition();
-        Set<CorrelationId> variablesSet = proto.getVariablesSet();
-        JoinRelType joinType = proto.getJoinType();
+        RelOptCluster cluster = rel.getCluster();
+        RexNode condition = rel.getCondition();
+        Set<CorrelationId> variablesSet = rel.getVariablesSet();
+        JoinRelType joinType = rel.getJoinType();
 
         List<IgniteDistributions.BiSuggestion> suggests = IgniteDistributions.suggestJoin(
-            left, right, proto.analyzeCondition(), joinType);
+            left, right, rel.analyzeCondition(), joinType);
 
         List<RelNode> newRels = new ArrayList<>(suggests.size());
 
         for (IgniteDistributions.BiSuggestion suggest : suggests) {
-            RelTraitSet traits = proto.getTraitSet().replace(suggest.out());
+            RelTraitSet traits = rel.getTraitSet().replace(suggest.out());
 
             RelNode left0 = RuleUtils.changeTraits(left, suggest.left());
             RelNode right0 = RuleUtils.changeTraits(right, suggest.right());

@@ -54,49 +54,69 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
  */
 public class IgniteDistributions {
     /** */
-    private static final int BEST_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_JOIN_SUGGESTS_COUNT", 3);
+    private static final int BEST_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_JOIN_SUGGESTS_COUNT", 0);
 
     /** */
     private static final Integer[] INTS = new Integer[]{0, 1, 2};
 
     /** */
-    private static final IgniteDistribution BROADCAST = new DistributionTrait(BroadcastDistribution.INSTANCE);
+    private static final IgniteDistribution BROADCAST = canonize(new DistributionTrait(BroadcastDistribution.INSTANCE));
 
     /** */
-    private static final IgniteDistribution SINGLETON = new DistributionTrait(SingletonDistribution.INSTANCE);
+    private static final IgniteDistribution SINGLETON = canonize(new DistributionTrait(SingletonDistribution.INSTANCE));
 
     /** */
-    private static final IgniteDistribution RANDOM = new DistributionTrait(RandomDistribution.INSTANCE);
+    private static final IgniteDistribution RANDOM = canonize(new DistributionTrait(RandomDistribution.INSTANCE));
 
     /** */
-    private static final IgniteDistribution ANY = new DistributionTrait(AnyDistribution.INSTANCE);
+    private static final IgniteDistribution ANY = canonize(new DistributionTrait(AnyDistribution.INSTANCE));
 
     /**
      * @return Any distribution.
      */
     public static IgniteDistribution any() {
-        return canonize(ANY);
+        return ANY;
     }
 
     /**
      * @return Random distribution.
      */
     public static IgniteDistribution random() {
-        return canonize(RANDOM);
+        return RANDOM;
     }
 
     /**
      * @return Single distribution.
      */
     public static IgniteDistribution single() {
-        return canonize(SINGLETON);
+        return SINGLETON;
     }
 
     /**
      * @return Broadcast distribution.
      */
     public static IgniteDistribution broadcast() {
-        return canonize(BROADCAST);
+        return BROADCAST;
+    }
+
+    /**
+     * @param key Affinity key.
+     * @param cacheName Affinity cache name.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(int key, String cacheName, Object identity) {
+        return affinity(key, CU.cacheId(cacheName), identity);
+    }
+
+    /**
+     * @param key Affinity key.
+     * @param cacheId Affinity cache ID.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(int key, int cacheId, Object identity) {
+        return hash(ImmutableIntList.of(key), new AffinityDistribution(cacheId, identity));
     }
 
     /**
@@ -114,33 +134,6 @@ public class IgniteDistributions {
      */
     public static IgniteDistribution hash(List<Integer> keys, DistributionFunction function) {
         return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), function));
-    }
-
-    /**
-     * @param key Affinity key.
-     * @param cacheId Affinity cache ID.
-     * @param identity Affinity identity key.
-     * @return Affinity distribution.
-     */
-    public static IgniteDistribution affinity(int key, int cacheId, Object identity) {
-        return canonize(new DistributionTrait(ImmutableIntList.of(key), new AffinityDistribution(cacheId, identity)));
-    }
-
-    /**
-     * @param key Affinity key.
-     * @param cacheName Affinity cache name.
-     * @param identity Affinity identity key.
-     * @return Affinity distribution.
-     */
-    public static IgniteDistribution affinity(int key, String cacheName, Object identity) {
-        return affinity(key, CU.cacheId(cacheName), identity);
-    }
-
-    /**
-     * See {@link RelTraitDef#canonize(org.apache.calcite.plan.RelTrait)}.
-     */
-    public static IgniteDistribution canonize(IgniteDistribution distr) {
-        return DistributionTraitDef.INSTANCE.canonize(distr);
     }
 
     /**
@@ -341,6 +334,13 @@ public class IgniteDistributions {
         }
 
         return ImmutableIntList.of(resKeys);
+    }
+
+    /**
+     * See {@link RelTraitDef#canonize(org.apache.calcite.plan.RelTrait)}.
+     */
+    private static IgniteDistribution canonize(IgniteDistribution distr) {
+        return DistributionTraitDef.INSTANCE.canonize(distr);
     }
 
     /**

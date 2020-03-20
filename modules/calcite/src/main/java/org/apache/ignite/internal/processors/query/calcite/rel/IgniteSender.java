@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
@@ -87,21 +85,7 @@ public class IgniteSender extends SingleRel implements IgniteRel, RelTargetAware
     /**
      * @return Node distribution.
      */
-    public IgniteDistribution targetDistribution() {
-        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-    }
-
-    /**
-     * @return Node distribution.
-     */
     public IgniteDistribution sourceDistribution() {
         return input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
-    }
-
-    /**
-     * @return Node collations.
-     */
-    public List<RelCollation> collations() {
-        return getTraitSet().getTraits(RelCollationTraitDef.INSTANCE);
     }
 }
