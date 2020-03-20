@@ -57,9 +57,12 @@ public class GridQueryCancel {
 
         IgniteException ex = null;
 
-        for (QueryCancellable action : cancelActions) {
+        // Run actions in the reverse order.
+        for (int i = cancelActions.size() - 1; i >= 0; i--) {
             try {
-                action.doCancel();
+                QueryCancellable act = cancelActions.get(i);
+
+                act.doCancel();
             }
             catch (Exception e) {
                 if (ex == null)
