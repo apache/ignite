@@ -943,62 +943,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(
-        final boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
-    ) {
-        return changeGlobalState(activate, baselineNodes, forceChangeBaselineTopology, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     ) {
         return changeGlobalState(state, forceDeactivation, baselineNodes, forceChangeBaselineTopology, false);
-    }
-
-    /**
-     * @param activate New activate state.
-     * @param baselineNodes New BLT nodes.
-     * @param forceChangeBaselineTopology Force change BLT.
-     * @param isAutoAdjust Auto adjusting flag.
-     * @return Global change state future.
-     * @deprecated Use {@link #changeGlobalState(ClusterState, boolean, Collection, boolean, boolean)} instead.
-     */
-    @Deprecated
-    public IgniteInternalFuture<?> changeGlobalState(
-        final boolean activate,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology,
-        boolean isAutoAdjust
-    ) {
-        return changeGlobalState(activate ? ACTIVE : INACTIVE, true, baselineNodes, forceChangeBaselineTopology,
-            isAutoAdjust);
-    }
-
-    /**
-     * @param state New activate state.
-     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
-     * @param baselineNodes New BLT nodes.
-     * @param forceChangeBaselineTopology Force change BLT.
-     * @param isAutoAdjust Auto adjusting flag.
-     * @return Global change state future.
-     */
-    public IgniteInternalFuture<?> changeGlobalState(
-        ClusterState state,
-        boolean forceDeactivation,
-        Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology,
-        boolean isAutoAdjust
-    ) {
-        BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ?
-            null :
-            calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
-
-        return changeGlobalState0(state, forceDeactivation, newBlt, forceChangeBaselineTopology, isAutoAdjust);
     }
 
     /** */
@@ -1065,14 +1015,26 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return bltNodes;
     }
 
-    /** */
-    private IgniteInternalFuture<?> changeGlobalState0(
+    /**
+     * @param state New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @param baselineNodes New baseline nodes.
+     * @param forceChangeBaselineTopology Force change baseline topology.
+     * @param isAutoAdjust Auto adjusting baseline flag.
+     * @return State change future.
+     * @see ClusterState#INACTIVE
+     */
+    public IgniteInternalFuture<?> changeGlobalState(
         ClusterState state,
         boolean forceDeactivation,
-        BaselineTopology blt,
+        Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
+        BaselineTopology blt = (compatibilityMode && !forceChangeBaselineTopology) ?
+            null :
+            calculateNewBaselineTopology(state, baselineNodes, forceChangeBaselineTopology);
+
         boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
         if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
