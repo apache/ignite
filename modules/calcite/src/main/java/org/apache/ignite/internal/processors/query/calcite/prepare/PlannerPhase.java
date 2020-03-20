@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
-import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverter;
-import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverter;
-import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverter;
-import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverter;
-import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverter;
+import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.FilterTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.JoinTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.ProjectTraitsPropagationRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
 
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.cbo;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePrograms.decorrelate;
@@ -42,7 +44,7 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
-                ValuesConverter.INSTANCE,
+                ValuesConverterRule.INSTANCE,
                 SubQueryRemoveRule.FILTER,
                 SubQueryRemoveRule.PROJECT,
                 SubQueryRemoveRule.JOIN);
@@ -59,11 +61,13 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
-                AbstractConverter.ExpandConversionRule.INSTANCE,
-                JoinConverter.INSTANCE,
-                ProjectConverter.INSTANCE,
-                FilterConverter.INSTANCE,
-                TableModifyConverter.INSTANCE);
+                JoinConverterRule.INSTANCE,
+                JoinTraitsPropagationRule.INSTANCE,
+                ProjectConverterRule.INSTANCE,
+                ProjectTraitsPropagationRule.INSTANCE,
+                FilterConverterRule.INSTANCE,
+                FilterTraitsPropagationRule.INSTANCE,
+                TableModifyConverterRule.INSTANCE);
         }
 
         /** {@inheritDoc} */

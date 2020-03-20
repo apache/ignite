@@ -17,46 +17,45 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.Collections;
-import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class TableModifyConverter extends IgniteConverter{
+public class TableModifyConverterRule extends RelOptRule {
     /** */
-    public static final ConverterRule INSTANCE = new TableModifyConverter();
+    public static final RelOptRule INSTANCE = new TableModifyConverterRule();
 
     /**
      * Creates a ConverterRule.
      */
-    public TableModifyConverter() {
-        super(LogicalTableModify.class, "TableModifyConverter");
+    public TableModifyConverterRule() {
+        super(operand(LogicalTableModify.class, any()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected List<RelNode> convert0(@NotNull RelNode rel) {
-        LogicalTableModify modify = (LogicalTableModify) rel;
+    @Override public void onMatch(RelOptRuleCall call) {
+        LogicalTableModify rel = call.rel(0);
+
+        RelOptCluster cluster = rel.getCluster();
+
+        RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
+
+        input = RuleUtils.changeTraits(input, IgniteDistributions.single());
 
         RelTraitSet traits = rel.getTraitSet()
             .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteDistributions.single());
+            .replace(IgniteDistributions.single()); // TODO move to IgniteMdDistributions
 
-        RelOptCluster cluster = rel.getCluster();
-        RelNode input = convert(modify.getInput(), traits);
-
-        IgniteTableModify newRel = new IgniteTableModify(cluster, traits, modify.getTable(), modify.getCatalogReader(), input,
-            modify.getOperation(), modify.getUpdateColumnList(), modify.getSourceExpressionList(), modify.isFlattened());
-
-        return Collections.singletonList(newRel);
+        RuleUtils.transformTo(call,
+            new IgniteTableModify(cluster, traits, rel.getTable(), rel.getCatalogReader(), input,
+            rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened()));
     }
 }

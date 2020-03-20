@@ -25,7 +25,7 @@ import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.RelSubset;
-import org.apache.calcite.plan.volcano.VolcanoUtils;
+import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Project;
@@ -41,6 +41,7 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.DerivedDistribution;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -52,15 +53,6 @@ import org.apache.ignite.internal.util.typedef.F;
  * Implementation class for {@link RelMetadataQueryEx#derivedDistributions(RelNode)} method call.
  */
 public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistribution> {
-    /**
-     * Holds initially requested convention. In case there is no physical nodes in interested RelSubset we need to discover
-     * another RelSubset, which holds logical ones (to calculate possible distribution types instead of actual).
-     * On a deeper layer we need to return to initially requested RelSubset because we primarily interested
-     * in physical nodes, but logical ones cannot have them as children, so, we use a value from this holder
-     * to request RelSubset of possible physical nodes of a logical parent.
-     */
-    private static final ThreadLocal<Convention> REQUESTED_CONVENTION = ThreadLocal.withInitial(() -> Convention.NONE);
-
     /**
      * Metadata provider, responsible for distribution types derivation. It uses this implementation class under the hood.
      */
@@ -138,24 +130,25 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
      * For general information see {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
     public List<IgniteDistribution> deriveDistributions(RelSubset rel, RelMetadataQuery mq) {
-        rel = VolcanoUtils.subset(rel, rel.getTraitSet().replace(REQUESTED_CONVENTION.get()));
-
         HashSet<IgniteDistribution> res = new HashSet<>();
 
-        for (RelNode rel0 : rel.getRels())
+        RelSubset newSubset = subset(rel, IgniteConvention.INSTANCE);
+
+        for (RelNode rel0 : newSubset.getRels())
             res.addAll(_deriveDistributions(rel0, mq));
 
-        if (F.isEmpty(res)) {
-            // default traits + NONE convention return a set of all logical rels.
-            RelSubset newRel = VolcanoUtils.subset(rel, rel.getCluster().traitSetOf(Convention.NONE));
+        if (!F.isEmpty(res))
+            return new ArrayList<>(res);
 
-            if (newRel != rel) {
-                for (RelNode rel0 : newRel.getRels())
-                    res.addAll(_deriveDistributions(rel0, mq));
-            }
-        }
+        newSubset = subset(rel, Convention.NONE);
 
-        return new ArrayList<>(res);
+        for (RelNode rel0 : newSubset.getRels())
+            res.addAll(_deriveDistributions(rel0, mq));
+
+        if (!F.isEmpty(res))
+            return new ArrayList<>(res);
+
+        return Collections.emptyList();
     }
 
     /**
@@ -176,35 +169,22 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
     public List<IgniteDistribution> deriveDistributions(LogicalJoin rel, RelMetadataQuery mq) {
-        List<IgniteDistribution> left = _deriveDistributions(rel.getLeft(), mq);
-        List<IgniteDistribution> right = _deriveDistributions(rel.getRight(), mq);
+        List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
+            rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
 
-        return Commons.transform(IgniteDistributions.suggestJoin(left, right, rel.analyzeCondition(), rel.getJoinType()),
-            IgniteDistributions.BiSuggestion::out);
-    }
-
-    /**
-     * Derivation entry point. Returns actual (or possible) distribution types of given relational node.
-     * @param rel Relational node.
-     * @param convention Required convention.
-     * @param mq Metadata query instance.
-     * @return List of distribution types the given relational node may have.
-     */
-    public static List<IgniteDistribution> deriveDistributions(RelNode rel, Convention convention, RelMetadataQuery mq) {
-        try {
-            REQUESTED_CONVENTION.set(convention);
-
-            return _deriveDistributions(rel, mq);
-        }
-        finally {
-            REQUESTED_CONVENTION.remove();
-        }
+        return Commons.transform(suggestions, IgniteDistributions.BiSuggestion::out);
     }
 
     /** */
-    private static List<IgniteDistribution> _deriveDistributions(RelNode rel, RelMetadataQuery mq) {
+    public static List<IgniteDistribution> _deriveDistributions(RelNode rel, RelMetadataQuery mq) {
         assert mq instanceof RelMetadataQueryEx;
 
         return ((RelMetadataQueryEx) mq).derivedDistributions(rel);
+    }
+
+    /** */
+    private static RelSubset subset(RelSubset rel, Convention convention) {
+        VolcanoPlanner planner = (VolcanoPlanner) rel.getCluster().getPlanner();
+        return planner.getSubset(rel, rel.getCluster().traitSetOf(convention), true);
     }
 }

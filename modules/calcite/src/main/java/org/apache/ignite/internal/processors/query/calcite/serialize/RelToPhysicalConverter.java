@@ -66,8 +66,8 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     @Override public PhysicalRel visit(IgniteSender rel) {
         long fragmentId = rel.target().fragmentId();
         NodesMapping mapping = rel.target().mapping();
-        DistributionFunction fun = rel.targetDistribution().function();
-        ImmutableIntList keys = rel.targetDistribution().getKeys();
+        DistributionFunction fun = rel.distribution().function();
+        ImmutableIntList keys = rel.distribution().getKeys();
 
         return new SenderPhysicalRel(fragmentId, mapping, fun, keys, visit((IgniteRel) rel.getInput()));
     }

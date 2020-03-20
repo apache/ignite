@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.List;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  * A superinterface of all Ignite relational nodes.
@@ -30,4 +35,18 @@ public interface IgniteRel extends RelNode {
      * @return Visit result.
      */
     <T> T accept(IgniteRelVisitor<T> visitor);
+
+    /**
+     * @return Node distribution.
+     */
+    default IgniteDistribution distribution() {
+        return getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    /**
+     * @return Node collations.
+     */
+    default List<RelCollation> collations() {
+        return getTraitSet().getTraits(RelCollationTraitDef.INSTANCE);
+    }
 }

@@ -79,7 +79,7 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(IgniteRel rel, RelMetadataQuery mq) {
-        return rel.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+        return rel.distribution();
     }
 
     /**
@@ -177,14 +177,7 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * @return Join relational node distribution calculated on the basis of its inputs and join information.
      */
     public static IgniteDistribution join(RelMetadataQuery mq, RelNode left, RelNode right, JoinInfo joinInfo, JoinRelType joinType) {
-        return join(_distribution(left, mq), _distribution(right, mq), joinInfo, joinType);
-    }
-
-    /**
-     * @return Join relational node distribution calculated on the basis of its inputs distributions and join information.
-     */
-    public static IgniteDistribution join(IgniteDistribution left, IgniteDistribution right, JoinInfo joinInfo, JoinRelType joinType) {
-        return F.first(IgniteDistributions.suggestJoin(left, right, joinInfo, joinType)).out();
+        return F.first(IgniteDistributions.suggestJoin(_distribution(left, mq), _distribution(right, mq), joinInfo, joinType)).out();
     }
 
     /**

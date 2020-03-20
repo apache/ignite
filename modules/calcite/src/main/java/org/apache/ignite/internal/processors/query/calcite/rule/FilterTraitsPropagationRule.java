@@ -17,41 +17,39 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.Collections;
-import java.util.List;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
-import org.apache.calcite.rel.logical.LogicalValues;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 
 /**
  *
  */
-public class ValuesConverter extends IgniteConverter {
+public class FilterTraitsPropagationRule extends RelOptRule {
     /** */
-    public static final ConverterRule INSTANCE = new ValuesConverter();
+    public static final RelOptRule INSTANCE = new FilterTraitsPropagationRule();
 
-    /**
-     * Creates a ConverterRule.
-     */
-    protected ValuesConverter() {
-        super(LogicalValues.class, "ValuesConverter");
+    public FilterTraitsPropagationRule() {
+        super(operand(IgniteFilter.class, operand(RelSubset.class, any())));
     }
 
     /** {@inheritDoc} */
-    @Override protected List<RelNode> convert0(@NotNull RelNode rel) {
-        LogicalValues values = (LogicalValues) rel;
+    @Override public void onMatch(RelOptRuleCall call) {
+        IgniteFilter rel = call.rel(0);
+        RelNode input = call.rel(1);
 
-        RelTraitSet traits = values.getTraitSet()
-            .replace(IgniteConvention.INSTANCE)
-            .replace(IgniteMdDistribution.values(values.getRowType(), values.getTuples()));
+        RelOptCluster cluster = rel.getCluster();
+        RelMetadataQuery mq = cluster.getMetadataQuery();
 
-        final IgniteValues newRel = new IgniteValues(values.getCluster(), values.getRowType(), values.getTuples(), traits);
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(IgniteMdDistribution.filter(mq, input, rel.getCondition()));
 
-        return Collections.singletonList(newRel);
+        RuleUtils.transformTo(call,
+            new IgniteFilter(cluster, traits, input, rel.getCondition()));
     }
 }

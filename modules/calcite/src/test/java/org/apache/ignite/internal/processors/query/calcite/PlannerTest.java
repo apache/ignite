@@ -90,6 +90,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -589,6 +590,7 @@ public class PlannerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12819")
     public void testSplitterCollocatedPartitionedPartitioned() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 

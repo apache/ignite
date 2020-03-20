@@ -18,21 +18,28 @@
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AnyDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.BroadcastDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.HashDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.RandomDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.SingletonDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,46 +54,69 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
  */
 public class IgniteDistributions {
     /** */
-    private static final int BEST_CNT = 3;
+    private static final int BEST_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_JOIN_SUGGESTS_COUNT", 0);
 
     /** */
-    private static final IgniteDistribution BROADCAST = new DistributionTrait(BroadcastDistribution.INSTANCE);
+    private static final Integer[] INTS = new Integer[]{0, 1, 2};
 
     /** */
-    private static final IgniteDistribution SINGLETON = new DistributionTrait(SingletonDistribution.INSTANCE);
+    private static final IgniteDistribution BROADCAST = canonize(new DistributionTrait(BroadcastDistribution.INSTANCE));
 
     /** */
-    private static final IgniteDistribution RANDOM = new DistributionTrait(RandomDistribution.INSTANCE);
+    private static final IgniteDistribution SINGLETON = canonize(new DistributionTrait(SingletonDistribution.INSTANCE));
 
     /** */
-    private static final IgniteDistribution ANY = new DistributionTrait(AnyDistribution.INSTANCE);
+    private static final IgniteDistribution RANDOM = canonize(new DistributionTrait(RandomDistribution.INSTANCE));
+
+    /** */
+    private static final IgniteDistribution ANY = canonize(new DistributionTrait(AnyDistribution.INSTANCE));
 
     /**
      * @return Any distribution.
      */
     public static IgniteDistribution any() {
-        return canonize(ANY);
+        return ANY;
     }
 
     /**
      * @return Random distribution.
      */
     public static IgniteDistribution random() {
-        return canonize(RANDOM);
+        return RANDOM;
     }
 
     /**
      * @return Single distribution.
      */
     public static IgniteDistribution single() {
-        return canonize(SINGLETON);
+        return SINGLETON;
     }
 
     /**
      * @return Broadcast distribution.
      */
     public static IgniteDistribution broadcast() {
-        return canonize(BROADCAST);
+        return BROADCAST;
+    }
+
+    /**
+     * @param key Affinity key.
+     * @param cacheName Affinity cache name.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(int key, String cacheName, Object identity) {
+        return affinity(key, CU.cacheId(cacheName), identity);
+    }
+
+    /**
+     * @param key Affinity key.
+     * @param cacheId Affinity cache ID.
+     * @param identity Affinity identity key.
+     * @return Affinity distribution.
+     */
+    public static IgniteDistribution affinity(int key, int cacheId, Object identity) {
+        return hash(ImmutableIntList.of(key), new AffinityDistribution(cacheId, identity));
     }
 
     /**
@@ -107,30 +137,27 @@ public class IgniteDistributions {
     }
 
     /**
-     * @param key Affinity key.
-     * @param cacheId Affinity cache ID.
-     * @param identity Affinity identity key.
-     * @return Affinity distribution.
+     * Suggests possible join distributions.
+     *
+     * @param left Left node.
+     * @param right Right node.
+     * @param joinInfo Join info.
+     * @param joinType Join type.
+     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
      */
-    public static IgniteDistribution affinity(int key, int cacheId, Object identity) {
-        return canonize(new DistributionTrait(ImmutableIntList.of(key), new AffinityDistribution(cacheId, identity)));
-    }
+    public static List<BiSuggestion> suggestJoin(RelNode left, RelNode right, JoinInfo joinInfo, JoinRelType joinType) {
+        RelMetadataQuery mq = left.getCluster().getMetadataQuery();
 
-    /**
-     * @param key Affinity key.
-     * @param cacheName Affinity cache name.
-     * @param identity Affinity identity key.
-     * @return Affinity distribution.
-     */
-    public static IgniteDistribution affinity(int key, String cacheName, Object identity) {
-        return affinity(key, CU.cacheId(cacheName), identity);
-    }
+        List<IgniteDistribution> leftIn = IgniteMdDerivedDistribution._deriveDistributions(left, mq);
+        List<IgniteDistribution> rightIn = IgniteMdDerivedDistribution._deriveDistributions(right, mq);
 
-    /**
-     * See {@link RelTraitDef#canonize(org.apache.calcite.plan.RelTrait)}.
-     */
-    public static IgniteDistribution canonize(IgniteDistribution distr) {
-        return DistributionTraitDef.INSTANCE.canonize(distr);
+        Map<BiSuggestion, Integer> suggestions = new LinkedHashMap<>();
+
+        for (IgniteDistribution leftIn0 : leftIn)
+            for (IgniteDistribution rightIn0 : rightIn)
+                suggestions = suggestJoin0(suggestions, leftIn0, rightIn0, joinInfo, joinType);
+
+        return sorted(suggestions);
     }
 
     /**
@@ -144,34 +171,7 @@ public class IgniteDistributions {
      */
     public static List<BiSuggestion> suggestJoin(IgniteDistribution leftIn, IgniteDistribution rightIn,
         JoinInfo joinInfo, JoinRelType joinType) {
-        return topN(suggestJoin0(leftIn, rightIn, joinInfo, joinType), BEST_CNT);
-    }
-
-    /**
-     * Suggests possible join distributions.
-     *
-     * @param leftIn Left distributions.
-     * @param rightIn Right distributions.
-     * @param joinInfo Join info.
-     * @param joinType Join type.
-     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
-     */
-    public static List<BiSuggestion> suggestJoin(List<IgniteDistribution> leftIn, List<IgniteDistribution> rightIn,
-        JoinInfo joinInfo, JoinRelType joinType) {
-        HashSet<BiSuggestion> suggestions = new HashSet<>();
-
-        int bestCnt = 0;
-
-        for (IgniteDistribution leftIn0 : leftIn) {
-            for (IgniteDistribution rightIn0 : rightIn) {
-                for (BiSuggestion suggest : suggestJoin0(leftIn0, rightIn0, joinInfo, joinType)) {
-                    if (suggestions.add(suggest) && suggest.needExchange == 0 && (++bestCnt) == BEST_CNT)
-                        return topN(new ArrayList<>(suggestions), BEST_CNT);
-                }
-            }
-        }
-
-        return topN(new ArrayList<>(suggestions), BEST_CNT);
+        return sorted(suggestJoin0(new LinkedHashMap<>(), leftIn, rightIn, joinInfo, joinType));
     }
 
     /**
@@ -207,22 +207,20 @@ public class IgniteDistributions {
      * @param rightIn Right distribution.
      * @param joinInfo Join info.
      * @param joinType Join type.
-     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
      */
-    private static ArrayList<BiSuggestion> suggestJoin0(IgniteDistribution leftIn, IgniteDistribution rightIn,
+    private static Map<BiSuggestion, Integer> suggestJoin0(Map<BiSuggestion, Integer> dst, IgniteDistribution leftIn, IgniteDistribution rightIn,
         JoinInfo joinInfo, JoinRelType joinType) {
-
-        ArrayList<BiSuggestion> res = new ArrayList<>();
-
         IgniteDistribution out, left, right;
 
         if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
             HashSet<DistributionFunction> factories = U.newHashSet(3);
 
-            if (Objects.equals(joinInfo.leftKeys, leftIn.getKeys()))
+            if (leftIn.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                && Objects.equals(joinInfo.leftKeys, leftIn.getKeys()))
                 factories.add(leftIn.function());
 
-            if (Objects.equals(joinInfo.rightKeys, rightIn.getKeys()))
+            if (rightIn.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                && Objects.equals(joinInfo.rightKeys, rightIn.getKeys()))
                 factories.add(rightIn.function());
 
             factories.add(HashDistribution.INSTANCE);
@@ -231,56 +229,76 @@ public class IgniteDistributions {
                 out = hash(joinInfo.leftKeys, factory);
 
                 left = hash(joinInfo.leftKeys, factory); right = hash(joinInfo.rightKeys, factory);
-                add(res, out, leftIn, rightIn, left, right);
+                dst = add(dst, out, leftIn, rightIn, left, right);
 
                 if (joinType == INNER || joinType == LEFT) {
                     left = hash(joinInfo.leftKeys, factory); right = broadcast();
-                    add(res, out, leftIn, rightIn, left, right);
+                    dst = add(dst, out, leftIn, rightIn, left, right);
                 }
 
                 if (joinType == INNER || joinType == RIGHT) {
                     left = broadcast(); right = hash(joinInfo.rightKeys, factory);
-                    add(res, out, leftIn, rightIn, left, right);
+                    dst = add(dst, out, leftIn, rightIn, left, right);
                 }
             }
         }
 
         out = left = right = broadcast();
-        add(res, out, leftIn, rightIn, left, right);
+        dst = add(dst, out, leftIn, rightIn, left, right);
 
         out = left = right = single();
-        add(res, out, leftIn, rightIn, left, right);
+        dst = add(dst, out, leftIn, rightIn, left, right);
 
-        return res;
+        return dst;
     }
 
     /** */
-    private static int add(ArrayList<BiSuggestion> dst, IgniteDistribution out, IgniteDistribution left, IgniteDistribution right,
+    private static Map<BiSuggestion, Integer> add(Map<BiSuggestion, Integer> dst, IgniteDistribution out, IgniteDistribution left, IgniteDistribution right,
         IgniteDistribution newLeft, IgniteDistribution newRight) {
-        int exch = 0;
+        if (BEST_CNT > 0) {
+            int exch = 0;
 
-        if (needsExchange(left, newLeft))
-            exch++;
+            if (!left.satisfies(newLeft))
+                exch++;
 
-        if (needsExchange(right, newRight))
-            exch++;
+            if (!right.satisfies(newRight))
+                exch++;
 
-        dst.add(new BiSuggestion(out, newLeft, newRight, exch));
-
-        return exch;
+            return add(dst, new BiSuggestion(out, newLeft, newRight), INTS[exch]);
+        }
+        else
+            return add(dst, new BiSuggestion(out, newLeft, newRight), INTS[0]);
     }
 
     /** */
-    private static boolean needsExchange(IgniteDistribution sourceDist, IgniteDistribution targetDist) {
-        return !sourceDist.satisfies(targetDist);
+    private static Map<BiSuggestion, Integer> add(Map<BiSuggestion, Integer> dst, BiSuggestion suggest, Integer exchCnt) {
+        if (dst == null)
+            dst = new LinkedHashMap<>();
+
+        dst.merge(suggest, exchCnt, IgniteDistributions::min);
+
+        return dst;
     }
 
     /** */
-    @SuppressWarnings("SameParameterValue")
-    private static List<BiSuggestion> topN(ArrayList<BiSuggestion> src, int n) {
-        Collections.sort(src);
+    private static List<BiSuggestion> sorted(Map<BiSuggestion, Integer> src) {
+        if (BEST_CNT > 0) {
+            List<Map.Entry<BiSuggestion, Integer>> entries = new ArrayList<>(src.entrySet());
 
-        return src.size() <= n ? src : src.subList(0, n);
+            entries.sort(Map.Entry.comparingByValue());
+
+            if (entries.size() >= BEST_CNT)
+                entries = entries.subList(0, BEST_CNT);
+
+            return Commons.transform(entries, Map.Entry::getKey);
+        }
+
+        return new ArrayList<>(src.keySet());
+    }
+
+    /** */
+    private static @NotNull Integer min(@NotNull Integer i1, @NotNull Integer i2) {
+        return i1 < i2 ? i1 : i2;
     }
 
     /**
@@ -319,9 +337,16 @@ public class IgniteDistributions {
     }
 
     /**
+     * See {@link RelTraitDef#canonize(org.apache.calcite.plan.RelTrait)}.
+     */
+    private static IgniteDistribution canonize(IgniteDistribution distr) {
+        return DistributionTraitDef.INSTANCE.canonize(distr);
+    }
+
+    /**
      * Distribution suggestion for BiRel.
      */
-    public static class BiSuggestion implements Comparable<BiSuggestion> {
+    public static class BiSuggestion {
         /** */
         private final IgniteDistribution out;
 
@@ -331,20 +356,15 @@ public class IgniteDistributions {
         /** */
         private final IgniteDistribution right;
 
-        /** */
-        private final int needExchange;
-
         /**
          * @param out Result distribution.
          * @param left Required left distribution.
          * @param right Required right distribution.
-         * @param needExchange Exchanges count (for ordering).
          */
-        public BiSuggestion(IgniteDistribution out, IgniteDistribution left, IgniteDistribution right, int needExchange) {
+        public BiSuggestion(IgniteDistribution out, IgniteDistribution left, IgniteDistribution right) {
             this.out = out;
             this.left = left;
             this.right = right;
-            this.needExchange = needExchange;
         }
 
         /**
@@ -369,19 +389,13 @@ public class IgniteDistributions {
         }
 
         /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull IgniteDistributions.BiSuggestion o) {
-            return Integer.compare(needExchange, o.needExchange);
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
             BiSuggestion that = (BiSuggestion) o;
 
-            return needExchange == that.needExchange
-                && out == that.out
+            return out == that.out
                 && left == that.left
                 && right == that.right;
         }
@@ -391,7 +405,6 @@ public class IgniteDistributions {
             int result = out.hashCode();
             result = 31 * result + left.hashCode();
             result = 31 * result + right.hashCode();
-            result = 31 * result + needExchange;
             return result;
         }
     }

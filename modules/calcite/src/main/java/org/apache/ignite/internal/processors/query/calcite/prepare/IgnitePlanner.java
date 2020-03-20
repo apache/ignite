@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import com.google.common.collect.ImmutableList;
 import java.io.Reader;
 import java.util.List;
+import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptMaterialization;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -29,7 +31,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
-import org.apache.calcite.plan.volcano.VolcanoUtils;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -52,6 +53,7 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
@@ -245,7 +247,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private RelOptPlanner planner() {
         if (planner == null) {
-            planner = VolcanoUtils.impatient(new VolcanoPlanner(frameworkConfig.getCostFactory(), ctx));
+            planner = new VolcanoPlannerExt(frameworkConfig.getCostFactory(), ctx);
             planner.setExecutor(rexExecutor);
 
             for (RelTraitDef<?> def : traitDefs)
@@ -286,5 +288,22 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     /** */
     private List<RelOptMaterialization> materializations() {
         return ImmutableList.of(); // TODO
+    }
+
+    /** */
+    private static class VolcanoPlannerExt extends VolcanoPlanner {
+        /** */
+        private static final Boolean IMPATIENT = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_PLANER_IMPATIENT", true);
+
+        /** */
+        private static final Boolean AMBITIOUS = IgniteSystemProperties.getBoolean("IGNITE_CALCITE_PLANER_AMBITIOUS", true);
+
+        /** */
+        protected VolcanoPlannerExt(RelOptCostFactory costFactory, Context externalContext) {
+            super(costFactory, externalContext);
+
+            impatient = IMPATIENT;
+            ambitious = AMBITIOUS;
+        }
     }
 }
