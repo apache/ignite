@@ -132,20 +132,18 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
     public List<IgniteDistribution> deriveDistributions(RelSubset rel, RelMetadataQuery mq) {
         HashSet<IgniteDistribution> res = new HashSet<>();
 
-        RelSubset newSubset;
+        RelSubset newSubset = subset(rel, IgniteConvention.INSTANCE);
 
-        if ((newSubset = subset(rel, IgniteConvention.INSTANCE)) != null) {
-            for (RelNode rel0 : newSubset.getRels())
-                res.addAll(_deriveDistributions(rel0, mq));
-        }
+        for (RelNode rel0 : newSubset.getRels())
+            res.addAll(_deriveDistributions(rel0, mq));
 
         if (!F.isEmpty(res))
             return new ArrayList<>(res);
 
-        if ((newSubset = subset(rel, Convention.NONE)) != null) {
-            for (RelNode rel0 : newSubset.getRels())
-                res.addAll(_deriveDistributions(rel0, mq));
-        }
+        newSubset = subset(rel, Convention.NONE);
+
+        for (RelNode rel0 : newSubset.getRels())
+            res.addAll(_deriveDistributions(rel0, mq));
 
         if (!F.isEmpty(res))
             return new ArrayList<>(res);
@@ -187,6 +185,6 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
     /** */
     private static RelSubset subset(RelSubset rel, Convention convention) {
         VolcanoPlanner planner = (VolcanoPlanner) rel.getCluster().getPlanner();
-        return planner.getSubset(rel, rel.getCluster().traitSetOf(convention));
+        return planner.getSubset(rel, rel.getCluster().traitSetOf(convention), true);
     }
 }

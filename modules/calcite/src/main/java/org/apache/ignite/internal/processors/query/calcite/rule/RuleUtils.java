@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -40,34 +39,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class RuleUtils {
     /** */
-    public static void transformTo(RelOptRuleCall call, RelNode newRel) {
-        transformTo(call, ImmutableList.of(newRel));
-    }
-
-    /** */
-    public static void transformTo(RelOptRuleCall call, List<RelNode> newRels) {
-        if (F.isEmpty(newRels))
-            return;
-
-        if (isRoot(call.rel(0)))
-            newRels = Commons.transform(newRels, RuleUtils::changeRootTraits);
-
-        if (newRels.size() == 1)
-            call.transformTo(F.first(newRels));
-        else
-            call.transformTo(F.first(newRels), equivMap(call.rel(0), newRels.subList(1, newRels.size())));
-    }
-
-    public static RelNode changeTraits(RelNode rel, RelTrait... diff) {
-        RelTraitSet traits = rel.getTraitSet();
-
-        for (RelTrait trait : diff)
-            traits = traits.replace(trait);
-
-        return changeTraits(rel, traits);
-    }
-
-    /** */
     public static RelNode convert(RelNode rel, @NotNull RelTrait toTrait) {
         RelTraitSet toTraits = rel.getTraitSet().replace(toTrait);
 
@@ -79,8 +50,69 @@ public class RuleUtils {
         return planner.changeTraits(rel, toTraits.simplify());
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
+    /** */
+    public static RelNode convert(RelNode rel, @NotNull RelTraitSet toTraits) {
+        RelTraitSet outTraits = rel.getTraitSet();
+        for (int i = 0; i < toTraits.size(); i++) {
+            RelTrait toTrait = toTraits.getTrait(i);
+
+            if (toTrait != null)
+                outTraits = outTraits.replace(i, toTrait);
+        }
+
+        if (rel.getTraitSet().matches(outTraits))
+            return rel;
+
+        RelOptPlanner planner = rel.getCluster().getPlanner();
+
+        return planner.changeTraits(rel, outTraits);
+    }
+
+    /** */
+    public static void transformTo(RelOptRuleCall call, RelNode newRel) {
+        transformTo(call, ImmutableList.of(newRel));
+    }
+
+    /** */
+    public static void transformTo(RelOptRuleCall call, List<RelNode> newRels) {
+        transformTo(call, newRels, ImmutableMap.of());
+    }
+
+    /** */
+    public static void transformTo(RelOptRuleCall call, List<RelNode> newRels, Map<RelNode, RelNode> additional) {
+        RelNode orig = call.rel(0);
+
+        if (F.isEmpty(newRels)) {
+            if (!F.isEmpty(additional))
+                // small trick to register the additional equivalence map entries only, we pass
+                // the original rel as transformed one, which will be skipped by the planner.
+                call.transformTo(orig, additional);
+
+            return;
+        }
+
+        if (isRoot(orig))
+            newRels = Commons.transform(newRels, RuleUtils::changeToRootTraits);
+
+        RelNode first = F.first(newRels);
+        List<RelNode> remaining = newRels.subList(1, newRels.size());
+        Map<RelNode, RelNode> equivMap = equivMap(orig, remaining, additional);
+
+        call.transformTo(first, equivMap);
+    }
+
+    /** */
+    public static RelNode changeTraits(RelNode rel, RelTrait... diff) {
+        RelTraitSet traits = rel.getTraitSet();
+
+        for (RelTrait trait : diff)
+            traits = traits.replace(trait);
+
+        return changeTraits(rel, traits);
+    }
+
+    /** */
+    @SuppressWarnings({"rawtypes", "unchecked"}) public static RelNode changeTraits(RelNode rel, RelTraitSet toTraits) {
         RelTraitSet fromTraits = rel.getTraitSet();
 
         if (fromTraits.satisfies(toTraits))
@@ -122,13 +154,6 @@ public class RuleUtils {
     }
 
     /** */
-    private static RelNode changeRootTraits(RelNode rel) {
-        RelTraitSet rootTraits = rel.getCluster().getPlanner().getRoot().getTraitSet();
-
-        return changeTraits(rel, rootTraits);
-    }
-
-    /** */
     private static boolean isRoot(RelNode rel) {
         RelOptPlanner planner = rel.getCluster().getPlanner();
         RelNode root = planner.getRoot();
@@ -143,15 +168,28 @@ public class RuleUtils {
     }
 
     /** */
-    private static Map<RelNode, RelNode> equivMap(RelNode rel, List<RelNode> equivList) {
-        if (F.isEmpty(equivList))
-            return ImmutableMap.of();
+    private static RelNode changeToRootTraits(RelNode rel) {
+        RelTraitSet rootTraits = rel.getCluster().getPlanner().getRoot().getTraitSet();
 
-        Map<RelNode, RelNode> equivMap = new HashMap<>(equivList.size());
+        return changeTraits(rel, rootTraits);
+    }
+
+    /** */
+    private static @NotNull Map<RelNode, RelNode> equivMap(RelNode orig, List<RelNode> equivList, Map<RelNode, RelNode> additional) {
+        assert orig != null;
+        assert equivList != null;
+        assert additional != null;
+
+        if(F.isEmpty(equivList))
+            return additional;
+
+        ImmutableMap.Builder<RelNode, RelNode> b = ImmutableMap.builder();
 
         for (RelNode equiv : equivList)
-            equivMap.put(equiv, rel);
+            b.put(equiv, orig);
 
-        return equivMap;
+        b.putAll(additional);
+
+        return b.build();
     }
 }
