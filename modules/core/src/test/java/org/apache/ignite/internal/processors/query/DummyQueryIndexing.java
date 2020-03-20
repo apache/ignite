@@ -269,8 +269,8 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancelQuery(long id) {
-        return false;
+    @Override public void cancelQueries(Collection<Long> queries) {
+
     }
 
     /** {@inheritDoc} */

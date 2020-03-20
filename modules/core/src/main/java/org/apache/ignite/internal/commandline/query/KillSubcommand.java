@@ -18,38 +18,17 @@
 package org.apache.ignite.internal.commandline.query;
 
 import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.QueryMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
-import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Subcommands of the kill command.
  *
  * @see KillCommand
- * @see QueryMXBean
  * @see ComputeMXBean
- * @see TransactionsMXBean
- * @see ServiceMXBean
  */
 public enum KillSubcommand {
-    /** Kill scan query. */
-    SCAN_QUERY("scan"),
-
-    /** Kill continuous query. */
-    CONTINUOUS_QUERY("continuous"),
-
-    /** Kill sql query. */
-    SQL_QUERY("sql"),
-
     /** Kill compute task. */
-    COMPUTE("compute"),
-
-    /** Kill transaction. */
-    TRANSACTION("tx"),
-
-    /** Kill service. */
-    SERVICE("service");
+    COMPUTE("compute");
 
     /** Subcommand name. */
     private final String name;
