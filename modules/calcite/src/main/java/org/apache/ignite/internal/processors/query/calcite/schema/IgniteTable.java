@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -70,12 +72,19 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     /** */
     private final Statistic statistic;
 
+    /** */
+    private final List<RelCollation> collations;
+
+    /** */
+    private final Map<String, IgniteTable> indexes = new ConcurrentHashMap<>();
+
     /**
      * @param name Table full name.
      */
-    public IgniteTable(String name, TableDescriptor desc) {
+    public IgniteTable(String name, TableDescriptor desc, List<RelCollation> collations) {
         this.name = name;
         this.desc = desc;
+        this.collations = collations;
 
         statistic = new StatisticsImpl();
     }
@@ -100,11 +109,55 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
+
+        return toRel(cluster, relOptTable);
+    }
+
+    /**
+     * Converts table into relational expression.
+     *
+     * @param cluster Custer.
+     * @param relOptTable Table.
+     * @return Table relational expression.
+     */
+    public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTable) {
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
             .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
         return new IgniteTableScan(cluster, traitSet, relOptTable);
+    }
+
+    /**
+     * @return Indexes for the current table.
+     */
+    public Map<String, IgniteTable> indexes() {
+        return indexes;
+    }
+
+    /**
+     * Adds index to table.
+     * @param idxName Index name.
+     * @param collation Index collation.
+     */
+    public void addIndex(String idxName, RelCollation collation) {
+        IgniteTable idx = new IgniteTable(idxName, desc, Collections.singletonList(collation));
+
+        indexes.put(idxName, idx);
+    }
+
+    /**
+     * @return Column descriptors.
+     */
+    public ColumnDescriptor[] columnDescriptors() {
+        return desc.columnDescriptors();
+    }
+
+    /**
+     * @return Map of column descriptors.
+     */
+    public Map<String, ColumnDescriptor> columnDescriptorsMap() {
+        return desc.columnDescriptorsMap();
     }
 
     /** {@inheritDoc} */
@@ -134,7 +187,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
 
     /** {@inheritDoc} */
     @Override public List<RelCollation> collations() {
-        return desc.collations();
+        return collations;
     }
 
     /** {@inheritDoc} */
@@ -223,6 +276,11 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
                 return false;
         }
         return true;
+    }
+
+    /** */
+    public void removeIndex(String idxName) {
+        indexes.remove(idxName);
     }
 
     /** */

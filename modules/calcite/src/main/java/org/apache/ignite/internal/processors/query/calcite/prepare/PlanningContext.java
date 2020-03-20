@@ -240,6 +240,8 @@ public final class PlanningContext implements Context {
             String.valueOf(config.getParserConfig().caseSensitive()));
         properties.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
             String.valueOf(config.getParserConfig().conformance()));
+        properties.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
+            String.valueOf(true));
 
         return connectionConfig = new CalciteConnectionConfigImpl(properties);
     }
@@ -273,6 +275,9 @@ public final class PlanningContext implements Context {
     @Override public <C> C unwrap(Class<C> aClass) {
         if (aClass == getClass())
             return aClass.cast(this);
+
+        if (aClass.isInstance(connectionConfig))
+            return aClass.cast(connectionConfig);
 
         return parentContext.unwrap(aClass);
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -97,6 +98,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
@@ -343,10 +345,32 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("TypeMayBeWeakened")
     @Override public List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params) {
         PlanningContext pctx = createContext(ctx, schema, query, params);
 
-        return Commons.transform(prepare(pctx), p -> executeSingle(UUID.randomUUID(), pctx, p));
+        List<QueryPlan> qryPlans = prepareQueryPlan(pctx);
+
+        return executePlans(qryPlans, pctx);
+    }
+
+    /**
+     * Executes prepared plans.
+     * @param qryPlans Query plans.
+     * @param pctx Query context.
+     * @return List of query result cursors.
+     */
+    @NotNull public List<FieldsQueryCursor<List<?>>> executePlans(Collection<QueryPlan> qryPlans, PlanningContext pctx) {
+        List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
+
+        for (QueryPlan plan : qryPlans) {
+            UUID qryId = UUID.randomUUID();
+
+            FieldsQueryCursor<List<?>> cur = executePlan(qryId, pctx, plan);
+
+            cursors.add(cur);
+        }
+        return cursors;
     }
 
     /** {@inheritDoc} */
@@ -455,7 +479,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private List<QueryPlan> prepare(PlanningContext ctx) {
+    private List<QueryPlan> prepareQueryPlan(PlanningContext ctx) {
         return queryPlanCache().queryPlan(ctx, new CacheKey(ctx.schemaName(), ctx.query()), this::prepare0);
     }
 
@@ -571,12 +595,12 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeSingle(UUID queryId, PlanningContext pctx, QueryPlan plan) {
+    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
         switch (plan.type()) {
             case DML:
                 // TODO a barrier between previous operation and this one
             case QUERY:
-                return executeQuery(queryId, (MultiStepPlan) plan, pctx);
+                return executeQuery(qryId, (MultiStepPlan) plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);

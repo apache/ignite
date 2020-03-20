@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 
 /**
@@ -55,4 +56,16 @@ public interface SchemaChangeListener {
      * @param cacheInfo Cache info.
      */
     void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo);
+
+    /**
+     * Callback on index creation.
+     */
+    void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc);
+
+    /**
+     * Callback on index drop.
+     */
+    void onIndexDrop(String schemaName, String tblName, String idxName);
+
+
 }

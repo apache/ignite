@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.List;
+import java.util.Map;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelProtoDataType;
@@ -47,10 +46,6 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      */
     IgniteDistribution distribution();
 
-    /**
-     * @return Collations.
-     */
-    List<RelCollation> collations();
 
     /**
      * Returns row type excluding effectively virtual fields.
@@ -110,4 +105,25 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
      * @throws IgniteCheckedException If failed.
      */
     <T> IgniteBiTuple<?,?> toTuple(ExecutionContext ectx, T row, TableModify.Operation op, @Nullable Object arg) throws IgniteCheckedException;
+
+    /**
+     * Returns column descriptors.
+     *
+     * @return Column descriptors
+     */
+    ColumnDescriptor[] columnDescriptors();
+
+    /**
+     * Returns map of column descriptors.
+     *
+     * @return Map of column descriptors.
+     */
+    Map<String, ColumnDescriptor> columnDescriptorsMap();
+
+    /**
+     * Returns key field index.
+     *
+     * @return Key field index.
+     */
+    int keyField();
 }

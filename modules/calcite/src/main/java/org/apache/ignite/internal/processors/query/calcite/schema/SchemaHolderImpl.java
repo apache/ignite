@@ -17,30 +17,38 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
 public class SchemaHolderImpl extends AbstractService implements SchemaHolder, SchemaChangeListener {
     /** */
-    private final Map<String, IgniteSchema> schemas = new HashMap<>();
+    private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
 
     /** */
     private GridInternalSubscriptionProcessor subscriptionProcessor;
 
     /** */
-    private volatile SchemaPlus schema;
+    private volatile SchemaPlus calciteSchema;
 
     /**
      * @param ctx Kernal context.
@@ -60,14 +68,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         this.subscriptionProcessor = subscriptionProcessor;
     }
 
-    /**
-     * Sets updated schema.
-     * @param schema New schema.
-     */
-    public void schema(SchemaPlus schema) {
-        this.schema = schema;
-    }
-
     /** {@inheritDoc} */
     @Override public void init() {
         subscriptionProcessor.registerSchemaChangeListener(this);
@@ -80,53 +80,135 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public SchemaPlus schema() {
-        return schema;
+        return calciteSchema;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void onSchemaCreate(String schemaName) {
-        schemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
+        igniteSchemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
         rebuild();
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void onSchemaDrop(String schemaName) {
-        schemas.remove(schemaName);
+        igniteSchemas.remove(schemaName);
         rebuild();
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
-        IgniteSchema schema = schemas.computeIfAbsent(schemaName, IgniteSchema::new);
+    @Override public synchronized void onSqlTypeCreate(
+        String schemaName,
+        GridQueryTypeDescriptor typeDescriptor,
+        GridCacheContextInfo<?,?> cacheInfo
+    ) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         String tableName = typeDescriptor.tableName();
-        TableDescriptorImpl desc = new TableDescriptorImpl(cacheInfo.cacheContext(), typeDescriptor, affinityIdentity(cacheInfo));
 
-        schema.addTable(tableName, new IgniteTable(tableName, desc));
+        TableDescriptorImpl desc =
+            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDescriptor, affinityIdentity(cacheInfo));
 
-        rebuild();
-    }
+        List<RelCollation> pkCollations = derivePkIndexCollations(desc);
 
-    /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo<?,?> cacheInfo) {
-        IgniteSchema schema = schemas.computeIfAbsent(schemaName, IgniteSchema::new);
-
-        schema.removeTable(typeDescriptor.tableName());
+        schema.addTable(tableName, new IgniteTable(tableName, desc, pkCollations));
 
         rebuild();
     }
+
 
     /** */
-    private Object affinityIdentity(GridCacheContextInfo<?, ?> cacheInfo) {
+    private static Object affinityIdentity(GridCacheContextInfo<?, ?> cacheInfo) {
         return cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
             cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
     }
 
+    /**
+     * @return Index collation.
+     */
+    @NotNull private static List<RelCollation> derivePkIndexCollations(TableDescriptor desc) {
+        List<RelCollation> collations = new ArrayList<>(2);
+
+        RelCollation keyFieldCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
+
+        collations.add(keyFieldCollation);
+
+        // Case where there is an alias for key => PK sorted by both _key and alias columns.
+        if (QueryUtils.KEY_COL != desc.keyField()) {
+            RelCollation keAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
+
+            collations.add(keAliasCollation);
+        }
+
+        return collations;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void onSqlTypeDrop(
+        String schemaName,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?,?> cacheInfo
+    ) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.removeTable(typeDesc.tableName());
+
+        rebuild();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc) {
+        IgniteSchema schema = igniteSchemas.get(schemaName);
+        assert schema != null;
+
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        assert tbl != null;
+
+        RelCollation collation = deriveSecondaryIndexCollation(idxDesc, tbl);
+
+        tbl.addIndex(idxName, collation);
+    }
+
+    /**
+     * @return Index collation.
+     */
+    @NotNull private static RelCollation deriveSecondaryIndexCollation(GridQueryIndexDescriptor idxDesc, IgniteTable tbl) {
+        Map<String, ColumnDescriptor> tblFields = tbl.columnDescriptorsMap();
+
+        List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
+
+        for (String idxField : idxDesc.fields()) {
+            ColumnDescriptor fieldDesc = tblFields.get(idxField);
+
+            boolean descending = idxDesc.descending(idxField);
+            int fieldIdx = fieldDesc.fieldIndex();
+
+            RelFieldCollation collation = new RelFieldCollation(fieldIdx,
+                descending ? RelFieldCollation.Direction.DESCENDING : RelFieldCollation.Direction.ASCENDING);
+
+            collations.add(collation);
+        }
+
+        return RelCollations.of(collations);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized void onIndexDrop(String schemaName, String tblName, String idxName) {
+        IgniteSchema schema = igniteSchemas.get(schemaName);
+        assert schema != null;
+
+        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        assert tbl != null;
+
+        tbl.removeIndex(idxName);
+
+        rebuild();
+    }
+
     /** */
     private void rebuild() {
-        SchemaPlus schema = Frameworks.createRootSchema(false);
-        schema.add("PUBLIC", new IgniteSchema("PUBLIC"));
-        schemas.forEach(schema::add);
-        schema(schema);
+        SchemaPlus newCalciteSchema = Frameworks.createRootSchema(false);
+        newCalciteSchema.add("PUBLIC", new IgniteSchema("PUBLIC"));
+        igniteSchemas.forEach(newCalciteSchema::add);
+        this.calciteSchema = newCalciteSchema;
     }
 }

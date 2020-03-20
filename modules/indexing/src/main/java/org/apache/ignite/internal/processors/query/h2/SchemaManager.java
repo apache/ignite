@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -336,7 +337,6 @@ public class SchemaManager {
             conn = connMgr.connectionForThread().connection(schema.schemaName());
 
             GridH2Table h2tbl = createTable(schema.schemaName(), schema, tblDesc, conn);
-            lsnr.onSqlTypeCreate(schemaName, type, cacheInfo);
 
             schema.add(tblDesc);
 
@@ -555,6 +555,8 @@ public class SchemaManager {
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn, sql, rowDesc, tbl);
 
+        lsnr.onSqlTypeCreate(schemaName, tbl.type(), tbl.cacheInfo());
+
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
 
@@ -635,6 +637,10 @@ public class SchemaManager {
 
             throw e;
         }
+
+        GridQueryIndexDescriptor idxDesc =  desc.type().indexes().get(h2Idx.getName());
+
+        lsnr.onIndexCreate(schemaName, desc.tableName(), h2Idx.getName(), idxDesc);
     }
 
     /**
@@ -683,6 +689,8 @@ public class SchemaManager {
 
             throw e;
         }
+
+        lsnr.onIndexCreate(schemaName, desc.tableName(), h2Idx.getName(), idxDesc);
     }
 
     /**
@@ -704,6 +712,8 @@ public class SchemaManager {
         tbl.setRemoveIndexOnDestroy(true);
 
         connMgr.executeStatement(schemaName, sql);
+
+        lsnr.onIndexDrop(schemaName, tbl.getName(), idxName);
     }
 
     /**
@@ -865,6 +875,12 @@ public class SchemaManager {
         @Override public void onSchemaDrop(String schemaName) {}
 
         /** {@inheritDoc} */
+        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc) {}
+
+        /** {@inheritDoc} */
+        @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {}
+
+        /** {@inheritDoc} */
         @Override public void onSqlTypeCreate(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {}
 
         /** {@inheritDoc} */
@@ -898,6 +914,16 @@ public class SchemaManager {
         /** {@inheritDoc} */
         @Override public void onSqlTypeDrop(String schemaName, GridQueryTypeDescriptor typeDescriptor, GridCacheContextInfo cacheInfo) {
             lsnrs.forEach(lsnr -> lsnr.onSqlTypeDrop(schemaName, typeDescriptor, cacheInfo));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexCreate(schemaName, tblName, idxName, idxDesc));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onIndexDrop(String schemaName, String tblName, String idxName) {
+            lsnrs.forEach(lsnr -> lsnr.onIndexDrop(schemaName, tblName, idxName));
         }
     }
 }

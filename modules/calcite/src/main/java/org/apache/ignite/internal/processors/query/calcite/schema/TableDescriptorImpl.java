@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -100,8 +98,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
         BitSet virtualFlags = new BitSet();
 
-        descriptors.add(new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true));
-        descriptors.add(new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), false));
+        descriptors.add(
+            new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, QueryUtils.KEY_COL));
+        descriptors.add(
+            new KeyValDescriptor(QueryUtils.VAL_FIELD_NAME, typeDesc.valueClass(), false, QueryUtils.VAL_COL));
+
+        int fldIdx = QueryUtils.VAL_COL + 1;
 
         for (String field : fields) {
             if (Objects.equals(field, typeDesc.affinityKey()))
@@ -115,12 +117,12 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
                 virtualFlags.set(0);
 
-                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true));
+                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true, fldIdx++));
             }
             else if (Objects.equals(field, typeDesc.valueFieldAlias())) {
                 valField = descriptors.size();
 
-                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false));
+                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
 
                 virtualFlags.set(1);
             }
@@ -129,7 +131,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
                 virtualFlags.set(prop.key() ? 0 : 1);
 
-                descriptors.add(new FieldDescriptor(prop));
+                descriptors.add(new FieldDescriptor(prop, fldIdx++));
             }
         }
 
@@ -167,11 +169,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
             return IgniteDistributions.broadcast();
 
         return IgniteDistributions.affinity(affField, cctx.cacheId(), affinityIdentity);
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<RelCollation> collations() {
-        return ImmutableList.of();
     }
 
     /** {@inheritDoc} */
@@ -387,34 +384,19 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         return b.build();
     }
 
-    /** */
-    private interface ColumnDescriptor {
-        /** */
-        boolean field();
+    /** {@inheritDoc} */
+    @Override public ColumnDescriptor[] columnDescriptors() {
+        return descriptors;
+    }
 
-        /** */
-        boolean key();
+    /** {@inheritDoc} */
+    @Override public Map<String, ColumnDescriptor> columnDescriptorsMap() {
+        return descriptorsMap;
+    }
 
-        /** */
-        boolean hasDefaultValue();
-
-        /** */
-        String name();
-
-        /** */
-        RelDataType logicalType(IgniteTypeFactory f);
-
-        /** */
-        Class<?> javaType();
-
-        /** */
-        Object value(ExecutionContext ectx, GridCacheContext<?,?> cctx, CacheDataRow src) throws IgniteCheckedException;
-
-        /** */
-        Object defaultValue();
-
-        /** */
-        void set(Object dst, Object val) throws IgniteCheckedException;
+    /** {@inheritDoc} */
+    @Override public int keyField() {
+        return keyField;
     }
 
     /** */
@@ -429,10 +411,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         private final boolean isKey;
 
         /** */
-        private KeyValDescriptor(String name, Class<?> type, boolean isKey) {
+        private final int fieldIdx;
+
+        /** */
+        private KeyValDescriptor(String name, Class<?> type, boolean isKey, int fieldIdx) {
             this.name = name;
             this.type = type;
             this.isKey = isKey;
+            this.fieldIdx = fieldIdx;
         }
 
         /** {@inheritDoc} */
@@ -458,6 +444,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         /** {@inheritDoc} */
         @Override public String name() {
             return name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fieldIndex() {
+            return fieldIdx;
         }
 
         /** {@inheritDoc} */
@@ -490,9 +481,13 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         private final Object defaultValue;
 
         /** */
-        private FieldDescriptor(GridQueryProperty desc) {
+        private final int fieldIdx;
+
+        /** */
+        private FieldDescriptor(GridQueryProperty desc, int fieldIdx) {
             this.desc = desc;
             defaultValue = desc.defaultValue();
+            this.fieldIdx = fieldIdx;
         }
 
         /** */
@@ -518,6 +513,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
         /** {@inheritDoc} */
         @Override public String name() {
             return desc.name();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fieldIndex() {
+            return fieldIdx;
         }
 
         /** {@inheritDoc} */
