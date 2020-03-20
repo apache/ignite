@@ -102,7 +102,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
- * Test KILL QUERY requested from the same node where quere was executed.
+ * Test KILL QUERY requested from the same node where query was executed.
  */
 @SuppressWarnings({"ThrowableNotThrown", "AssertWithSideEffects"})
 @RunWith(Parameterized.class)
@@ -372,8 +372,10 @@ public class KillQueryTest extends GridCommonAbstractTest {
     /**
      * Tries to cancel COPY FROM command, then checks such cancellation is unsupported.
      *
-     * 1) Run COPY query, got it suspended in the middle. 2) Try to cancel it, get expected exception. 3) Wake up the
-     * COPY. 4) Check COPY is done.
+     * 1) Run COPY query, got it suspended in the middle.
+     * 2) Try to cancel it, get expected exception.
+     * 3) Wake up the COPY.
+     * 4) Check COPY is done.
      */
     @Test
     public void testBulkLoadCancellationUnsupported() throws Exception {
@@ -643,6 +645,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
+
+        if (asyncCancel)
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -659,6 +664,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
+
+        if (asyncCancel)
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -677,6 +685,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
+
+        if (asyncCancel)
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -691,6 +702,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
+
+        if (asyncCancel)
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -707,6 +721,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
+
+        if (asyncCancel)
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -725,6 +742,9 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         igniteForKillRequest.context().query()
             .querySqlFields(createKillQuery(ignite.context().localNodeId(), qryId, asyncCancel), false).getAll();
+
+        if (asyncCancel)
+            GridTestUtils.waitForCondition(() -> ignite.context().query().runningQueries(-1).isEmpty(), 1000);
     }
 
     /**
@@ -758,15 +778,39 @@ public class KillQueryTest extends GridCommonAbstractTest {
     public void testCancelLocalQueryNative() throws Exception {
         IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
 
-        GridTestUtils.assertThrows(log, () -> {
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
             ignite.cache(DEFAULT_CACHE_NAME).query(
                 new SqlFieldsQuery("select * from Integer where _key in " +
-                    "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()")
+                    "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledMoreThan(128)")
                     .setLocal(true)
+                    .setLazy(false)
             ).getAll();
 
             return null;
-        }, IgniteException.class, "The query was cancelled while executing.");
+        }, QueryCancelledException.class, "The query was cancelled while executing.");
+
+        // Ensures that there were no exceptions within async cancellation process.
+        cancelRes.get(CHECK_RESULT_TIMEOUT);
+    }
+
+    /**
+     * Check that local query can be canceled either using async or non-async method. Local query is performed using
+     * cache.query() API with "local" property "true".
+     */
+    @Test
+    public void testCancelLocalLazyQueryNative() throws Exception {
+        IgniteInternalFuture cancelRes = cancel(1, asyncCancel);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+            ignite.cache(DEFAULT_CACHE_NAME).query(
+                new SqlFieldsQuery("select * from Integer where _key in " +
+                    "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledMoreThan(128)")
+                    .setLocal(true)
+                    .setLazy(true)
+            ).getAll();
+
+            return null;
+        }, QueryCancelledException.class, "The query was cancelled while executing.");
 
         // Ensures that there were no exceptions within async cancellation process.
         cancelRes.get(CHECK_RESULT_TIMEOUT);
