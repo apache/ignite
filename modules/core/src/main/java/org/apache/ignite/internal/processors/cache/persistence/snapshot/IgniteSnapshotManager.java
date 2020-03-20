@@ -120,6 +120,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
     /** File name template for index delta pages. */
     public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
+    /** Text Reason for checkpoint to start snapshot operation. */
+    public static final String CP_SNAPSHOT_REASON = "Checkpoint started to enforce snapshot operation: %s";
+
+    /** Name prefix for each remote snapshot operation. */
+    public static final String RMT_SNAPSHOT_PREFIX = "snapshot_";
+
     /** Default snapshot directory for loading remote snapshots. */
     public static final String DFLT_SNAPSHOT_WORK_DIRECTORY = "snp";
 
@@ -625,7 +631,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']'));
         }
 
-        String snpName = "snapshot_" + UUID.randomUUID().toString();
+        String snpName = RMT_SNAPSHOT_PREFIX + UUID.randomUUID().toString();
 
         RemoteSnapshotFuture snpTransFut = new RemoteSnapshotFuture(rmtNodeId, snpName,
             parts.values().stream().mapToInt(Set::size).sum(), partConsumer);

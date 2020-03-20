@@ -441,6 +441,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
+        assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
+
         if (stopping())
             return;
 
