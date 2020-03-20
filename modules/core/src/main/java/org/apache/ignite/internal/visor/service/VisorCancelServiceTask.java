@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.visor.service;
 
 import java.util.Optional;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
@@ -72,16 +70,7 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
             if (!svc.isPresent())
                 return false;
 
-            try {
-                services.cancel(svcName);
-            }
-            catch (IgniteException e) {
-                IgniteLogger log = ignite.log().getLogger(VisorCancelServiceTask.class);
-
-                log.warning("Error on service cancel.", e);
-
-                return false;
-            }
+            services.cancel(svcName);
 
             return true;
         }

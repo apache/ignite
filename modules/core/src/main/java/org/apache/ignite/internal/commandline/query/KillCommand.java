@@ -53,19 +53,19 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.COMPUTE;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.CONTINUOUS_QUERY;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SCAN_QUERY;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SERVICE;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.SQL_QUERY;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.TRANSACTION;
-import static org.apache.ignite.internal.commandline.query.KillQuerySubcommand.of;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS_QUERY;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN_QUERY;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SQL_QUERY;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.TRANSACTION;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.of;
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
 /**
  * control.sh kill command.
  *
- * @see KillQuerySubcommand
+ * @see KillSubcommand
  * @see QueryMXBean
  * @see ComputeMXBean
  * @see TransactionsMXBean
@@ -79,7 +79,7 @@ public class KillCommand implements Command<Object> {
     private String taskName;
 
     /** Subcommand. */
-    private KillQuerySubcommand cmd;
+    private KillSubcommand cmd;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {

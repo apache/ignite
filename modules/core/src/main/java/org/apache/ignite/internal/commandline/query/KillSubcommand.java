@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * @see TransactionsMXBean
  * @see ServiceMXBean
  */
-public enum KillQuerySubcommand {
+public enum KillSubcommand {
     /** Kill scan query. */
     SCAN_QUERY("scan"),
 
@@ -55,7 +55,7 @@ public enum KillQuerySubcommand {
     private final String name;
 
     /** @param name Encryption subcommand name. */
-    KillQuerySubcommand(String name) {
+    KillSubcommand(String name) {
         this.name = name;
     }
 
@@ -63,8 +63,8 @@ public enum KillQuerySubcommand {
      * @param text Command text (case insensitive).
      * @return Command for the text. {@code Null} if there is no such command.
      */
-    @Nullable public static KillQuerySubcommand of(String text) {
-        for (KillQuerySubcommand cmd : KillQuerySubcommand.values()) {
+    @Nullable public static KillSubcommand of(String text) {
+        for (KillSubcommand cmd : KillSubcommand.values()) {
             if (cmd.name.equalsIgnoreCase(text))
                 return cmd;
         }
