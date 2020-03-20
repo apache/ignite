@@ -43,13 +43,16 @@ import static org.junit.Assert.fail;
 public class DiscoveryClientSocketTest {
     /** Port to listen. */
     public static final int PORT_TO_LNSR = 12346;
+
     /** Host for bind. */
     public static final String HOST = "localhost";
 
     /** SSL server socket factory. */
     private SSLServerSocketFactory sslSrvSockFactory;
+
     /** SSL socket factory. */
     private SocketFactory sslSockFactory;
+
     /** Fake TCP discovery SPI. */
     private TcpDiscoverySpi fakeTcpDiscoverySpi;
 
