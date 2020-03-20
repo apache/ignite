@@ -57,23 +57,13 @@ public class KillCommand implements Command<Object> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Object res = executeTaskByNameOnNode(
+            return executeTaskByNameOnNode(
                 client,
                 taskName,
                 taskArgs,
                 null,
                 clientCfg
             );
-
-            switch (cmd) {
-                case COMPUTE:
-                    if (!(boolean)res)
-                        throw new RuntimeException("Compute task not found.");
-
-                    break;
-            }
-
-            return res;
         }
         catch (Throwable e) {
             logger.severe("Failed to perform operation.");
@@ -98,7 +88,7 @@ public class KillCommand implements Command<Object> {
         switch (cmd) {
             case COMPUTE:
                 taskArgs = new VisorComputeCancelSessionsTaskArg(Collections.singleton(
-                    IgniteUuid.fromString(argIter.nextArg("Expected compute task id."))));
+                    IgniteUuid.fromString(argIter.nextArg("Expected compute task id."))), true);
 
                 taskName = VisorComputeCancelSessionsTask.class.getName();
 

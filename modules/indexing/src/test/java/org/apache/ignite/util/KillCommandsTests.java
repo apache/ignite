@@ -86,7 +86,7 @@ class KillCommandsTests {
                 return tasks.isEmpty();
             }, TIMEOUT);
 
-            assertTrue(res);
+            assertTrue(srv.configuration().getIgniteInstanceName(), res);
         }
 
         assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);

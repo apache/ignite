@@ -21,20 +21,23 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Arguments for task {@link VisorComputeCancelSessionsTask}
  */
-public class VisorComputeCancelSessionsTaskArg extends VisorDataTransferObject {
+public class VisorComputeCancelSessionsTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Session IDs to cancel. */
     private Set<IgniteUuid> sesIds;
+
+    /** {@code True} if job should be runed on all nodes. */
+    private boolean execOnAllNodes;
 
     /**
      * Default constructor.
@@ -51,20 +54,36 @@ public class VisorComputeCancelSessionsTaskArg extends VisorDataTransferObject {
     }
 
     /**
+     * @param sesIds Session IDs to cancel.
+     * @param execOnAllNodes Execute on all nodes.
+     */
+    public VisorComputeCancelSessionsTaskArg(Set<IgniteUuid> sesIds, boolean execOnAllNodes) {
+        this.sesIds = sesIds;
+        this.execOnAllNodes = execOnAllNodes;
+    }
+
+    /**
      * @return Session IDs to cancel.
      */
     public Set<IgniteUuid> getSessionIds() {
         return sesIds;
     }
 
+    /** @return {@code True} if job should be runed on all nodes. */
+    public boolean isExecOnAllNodes() {
+        return execOnAllNodes;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, sesIds);
+        out.writeBoolean(execOnAllNodes);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         sesIds = U.readSet(in);
+        execOnAllNodes = in.readBoolean();
     }
 
     /** {@inheritDoc} */

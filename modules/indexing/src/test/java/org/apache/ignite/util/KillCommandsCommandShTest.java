@@ -27,7 +27,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 
@@ -75,6 +74,6 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownComputeTask() throws Exception {
         int res = execute("--kill", "compute", IgniteUuid.randomUuid().toString());
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
+        assertEquals(EXIT_CODE_OK, res);
     }
 }
