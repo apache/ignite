@@ -1160,7 +1160,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11861")
     public void testMultithreadedWithNodeRestart() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
         final BlockingQueue<IgniteBiTuple<Integer, UUID>> queue = new LinkedBlockingQueue<>();
@@ -1169,111 +1168,117 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
-        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : CONSUME_CNT / 2;
+        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : CONSUME_CNT / 5;
 
-        IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                for (int i = 0; i < consumeCnt && !stop.get(); i++) {
-                    int idx = rnd.nextInt(GRID_CNT);
-
+        try {
+            IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
                     try {
-                        IgniteEvents evts = grid(idx).events();
+                        for (int i = 0; i < consumeCnt; i++) {
+                            int idx = rnd.nextInt(GRID_CNT);
 
-                        UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
-                            @Override public boolean apply(UUID uuid, Event evt) {
-                                return true;
+                            try {
+                                IgniteEvents evts = grid(idx).events();
+
+                                UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
+                                    @Override public boolean apply(UUID uuid, Event evt) {
+                                        return true;
+                                    }
+                                }, null, EVT_JOB_STARTED).get(9000);
+
+                                started.add(consumeId);
+
+                                queue.add(F.t(idx, consumeId));
                             }
-                        }, null, EVT_JOB_STARTED).get(3000);
+                            catch (ClusterTopologyException ignored) {
+                                // No-op.
+                            }
 
-                        started.add(consumeId);
-
-                        queue.add(F.t(idx, consumeId));
+                            U.sleep(10);
+                        }
                     }
-                    catch (ClusterTopologyException ignored) {
-                        // No-op.
+                    finally {
+                        stop.set(true);
                     }
 
-                    U.sleep(10);
+                    return null;
                 }
+            }, 8, "consume-starter");
 
-                stop.set(true);
+            IgniteInternalFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    while (!stop.get()) {
+                        IgniteBiTuple<Integer, UUID> t = queue.poll(1, SECONDS);
 
-                return null;
-            }
-        }, 8, "consume-starter");
+                        if (t == null)
+                            continue;
 
-        starterFut.listen(fut -> stop.set(true));
+                        int idx = t.get1();
+                        UUID consumeId = t.get2();
 
-        IgniteInternalFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                while (!stop.get()) {
-                    IgniteBiTuple<Integer, UUID> t = queue.poll(1, SECONDS);
+                        try {
+                            IgniteEvents evts = grid(idx).events();
 
-                    if (t == null)
-                        continue;
+                            evts.stopRemoteListenAsync(consumeId).get(9000);
 
-                    int idx = t.get1();
-                    UUID consumeId = t.get2();
-
-                    try {
-                        IgniteEvents evts = grid(idx).events();
-
-                        evts.stopRemoteListenAsync(consumeId).get(3000);
-
-                        stopped.add(consumeId);
+                            stopped.add(consumeId);
+                        }
+                        catch (ClusterTopologyException ignored) {
+                            // No-op.
+                        }
                     }
-                    catch (ClusterTopologyException ignored) {
-                        // No-op.
-                    }
+
+                    return null;
                 }
+            }, 4, "consume-stopper");
 
-                return null;
-            }
-        }, 4, "consume-stopper");
-
-        IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                while (!stop.get()) {
-                    startGrid("anotherGridMultithreadedWithNodeRestart");
-                    stopGrid("anotherGridMultithreadedWithNodeRestart");
-                }
-
-                return null;
-            }
-        }, 1, "node-restarter");
-
-        IgniteInternalFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                while (!stop.get()) {
-                    int idx = rnd.nextInt(GRID_CNT);
-
-                    try {
-                        grid(idx).compute().runAsync(F.noop()).get(3000);
+            IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    while (!stop.get()) {
+                        startGrid("anotherGrid");
+                        stopGrid("anotherGrid");
                     }
-                    catch (IgniteException ignored) {
-                        // Ignore all job execution related errors.
-                    }
-                }
 
-                return null;
-            }
-        }, 1, "job-runner");
+                    return null;
+                }
+            }, 1, "node-restarter");
+
+            IgniteInternalFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    while (!stop.get()) {
+                        int idx = rnd.nextInt(GRID_CNT);
+
+                        try {
+                            grid(idx).compute().runAsync(F.noop()).get(3000);
+                        }
+                        catch (IgniteException ignored) {
+                            // Ignore all job execution related errors.
+                        }
+                    }
+
+                    return null;
+                }
+            }, 1, "job-runner");
 
         GridTestUtils.waitForAllFutures(starterFut, stopperFut, nodeRestarterFut, jobRunnerFut);
 
-        IgniteBiTuple<Integer, UUID> t;
+            IgniteBiTuple<Integer, UUID> t;
 
-        while ((t = queue.poll()) != null) {
-            int idx = t.get1();
-            UUID consumeId = t.get2();
+            while ((t = queue.poll()) != null) {
+                int idx = t.get1();
+                UUID consumeId = t.get2();
 
-            grid(idx).events().stopRemoteListenAsync(consumeId).get(3000);
+                grid(idx).events().stopRemoteListenAsync(consumeId).get(3000);
 
-            stopped.add(consumeId);
+                stopped.add(consumeId);
+            }
+
+            Collection<UUID> notStopped = F.lose(started, true, stopped);
+
+            assertEquals("Not stopped IDs: " + notStopped, 0, notStopped.size());
         }
-
-        Collection<UUID> notStopped = F.lose(started, true, stopped);
-
-        assertEquals("Not stopped IDs: " + notStopped, 0, notStopped.size());
+        finally {
+            stop.set(true);
+        }
     }
 }
