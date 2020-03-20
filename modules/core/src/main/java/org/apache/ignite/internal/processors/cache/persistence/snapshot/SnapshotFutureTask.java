@@ -640,6 +640,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      */
     private class PageStoreSerialWriter implements PageWriteListener, Closeable {
         /** Page store to which current writer is related to. */
+        @GridToStringExclude
         private final PageStore store;
 
         /** Partition delta file to store delta pages into. */
@@ -649,6 +650,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
+        @GridToStringExclude
         private final BooleanSupplier checkpointComplete = () ->
             cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
 
@@ -659,6 +661,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         private final AtomicBitSet writtenPages;
 
         /** IO over the underlying delta file. */
+        @GridToStringExclude
         private volatile FileIO deltaFileIo;
 
         /** {@code true} if partition file has been copied to external resource. */
@@ -726,13 +729,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
 
+            int pageIdx = -1;
+
             lock.readLock().lock();
 
             try {
                 if (stopped())
                     return;
 
-                int pageIdx = PageIdUtils.pageIndex(pageId);
+                pageIdx = PageIdUtils.pageIndex(pageId);
 
                 if (checkpointComplete.getAsBoolean()) {
                     // Page already written.
@@ -763,7 +768,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
             catch (Throwable ex) {
-                acceptException(ex);
+                acceptException(new IgniteCheckedException("Error during writing pages to delta partition file " +
+                    "[pageIdx=" + pageIdx + ", writer=" + this + ']', ex));
             }
             finally {
                 lock.readLock().unlock();
@@ -810,6 +816,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 lock.writeLock().unlock();
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PageStoreSerialWriter.class, this);
+        }
     }
 
     /**
@@ -837,7 +848,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
          * {@code false} if bit changed by another thread or out of range.
          */
         public boolean touch(long off) {
-            if (off > size)
+            if (off >= size)
                 return false;
 
             int bit = 1 << off;
@@ -852,6 +863,29 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 if (arr.compareAndSet(bucket, cur, val))
                     return true;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("AtomicBitSet[arr=[");
+
+            int iMax = arr.length() - 1;
+
+            for (int idx = 0; ; idx++) {
+                sb.append(Integer.toBinaryString(arr.get(idx)));
+
+                if (idx == iMax) {
+                    return sb.append(']')
+                        .append(", size=")
+                        .append(size)
+                        .append(']')
+                        .toString();
+                }
+
+                sb.append(',').append(' ');
             }
         }
     }
