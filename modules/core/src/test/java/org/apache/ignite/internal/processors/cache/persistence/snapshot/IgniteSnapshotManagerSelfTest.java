@@ -631,17 +631,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch hold = new CountDownLatch(1);
 
-        (ig1.context()
-            .cache()
-            .context()
-            .database())
-            .waitForCheckpoint("Snapshot before request", f -> {
-                try {
+        ((GridCacheDatabaseSharedManager)ig1.context().cache().context().database())
+            .addCheckpointListener(new DbCheckpointListener() {
+                /** {@inheritDoc} */
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     // Listener will be exectuted inside the checkpoint thead.
                     U.await(hold);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+
+                /** {@inheritDoc} */
+                @Override public void onMarkCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onCheckpointBegin(Context ctx) {
+                    // No-op.
                 }
             });
 
