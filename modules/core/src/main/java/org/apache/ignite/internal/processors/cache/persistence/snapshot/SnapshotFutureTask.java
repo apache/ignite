@@ -556,7 +556,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
             .whenComplete((res, t) -> {
-                assert t == null : "Excepction must never be thrown since a wrapper is used " +
+                assert t == null : "Exception must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
                 closeAsync();

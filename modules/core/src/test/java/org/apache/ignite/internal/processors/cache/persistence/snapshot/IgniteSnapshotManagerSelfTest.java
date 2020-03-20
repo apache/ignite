@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
@@ -185,25 +184,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         // Start grid node with data before each test.
         IgniteEx ig = startGridWithCache(defaultCacheCfg, 2048);
 
-        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 2048; i < 4096; i++)
-                ds.addData(i, new TestOrderItem(i, i));
+        // The following data will be included into checkpoint.
+        for (int i = 2048; i < 4096; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i));
+
+        for (int i = 4096; i < 8192; i++) {
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i) {
+                @Override public String toString() {
+                    return "_" + super.toString();
+                }
+            });
         }
 
-        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 4096; i < 8192; i++)
-                ds.addData(i, new TestOrderItem(i, i) {
-                    @Override public String toString() {
-                        return "_" + super.toString();
-                    }
-                });
-        }
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
 
         // Collection of pairs group and appropratate cache partition to be snapshotted.
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx.database(),
-            cctx.localNodeId(),
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             cctx.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME));
@@ -228,8 +224,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
             FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(cctx.snapshotMgr()
-                .snapshotLocalDir(SNAPSHOT_NAME)
-                .getAbsolutePath(),
+                    .snapshotLocalDir(SNAPSHOT_NAME)
+                    .getAbsolutePath(),
                 nodePath,
                 false),
                 cacheDirName(defaultCacheCfg)));
@@ -247,7 +243,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSnapshotLocalPartitionsNextCpStarted() throws Exception {
-        final int cache_val_factor = 2;
+        final int valMultiplier = 2;
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
@@ -265,11 +261,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         // Change data before backup.
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, cache_val_factor * i);
+            ig.cache(DEFAULT_CACHE_NAME).put(i, valMultiplier * i);
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(mgr,
-            dbMgr,
-            ig.context().cache().context().localNodeId(),
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(ig.context().cache().context(),
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
@@ -317,7 +311,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
             assertEquals("snapshot data consistency violation [key=" + i + ']',
-                i * cache_val_factor, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+                i * valMultiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
         }
     }
 
@@ -358,9 +352,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME));
@@ -385,9 +377,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
-        IgniteInternalFuture<?> fut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
+        IgniteInternalFuture<?> fut = startLocalSnapshotTask(cctx0,
             SNAPSHOT_NAME,
             parts,
             new DeleagateSnapshotSender(log, cctx0.snapshotMgr().snapshotExecutorService(),
@@ -588,7 +578,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch hold = new CountDownLatch(1);
 
-        ((GridCacheDatabaseSharedManager)ig1.context()
+        (ig1.context()
             .cache()
             .context()
             .database())
@@ -616,7 +606,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 IgniteInternalFuture<Boolean> snpFut = ig1.context()
                     .cache()
@@ -631,7 +621,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, 5_000L);
+        }, 5_000L));
 
         stopGrid(0);
 
@@ -735,9 +725,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
@@ -797,21 +785,19 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      * @return Future which will be completed when snapshot is done.
      */
     private static IgniteInternalFuture<Boolean> startLocalSnapshotTask(
-        IgniteSnapshotManager snpMgr,
-        GridCacheDatabaseSharedManager dbMgr,
-        UUID srcNodeId,
+        GridCacheSharedContext<?, ?> cctx,
         String snpName,
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException{
-        SnapshotFutureTask snpFutTask = snpMgr.registerSnapshotTask(snpName, srcNodeId, parts, snpSndr);
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
 
         snpFutTask.start();
 
         // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
         // due to checkpoint aready running and we need to schedule the next one
         // right afther current will be completed.
-        dbMgr.forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
+        (cctx.database()).forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
 
         snpFutTask.awaitStarted();
 
