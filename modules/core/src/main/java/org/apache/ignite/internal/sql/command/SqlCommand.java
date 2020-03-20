@@ -34,14 +34,10 @@ public interface SqlCommand {
     /**
      * @return Schema name.
      */
-    default String schemaName() {
-        return null;
-    }
+    public String schemaName();
 
     /**
      * @param schemaName Schema name.
      */
-    default void schemaName(String schemaName) {
-        // No-op.
-    }
+    public void schemaName(String schemaName);
 }

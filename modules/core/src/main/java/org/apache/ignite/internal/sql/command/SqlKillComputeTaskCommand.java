@@ -53,4 +53,14 @@ public class SqlKillComputeTaskCommand implements SqlCommand {
     public IgniteUuid getSessionId() {
         return sessionId;
     }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
+    }
 }
