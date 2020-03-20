@@ -621,6 +621,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
         Map<Integer, Set<Integer>> parts,
         BiConsumer<File, GroupPartitionId> partConsumer
     ) {
+        assert partConsumer != null;
+
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
         if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))

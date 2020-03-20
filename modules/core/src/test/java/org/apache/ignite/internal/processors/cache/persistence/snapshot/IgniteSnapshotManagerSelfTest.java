@@ -579,15 +579,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         forceCheckpoint(ig0);
 
-        IgniteSnapshotManager mgr0 = ig0.context()
-            .cache()
-            .context()
-            .snapshotMgr();
-
-        IgniteSnapshotManager mgr1 = grid(1).context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        IgniteSnapshotManager mgr0 = ig0.context().cache().context().snapshotMgr();
+        IgniteSnapshotManager mgr1 = grid(1).context().cache().context().snapshotMgr();
 
         UUID node0 = grid(0).localNode().id();
         UUID node1 = grid(1).localNode().id();
@@ -720,10 +713,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         UUID rmtNodeId = grid(1).localNode().id();
 
-        IgniteSnapshotManager mgr0 = ig0.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        IgniteSnapshotManager mgr0 = ig0.context().cache().context().snapshotMgr();
 
         // Snapshot must be taken on node1 and transmitted to node0.
         IgniteInternalFuture<?> snpFut = mgr0.createRemoteSnapshot(rmtNodeId,
@@ -765,14 +755,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        IgniteSnapshotManager mgr = ig.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
+        IgniteSnapshotManager mgr = cctx0.snapshotMgr();
 
         CountDownLatch cpLatch = new CountDownLatch(1);
-
-        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
         IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
             SNAPSHOT_NAME,
@@ -896,7 +882,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < range; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        forceCheckpoint();
+        forceCheckpoint(ig);
 
         return ig;
     }
