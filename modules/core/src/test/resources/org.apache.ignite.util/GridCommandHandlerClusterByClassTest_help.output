@@ -68,47 +68,43 @@ This utility can do the following commands:
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
-  Kill user-initiated task:
-    control.(sh|bat) --kill operation
+  Kill scan query by node id, cache name and query id:
+    control.(sh|bat) --kill scan origin_node_id cache_name query_id
 
-    Operations:
-      Scan query:
-        scan ORIGIN_NODE_ID CACHE_NAME QUERY_ID
+    Parameters:
+      cache_name      - Cache name.
+      query_id        - Query identifier.
+      origin_node_id  - Originating node id.
 
-        Parameters:
-          ORIGIN_NODE_ID  - query originating node ID.
-          CACHE_NAME      - cache name.
-          QUERY_ID        - query identifier.
+  Kill continuous query by routine id:
+    control.(sh|bat) --kill continuous routine_id
 
-      Continuous query:
-        continuous ROUTINE_ID
+    Parameters:
+      routine_id  - Routine identifier.
 
-        Parameters:
-          ROUTINE_ID      - routine identifier.
+  Kill sql query by query id:
+    control.(sh|bat) --kill sql query_id
 
-      SQL query:
-        sql QUERY_ID
+    Parameters:
+      query_id  - Query identifier.
 
-        Parameters:
-          QUERY_ID        - routine identifier.
+  Kill compute task by session id:
+    control.(sh|bat) --kill compute session_id
 
-      Compute task:
-        compute SESSION_ID
+    Parameters:
+      session_id  - Session identifier.
 
-        Parameters:
-          SESSION_ID      - task session identifier.
+  Kill transaction by xid:
+    control.(sh|bat) --kill tx xid
 
-      Transaction:
-        tx XID
+    Parameters:
+      xid  - Transaction identifier.
 
-        Parameters:
-          XID             - transaction identifier.
+  Kill service by name:
+    control.(sh|bat) --kill service name
 
-      Service:
-        service NAME
-
-        Parameters:
-          NAME            - Service name.
+    Parameters:
+      name  - Service name.
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

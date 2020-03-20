@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.query;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -208,16 +209,42 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        Command.usage(logger, "Kill scan query by node id, cache name and query id:", KILL, SCAN_QUERY.toString(),
-            "origin_node_id", "cache_name", "query_id");
-        Command.usage(logger, "Kill continuous query by routine id:", KILL, CONTINUOUS_QUERY.toString(),
+        Map<String, String> params = new HashMap<>();
+
+        params.put("origin_node_id", "Originating node id.");
+        params.put("cache_name", "Cache name.");
+        params.put("query_id", "Query identifier.");
+
+        Command.usage(logger, "Kill scan query by node id, cache name and query id:", KILL,
+            params, SCAN_QUERY.toString(),"origin_node_id", "cache_name", "query_id");
+
+        params.clear();
+        params.put("routine_id", "Routine identifier.");
+
+        Command.usage(logger, "Kill continuous query by routine id:", KILL, params, CONTINUOUS_QUERY.toString(),
             "routine_id");
-        Command.usage(logger, "Kill sql query by query id:", KILL, SQL_QUERY.toString(),
+
+        params.clear();
+        params.put("query_id", "Query identifier.");
+
+        Command.usage(logger, "Kill sql query by query id:", KILL, params, SQL_QUERY.toString(),
             "query_id");
-        Command.usage(logger, "Kill compute task by session id:", KILL, COMPUTE.toString(),
+
+        params.clear();
+        params.put("session_id", "Session identifier.");
+
+        Command.usage(logger, "Kill compute task by session id:", KILL, params, COMPUTE.toString(),
             "session_id");
-        Command.usage(logger, "Kill transaction by xid:", KILL, TRANSACTION.toString(), "xid");
-        Command.usage(logger, "Kill service by name:", KILL, SERVICE.toString(), "name");
+
+        params.clear();
+        params.put("xid", "Transaction identifier.");
+
+        Command.usage(logger, "Kill transaction by xid:", KILL, params, TRANSACTION.toString(), "xid");
+
+        params.clear();
+        params.put("name", "Service name.");
+
+        Command.usage(logger, "Kill service by name:", KILL, params, SERVICE.toString(), "name");
     }
 
     /** {@inheritDoc} */
