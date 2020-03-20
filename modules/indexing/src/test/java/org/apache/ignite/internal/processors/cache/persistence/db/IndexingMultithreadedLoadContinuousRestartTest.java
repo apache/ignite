@@ -156,7 +156,7 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
             forceCheckpoint();
 
             // Validate indexes on start.
-            ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0);
+            ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false);
             ignite.context().resource().injectGeneric(clo);
             VisorValidateIndexesJobResult res = clo.call();
 
