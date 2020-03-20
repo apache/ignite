@@ -683,7 +683,8 @@ public class GridReduceQueryExecutor {
                                 qryInfo
                                 );
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, detachedConn);
+                            resIter = new H2FieldsIterator(res, mvccTracker, detachedConn, r.pageSize(), log, h2,
+                                qctx, lazy);
 
                             // don't recycle at final block
                             detachedConn = null;
