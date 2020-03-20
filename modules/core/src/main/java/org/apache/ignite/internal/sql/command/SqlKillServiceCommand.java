@@ -18,19 +18,36 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 
 /**
- * BEGIN [TRANSACTION] command.
+ * KILL SERVICE command.
+ *
+ * @see ServiceMXBean#cancel(String)
+ * @see ServiceView#name()
  */
-public class SqlBeginTransactionCommand implements SqlCommand {
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        return this;
-    }
+public class SqlKillServiceCommand implements SqlCommand {
+    /** Service name. */
+    private String name;
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlBeginTransactionCommand.class, this);
+    @Override public SqlCommand parse(SqlLexer lex) {
+        if (lex.shift()) {
+            if (lex.tokenType() == SqlLexerTokenType.STRING) {
+                name = lex.token();
+
+                return this;
+            }
+        }
+
+        throw SqlParserUtils.error(lex, "Expected service name.");
+    }
+
+    /** @return Service name. */
+    public String getName() {
+        return name;
     }
 }

@@ -17,20 +17,38 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.UUID;
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 
 /**
- * BEGIN [TRANSACTION] command.
+ * KILL CONTINUOUS_QUERY command.
+ *
+ * @see QueryMXBean#cancelContinuous(String)
+ * @see ContinuousQueryView#routineId()
  */
-public class SqlBeginTransactionCommand implements SqlCommand {
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        return this;
-    }
+public class SqlKillContinuousQueryCommand implements SqlCommand {
+    /** Routine id. */
+    private UUID routineId;
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlBeginTransactionCommand.class, this);
+    @Override public SqlCommand parse(SqlLexer lex) {
+        if (lex.shift()) {
+            if (lex.tokenType() == SqlLexerTokenType.STRING) {
+                routineId = UUID.fromString(lex.token());
+
+                return this;
+            }
+        }
+
+        throw SqlParserUtils.error(lex, "Expected routine id.");
+    }
+
+    /** @return Routine id. */
+    public UUID getRoutineId() {
+        return routineId;
     }
 }

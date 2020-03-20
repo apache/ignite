@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.sql.command;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 
 /**
- * BEGIN [TRANSACTION] command.
+ * Service MXBean interface.
  */
-public class SqlBeginTransactionCommand implements SqlCommand {
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlBeginTransactionCommand.class, this);
-    }
+public interface ServiceMXBean {
+    /**
+     * @param name Service name.
+     * @see ServiceView#name()
+     */
+    @MXBeanDescription("Kills service by the name.")
+    public void cancel(
+        @MXBeanParameter(name = "name", description = "Service name.") String name
+    );
 }

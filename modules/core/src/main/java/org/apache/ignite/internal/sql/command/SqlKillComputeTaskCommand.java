@@ -18,19 +18,39 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
- * BEGIN [TRANSACTION] command.
+ * KILL COMPUTE_TASK command.
+ *
+ * @see ComputeMXBean#cancel(String)
+ * @see ComputeJobView#sessionId()
+ * @see ComputeTaskView#sessionId()
  */
-public class SqlBeginTransactionCommand implements SqlCommand {
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        return this;
-    }
+public class SqlKillComputeTaskCommand implements SqlCommand {
+    /** Session id. */
+    private IgniteUuid sessionId;
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlBeginTransactionCommand.class, this);
+    @Override public SqlCommand parse(SqlLexer lex) {
+        if (lex.shift()) {
+            if (lex.tokenType() == SqlLexerTokenType.STRING) {
+                sessionId = IgniteUuid.fromString(lex.token());
+
+                return this;
+            }
+        }
+
+        throw SqlParserUtils.error(lex, "Expected session id.");
+    }
+
+    /** @return Session id. */
+    public IgniteUuid getSessionId() {
+        return sessionId;
     }
 }

@@ -18,19 +18,36 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParserUtils;
+import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 
 /**
- * BEGIN [TRANSACTION] command.
+ * KILL TX command.
+ *
+ * @see TransactionsMXBean#cancel(String)
+ * @see TransactionView#xid()
  */
-public class SqlBeginTransactionCommand implements SqlCommand {
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        return this;
-    }
+public class SqlKillTxCommand implements SqlCommand {
+    /** Transaction xid. */
+    private String xid;
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlBeginTransactionCommand.class, this);
+    @Override public SqlCommand parse(SqlLexer lex) {
+        if (lex.shift()) {
+            if (lex.tokenType() == SqlLexerTokenType.STRING) {
+                xid = lex.token();
+
+                return this;
+            }
+        }
+
+        throw SqlParserUtils.error(lex, "Expected transaction xid.");
+    }
+
+    /** @return Xid. */
+    public String getXid() {
+        return xid;
     }
 }

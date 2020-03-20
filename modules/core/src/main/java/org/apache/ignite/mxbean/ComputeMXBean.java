@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.sql.command;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
- * BEGIN [TRANSACTION] command.
+ * Compute MXBean interface.
  */
-public class SqlBeginTransactionCommand implements SqlCommand {
-    /** {@inheritDoc} */
-    @Override public SqlCommand parse(SqlLexer lex) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SqlBeginTransactionCommand.class, this);
-    }
+public interface ComputeMXBean {
+    /**
+     * Kills compute task by the session idenitifier.
+     *
+     * @param sessionId Session id.
+     * @see ComputeTaskView#sessionId()
+     * @see ComputeJobView#sessionId()
+     */
+    @MXBeanDescription("Kills compute task by the session idenitifier.")
+    public void cancel(
+        @MXBeanParameter(name = "sessionId", description = "Session identifier.") String sessionId
+    );
 }

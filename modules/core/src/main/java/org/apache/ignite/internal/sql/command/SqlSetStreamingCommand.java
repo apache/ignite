@@ -197,14 +197,4 @@ public class SqlSetStreamingCommand implements SqlCommand {
     public boolean isOrdered() {
         return ordered;
     }
-
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
-    }
 }

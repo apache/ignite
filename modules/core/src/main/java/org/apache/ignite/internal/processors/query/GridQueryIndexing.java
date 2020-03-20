@@ -366,11 +366,12 @@ public interface GridQueryIndexing {
     public Collection<GridRunningQueryInfo> runningQueries(long duration);
 
     /**
-     * Cancel specified queries.
+     * Cancel specified query.
      *
-     * @param queries Queries ID's to cancel.
+     * @param id Query ID's to cancel.
+     * @return {@code True} if query was canceled, {@code false} otherwise.
      */
-    public void cancelQueries(Collection<Long> queries);
+    public boolean cancelQuery(long id);
 
     /**
      * Cancels all executing queries.
