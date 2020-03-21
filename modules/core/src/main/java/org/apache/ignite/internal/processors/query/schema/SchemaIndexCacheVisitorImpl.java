@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -166,15 +165,14 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             res.a("        Type name=" + type.name());
             res.a(U.nl());
 
-            final String pk = "_key_PK";
+            String pk = "_key_PK";
+            String tblName = type.tableName();
 
-            res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), pk));
+            res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), tblName, pk));
             res.a(U.nl());
 
-            final Map<String, GridQueryIndexDescriptor> indexes = type.indexes();
-
-            for (GridQueryIndexDescriptor descriptor : indexes.values()) {
-                final long size = idx.indexSize(type.schemaName(), descriptor.name());
+            for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
+                long size = idx.indexSize(type.schemaName(), tblName, descriptor.name());
 
                 res.a("            Index: name=" + descriptor.name() + ", size=" + size);
                 res.a(U.nl());

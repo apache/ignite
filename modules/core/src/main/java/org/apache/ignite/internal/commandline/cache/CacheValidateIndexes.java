@@ -18,12 +18,12 @@
  *
  */
 
-
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -40,6 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
+import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeIssue;
+import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeResult;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
@@ -47,6 +49,7 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -58,6 +61,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_SIZES;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 
 /**
@@ -79,9 +83,17 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
 
         map.put(CHECK_FIRST + " N", "validate only the first N keys");
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
+        map.put(CHECK_SIZES.toString(), "check that index size and cache size are same");
 
-        usageCache(logger, VALIDATE_INDEXES, description, map,
-            optional(CACHES), OP_NODE_ID, optional(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
+        usageCache(
+            logger,
+            VALIDATE_INDEXES,
+            description,
+            map,
+            optional(CACHES),
+            OP_NODE_ID,
+            optional(or(CHECK_FIRST + " N", CHECK_THROUGH + " K", CHECK_SIZES))
+        );
     }
 
     /**
@@ -89,25 +101,41 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
      */
     public class Arguments {
          /** Caches. */
-        private Set<String> caches;
+        private final Set<String> caches;
 
         /** Node id. */
-        private UUID nodeId;
+        private final UUID nodeId;
 
         /** Max number of entries to be checked. */
-        private int checkFirst = -1;
+        private final int checkFirst;
 
         /** Number of entries to check through. */
-        private int checkThrough = -1;
+        private final int checkThrough;
+
+        /** Check that index size and cache size are same. */
+        private final boolean checkSizes;
 
         /**
+         * Constructor.
          *
+         * @param caches Caches.
+         * @param nodeId Node id.
+         * @param checkFirst Max number of entries to be checked.
+         * @param checkThrough Number of entries to check through.
+         * @param checkSizes Check that index size and cache size are same.
          */
-        public Arguments(Set<String> caches, UUID nodeId, int checkFirst, int checkThrough) {
+        public Arguments(
+            Set<String> caches,
+            UUID nodeId,
+            int checkFirst,
+            int checkThrough,
+            boolean checkSizes
+        ) {
             this.caches = caches;
             this.nodeId = nodeId;
             this.checkFirst = checkFirst;
             this.checkThrough = checkThrough;
+            this.checkSizes = checkSizes;
         }
 
         /**
@@ -131,12 +159,21 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             return checkThrough;
         }
 
-
         /**
          * @return Node id.
          */
         public UUID nodeId() {
             return nodeId;
+        }
+
+        /**
+         * Returns whether to check that index size and cache size are same.
+         *
+         * @return {@code true} if need check that index size and cache size
+         *      are same.
+         */
+        public boolean checkSizes() {
+            return checkSizes;
         }
 
         /** {@inheritDoc} */
@@ -159,7 +196,8 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             args.caches(),
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null,
             args.checkFirst(),
-            args.checkThrough()
+            args.checkThrough(),
+            args.checkSizes()
         );
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -168,45 +206,52 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
 
             boolean errors = CommandLogger.printErrors(taskRes.exceptions(), "Index validation failed on nodes:", logger);
 
-            for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-                if (!nodeEntry.getValue().hasIssues())
+            for (Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+                VisorValidateIndexesJobResult jobRes = nodeEntry.getValue();
+
+                if (!jobRes.hasIssues())
                     continue;
 
                 errors = true;
 
                 logger.info("Index issues found on node " + nodeEntry.getKey() + ":");
 
-                Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
+                for (IndexIntegrityCheckIssue is : jobRes.integrityCheckFailures())
+                    logger.info(INDENT + is);
 
-                if (!integrityCheckFailures.isEmpty()) {
-                    for (IndexIntegrityCheckIssue is : integrityCheckFailures)
-                        logger.info(INDENT + is);
-                }
-
-                Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
-
-                for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
+                for (Entry<PartitionKey, ValidateIndexesPartitionResult> e : jobRes.partitionResult().entrySet()) {
                     ValidateIndexesPartitionResult res = e.getValue();
 
                     if (!res.issues().isEmpty()) {
-                        logger.info(INDENT + CommandLogger.join(" ", e.getKey(), e.getValue()));
+                        logger.info(INDENT + join(" ", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
                             logger.info(DOUBLE_INDENT + is);
                     }
                 }
 
-                Map<String, ValidateIndexesPartitionResult> idxRes = nodeEntry.getValue().indexResult();
-
-                for (Map.Entry<String, ValidateIndexesPartitionResult> e : idxRes.entrySet()) {
+                for (Entry<String, ValidateIndexesPartitionResult> e : jobRes.indexResult().entrySet()) {
                     ValidateIndexesPartitionResult res = e.getValue();
 
                     if (!res.issues().isEmpty()) {
-                        logger.info(INDENT + CommandLogger.join(" ", "SQL Index", e.getKey(), e.getValue()));
+                        logger.info(INDENT + join(" ", "SQL Index", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
                             logger.info(DOUBLE_INDENT + is);
                     }
+                }
+
+                for (Entry<String, ValidateIndexesCheckSizeResult> e : jobRes.checkSizeResult().entrySet()) {
+                    ValidateIndexesCheckSizeResult res = e.getValue();
+                    Collection<ValidateIndexesCheckSizeIssue> issues = res.issues();
+
+                    if (issues.isEmpty())
+                        continue;
+
+                    logger.info(INDENT + join(" ", "Size check", e.getKey(), res));
+
+                    for (ValidateIndexesCheckSizeIssue issue : issues)
+                        logger.info(DOUBLE_INDENT + issue);
                 }
             }
 
@@ -227,10 +272,9 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         int checkThrough = -1;
         UUID nodeId = null;
         Set<String> caches = null;
+        boolean checkSizes = false;
 
-        int argsCnt = 0;
-
-        while (argIter.hasNextSubArg() && argsCnt++ < 4) {
+        while (argIter.hasNextSubArg()) {
             String nextArg = argIter.nextArg("");
 
             ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
@@ -262,6 +306,11 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
 
                 continue;
             }
+            else if (CHECK_SIZES == arg) {
+                checkSizes = true;
+
+                continue;
+            }
 
             try {
                 nodeId = UUID.fromString(nextArg);
@@ -281,7 +330,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             }
         }
 
-        args = new Arguments(caches, nodeId, checkFirst, checkThrough);
+        args = new Arguments(caches, nodeId, checkFirst, checkThrough, checkSizes);
     }
 
     /** {@inheritDoc} */

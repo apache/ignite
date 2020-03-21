@@ -102,6 +102,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /** Enable automatic confirmation to avoid user interaction. */
     protected boolean autoConfirmation = true;
 
+    /** Last operation result. */
+    protected Object lastOperationResult;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -167,18 +170,17 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(checkpointFreq)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024));
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(true)
+            );
 
         if (dataRegionConfiguration != null)
-            memCfg.setDataRegionConfigurations(dataRegionConfiguration);
+            dsCfg.setDataRegionConfigurations(dataRegionConfiguration);
 
-        cfg.setDataStorageConfiguration(memCfg);
-
-        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-        dsCfg.setWalMode(WALMode.LOG_ONLY);
-        dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        cfg.setDataStorageConfiguration(dsCfg);
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -238,6 +240,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         testOut.reset();
 
         int exitCode = hnd.execute(args);
+        lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
         Logger logger = U.field(hnd, "logger");

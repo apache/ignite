@@ -21,14 +21,19 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static org.apache.ignite.internal.util.IgniteUtils.readCollection;
+import static org.apache.ignite.internal.util.IgniteUtils.readMap;
+import static org.apache.ignite.internal.util.IgniteUtils.writeCollection;
+import static org.apache.ignite.internal.util.IgniteUtils.writeMap;
 
 /**
  *
@@ -49,19 +54,28 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
     @GridToStringInclude
     private Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
+    /** Results of checking size cache and index. */
+    @GridToStringInclude
+    private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
+
     /**
+     * Constructor.
+     *
      * @param partRes Results of indexes validation from node.
      * @param idxRes Results of reverse indexes validation from node.
-     * @param  integrityCheckFailures Collection of indexes integrity check failures.
+     * @param integrityCheckFailures Collection of indexes integrity check failures.
+     * @param checkSizeRes Results of checking size cache and index.
      */
     public VisorValidateIndexesJobResult(
-            @NotNull Map<PartitionKey, ValidateIndexesPartitionResult> partRes,
-            @NotNull Map<String, ValidateIndexesPartitionResult> idxRes,
-            @NotNull Collection<IndexIntegrityCheckIssue> integrityCheckFailures
+        Map<PartitionKey, ValidateIndexesPartitionResult> partRes,
+        @Nullable Map<String, ValidateIndexesPartitionResult> idxRes,
+        @Nullable Collection<IndexIntegrityCheckIssue> integrityCheckFailures,
+        @Nullable Map<String, ValidateIndexesCheckSizeResult> checkSizeRes
     ) {
         this.partRes = partRes;
         this.idxRes = idxRes;
         this.integrityCheckFailures = integrityCheckFailures;
+        this.checkSizeRes = checkSizeRes;
     }
 
     /**
@@ -72,7 +86,7 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V3;
+        return V4;
     }
 
     /**
@@ -86,14 +100,23 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
      * @return Results of reverse indexes validation from node.
      */
     public Map<String, ValidateIndexesPartitionResult> indexResult() {
-        return idxRes == null ? Collections.emptyMap() : idxRes;
+        return idxRes == null ? emptyMap() : idxRes;
     }
 
     /**
      * @return Collection of failed integrity checks.
      */
     public Collection<IndexIntegrityCheckIssue> integrityCheckFailures() {
-        return integrityCheckFailures == null ? Collections.emptyList() : integrityCheckFailures;
+        return integrityCheckFailures == null ? emptyList() : integrityCheckFailures;
+    }
+
+    /**
+     * Return results of checking size cache and index.
+     *
+     * @return Results of checking size cache and index.
+     */
+    public Map<String, ValidateIndexesCheckSizeResult> checkSizeResult() {
+        return checkSizeRes == null ? emptyMap() : checkSizeRes;
     }
 
     /**
@@ -101,26 +124,34 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
      */
     public boolean hasIssues() {
         return (integrityCheckFailures != null && !integrityCheckFailures.isEmpty()) ||
-                (partRes != null && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
-                (idxRes != null && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()));
+            (partRes != null && partRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
+            (idxRes != null && idxRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty())) ||
+            (checkSizeRes != null && checkSizeRes.entrySet().stream().anyMatch(e -> !e.getValue().issues().isEmpty()));
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, partRes);
-        U.writeMap(out, idxRes);
-        U.writeCollection(out, integrityCheckFailures);
+        writeMap(out, partRes);
+        writeMap(out, idxRes);
+        writeCollection(out, integrityCheckFailures);
+        writeMap(out, checkSizeRes);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        partRes = U.readMap(in);
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
+        partRes = readMap(in);
 
         if (protoVer >= V2)
-            idxRes = U.readMap(in);
+            idxRes = readMap(in);
 
         if (protoVer >= V3)
-            integrityCheckFailures = U.readCollection(in);
+            integrityCheckFailures = readCollection(in);
+
+        if (protoVer >= V4)
+            checkSizeRes = readMap(in);
     }
 
     /** {@inheritDoc} */

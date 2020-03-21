@@ -216,7 +216,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
         VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1);
+            null, 10000, 1, true);
 
         VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
@@ -311,7 +311,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
         ImmutableSet<UUID> nodes = ImmutableSet.of(grid(2).localNode().id(), grid(3).localNode().id());
 
         VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1);
+            null, 10000, 1, true);
 
         VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
