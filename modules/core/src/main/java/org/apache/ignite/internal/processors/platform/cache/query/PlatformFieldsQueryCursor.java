@@ -22,6 +22,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
 import java.util.List;
 
@@ -29,22 +30,32 @@ import java.util.List;
  * Interop cursor for fields query.
  */
 public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<?>> {
-    /** Gets field names. */
+    /**
+     * Gets field names.
+     */
     private static final int OP_GET_FIELD_NAMES = 7;
+
+    /**
+     * Gets field types.
+     */
+    private static final int OP_GET_FIELD_TYPES = 8;
 
     /**
      * Constructor.
      *
      * @param platformCtx Platform context.
-     * @param cursor Backing cursor.
-     * @param batchSize Batch size.
+     * @param cursor      Backing cursor.
+     * @param batchSize   Batch size.
      */
     public PlatformFieldsQueryCursor(PlatformContext platformCtx, QueryCursorEx<List<?>> cursor, int batchSize) {
         super(platformCtx, cursor, batchSize);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void write(BinaryRawWriterEx writer, List vals) {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void write(BinaryRawWriterEx writer, List vals) {
         assert vals != null;
 
         int rowSizePos = writer.reserveInt();
@@ -55,12 +66,15 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
             writer.writeObjectDetached(val);
 
         int rowEndPos = writer.out().position();
-        
+
         writer.writeInt(rowSizePos, rowEndPos - rowSizePos);
     }
 
-    /** {@inheritDoc} */
-    @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_GET_FIELD_NAMES) {
             FieldsQueryCursor fq = (FieldsQueryCursor) cursor();
 
@@ -69,6 +83,16 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
 
             for (int i = 0; i < cnt; i++) {
                 writer.writeString(fq.getFieldName(i));
+            }
+        } else if (type == OP_GET_FIELD_TYPES) {
+            QueryCursorEx<List<?>> cursor = cursor();
+
+            List<GridQueryFieldMetadata> metadatas = cursor.fieldsMeta();
+
+            writer.writeInt(metadatas.size());
+
+            for (GridQueryFieldMetadata metadata: metadatas){
+                writer.writeString(metadata.fieldTypeName() + metadata.fieldName() + metadata.typeName() + metadata.schemaName());
             }
         } else {
             super.processOutStream(type, writer);

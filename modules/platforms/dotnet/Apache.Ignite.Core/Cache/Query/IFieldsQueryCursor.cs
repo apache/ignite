@@ -30,5 +30,10 @@ namespace Apache.Ignite.Core.Cache.Query
         /// Gets the field names.
         /// </summary>
         IList<string> FieldNames { get; }
+
+        /// <summary>
+        /// Gets the field type names.
+        /// </summary>
+        IList<string> FieldTypeNames { get; }
     }
 }

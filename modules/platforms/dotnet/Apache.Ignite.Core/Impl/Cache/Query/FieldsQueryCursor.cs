@@ -61,7 +61,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         private const int OpGetFieldNames = 7;
 
         /** */
+        private const int OpGetFieldTypes = 8;
+
+        /** */
         private IList<string> _fieldNames;
+
+        /** */
+        private IList<string> _fieldTypeNames;
 
         /// <summary>
         /// Constructor.
@@ -83,6 +89,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 return _fieldNames ??
                        (_fieldNames = new ReadOnlyCollection<string>(
                            Target.OutStream(OpGetFieldNames, reader => reader.ReadStringCollection())));
+            }
+        }
+
+        public IList<string> FieldTypeNames
+        {
+            get
+            {
+                return _fieldTypeNames ??
+                    (_fieldTypeNames = new ReadOnlyCollection<string>(
+                        Target.OutStream(OpGetFieldTypes, reader => reader.ReadStringCollection())));
             }
         }
     }

@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     /// </summary>
     internal class ClientFieldsQueryCursor : ClientQueryCursorBase<IList<object>>, IFieldsQueryCursor
     {
+        /** Ignite. */
+        private readonly IgniteClient _ignite;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
         /// </summary>
@@ -55,12 +58,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
                 })
         {
             Debug.Assert(columns != null);
+            _ignite = ignite;
 
             FieldNames = new ReadOnlyCollection<string>(columns);
         }
 
         /** <inheritdoc /> */
         public IList<string> FieldNames { get; private set; }
+
+        public IList<string> FieldTypeNames { get; private set; }
 
         /// <summary>
         /// Reads the columns.
