@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanWithInd
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
+import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 
@@ -39,6 +40,7 @@ public class IgniteCacheWithIndexingAndPersistenceTestSuite extends TestSuite {
         suite.addTestSuite(GridCommandHandlerBrokenIndexTest.class);
         suite.addTestSuite(GridCommandHandlerIndexingTest.class);
         suite.addTestSuite(GridCommandHandlerIndexingClusterByClassTest.class);
+        suite.addTestSuite(GridCommandHandlerIndexingCheckSizeTest.class);
         suite.addTestSuite(StartCachesInParallelTest.class);
         suite.addTestSuite(CacheGroupMetricsMBeanWithIndexTest.class);
         suite.addTestSuite(RebuildIndexLogMessageTest.class);
