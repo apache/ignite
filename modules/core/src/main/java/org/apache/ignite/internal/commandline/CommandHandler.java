@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.awt.Toolkit;
 import java.io.File;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -61,6 +62,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_BEEP_SOUND;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -347,6 +349,10 @@ public class CommandHandler {
 
             logger.info("Control utility has completed execution at: " + endTime);
             logger.info("Execution time: " + diff.toMillis() + " ms");
+
+            if (rawArgs.contains("--sound")) {
+                Toolkit.getDefaultToolkit().beep();
+            }
 
             Arrays.stream(logger.getHandlers())
                   .filter(handler -> handler instanceof FileHandler)
@@ -658,6 +664,9 @@ public class CommandHandler {
         logger.info("This utility can do the following commands:");
 
         Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage(logger));
+
+        logger.info("\nThe 'Beep' functionality for signaling completion of work:" +
+                "\nUse " + CMD_BEEP_SOUND + " command to enable sound.");
 
         logger.info("");
         logger.info("By default commands affecting the cluster require interactive confirmation.");

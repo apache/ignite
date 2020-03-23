@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,6 +48,8 @@ import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
@@ -514,6 +517,23 @@ public class CommandHandlerParsingTest {
 
         assertNull(arg.getProjection());
         assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
+    }
+
+    /**
+     * test using and working capacity of 'beep' functionality
+     */
+    @Test
+    public void testBeepSoundFunctiomality() {
+        CommandHandler commandHandler = new CommandHandler();
+        List<String> listOfCommands;
+
+        listOfCommands = Arrays.asList("--sound");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, commandHandler.execute(listOfCommands));
+
+        listOfCommands = Arrays.asList("--cache", "--sound");
+
+        assertEquals(EXIT_CODE_OK, commandHandler.execute(listOfCommands));
     }
 
     /**

@@ -91,6 +91,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
+    /** */
+    static final String CMD_BEEP_SOUND = "--sound";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -149,6 +152,7 @@ public class CommonArgParser {
         list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
         list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_BEEP_SOUND, "BEEP_SOUND"));
 
         return list.toArray(new String[0]);
     }
@@ -212,8 +216,12 @@ public class CommonArgParser {
                 command = cmd;
             }
             else {
-
                 switch (str) {
+                    case CMD_BEEP_SOUND:
+                        logger.info("Make 'Beep' sound");
+
+                        break;
+
                     case CMD_HOST:
                         host = argIter.nextArg("Expected host name");
 
