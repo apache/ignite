@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -28,7 +29,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * General tests for the cancel command.
@@ -43,6 +43,9 @@ class KillCommandsTests {
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
+    /** Latch to block compute task execution. */
+    private static CountDownLatch computeLatch;
+
     /**
      * Test cancel of the compute task.
      *
@@ -52,10 +55,10 @@ class KillCommandsTests {
      */
     public static void doTestCancelComputeTask(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> qryCanceler)
         throws Exception {
-        IgniteFuture<Collection<Integer>> fut = cli.compute().broadcastAsync(() -> {
-            Thread.sleep(10 * TIMEOUT);
+        computeLatch = new CountDownLatch(1);
 
-            fail("Task should be killed!");
+        IgniteFuture<Collection<Integer>> fut = cli.compute().broadcastAsync(() -> {
+            computeLatch.await();
 
             return 1;
         });
@@ -79,16 +82,20 @@ class KillCommandsTests {
 
         qryCanceler.accept(id[0]);
 
-        for (IgniteEx srv : srvs) {
-            res = waitForCondition(() -> {
-                List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+        try {
+            for (IgniteEx srv : srvs) {
+                res = waitForCondition(() -> {
+                    List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
 
-                return tasks.isEmpty();
-            }, TIMEOUT);
+                    return tasks.isEmpty();
+                }, TIMEOUT);
 
-            assertTrue(srv.configuration().getIgniteInstanceName(), res);
+                assertTrue(srv.configuration().getIgniteInstanceName(), res);
+            }
+
+            assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
+        } finally {
+            computeLatch.countDown();
         }
-
-        assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
     }
 }
