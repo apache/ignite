@@ -41,41 +41,55 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 
 /** */
 public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends AbstractRestProcessorSelfTest {
-    /** Clients. */
-    private static final String ADMIN = "admin";
+    /** */
+    private static final String CLNT_ADMIN = "clnt_admin";
+
+    /** */
     private static final String ALLOWED_CLNT_CACHE = "allowed_clnt_cache";
+
+    /** */
     private static final String UNALLOWED_CLNT_CACHE = "unallowed_clnt_cache";
+
+    /** */
     private static final String ALLOWED_CLNT_SYSTEM = "allowed_clnt_system";
+
+    /** */
     private static final String UNALLOWED_CLNT_SYSTEM = "unallowed_clnt_system";
 
-    /** JSON to java mapper. */
+    /** */
     protected static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
 
-    /** Json field names. */
+    /** */
     private static final String STATUS_FLD = "successStatus";
+
+    /** */
     private static final String ERROR_FLD = "error";
 
-    /** REST Status's. */
+    /** */
     private static final String SUCCESS_STATUS = "0";
+
+    /** */
     private static final String ERROR_STATUS = "3";
 
-    /** Cache names for tests. */
+    /** */
     private static final String CACHE_NAME = "TEST_CACHE";
-    private static final String NOT_DECLARED_CACHE = "NOT_DECLARED_CACHE";
 
-    /** Empty permission. */
+    /** */
+    private static final String UNDECLARED_CACHE = "UNDECLARED_CACHE";
+
+    /** */
     private static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
 
-    /** REST port. */
+    /** */
     private static final int DFLT_REST_PORT = 8091;
 
-    /** REST url. */
+    /** */
     private static final String REST_URL ="http://" + LOC_HOST +":" + DFLT_REST_PORT + "/ignite?";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TestSecurityData[] clientData = new TestSecurityData[] {
-            new TestSecurityData(ADMIN,
+            new TestSecurityData(CLNT_ADMIN,
                 SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                     .appendSystemPermissions(ADMIN_CACHE)
                     .build()
@@ -128,15 +142,15 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
     @Test
     public void testGetOrCreateWithAdminPerms() throws Exception {
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ADMIN, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
+            jsonField(execute(CLNT_ADMIN, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ADMIN, NOT_DECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
+            jsonField(execute(CLNT_ADMIN, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
@@ -144,21 +158,21 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
     public void testGetOrCreateWithCachePermission() throws Exception {
         checkFailWithError(execute(UNALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
-        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
+        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
             jsonField(execute(ALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
 
-        checkFailWithError(execute(ALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
+        checkFailWithError(execute(ALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
 
         assertNotNull(grid(0).cache(CACHE_NAME));
 
-        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
@@ -166,82 +180,82 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
     public void testGetOrCreateWithSystemPermission() throws Exception {
         checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
-        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
+        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
             jsonField(execute(ALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
+            jsonField(execute(ALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
     @Test
     public void testDestroyCacheWithAdminPerms() throws Exception {
         assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).getOrCreateCache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ADMIN, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
+            jsonField(execute(CLNT_ADMIN, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ADMIN, NOT_DECLARED_CACHE, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
+            jsonField(execute(CLNT_ADMIN, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
     @Test
     public void testDestroyCacheWithCachePermissions() throws Exception {
         assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).getOrCreateCache(UNDECLARED_CACHE));
 
         checkFailWithError(execute(UNALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
-        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
+        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
             jsonField(execute(ALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
 
-        checkFailWithError(execute(ALLOWED_CLNT_CACHE, NOT_DECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
+        checkFailWithError(execute(ALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
 
         assertNull(grid(0).cache(CACHE_NAME));
 
-        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
     @Test
     public void testDestroyCacheWithSystemPermissions() throws Exception {
         assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).getOrCreateCache(UNDECLARED_CACHE));
 
         checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
-        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
+        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
             jsonField(execute(ALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_SYSTEM, NOT_DECLARED_CACHE, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
+            jsonField(execute(ALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(NOT_DECLARED_CACHE));
+        assertNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /**
