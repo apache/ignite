@@ -63,26 +63,26 @@ class KillCommandsTests {
             return 1;
         });
 
-        String[] id = new String[1];
-
-        boolean res = waitForCondition(() -> {
-            for (IgniteEx srv : srvs) {
-                List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
-
-                if (tasks.size() == 1)
-                    id[0] = (String)tasks.get(0).get(0);
-                else
-                    return false;
-            }
-
-            return true;
-        }, TIMEOUT);
-
-        assertTrue(res);
-
-        qryCanceler.accept(id[0]);
-
         try {
+            String[] id = new String[1];
+
+            boolean res = waitForCondition(() -> {
+                for (IgniteEx srv : srvs) {
+                    List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+
+                    if (tasks.size() == 1)
+                        id[0] = (String)tasks.get(0).get(0);
+                    else
+                        return false;
+                }
+
+                return true;
+            }, TIMEOUT);
+
+            assertTrue(res);
+
+            qryCanceler.accept(id[0]);
+
             for (IgniteEx srv : srvs) {
                 res = waitForCondition(() -> {
                     List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
