@@ -166,6 +166,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
     /** File name template for index delta pages. */
     public static final String INDEX_DELTA_NAME = INDEX_FILE_NAME + DELTA_SUFFIX;
 
+    /** Text Reason for checkpoint to start snapshot operation. */
+    public static final String CP_SNAPSHOT_REASON = "Checkpoint started to enforce snapshot operation: %s";
+
+    /** Name prefix for each remote snapshot operation. */
+    public static final String RMT_SNAPSHOT_PREFIX = "snapshot_";
+
     /** Default snapshot directory for loading remote snapshots. */
     public static final String DFLT_SNAPSHOT_WORK_DIRECTORY = "snp";
 
@@ -1153,6 +1159,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
         Map<Integer, Set<Integer>> parts,
         BiConsumer<File, GroupPartitionId> partConsumer
     ) {
+        assert partConsumer != null;
+
         ClusterNode rmtNode = cctx.discovery().node(rmtNodeId);
 
         if (!nodeSupports(rmtNode, PERSISTENCE_CACHE_SNAPSHOT))
@@ -1163,7 +1171,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']'));
         }
 
-        String snpName = "snapshot_" + UUID.randomUUID().toString();
+        String snpName = RMT_SNAPSHOT_PREFIX + UUID.randomUUID().toString();
 
         RemoteSnapshotFuture snpTransFut = new RemoteSnapshotFuture(rmtNodeId, snpName,
             parts.values().stream().mapToInt(Set::size).sum(), partConsumer);
@@ -1519,7 +1527,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
 
         /** {@inheritDoc} */
         @Override public boolean cancel() {
-            if (onCancelled()) {
+            return onCancelled();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+            assert err != null || cancel || stores.isEmpty() : "Not all file storages processed: " + stores;
+
+            rmtSnpReq.compareAndSet(this, null);
+
+            if (err != null || cancel) {
                 // Close non finished file storages.
                 for (Map.Entry<GroupPartitionId, FilePageStore> entry : stores.entrySet()) {
                     FilePageStore store = entry.getValue();
@@ -1533,14 +1550,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter impleme
                 }
             }
 
-            return isCancelled();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-            assert err != null || cancel || stores.isEmpty() : "Not all file storages processed: " + stores;
-
-            rmtSnpReq.compareAndSet(this, null);
+            U.delete(Paths.get(tmpWorkDir.getAbsolutePath(), snpName));
 
             return super.onDone(res, err, cancel);
         }

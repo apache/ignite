@@ -17,33 +17,70 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.file.DirectoryStream;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.*;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -53,26 +90,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.file.DirectoryStream;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.*;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_LOCAL_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_WORK_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.relativeNodePath;
 
 /**
@@ -87,9 +113,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String SNAPSHOT_NAME = "testSnapshot";
-
-    /** */
-    private static final String CP_TEST_SNAPSHOT_REASON = "Checkpoint started to enforce snapshot operation %s";
 
     /** */
     private static final int CACHE_PARTS_COUNT = 8;
@@ -119,34 +142,16 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
 
-    /**
-     * Calculate CRC for all partition files of specified cache.
-     *
-     * @param cacheDir Cache directory to iterate over partition files.
-     * @return The map of [fileName, checksum].
-     * @throws IgniteCheckedException If fails.
-     */
-    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) throws IgniteCheckedException {
-        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
 
-        Map<String, Integer> result = new HashMap<>();
-
-        try {
-            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
-            ) {
-                for (Path path : partFiles)
-                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
-            }
-
-            return result;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException(e);
-        }
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_LOCAL_SNAPSHOT_DIRECTORY, false));
     }
 
-    /** */
+    /**
+     * @throws Exception If fails.
+     */
     @Before
     public void beforeTestSnapshot() throws Exception {
         cleanPersistenceDir();
@@ -154,8 +159,21 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     @After
-    public void afterTestSnapshot() throws Exception {
-        stopAllGrids();
+    public void afterTestSnapshot() {
+        try {
+            for (Ignite ig : G.allGrids()) {
+                File storeWorkDir = ((FilePageStoreManager)((IgniteEx)ig).context()
+                    .cache().context().pageStore()).workDir();
+
+                Path snpTempDir = Paths.get(storeWorkDir.getAbsolutePath(), DFLT_SNAPSHOT_WORK_DIRECTORY);
+
+                assertTrue("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
+                    F.isEmptyDirectory(snpTempDir));
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** {@inheritDoc} */
@@ -169,41 +187,35 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If fails.
      */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
         // Start grid node with data before each test.
-        IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ig = startGridWithCache(defaultCacheCfg, 2048);
 
-        for (int i = CACHE_KEYS_RANGE; i < 2048; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
+        // The following data will be included into checkpoint.
+        for (int i = 2048; i < 4096; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i));
 
-        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 2048; i++)
-                ds.addData(i, new TestOrderItem(i, i));
+        for (int i = 4096; i < 8192; i++) {
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i) {
+                @Override public String toString() {
+                    return "_" + super.toString();
+                }
+            });
         }
 
-        try (IgniteDataStreamer<Integer, TestOrderItem> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < 2048; i++)
-                ds.addData(i, new TestOrderItem(i, i) {
-                    @Override public String toString() {
-                        return "_" + super.toString();
-                    }
-                });
-        }
-        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
+        GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         // Collection of pairs group and appropratate cache partition to be snapshotted.
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx,
             SNAPSHOT_NAME,
-                parts,
-            cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME, parts.keySet()));
+            parts,
+            cctx.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME, parts.keySet()));
 
         snpFut.get();
 
@@ -213,66 +225,98 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .pageStore())
             .cacheWorkDir(defaultCacheCfg);
 
+        // Checkpoint forces on cluster deactivation (currently only single node in cluster),
+        // so we must have the same data in snapshotted partitions and thouse which left
+        // after node stop.
         stopGrid(ig.name());
 
-        // Calculate CRCs
-        final Map<String, Integer> origParts = calculateCRC32Partitions(cacheWorkDir);
-
+        // Calculate CRCs.
+        IgniteConfiguration cfg = ig.context().config();
         String nodePath = relativeNodePath(ig.context().pdsFolderResolver().resolveFolders());
+        File binWorkDir = ((CacheObjectBinaryProcessorImpl)ig.context().cacheObjects())
+            .binaryFileStoreWorkDir(cfg.getWorkDirectory());
+        File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        File snpBinWorkDir = ((CacheObjectBinaryProcessorImpl)ig.context().cacheObjects())
+            .binaryFileStoreWorkDir(cctx.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
+        File snpMarshWorkDir = mappingFileStoreWorkDir(cctx.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());;
 
-        final Map<String, Integer> bakcupCRCs = calculateCRC32Partitions(
-            Paths.get(cctx0.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getPath(), nodePath, cacheDirName(defaultCacheCfg)).toFile()
-        );
+        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
+        final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
+            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(cctx.snapshotMgr()
+                    .snapshotLocalDir(SNAPSHOT_NAME)
+                    .getAbsolutePath(),
+                nodePath,
+                false),
+                cacheDirName(defaultCacheCfg)));
 
-        assertEquals("Partiton must have the same CRC after shapshot and after merge", origParts, bakcupCRCs);
+        assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
+            origPartCRCs, snpPartCRCs);
+        assertEquals("Binary object mappings must be the same for local node and created snapshot",
+            calculateCRC32Partitions(binWorkDir), calculateCRC32Partitions(snpBinWorkDir));
+        assertEquals("Marshaller meta mast be the same for local node and created snapshot",
+            calculateCRC32Partitions(marshWorkDir), calculateCRC32Partitions(snpMarshWorkDir));
 
-        File snpWorkDir = cctx0.snapshotMgr().snapshotTempDir();
+        File snpWorkDir = cctx.snapshotMgr().snapshotTempDir();
 
-        assertEquals("Snapshot working directory must be cleand after usage", 0, snpWorkDir.listFiles().length);
+        assertEquals("Snapshot working directory must be cleaned after usage", 0, snpWorkDir.listFiles().length);
     }
 
     /**
+     * Test that all partitions are copied successfully even after multiple checkpoints occur during
+     * the long copy of cache partition files.
      *
+     * Data consistency checked through a test node started right from snapshot directory and all values
+     * read successes.
+     *
+     * @throws Exception If fails.
      */
     @Test
-    public void testSnapshotLocalPartitionsNextCpStarted() throws Exception {
-        final int value_multiplier = 2;
+    public void testSnapshotLocalPartitionMultiCpWithLoad() throws Exception {
+        int valMultiplier = 2;
         CountDownLatch slowCopy = new CountDownLatch(1);
 
-        IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
-            .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
+        // Start grid node with data before each test.
+        IgniteEx ig = startGrid(0);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
-        IgniteSnapshotManager mgr = ig.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        ig.cluster().baselineAutoAdjustEnabled(false);
+        ig.cluster().state(ClusterState.ACTIVE);
+        GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig.context()
-            .cache()
-            .context()
-            .database();
-
-        File cpDir = dbMgr.checkpointDirectory();
-        File walDir = ((FileWriteAheadLogManager) ig.context().cache().context().wal()).walWorkDir();
-
-        // Change data before backup
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, value_multiplier * i);
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i));
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(mgr,
-            dbMgr,
-            ig.context().cache().context().localNodeId(),
-            SNAPSHOT_NAME,
-                parts,
+        forceCheckpoint(ig);
+
+        AtomicInteger cntr = new AtomicInteger();
+        CountDownLatch ldrLatch = new CountDownLatch(1);
+        IgniteSnapshotManager mgr = cctx.snapshotMgr();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cctx.database();
+
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                U.await(ldrLatch);
+
+                while (!Thread.currentThread().isInterrupted())
+                    ig.cache(DEFAULT_CACHE_NAME).put(cntr.incrementAndGet(),
+                        new TestOrderItem(cntr.incrementAndGet(), cntr.incrementAndGet()));
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                log.warning("Loader has been interrupted", e);
+            }
+        }, 5, "cache-loader-");
+
+        // Register task but not schedule it on the checkpoint.
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(SNAPSHOT_NAME,
+            cctx.localNodeId(),
+            parts,
             new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                 @Override
                 public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
-                        if (pair.getPartitionId() == 0)
-                            U.await(slowCopy);
+                        U.await(slowCopy);
 
                         delegate.sendPart0(part, cacheDirName, pair, length);
                     }
@@ -282,59 +326,92 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                 }
             });
 
+        db.addCheckpointListener(new DbCheckpointListener() {
+            /** {@inheritDoc} */
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                // No-op.
+            }
 
-        dbMgr.forceCheckpoint("snapshot is ready to be created")
-            .futureFor(CheckpointState.MARKER_STORED_TO_DISK)
-            .get();
+            /** {@inheritDoc} */
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                // No-op.
+            }
 
-        // Change data after backup
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, 3 * i);
+            /** {@inheritDoc} */
+            @Override public void onCheckpointBegin(Context ctx) {
+                Map<Integer, Set<Integer>> processed = GridTestUtils.getFieldValue(snpFutTask,
+                    SnapshotFutureTask.class,
+                    "processed");
 
-        // Backup on the next checkpoint must copy page before write it to partition
-        CheckpointProgress cpFut = ig.context()
-            .cache()
-            .context()
-            .database()
-            .forceCheckpoint("second cp");
+                if (!processed.isEmpty())
+                    ldrLatch.countDown();
+            }
+        });
 
-        cpFut.futureFor(CheckpointState.FINISHED).get();
+        try {
+            snpFutTask.start();
 
-        slowCopy.countDown();
+            // Change data before snapshot creation which must be included into it witch corretn value multiplier.
+            for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, valMultiplier * i));
 
-        snpFut.get();
+            // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
+            // due to checkpoint aready running and we need to schedule the next one
+            // right afther current will be completed.
+            cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, SNAPSHOT_NAME));
 
-        // Now can stop the node and check created backups.
+            snpFutTask.awaitStarted();
 
+            db.forceCheckpoint("snapshot is ready to be created")
+                .futureFor(CheckpointState.MARKER_STORED_TO_DISK)
+                .get();
+
+            // Change data after snapshot.
+            for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, 3 * i));
+
+            // Snapshot on the next checkpoint must copy page to delta file before write it to a partition.
+            forceCheckpoint(ig);
+
+            slowCopy.countDown();
+
+            snpFutTask.get();
+        }
+        finally {
+            loadFut.cancel();
+        }
+
+        // Now can stop the node and check created snapshots.
         stopGrid(0);
 
-        IgniteUtils.delete(cpDir);
-        IgniteUtils.delete(walDir);
+        cleanPersistenceDir(ig.name());
 
+        // Start Ignite instance from snapshot directory.
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
             .setWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
 
         IgniteEx ig2 = startGrid(cfg);
 
-        ig2.cluster().active(true);
+        ig2.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
             assertEquals("snapshot data consistency violation [key=" + i + ']',
-                i * value_multiplier, ig2.cache(DEFAULT_CACHE_NAME).get(i));
+                i * valMultiplier, ((TestOrderItem)ig2.cache(DEFAULT_CACHE_NAME).get(i)).value);
         }
     }
 
     /**
-     *
+     * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testSnapshotLocalPartitionNotEnoughSpace() throws Exception {
-        final AtomicInteger throwCntr = new AtomicInteger();
+        String err_msg = "Test exception. Not enough space.";
+        AtomicInteger throwCntr = new AtomicInteger();
 
         IgniteEx ig = startGridWithCache(defaultCacheCfg.setAffinity(new ZeroPartitionAffinityFunction()
             .setPartitions(CACHE_PARTS_COUNT)), CACHE_KEYS_RANGE);
 
-        // Change data after backup
+        // Change data after backup.
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, 2 * i);
 
@@ -350,7 +427,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
                     return new FileIODecorator(fileIo) {
                         @Override public int writeFully(ByteBuffer srcBuf) throws IOException {
                             if (throwCntr.incrementAndGet() == 3)
-                                throw new IOException("Test exception. Not enough space.");
+                                throw new IOException(err_msg);
 
                             return super.writeFully(srcBuf);
                         }
@@ -363,21 +440,24 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
             SNAPSHOT_NAME,
             parts,
             cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME, parts.keySet()));
 
-        snpFut.get();
+        // Check the right exception thrown.
+        GridTestUtils.assertThrowsAnyCause(log,
+            snpFut::get,
+            IOException.class,
+            err_msg);
     }
 
     /**
-     *
+     * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testSnapshotCreateLocalCopyPartitionFail() throws Exception {
+        String err_msg = "Test. Fail to copy partition: ";
         IgniteEx ig = startGridWithCache(defaultCacheCfg, CACHE_KEYS_RANGE);
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
@@ -385,74 +465,133 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
 
-        IgniteInternalFuture<?> fut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-            (GridCacheDatabaseSharedManager)cctx0.database(),
-            cctx0.localNodeId(),
+        IgniteInternalFuture<?> fut = startLocalSnapshotTask(cctx0,
             SNAPSHOT_NAME,
             parts,
             new DeleagateSnapshotSender(log, cctx0.snapshotMgr().snapshotExecutorService(),
                 cctx0.snapshotMgr().localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
-                        throw new IgniteException("Test. Fail to copy partition: " + pair);
+                        throw new IgniteException(err_msg + pair);
 
                     delegate.sendPart0(part, cacheDirName, pair, length);
                 }
             });
 
-        fut.get();
+        GridTestUtils.assertThrowsAnyCause(log,
+            fut::get,
+            IgniteException.class,
+            err_msg);
     }
 
     /**
      * @throws Exception If fails.
      */
     @Test
-    public void testSnapshotRemotePartitions() throws Exception {
+    public void testSnapshotRemotePartitionsWithLoad() throws Exception {
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        AtomicInteger cntr = new AtomicInteger();
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
+            ig0.cache(DEFAULT_CACHE_NAME).put(i, cntr.incrementAndGet());
 
-        CheckpointProgress cpFut = ig0.context()
-            .cache()
-            .context()
-            .database()
-            .forceCheckpoint("the next one");
+        GridCacheSharedContext<?, ?> cctx1 = grid(1).context().cache().context();
+        GridCacheDatabaseSharedManager db1 = (GridCacheDatabaseSharedManager)cctx1.database();
 
-        cpFut.futureFor(CheckpointState.FINISHED).get();
+        forceCheckpoint();
 
-        IgniteSnapshotManager mgr0 = ig0.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        Map<String, Integer> rmtPartCRCs = new HashMap<>();
+        CountDownLatch cancelLatch = new CountDownLatch(1);
 
-        final CountDownLatch cancelLatch = new CountDownLatch(1);
+        db1.addCheckpointListener(new DbCheckpointListener() {
+            /** {@inheritDoc} */
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                //No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onCheckpointBegin(Context ctx) {
+                SnapshotFutureTask task = cctx1.snapshotMgr().lastScheduledRemoteSnapshotTask(grid(0).localNode().id());
+
+                // Skip first remote snapshot creation due to it will be cancelled.
+                if (task == null || cancelLatch.getCount() > 0)
+                    return;
+
+                Map<Integer, Set<Integer>> processed = GridTestUtils.getFieldValue(task,
+                    SnapshotFutureTask.class,
+                    "processed");
+
+                if (!processed.isEmpty()) {
+                    assert rmtPartCRCs.isEmpty();
+
+                    // Calculate actual parititon CRCs when the checkpoint will be finished on this node.
+                    ctx.finishedStateFut().listen(f -> {
+                        File cacheWorkDir = ((FilePageStoreManager)grid(1).context().cache().context().pageStore())
+                            .cacheWorkDir(defaultCacheCfg);
+
+                        rmtPartCRCs.putAll(calculateCRC32Partitions(cacheWorkDir));
+                    });
+                }
+            }
+        });
+
+        IgniteSnapshotManager mgr0 = ig0.context().cache().context().snapshotMgr();
 
         UUID rmtNodeId = grid(1).localNode().id();
+        Map<String, Integer> snpPartCRCs = new HashMap<>();
+        Map<Integer, Set<Integer>> parts = owningParts(ig0,
+            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
+            rmtNodeId);
 
-        // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
-            new BiConsumer<File, GroupPartitionId>() {
-                @Override public void accept(File file, GroupPartitionId gprPartId) {
-                    log.info("Snapshot partition received successfully [rmtNodeId=" + rmtNodeId +
-                        ", part=" + file.getAbsolutePath() + ", gprPartId=" + gprPartId + ']');
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!Thread.currentThread().isInterrupted())
+                ig0.cache(DEFAULT_CACHE_NAME).put(cntr.incrementAndGet(), cntr.incrementAndGet());
+        }, 5, "cache-loader-");
 
-                    cancelLatch.countDown();
-                }
-            });
+        try {
+            // Snapshot must be taken on node1 and transmitted to node0.
+            IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(rmtNodeId,
+                parts,
+                new BiConsumer<File, GroupPartitionId>() {
+                    @Override public void accept(File file, GroupPartitionId gprPartId) {
+                        log.info("Snapshot partition received successfully [rmtNodeId=" + rmtNodeId +
+                            ", part=" + file.getAbsolutePath() + ", gprPartId=" + gprPartId + ']');
 
-        cancelLatch.await();
+                        cancelLatch.countDown();
+                    }
+                });
 
-        fut.cancel();
+            cancelLatch.await();
 
-        IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
-            (part, grp) -> {});
+            fut.cancel();
 
-        fut2.get();
+            IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
+                parts,
+                (part, pair) -> {
+                    try {
+                        snpPartCRCs.put(part.getName(), FastCrc.calcCrc(part));
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+                });
+
+            fut2.get();
+        }
+        finally {
+            loadFut.cancel();
+        }
+
+        assertEquals("Partitions from remote node must have the same CRCs as thouse which have been received",
+            rmtPartCRCs, snpPartCRCs);
     }
 
     /**
@@ -462,43 +601,42 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     public void testSnapshotRemoteOnBothNodes() throws Exception {
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        CheckpointProgress cpFut = ig0.context()
-            .cache()
-            .context()
-            .database()
-            .forceCheckpoint("the next one");
+        forceCheckpoint(ig0);
 
-        cpFut.futureFor(CheckpointState.FINISHED).get();
-
-        IgniteSnapshotManager mgr0 = ig0.context()
-            .cache()
-            .context()
-            .snapshotMgr();
-
-        IgniteSnapshotManager mgr1 = grid(1).context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        IgniteSnapshotManager mgr0 = ig0.context().cache().context().snapshotMgr();
+        IgniteSnapshotManager mgr1 = grid(1).context().cache().context().snapshotMgr();
 
         UUID node0 = grid(0).localNode().id();
         UUID node1 = grid(1).localNode().id();
 
-        // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> futFrom1To0 = mgr0.createRemoteSnapshot(node1,
-            owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node1),
-            (part, grp) -> {});
+        Map<Integer, Set<Integer>> fromNode1 = owningParts(ig0,
+            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
+            node1);
 
-        IgniteInternalFuture<?> futFrom0To1 = mgr1.createRemoteSnapshot(node0,
-            owningParts(grid(1), new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), node0),
-            (part, grp) -> {});
+        Map<Integer, Set<Integer>> fromNode0 = owningParts(grid(1),
+            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
+            node0);
+
+        // Snapshot must be taken on node1 and transmitted to node0.
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.createRemoteSnapshot(node1, fromNode1,
+            (part, pair) -> assertTrue("Received partition has not been requested", fromNode1.get(pair.getGroupId())
+                    .remove(pair.getPartitionId())));
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.createRemoteSnapshot(node0, fromNode0,
+            (part, pair) -> assertTrue("Received partition has not been requested", fromNode0.get(pair.getGroupId())
+                .remove(pair.getPartitionId())));
 
         futFrom0To1.get();
         futFrom1To0.get();
+
+        assertTrue("Not all of partitions have been received: " + fromNode1,
+            fromNode1.get(CU.cacheId(DEFAULT_CACHE_NAME)).isEmpty());
+        assertTrue("Not all of partitions have been received: " + fromNode0,
+            fromNode0.get(CU.cacheId(DEFAULT_CACHE_NAME)).isEmpty());
     }
 
     /**
@@ -515,17 +653,22 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         CountDownLatch hold = new CountDownLatch(1);
 
-        ((GridCacheDatabaseSharedManager)ig1.context()
-            .cache()
-            .context()
-            .database())
-            .waitForCheckpoint("Snapshot before request", f -> {
-                try {
+        ((GridCacheDatabaseSharedManager)ig1.context().cache().context().database())
+            .addCheckpointListener(new DbCheckpointListener() {
+                /** {@inheritDoc} */
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     // Listener will be exectuted inside the checkpoint thead.
                     U.await(hold);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+
+                /** {@inheritDoc} */
+                @Override public void onMarkCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onCheckpointBegin(Context ctx) {
+                    // No-op.
                 }
             });
 
@@ -543,7 +686,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 IgniteInternalFuture<Boolean> snpFut = ig1.context()
                     .cache()
@@ -558,7 +701,7 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, 5_000L);
+        }, 5_000L));
 
         stopGrid(0);
 
@@ -585,33 +728,21 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
     public void testRemoteOutdatedSnapshot() throws Exception {
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
 
         awaitPartitionMapExchange();
 
-        for (int i = 0; i < 2; i++) {
-            grid(i).
-                context()
-                .cache()
-                .context()
-                .database()
-                .forceCheckpoint("the next one")
-                .futureFor(CheckpointState.FINISHED)
-                .get();
-        }
+        forceCheckpoint();
 
         TestRecordingCommunicationSpi.spi(ig0)
             .blockMessages((node, msg) -> msg instanceof SnapshotRequestMessage);
 
         UUID rmtNodeId = grid(1).localNode().id();
 
-        IgniteSnapshotManager mgr0 = ig0.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        IgniteSnapshotManager mgr0 = ig0.context().cache().context().snapshotMgr();
 
         // Snapshot must be taken on node1 and transmitted to node0.
         IgniteInternalFuture<?> snpFut = mgr0.createRemoteSnapshot(rmtNodeId,
@@ -649,32 +780,26 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
-        IgniteSnapshotManager mgr = ig.context()
-            .cache()
-            .context()
-            .snapshotMgr();
+        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
+        IgniteSnapshotManager mgr = cctx0.snapshotMgr();
 
         CountDownLatch cpLatch = new CountDownLatch(1);
 
-        GridCacheSharedContext<?, ?> cctx0 = ig.context().cache().context();
-
-        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0.snapshotMgr(),
-                (GridCacheDatabaseSharedManager) cctx0.database(),
-                cctx0.localNodeId(),
-                SNAPSHOT_NAME,
-                parts,
-                new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
-                    @Override
-                    public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                        try {
-                            U.await(cpLatch);
+        IgniteInternalFuture<?> snpFut = startLocalSnapshotTask(cctx0,
+            SNAPSHOT_NAME,
+            parts,
+            new DeleagateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME, parts.keySet())) {
+                @Override
+                public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    try {
+                        U.await(cpLatch);
 
                             delegate.sendPart0(part, cacheDirName, pair, length);
                         } catch (IgniteInterruptedCheckedException e) {
@@ -771,26 +896,50 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
      * @param snpSndr Sender which used for snapshot sub-task processing.
      * @return Future which will be completed when snapshot is done.
      */
-    private static IgniteInternalFuture<Boolean> startLocalSnapshotTask(
-        IgniteSnapshotManager snpMgr,
-        GridCacheDatabaseSharedManager dbMgr,
-        UUID srcNodeId,
+    private static SnapshotFutureTask startLocalSnapshotTask(
+        GridCacheSharedContext<?, ?> cctx,
         String snpName,
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException{
-        SnapshotFutureTask snpFutTask = snpMgr.registerSnapshotTask(snpName, srcNodeId, parts, snpSndr);
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
 
         snpFutTask.start();
 
         // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
         // due to checkpoint aready running and we need to schedule the next one
         // right afther current will be completed.
-        dbMgr.forceCheckpoint(String.format(CP_TEST_SNAPSHOT_REASON, snpName));
+        cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
 
         snpFutTask.awaitStarted();
 
         return snpFutTask;
+    }
+
+    /**
+     * Calculate CRC for all partition files of specified cache.
+     *
+     * @param cacheDir Cache directory to iterate over partition files.
+     * @return The map of [fileName, checksum].
+     */
+    private static Map<String, Integer> calculateCRC32Partitions(File cacheDir) {
+        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
+
+        Map<String, Integer> result = new HashMap<>();
+
+        try {
+            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+                p -> p.toFile().getName().startsWith(PART_FILE_PREFIX) && p.toFile().getName().endsWith(FILE_SUFFIX))
+            ) {
+                for (Path path : partFiles)
+                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+            }
+
+            return result;
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -816,43 +965,24 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         IgniteEx ig = startGrids(cnt);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < range; i++)
             ig.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-        GridCompoundFuture<?, ?> cpFuts = new GridCompoundFuture<>();
-
-        for (int i = 0; i < cnt; i++) {
-            GridFutureAdapter cpFut = grid(i).context()
-                .cache()
-                .context()
-                .database()
-                .forceCheckpoint("the next one")
-                .futureFor(CheckpointState.FINISHED);
-
-            cpFuts.add(cpFut);
-        }
-
-        cpFuts.markInitialized();
-
-        cpFuts.get();
+        forceCheckpoint(ig);
 
         return ig;
     }
 
-    /**
-     *
-     */
+    /** */
     private static class ZeroPartitionAffinityFunction extends RendezvousAffinityFunction {
         @Override public int partition(Object key) {
             return 0;
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class DeleagateSnapshotSender extends SnapshotSender {
         /** Delegate call to. */
         protected final SnapshotSender delegate;
@@ -902,10 +1032,11 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class TestOrderItem implements Serializable {
+        /** Serial version. */
+        private static final long serialVersionUID = 0L;
+
         /** Order key. */
         private final int key;
 

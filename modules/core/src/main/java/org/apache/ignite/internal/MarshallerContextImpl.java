@@ -566,7 +566,7 @@ public class MarshallerContextImpl implements MarshallerContext {
      * @param igniteWorkDir Base ignite working directory.
      * @return Resolved directory.
      */
-    private static File mappingFileStoreWorkDir(String igniteWorkDir) {
+    public static File mappingFileStoreWorkDir(String igniteWorkDir) {
         try {
             return U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
         }

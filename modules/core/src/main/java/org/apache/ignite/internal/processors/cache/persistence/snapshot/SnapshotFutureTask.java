@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -247,36 +248,29 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         log.error("Exception occurred during snapshot operation", th);
     }
 
-    /**
-     * Close snapshot operation and release resources being used.
-     */
-    private void close() {
-        if (isDone())
-            return;
+    /** {@inheritDoc} */
+    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+        for (PageStoreSerialWriter writer : partDeltaWriters.values())
+            U.closeQuiet(writer);
 
-        Throwable err0 = err.get();
+        snpSndr.close(err);
 
-        if (onDone(true, err0)) {
-            for (PageStoreSerialWriter writer : partDeltaWriters.values())
-                U.closeQuiet(writer);
+        if (tmpSnpDir != null)
+            U.delete(tmpSnpDir);
 
-            snpSndr.close(err0);
-
-            if (tmpSnpDir != null)
-                U.delete(tmpSnpDir);
-
-            // Delete snapshot directory if no other files exists.
-            try {
-                if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || err0 != null)
-                    U.delete(tmpTaskWorkDir.toPath());
-            }
-            catch (IOException e) {
-                log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
-            }
-
-            if (err0 != null)
-                startedFut.onDone(err0);
+        // Delete snapshot directory if no other files exists.
+        try {
+            if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || err != null)
+                U.delete(tmpTaskWorkDir.toPath());
         }
+        catch (IOException e) {
+            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
+        }
+
+        if (err != null)
+            startedFut.onDone(err);
+
+        return super.onDone(res, err);
     }
 
     /**
@@ -454,12 +448,16 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        if (stopping())
+        if (stopping()) {
             return;
+        }
 
         // Snapshot task is now started since checkpoint writelock released.
-        if (!startedFut.onDone())
+        if (!startedFut.onDone()) {
             return;
+        }
+
+        assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();
@@ -567,7 +565,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
             .whenComplete((res, t) -> {
-                assert t == null : "Excepction must never be thrown since a wrapper is used " +
+                assert t == null : "Exception must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
                 closeAsync();
@@ -596,16 +594,20 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      * @return Future which will be completed when operations truhly stopped.
      */
     public synchronized CompletableFuture<Void> closeAsync() {
-        if (closeFut == null)
-            closeFut = CompletableFuture.runAsync(this::close, cctx.kernalContext().getSystemExecutorService());
+        if (closeFut == null) {
+            Throwable err0 = err.get();
+
+            closeFut = CompletableFuture.runAsync(() -> onDone(true, err0),
+                cctx.kernalContext().getSystemExecutorService());
+        }
 
         return closeFut;
     }
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
-        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process: "
-            + snpName));
+        acceptException(new IgniteCheckedException("Snapshot operation has been cancelled by external process " +
+            "[snpName=" + snpName + ']'));
 
         try {
             closeAsync().get();
@@ -647,6 +649,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      */
     private class PageStoreSerialWriter implements PageWriteListener, Closeable {
         /** Page store to which current writer is related to. */
+        @GridToStringExclude
         private final PageStore store;
 
         /** Partition delta file to store delta pages into. */
@@ -656,6 +659,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
         /** {@code true} if need the original page from PageStore instead of given buffer. */
+        @GridToStringExclude
         private final BooleanSupplier checkpointComplete = () ->
             cpEndFut.isDone() && !cpEndFut.isCompletedExceptionally();
 
@@ -666,6 +670,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         private final AtomicBitSet writtenPages;
 
         /** IO over the underlying delta file. */
+        @GridToStringExclude
         private volatile FileIO deltaFileIo;
 
         /** {@code true} if partition file has been copied to external resource. */
@@ -733,13 +738,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
 
+            int pageIdx = -1;
+
             lock.readLock().lock();
 
             try {
                 if (stopped())
                     return;
 
-                int pageIdx = PageIdUtils.pageIndex(pageId);
+                pageIdx = PageIdUtils.pageIndex(pageId);
 
                 if (checkpointComplete.getAsBoolean()) {
                     // Page already written.
@@ -770,7 +777,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 }
             }
             catch (Throwable ex) {
-                acceptException(ex);
+                acceptException(new IgniteCheckedException("Error during writing pages to delta partition file " +
+                    "[pageIdx=" + pageIdx + ", writer=" + this + ']', ex));
             }
             finally {
                 lock.readLock().unlock();
@@ -817,6 +825,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 lock.writeLock().unlock();
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PageStoreSerialWriter.class, this);
+        }
     }
 
     /**
@@ -844,7 +857,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
          * {@code false} if bit changed by another thread or out of range.
          */
         public boolean touch(long off) {
-            if (off > size)
+            if (off >= size)
                 return false;
 
             int bit = 1 << off;
@@ -859,6 +872,29 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 if (arr.compareAndSet(bucket, cur, val))
                     return true;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("AtomicBitSet[arr=[");
+
+            int iMax = arr.length() - 1;
+
+            for (int idx = 0; ; idx++) {
+                sb.append(Integer.toBinaryString(arr.get(idx)));
+
+                if (idx == iMax) {
+                    return sb.append(']')
+                        .append(", size=")
+                        .append(size)
+                        .append(']')
+                        .toString();
+                }
+
+                sb.append(',').append(' ');
             }
         }
     }
