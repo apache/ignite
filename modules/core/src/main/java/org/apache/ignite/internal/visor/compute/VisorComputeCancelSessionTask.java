@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,7 +28,6 @@ import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -43,8 +38,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorComputeCancelSessionTask
-    extends VisorOneNodeTask<VisorComputeCancelSessionTaskArg, Void> {
+public class VisorComputeCancelSessionTask extends VisorOneNodeTask<VisorComputeCancelSessionTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,15 +51,6 @@ public class VisorComputeCancelSessionTask
     @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         // No-op, just awaiting all jobs done.
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorComputeCancelSessionTaskArg> arg) {
-        List<UUID> collect = ignite.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
-
-        System.out.println("collect = " + collect);
-
-        return arg.getNodes();
     }
 
     /**
