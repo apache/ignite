@@ -58,9 +58,9 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         });
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownComputeTask() throws Exception {
+    public void testCancelUnknownComputeTask() {
         int res = execute("--kill", "compute", IgniteUuid.randomUuid().toString());
 
         assertEquals(EXIT_CODE_OK, res);

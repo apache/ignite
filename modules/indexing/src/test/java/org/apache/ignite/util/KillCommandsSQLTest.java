@@ -70,9 +70,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownComputeTask() throws Exception {
+    public void testCancelUnknownComputeTask() {
         execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
     }
 
