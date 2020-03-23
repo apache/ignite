@@ -135,6 +135,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Partition map exchange metrics prefix. */
     public static final String PME_METRICS = "pme";
 
+    /** Rebalance metrics prefix. */
+    public static final String REBALANCE_METRICS = "rebalance";
+
     /** Transaction metrics prefix. */
     public static final String TX_METRICS = "tx";
 
@@ -176,6 +179,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Histogram of blocking PME durations metric name. */
     public static final String PME_OPS_BLOCKED_DURATION_HISTOGRAM = "CacheOperationsBlockedDurationHistogram";
+
+    /** Whether cluster is in fully rebalanced state metric name. */
+    public static final String CLUSTER_REBALANCED = "ClusterInRebalancedState";
 
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
@@ -265,6 +271,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
+
+        MetricRegistry rebalanceReg = registry(REBALANCE_METRICS);
+
+        rebalanceReg.booleanMetric(CLUSTER_REBALANCED, "True if the cluster has achieved fully rebalanced state.");
     }
 
     /** {@inheritDoc} */

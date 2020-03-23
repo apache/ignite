@@ -112,6 +112,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -169,9 +170,11 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_REBALANCED;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCE_METRICS;
 
 /**
  * Partition exchange manager.
@@ -283,6 +286,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Histogram of blocking PME durations. */
     private volatile HistogramMetricImpl blockingDurationHistogram;
+
+    /** Whether cluster is in rebalanced state metric. */
+    private volatile BooleanMetricImpl rebalancedMetric;
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
@@ -490,6 +496,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+
+        MetricRegistry rebalanceReg = cctx.kernalContext().metric().registry(REBALANCE_METRICS);
+
+        rebalancedMetric = rebalanceReg.findMetric(CLUSTER_REBALANCED);
     }
 
     /**
@@ -2856,6 +2866,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** @return Histogram of blocking PME durations metric. */
     public HistogramMetricImpl blockingDurationHistogram() {
         return blockingDurationHistogram;
+    }
+
+    /** @return Whether cluster is in rebalanced state metric. */
+    public BooleanMetricImpl clusterInRebalancedStateMetric() {
+        return rebalancedMetric;
     }
 
     /**
