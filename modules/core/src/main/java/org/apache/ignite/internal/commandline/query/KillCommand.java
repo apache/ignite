@@ -35,7 +35,6 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
-import static org.apache.ignite.internal.commandline.query.KillSubcommand.of;
 
 /**
  * control.sh kill command.
@@ -77,10 +76,14 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        KillSubcommand cmd = of(argIter.nextArg("Expected type of resource to kill."));
+        KillSubcommand cmd;
 
-        if (cmd == null)
+        try {
+            cmd = KillSubcommand.valueOf(argIter.nextArg("Expected type of resource to kill.").toUpperCase());
+        }
+        catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Expected type of resource to kill.");
+        }
 
         switch (cmd) {
             case COMPUTE:

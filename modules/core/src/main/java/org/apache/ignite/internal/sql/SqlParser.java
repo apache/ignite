@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
-import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE_TASK;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -292,7 +292,7 @@ public class SqlParser {
                 case QUERY:
                     return new SqlKillQueryCommand().parse(lex);
 
-                case COMPUTE_TASK:
+                case COMPUTE:
                     return new SqlKillComputeTaskCommand().parse(lex);
             }
         }

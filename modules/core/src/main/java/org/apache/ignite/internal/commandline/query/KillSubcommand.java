@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.query;
 
 import org.apache.ignite.mxbean.ComputeMXBean;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Subcommands of the kill command.
@@ -28,31 +27,5 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum KillSubcommand {
     /** Kill compute task. */
-    COMPUTE("compute");
-
-    /** Subcommand name. */
-    private final String name;
-
-    /** @param name Encryption subcommand name. */
-    KillSubcommand(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @param text Command text (case insensitive).
-     * @return Command for the text. {@code Null} if there is no such command.
-     */
-    @Nullable public static KillSubcommand of(String text) {
-        for (KillSubcommand cmd : KillSubcommand.values()) {
-            if (cmd.name.equalsIgnoreCase(text))
-                return cmd;
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return name;
-    }
+    COMPUTE
 }

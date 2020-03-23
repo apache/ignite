@@ -28,6 +28,8 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
+import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 
 /** Tests cancel of user created entities via SQL. */
@@ -36,7 +38,7 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public static final int  NODES_CNT = 3;
 
     /** */
-    public static final String KILL_COMPUTE_QRY = "KILL COMPUTE_TASK";
+    public static final String KILL_COMPUTE_QRY = KILL + " " + COMPUTE;
 
     /** */
     private static List<IgniteEx> srvs;
