@@ -94,6 +94,8 @@ public class VisorComputeCancelSessionTask
                 @Override public Void apply(IgniteUuid uuid) {
                     IgniteUuid sesId = arg.getSessionId();
 
+                    ignite.context().job().cancelJob(sesId, null, false);
+
                     IgniteCompute compute = ignite.compute(ignite.cluster().forLocal());
 
                     Map<IgniteUuid, ComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
