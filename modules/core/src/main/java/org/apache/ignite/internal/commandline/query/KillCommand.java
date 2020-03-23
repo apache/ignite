@@ -25,8 +25,8 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionOnAllNodesTask;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionOnAllNodesTaskArg;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
@@ -86,10 +86,10 @@ public class KillCommand implements Command<Object> {
 
         switch (cmd) {
             case COMPUTE:
-                taskArgs = new VisorComputeCancelSessionOnAllNodesTaskArg(
+                taskArgs = new VisorComputeCancelSessionTaskArg(
                     IgniteUuid.fromString(argIter.nextArg("Expected compute task id.")));
 
-                taskName = VisorComputeCancelSessionOnAllNodesTask.class.getName();
+                taskName = VisorComputeCancelSessionTask.class.getName();
 
                 break;
 

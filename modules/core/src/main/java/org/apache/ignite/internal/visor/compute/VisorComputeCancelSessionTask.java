@@ -43,13 +43,13 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorComputeCancelSessionOnAllNodesTask
-    extends VisorOneNodeTask<VisorComputeCancelSessionOnAllNodesTaskArg, Void> {
+public class VisorComputeCancelSessionTask
+    extends VisorOneNodeTask<VisorComputeCancelSessionTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorComputeCancelSessionJob job(VisorComputeCancelSessionOnAllNodesTaskArg arg) {
+    @Override protected VisorComputeCancelSessionJob job(VisorComputeCancelSessionTaskArg arg) {
         return new VisorComputeCancelSessionJob(arg, debug);
     }
 
@@ -60,7 +60,7 @@ public class VisorComputeCancelSessionOnAllNodesTask
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorComputeCancelSessionOnAllNodesTaskArg> arg) {
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorComputeCancelSessionTaskArg> arg) {
         List<UUID> collect = ignite.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
 
         System.out.println("collect = " + collect);
@@ -71,7 +71,7 @@ public class VisorComputeCancelSessionOnAllNodesTask
     /**
      * Job that cancel tasks.
      */
-    private static class VisorComputeCancelSessionJob extends VisorJob<VisorComputeCancelSessionOnAllNodesTaskArg, Void> {
+    private static class VisorComputeCancelSessionJob extends VisorJob<VisorComputeCancelSessionTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -79,12 +79,12 @@ public class VisorComputeCancelSessionOnAllNodesTask
          * @param arg Map with task sessions IDs to cancel.
          * @param debug Debug flag.
          */
-        private VisorComputeCancelSessionJob(VisorComputeCancelSessionOnAllNodesTaskArg arg, boolean debug) {
+        private VisorComputeCancelSessionJob(VisorComputeCancelSessionTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorComputeCancelSessionOnAllNodesTaskArg arg) {
+        @Override protected Void run(VisorComputeCancelSessionTaskArg arg) {
             ignite.compute(ignite.cluster()).broadcast(new IgniteClosure<IgniteUuid, Void>() {
                 /** Auto-injected grid instance. */
                 @IgniteInstanceResource

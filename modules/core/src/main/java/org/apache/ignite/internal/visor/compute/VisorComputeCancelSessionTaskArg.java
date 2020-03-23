@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteUuid;
 /**
  * Arguments for task {@link VisorComputeCancelSessionsTask}
  */
-public class VisorComputeCancelSessionOnAllNodesTaskArg extends VisorDataTransferObject {
+public class VisorComputeCancelSessionTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,14 +38,14 @@ public class VisorComputeCancelSessionOnAllNodesTaskArg extends VisorDataTransfe
     /**
      * Default constructor.
      */
-    public VisorComputeCancelSessionOnAllNodesTaskArg() {
+    public VisorComputeCancelSessionTaskArg() {
         // No-op.
     }
 
     /**
      * @param sesId Session IDs to cancel.
      */
-    public VisorComputeCancelSessionOnAllNodesTaskArg(IgniteUuid sesId) {
+    public VisorComputeCancelSessionTaskArg(IgniteUuid sesId) {
         this.sesId = sesId;
     }
 
@@ -68,6 +68,6 @@ public class VisorComputeCancelSessionOnAllNodesTaskArg extends VisorDataTransfe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorComputeCancelSessionOnAllNodesTaskArg.class, this);
+        return S.toString(VisorComputeCancelSessionTaskArg.class, this);
     }
 }
