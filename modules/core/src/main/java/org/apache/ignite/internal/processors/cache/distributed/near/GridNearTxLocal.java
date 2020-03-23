@@ -3123,7 +3123,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             });
         }
         else if (cacheCtx.isColocated()) {
-            if (readRepair) {
+            if (readRepair || optimistic()) {
                 return new GridNearReadRepairCheckOnlyFuture(
                     cacheCtx,
                     keys,

@@ -37,16 +37,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- *
+ * Test for optimistic tx with read/through cache.
  */
-public class ReplicatedOptimisticTxTest extends GridCommonAbstractTest {
-    /** */
+public class GridCacheReplicatedOptimisticTxTest extends GridCommonAbstractTest {
+    /** Shared read/write-through store. */
     private static Map<Object, Object> storeMap = new ConcurrentHashMap<>();
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -64,6 +65,7 @@ public class ReplicatedOptimisticTxTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** Check optimistic transaction synchronizes value version. */
     @Test
     public void testReplicatedOptimistic() throws Exception {
         startGrids(5);
@@ -79,10 +81,11 @@ public class ReplicatedOptimisticTxTest extends GridCommonAbstractTest {
 
             assertEquals(1, cache.get(key));
         }
+
         {
             IgniteCache<Object, Object> cache = grid(1).cache("tx");
 
-            try (Transaction tx = grid(1).transactions().txStart(PESSIMISTIC, SERIALIZABLE)) {
+            try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                 cache.get(key);
 
                 cache.put(key, 2);
@@ -91,24 +94,28 @@ public class ReplicatedOptimisticTxTest extends GridCommonAbstractTest {
             }
 
             assertEquals(2, grid(1).cache("tx").get(key));
+
             assertEquals(2, grid(0).cache("tx").get(key));
         }
     }
 
+    /** Shared cache read/write-through store factory. */
     private static class TestStoreFactory implements Factory<CacheStore<Object, Object>> {
+        /** {@inheritDoc} */
         @Override public CacheStore<Object, Object> create() {
             return new CacheStoreAdapter<Object, Object>() {
+                /** {@inheritDoc} */
                 @Override public Object load(Object key) throws CacheLoaderException {
                     return storeMap.get(key);
                 }
 
-                @Override
-                public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
+                /** {@inheritDoc} */
+                @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
                     storeMap.put(entry.getKey(), entry.getValue());
                 }
 
-                @Override
-                public void delete(Object key) throws CacheWriterException {
+                /** {@inheritDoc} */
+                @Override public void delete(Object key) throws CacheWriterException {
                     storeMap.remove(key);
                 }
             };
