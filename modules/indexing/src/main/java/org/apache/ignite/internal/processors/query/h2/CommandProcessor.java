@@ -494,10 +494,10 @@ public class CommandProcessor {
     /**
      * Process kill compute task command.
      *
-     * @param command Command.
+     * @param cmd Command.
      */
-    private void processKillComputeTaskCommand(SqlKillComputeTaskCommand command) {
-        new ComputeMXBeanImpl(ctx).cancel(command.getSessionId());
+    private void processKillComputeTaskCommand(SqlKillComputeTaskCommand cmd) {
+        new ComputeMXBeanImpl(ctx).cancel(cmd.getSessionId());
     }
 
     /**

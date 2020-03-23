@@ -55,7 +55,7 @@ public class KillCommand implements Command<Object> {
     private KillSubcommand cmd;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             return executeTaskByNameOnNode(
                 client,
@@ -66,8 +66,8 @@ public class KillCommand implements Command<Object> {
             );
         }
         catch (Throwable e) {
-            logger.severe("Failed to perform operation.");
-            logger.severe(CommandLogger.errorMessage(e));
+            log.severe("Failed to perform operation.");
+            log.severe(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -97,13 +97,12 @@ public class KillCommand implements Command<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(Logger log) {
         Map<String, String> params = new HashMap<>();
 
-        params.clear();
         params.put("session_id", "Session identifier.");
 
-        Command.usage(logger, "Kill compute task by session id:", KILL, params, COMPUTE.toString(),
+        Command.usage(log, "Kill compute task by session id:", KILL, params, COMPUTE.toString(),
             "session_id");
     }
 

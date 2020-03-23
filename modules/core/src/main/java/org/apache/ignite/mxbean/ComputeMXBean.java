@@ -27,12 +27,12 @@ public interface ComputeMXBean {
     /**
      * Kills compute task by the session idenitifier.
      *
-     * @param sessionId Session id.
+     * @param sesId Session id.
      * @see ComputeTaskView#sessionId()
      * @see ComputeJobView#sessionId()
      */
     @MXBeanDescription("Kills compute task by the session idenitifier.")
     public void cancel(
-        @MXBeanParameter(name = "sessionId", description = "Session identifier.") String sessionId
+        @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
     );
 }

@@ -42,10 +42,10 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(String sessionId) {
-        A.notNull(sessionId, "sessionId");
+    @Override public void cancel(String sesId) {
+        A.notNull(sesId, "sessionId");
 
-        cancel(IgniteUuid.fromString(sessionId));
+        cancel(IgniteUuid.fromString(sesId));
     }
 
     /**

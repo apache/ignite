@@ -34,13 +34,13 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
  */
 public class SqlKillComputeTaskCommand implements SqlCommand {
     /** Session id. */
-    private IgniteUuid sessionId;
+    private IgniteUuid sesId;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift()) {
             if (lex.tokenType() == SqlLexerTokenType.STRING) {
-                sessionId = IgniteUuid.fromString(lex.token());
+                sesId = IgniteUuid.fromString(lex.token());
 
                 return this;
             }
@@ -51,7 +51,7 @@ public class SqlKillComputeTaskCommand implements SqlCommand {
 
     /** @return Session id. */
     public IgniteUuid getSessionId() {
-        return sessionId;
+        return sesId;
     }
 
     /** {@inheritDoc} */
