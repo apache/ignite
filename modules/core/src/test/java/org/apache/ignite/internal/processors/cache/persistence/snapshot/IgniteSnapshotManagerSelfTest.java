@@ -62,6 +62,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
@@ -88,6 +89,7 @@ import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_LOCAL_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -218,10 +220,16 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         stopGrid(ig.name());
 
         // Calculate CRCs.
-        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
-
+        IgniteConfiguration cfg = ig.context().config();
         String nodePath = relativeNodePath(ig.context().pdsFolderResolver().resolveFolders());
+        File binWorkDir = ((CacheObjectBinaryProcessorImpl)ig.context().cacheObjects())
+            .binaryFileStoreWorkDir(cfg.getWorkDirectory());
+        File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
+        File snpBinWorkDir = ((CacheObjectBinaryProcessorImpl)ig.context().cacheObjects())
+            .binaryFileStoreWorkDir(cctx.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
+        File snpMarshWorkDir = mappingFileStoreWorkDir(cctx.snapshotMgr().snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());;
 
+        final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
             FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(cctx.snapshotMgr()
                     .snapshotLocalDir(SNAPSHOT_NAME)
@@ -232,6 +240,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
             origPartCRCs, snpPartCRCs);
+        assertEquals("Binary object mappings must be the same for local node and created snapshot",
+            calculateCRC32Partitions(binWorkDir), calculateCRC32Partitions(snpBinWorkDir));
+        assertEquals("Marshaller meta mast be the same for local node and created snapshot",
+            calculateCRC32Partitions(marshWorkDir), calculateCRC32Partitions(snpMarshWorkDir));
 
         File snpWorkDir = cctx.snapshotMgr().snapshotTempDir();
 

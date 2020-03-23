@@ -205,7 +205,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @param igniteWorkDir Basic ignite working directory.
      * @return Working directory.
      */
-    private File binaryFileStoreWorkDir(String igniteWorkDir) {
+    public File binaryFileStoreWorkDir(String igniteWorkDir) {
         try {
             File workDir = new File(U.resolveWorkDirectory(
                 igniteWorkDir,

@@ -441,14 +441,16 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
-
-        if (stopping())
+        if (stopping()) {
             return;
+        }
 
         // Snapshot task is now started since checkpoint writelock released.
-        if (!startedFut.onDone())
+        if (!startedFut.onDone()) {
             return;
+        }
+
+        assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();
