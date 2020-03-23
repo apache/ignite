@@ -19,15 +19,11 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 
 /** Tests cancel of user created entities via control.sh. */
@@ -44,14 +40,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         for (int i = 0; i < SERVER_NODE_CNT; i++)
             srvs.add(grid(i));
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
         awaitPartitionMapExchange();
-
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
-            cache.put(i, i);
     }
 
     /** {@inheritDoc} */

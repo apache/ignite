@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsOnAllNodesTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
@@ -57,9 +57,9 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
         try {
             IgniteCompute compute = ctx.cluster().get().compute();
 
-            compute.execute(new VisorComputeCancelSessionsTask(),
+            compute.execute(new VisorComputeCancelSessionsOnAllNodesTask(),
                 new VisorTaskArgument<>(ctx.localNodeId(),
-                    new VisorComputeCancelSessionsTaskArg(Collections.singleton(sesId), true), false));
+                    new VisorComputeCancelSessionsTaskArg(Collections.singleton(sesId)), false));
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

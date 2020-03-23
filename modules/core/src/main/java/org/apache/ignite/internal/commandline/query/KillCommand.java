@@ -26,7 +26,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsOnAllNodesTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
@@ -50,9 +50,6 @@ public class KillCommand implements Command<Object> {
 
     /** Task name. */
     private String taskName;
-
-    /** Subcommand. */
-    private KillSubcommand cmd;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
@@ -80,19 +77,22 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        cmd = of(argIter.nextArg("Expected type of resource to kill."));
+        KillSubcommand cmd = of(argIter.nextArg("Expected type of resource to kill."));
 
         if (cmd == null)
             throw new IllegalArgumentException("Expected type of resource to kill.");
 
         switch (cmd) {
             case COMPUTE:
-                taskArgs = new VisorComputeCancelSessionsTaskArg(Collections.singleton(
-                    IgniteUuid.fromString(argIter.nextArg("Expected compute task id."))), true);
+                taskArgs = new VisorComputeCancelSessionsTaskArg(
+                    Collections.singleton(IgniteUuid.fromString(argIter.nextArg("Expected compute task id."))));
 
-                taskName = VisorComputeCancelSessionsTask.class.getName();
+                taskName = VisorComputeCancelSessionsOnAllNodesTask.class.getName();
 
                 break;
+
+            default:
+                throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
     }
 

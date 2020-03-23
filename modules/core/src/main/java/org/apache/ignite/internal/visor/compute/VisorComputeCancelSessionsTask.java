@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -32,7 +28,6 @@ import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,14 +43,6 @@ public class VisorComputeCancelSessionsTask extends VisorOneNodeTask<VisorComput
     /** {@inheritDoc} */
     @Override protected VisorComputeCancelSessionsJob job(VisorComputeCancelSessionsTaskArg arg) {
         return new VisorComputeCancelSessionsJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorComputeCancelSessionsTaskArg> arg) {
-        if (arg.getArgument().isExecOnAllNodes())
-            return ignite.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
-
-        return super.jobNodes(arg);
     }
 
     /** {@inheritDoc} */

@@ -23,23 +23,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.lang.IgniteFuture;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.util.KillCommandsSQLTest.execute;
 import static org.junit.Assert.assertTrue;
 
 /**
  * General tests for the cancel command.
  */
 class KillCommandsTests {
-    /** Cache name. */
-    public static final String DEFAULT_CACHE_NAME = "default";
-
-    /** Page size. */
-    public static final int PAGE_SZ = 5;
-
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
@@ -68,7 +62,7 @@ class KillCommandsTests {
 
             boolean res = waitForCondition(() -> {
                 for (IgniteEx srv : srvs) {
-                    List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+                    List<List<?>> tasks = execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
 
                     if (tasks.size() == 1)
                         id[0] = (String)tasks.get(0).get(0);
@@ -85,7 +79,7 @@ class KillCommandsTests {
 
             for (IgniteEx srv : srvs) {
                 res = waitForCondition(() -> {
-                    List<List<?>> tasks = SqlViewExporterSpiTest.execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+                    List<List<?>> tasks = execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
 
                     return tasks.isEmpty();
                 }, TIMEOUT);

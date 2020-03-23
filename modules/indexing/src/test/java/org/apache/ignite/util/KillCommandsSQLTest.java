@@ -19,17 +19,15 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.execute;
-import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 
 /** Tests cancel of user created entities via SQL. */
@@ -62,13 +60,6 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
-
-        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
-            cache.put(i, i);
     }
 
     /** @throws Exception If failed. */
@@ -81,5 +72,19 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     @Test
     public void testCancelUnknownComputeTask() throws Exception {
         execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
+    }
+
+    /**
+     * Execute query on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    static List<List<?>> execute(Ignite node, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
+            .setArgs(args)
+            .setSchema("PUBLIC");
+
+        return queryProcessor(node).querySqlFields(qry, true).getAll();
     }
 }
