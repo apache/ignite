@@ -5422,13 +5422,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * in the case of using local caches with native persistence.
      */
     @Deprecated
-    static class LocalAffinityFunction implements AffinityFunction {
+    private static class LocalAffinityFunction implements AffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
         private static final org.apache.ignite.internal.processors.affinity.LocalAffinityFunction DELEGATE =
             new org.apache.ignite.internal.processors.affinity.LocalAffinityFunction();
+
+        /**
+         * Should not be directly used.
+         */
+        LocalAffinityFunction() throws IgniteCheckedException {
+            throw new IgniteCheckedException("This class should not be directly instantiated. Please use "
+                + org.apache.ignite.internal.processors.affinity.LocalAffinityFunction.class.getCanonicalName()
+                + " instead.");
+        }
 
         /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
