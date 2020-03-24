@@ -93,9 +93,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         computeMBean.cancel(IgniteUuid.randomUuid().toString());
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownService() throws Exception {
+    public void testCancelUnknownService() {
         svcMxBean.cancel("unknown");
     }
 }

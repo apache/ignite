@@ -507,10 +507,10 @@ public class CommandProcessor {
     /**
      * Process kill service command.
      *
-     * @param command Command.
+     * @param cmd Command.
      */
-    private void processKillServiceTaskCommand(SqlKillServiceCommand command) {
-        new ServiceMXBeanImpl(ctx).cancel(command.getName());
+    private void processKillServiceTaskCommand(SqlKillServiceCommand cmd) {
+        new ServiceMXBeanImpl(ctx).cancel(cmd.getName());
     }
 
     /**
