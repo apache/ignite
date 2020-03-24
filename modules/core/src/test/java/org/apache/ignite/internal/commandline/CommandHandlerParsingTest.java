@@ -32,6 +32,7 @@ import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
@@ -70,6 +71,16 @@ import static org.junit.Assert.fail;
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class CommandHandlerParsingTest {
+    /** */
+    private static final List<String> DFLT_ARGS = asList("--keystore", "testKeystore",
+        "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
+        "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword",
+        "--truststore-type", "testTruststoreType", "--ssl-key-algorithm", "testSSLKeyAlgorithm",
+        "--ssl-protocol", "testSSLProtocol");
+
+    /** */
+    private static final String USER_ATTRIBUTE_PATH = "modules/core/src/test/resources/user-attribute.properties";
+
     /** */
     @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
 
@@ -204,7 +215,9 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-    /** */
+    /**
+     *
+     */
     private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
         List<List<T>> res = new ArrayList<>();
 
@@ -219,7 +232,9 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-    /** */
+    /**
+     *
+     */
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
@@ -260,9 +275,11 @@ public class CommandHandlerParsingTest {
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
-            ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
-                "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
-                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
+            List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
+
+            cmdArgs.add(cmd.text());
+
+            ConnectionAndSslParameters args = parseArgs(cmdArgs);
 
             assertEquals("testSSLProtocol", args.sslProtocol());
             assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
@@ -275,6 +292,56 @@ public class CommandHandlerParsingTest {
 
             assertEquals(cmd.command(), args.command());
         }
+    }
+
+    /**
+     * Tests parsing user attribute arguments from string.
+     */
+    @Test
+    public void testParseUserAttrStringArguments() {
+        List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
+
+        cmdArgs.add(CommandList.TX.text());
+        cmdArgs.add(CommonArgParser.CMD_USER_ATTR);
+        cmdArgs.add("attr1=val1,attr2=val2");
+
+        ConnectionAndSslParameters args = parseArgs(cmdArgs);
+
+        assertEquals(args.userAttributes().get("attr1"), "val1");
+    }
+
+    /**
+     * Tests parsing user attribute arguments from file.
+     */
+    @Test
+    public void testParseUserAttrFileArguments() {
+        List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
+
+        cmdArgs.add(CommandList.TX.text());
+        cmdArgs.add(CommonArgParser.CMD_USER_ATTR_PATH);
+        cmdArgs.add(IgniteUtils.resolveIgnitePath(USER_ATTRIBUTE_PATH).getAbsolutePath());
+
+        ConnectionAndSslParameters args = parseArgs(cmdArgs);
+
+        assertEquals(args.userAttributes().get("attr3"), "val3");
+    }
+
+    /**
+     * Tests parsing user attribute arguments from file.
+     */
+    @Test
+    public void testParseUserAttrStringFileArguments() {
+        List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
+
+        cmdArgs.add(CommandList.TX.text());
+        cmdArgs.add(CommonArgParser.CMD_USER_ATTR_PATH);
+        cmdArgs.add(IgniteUtils.resolveIgnitePath(USER_ATTRIBUTE_PATH).getAbsolutePath());
+        cmdArgs.add(CommonArgParser.CMD_USER_ATTR);
+        cmdArgs.add("attr1=val1,attr3=val4");
+
+        ConnectionAndSslParameters args = parseArgs(cmdArgs);
+
+        assertEquals(args.userAttributes().get("attr3"), "val4");
     }
 
     /**

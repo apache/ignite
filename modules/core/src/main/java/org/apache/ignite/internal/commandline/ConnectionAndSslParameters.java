@@ -19,6 +19,8 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
+import java.util.Map;
+
 /**
  * Container with common parsed and validated arguments.
  */
@@ -70,6 +72,9 @@ public class ConnectionAndSslParameters {
 
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
+
+    /** Truststore Password. */
+    private Map<String, String> userAttrs;
 
     /** High-level command. */
     private Command command;
@@ -270,11 +275,29 @@ public class ConnectionAndSslParameters {
     }
 
     /**
+     * @return {@code Map} User attributes.
+     */
+    public Map<String, String> userAttributes(){
+        return userAttrs;
+    }
+
+    /**
      * Set truststore password.
      *
      * @param sslTrustStorePassword Truststore password.
      */
     public void sslTrustStorePassword(char[] sslTrustStorePassword) {
         this.sslTrustStorePassword = sslTrustStorePassword;
+    }
+
+    /**
+     * Set user attributes.
+     *
+     * @param userAttrs user attributes.
+     */
+    public ConnectionAndSslParameters withUserAttributes(Map<String, String> userAttrs){
+        this.userAttrs = userAttrs;
+
+        return this;
     }
 }

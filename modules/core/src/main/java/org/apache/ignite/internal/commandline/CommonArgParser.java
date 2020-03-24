@@ -18,11 +18,11 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -91,6 +91,12 @@ public class CommonArgParser {
     /** */
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
+    /** */
+    static final String CMD_USER_ATTR = "--user-attributes";
+
+    /** */
+    static final String CMD_USER_ATTR_PATH = "--user-attribute-path";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -117,6 +123,9 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_USER_ATTR);
+        AUX_COMMANDS.add(CMD_USER_ATTR_PATH);
     }
 
     /**
@@ -192,6 +201,12 @@ public class CommonArgParser {
         String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
+
+        Map<String, String> userAttrs = new HashMap<>();
+
+        String userAttrStr = null;
+
+        String userAttrPath = null;
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
@@ -310,11 +325,29 @@ public class CommonArgParser {
 
                         break;
 
+                    case CMD_USER_ATTR:
+                        userAttrStr = argIter.nextArg("Expected user attribute string.");
+                        ;
+
+                        break;
+
+                    case CMD_USER_ATTR_PATH:
+                        userAttrPath = argIter.nextArg("Expected user attribute file.");
+                        ;
+
+                        break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
             }
         }
+
+        if (userAttrStr != null)
+            extractAttributesFromString(userAttrs, userAttrStr);
+
+        if (userAttrPath != null)
+            extractAttributesFromFile(userAttrs, userAttrPath);
 
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
@@ -323,7 +356,7 @@ public class CommonArgParser {
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType).withUserAttributes(userAttrs);
     }
 
     /**
@@ -332,8 +365,42 @@ public class CommonArgParser {
      */
     private String securityWarningMessage(String password) {
         final String pwdArgWarnFmt = "Warning: %s is insecure. " +
-            "Whenever possible, use interactive prompt for password (just discard %s option).";
+                "Whenever possible, use interactive prompt for password (just discard %s option).";
 
         return String.format(pwdArgWarnFmt, password, password);
+    }
+
+    private void extractAttributesFromString(Map<String, String> attrMap, String attrs) {
+        for (String attr : attrs.split(",")) {
+            if (!attr.contains("=")) {
+                logger.warning(String.format("Failed to parse attribute %s", attr));
+
+                continue;
+            }
+
+            String[] keyValue = attr.split("=");
+
+            if (!attrMap.containsKey(keyValue[0]))
+                attrMap.put(keyValue[0], keyValue[1]);
+        }
+    }
+
+    private void extractAttributesFromFile(Map<String, String> attrMap, String path) {
+        Properties attrs = new Properties();
+
+        try (InputStream is = new FileInputStream(new File(path))) {
+            attrs.load(is);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to read property file: " + path, e);
+
+            throw new RuntimeException(e);
+        }
+
+        attrs.forEach((key, value) ->
+                {
+                    if (!attrMap.containsKey(key.toString()))
+                        attrMap.put(key.toString(), value.toString());
+                }
+        );
     }
 }
