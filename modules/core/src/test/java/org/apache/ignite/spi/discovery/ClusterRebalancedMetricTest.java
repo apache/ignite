@@ -48,25 +48,21 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("rawtypes")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(persistenceEnabled)
                 .setMaxSize(10L * 1024 * 1024)
-            );
+            ));
 
-        CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setBackups(1)
             .setCacheMode(PARTITIONED)
-            .setAtomicityMode(TRANSACTIONAL);
+            .setAtomicityMode(TRANSACTIONAL));
 
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(cCfg);
-        cfg.setCommunicationSpi(commSpi);
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
         cfg.setClusterStateOnStart(INACTIVE);
-        cfg.setDataStorageConfiguration(dsCfg);
 
         return cfg;
     }
@@ -128,9 +124,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(3);
 
         if (persistenceEnabled) {
-            awaitPartitionMapExchange(true, true, null, false);
-
-            assertClusterRebalancedMetricOnAllNodes(true);
+            awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
 
             ignite.cluster().setBaselineTopology(ignite.cluster().forServers().nodes());
         }
@@ -148,7 +142,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      * @param exp Expected value of {@link GridMetricManager#CLUSTER_REBALANCED} metric.
      */
     private void awaitPmeAndAssertRebalancedMetricOnAllNodes(boolean exp) throws Exception {
-        awaitPartitionMapExchange(true, true, null, true);
+        awaitPartitionMapExchange(true, true, null, false);
 
         assertClusterRebalancedMetricOnAllNodes(exp);
     }
