@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
 /** Tests cancel of user created entities via JMX. */
