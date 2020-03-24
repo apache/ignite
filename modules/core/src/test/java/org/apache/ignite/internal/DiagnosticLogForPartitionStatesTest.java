@@ -167,7 +167,6 @@ public class DiagnosticLogForPartitionStatesTest extends GridCommonAbstractTest 
 
         node1.cluster().active(true);
 
-
         List<IgniteCache<Integer, Integer>> caches = cfgs.stream()
             .map(cfg -> node1.getOrCreateCache(cfg)).collect(Collectors.toList());
 
