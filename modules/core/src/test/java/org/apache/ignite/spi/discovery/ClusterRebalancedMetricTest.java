@@ -107,8 +107,6 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     public void checkClusterRebalancedMetric() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        startClientGrid(1);
-
         assertClusterRebalancedMetricOnAllNodes(false);
 
         ignite.cluster().state(ACTIVE);
@@ -117,11 +115,11 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         ignite.cache(DEFAULT_CACHE_NAME).put("key", "val");
 
-        startClientGrid(2);
+        startClientGrid(1);
 
         awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
 
-        TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(3);
+        TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(2);
 
         if (persistenceEnabled) {
             awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
@@ -136,13 +134,21 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
         spi.stopBlock();
 
         awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+
+        ignite.cluster().state(INACTIVE);
+
+        awaitPmeAndAssertRebalancedMetricOnAllNodes(false);
+
+        ignite.cluster().state(ACTIVE);
+
+        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
     }
 
     /**
      * @param exp Expected value of {@link GridMetricManager#CLUSTER_REBALANCED} metric.
      */
     private void awaitPmeAndAssertRebalancedMetricOnAllNodes(boolean exp) throws Exception {
-        awaitPartitionMapExchange(true, true, null, false);
+        awaitPartitionMapExchange(true, true, null);
 
         assertClusterRebalancedMetricOnAllNodes(exp);
     }

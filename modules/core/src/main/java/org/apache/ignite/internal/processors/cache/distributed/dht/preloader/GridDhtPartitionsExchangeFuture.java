@@ -2392,11 +2392,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (super.onDone(res, err)) {
             afterLsnrCompleteFut.onDone();
 
-            if (err == null) {
+            if (err == null)
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
-
-                cctx.exchange().clusterInRebalancedStateMetric().value(rebalanced);
-            }
 
             if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +

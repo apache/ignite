@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.ClusterActivationEvent;
@@ -112,7 +113,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -151,6 +151,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGED;
@@ -286,9 +288,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Histogram of blocking PME durations. */
     private volatile HistogramMetricImpl blockingDurationHistogram;
-
-    /** Whether cluster is in rebalanced state metric. */
-    private volatile BooleanMetricImpl rebalancedMetric;
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
@@ -499,7 +498,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         MetricRegistry rebalanceReg = cctx.kernalContext().metric().registry(REBALANCE_METRICS);
 
-        rebalancedMetric = rebalanceReg.findMetric(CLUSTER_REBALANCED);
+        rebalanceReg.register(CLUSTER_REBALANCED,
+            this::clusterRebalanced,
+            "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
+                " this metric in False regardless of the real partitions state."
+        );
     }
 
     /**
@@ -2858,6 +2861,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return fut == null ? 0 : fut.currentPMEDuration(blocked);
     }
 
+    /** @return {@code True} if the cluster is in fully rebalanced state. */
+    public boolean clusterRebalanced() {
+        GridDhtPartitionsExchangeFuture fut = lastFinishedFuture();
+
+        ClusterState state = cctx.kernalContext().state().clusterState().state();
+
+        return fut != null && fut.rebalanced() && active(state);
+    }
+
     /** @return Histogram of PME durations metric. */
     public HistogramMetricImpl durationHistogram() {
         return durationHistogram;
@@ -2866,11 +2878,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** @return Histogram of blocking PME durations metric. */
     public HistogramMetricImpl blockingDurationHistogram() {
         return blockingDurationHistogram;
-    }
-
-    /** @return Whether cluster is in rebalanced state metric. */
-    public BooleanMetricImpl clusterInRebalancedStateMetric() {
-        return rebalancedMetric;
     }
 
     /**
