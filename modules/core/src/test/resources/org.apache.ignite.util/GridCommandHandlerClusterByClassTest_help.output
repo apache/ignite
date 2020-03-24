@@ -69,7 +69,7 @@ This utility can do the following commands:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
 
   Kill compute task by session id:
-    control.(sh|bat) --kill compute session_id
+    control.(sh|bat) --kill COMPUTE session_id
 
     Parameters:
       session_id  - Session identifier.
