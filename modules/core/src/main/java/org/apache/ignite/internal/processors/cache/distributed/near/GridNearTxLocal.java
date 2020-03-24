@@ -119,6 +119,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -3124,7 +3125,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             });
         }
         else if (cacheCtx.isColocated()) {
-            if (readRepair || (optimistic() && !async && serializable() &&
+            if (readRepair || (optimistic() && serializable() && !async
+                && cacheCtx.config().getRebalanceMode() != SYNC &&
                 cacheCtx.config().getWriteSynchronizationMode() != CacheWriteSynchronizationMode.FULL_SYNC)) {
                 return new GridNearReadRepairCheckOnlyFuture(
                     cacheCtx,
