@@ -20,14 +20,14 @@ package org.apache.ignite.internal.visor.query;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Arguments for {@link VisorScanQueryTask}.
  */
-public class VisorScanQueryTaskArg extends IgniteDataTransferObject {
+public class VisorScanQueryTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 

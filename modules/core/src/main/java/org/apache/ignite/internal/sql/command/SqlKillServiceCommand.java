@@ -46,6 +46,16 @@ public class SqlKillServiceCommand implements SqlCommand {
         throw SqlParserUtils.error(lex, "Expected service name.");
     }
 
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
+    }
+
     /** @return Service name. */
     public String getName() {
         return name;

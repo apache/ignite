@@ -27,10 +27,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
-import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
 import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
@@ -47,13 +45,11 @@ import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
-import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
-import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -152,14 +148,6 @@ public class IgniteMBeansManager {
         // Transactions
         TransactionsMXBean txMXBean = new TransactionsMXBeanImpl(ctx);
         registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TransactionsMXBean.class);
-
-        // Queries management
-        QueryMXBean qryMXBean = new QueryMXBeanImpl(ctx);
-        registerMBean("Query", qryMXBean.getClass().getSimpleName(), qryMXBean, QueryMXBean.class);
-
-        // Compute task management
-        ComputeMXBean computeMXBean = new ComputeMXBeanImpl(ctx);
-        registerMBean("Compute", computeMXBean.getClass().getSimpleName(), computeMXBean, ComputeMXBean.class);
 
         // Service management
         ServiceMXBean serviceMXBean = new ServiceMXBeanImpl(ctx);

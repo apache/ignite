@@ -20,23 +20,18 @@ package org.apache.ignite.internal.visor.query;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Arguments for task {@link VisorQueryCancelTask}
  */
-public class VisorQueryCancelTaskArg extends IgniteDataTransferObject {
+public class VisorQueryCancelTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Query ID to cancel. */
     private long qryId;
-
-    /** Originating node ID. */
-    private UUID nodeId;
 
     /**
      * Default constructor.
@@ -46,19 +41,10 @@ public class VisorQueryCancelTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param nodeId Originating node id.
      * @param qryId Query ID to cancel.
      */
-    public VisorQueryCancelTaskArg(UUID nodeId, long qryId) {
+    public VisorQueryCancelTaskArg(long qryId) {
         this.qryId = qryId;
-        this.nodeId = nodeId;
-    }
-
-    /**
-     * @return Originating node id.
-     */
-    public UUID getNodeId() {
-        return nodeId;
     }
 
     /**
@@ -71,13 +57,11 @@ public class VisorQueryCancelTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeLong(qryId);
-        U.writeUuid(out, nodeId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         qryId = in.readLong();
-        nodeId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */

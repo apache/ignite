@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
@@ -37,19 +36,17 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
-
 /**
  * TransactionsMXBean implementation.
  */
 public class TransactionsMXBeanImpl implements TransactionsMXBean {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
+    /** */
+    private final GridKernalContextImpl ctx;
 
     /**
      * @param ctx Context.
      */
-    public TransactionsMXBeanImpl(GridKernalContext ctx) {
+    public TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
         this.ctx = ctx;
     }
 
@@ -117,47 +114,6 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel(String xid) {
-        A.notNull(xid, "xid");
-
-        IgniteCompute compute = ctx.cluster().get().compute();
-
-        Map<ClusterNode, VisorTxTaskResult> taskRes = compute.execute(new VisorTxTask(),
-            new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
-                1, null, null, null, null, null, xid, null, null, null), false));
-
-        boolean res = isXidFound(xid, taskRes);
-
-        if (!res)
-            throw new RuntimeException("Transaction not found[xid=" + xid + ']');
-    }
-
-    /**
-     * Determine if task results contains information about xid.
-     *
-     * @param xid Xid.
-     * @param taskRes {@code VisorTxTask} results.
-     * @return {@code True} if {@code xid} was found in task results.
-     */
-    public static boolean isXidFound(String xid, Map<ClusterNode, VisorTxTaskResult> taskRes) {
-        if (!isEmpty(taskRes)) {
-            for (VisorTxTaskResult singleRes : taskRes.values()) {
-                if (isEmpty(singleRes.getInfos()))
-                    continue;
-
-                for (VisorTxInfo info : singleRes.getInfos()) {
-                    if (xid.equalsIgnoreCase(info.getXid().toString()))
-                        return true;
-
-                    break;
-                }
-            }
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */

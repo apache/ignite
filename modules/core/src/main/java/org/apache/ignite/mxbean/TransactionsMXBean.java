@@ -18,7 +18,6 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.spi.systemview.view.TransactionView;
 
 /**
  * Transactions MXBean interface.
@@ -59,18 +58,6 @@ public interface TransactionsMXBean {
             boolean detailed,
         @MXBeanParameter(name = "kill", description = "Kill matching transactions (be careful).")
             boolean kill
-    );
-
-    /**
-     * Kills transactions by the xid.
-     *
-     * @param xid Transaction xid.
-     * @see TransactionView#xid()
-     */
-    @MXBeanDescription("Kills transactions by the xid.")
-    public void cancel(
-        @MXBeanParameter(name = "xid", description = "Transaction XID.")
-        String xid
     );
 
     /**

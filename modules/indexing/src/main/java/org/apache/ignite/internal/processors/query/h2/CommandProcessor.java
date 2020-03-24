@@ -48,13 +48,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
-import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
@@ -101,12 +98,8 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
-import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
-import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
-import org.apache.ignite.internal.sql.command.SqlKillTxCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -167,7 +160,7 @@ public class CommandProcessor {
     private volatile boolean stopped;
 
     /** */
-    private final ReadWriteLock killQryLock = new ReentrantReadWriteLock();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** KILL COMMAND support added since. */
     private static final IgniteProductVersion KILL_COMMAND_SINCE_VER = IgniteProductVersion.fromString("2.8.0");
@@ -205,7 +198,7 @@ public class CommandProcessor {
 
                 List<GridFutureAdapter<String>> futs = new ArrayList<>();
 
-                killQryLock.writeLock().lock();
+                lock.writeLock().lock();
 
                 try {
                     Iterator<KillQueryRun> it = cancellationRuns.values().iterator();
@@ -221,7 +214,7 @@ public class CommandProcessor {
                     }
                 }
                 finally {
-                    killQryLock.writeLock().unlock();
+                    lock.writeLock().unlock();
                 }
 
                 futs.forEach(f -> f.onDone("Query node has left the grid: [nodeId=" + nodeId + "]"));
@@ -249,7 +242,7 @@ public class CommandProcessor {
      * @param err Text of error to complete futures.
      */
     private void completeCancellationFutures(@Nullable String err) {
-        killQryLock.writeLock().lock();
+        lock.writeLock().lock();
 
         try {
             Iterator<KillQueryRun> it = cancellationRuns.values().iterator();
@@ -263,7 +256,7 @@ public class CommandProcessor {
             }
         }
         finally {
-            killQryLock.writeLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -359,13 +352,13 @@ public class CommandProcessor {
     private void onQueryKillResponse(GridQueryKillResponse msg) {
         KillQueryRun qryRun;
 
-        killQryLock.readLock().lock();
+        lock.readLock().lock();
 
         try {
             qryRun = cancellationRuns.remove(msg.requestId());
         }
         finally {
-            killQryLock.readLock().unlock();
+            lock.readLock().unlock();
         }
 
         if (qryRun != null)
@@ -418,14 +411,6 @@ public class CommandProcessor {
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
             else if (cmdNative instanceof SqlKillQueryCommand)
                 processKillQueryCommand((SqlKillQueryCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillScanQueryCommand)
-                processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillContinuousQueryCommand)
-                processKillContinuousQueryCommand((SqlKillContinuousQueryCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillTxCommand)
-                processKillTxCommand((SqlKillTxCommand) cmdNative);
-            else if (cmdNative instanceof SqlKillComputeTaskCommand)
-                processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
             else if (cmdNative instanceof SqlKillServiceCommand)
                 processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
             else
@@ -448,7 +433,7 @@ public class CommandProcessor {
     private void processKillQueryCommand(SqlKillQueryCommand cmd) {
         GridFutureAdapter<String> fut = new GridFutureAdapter<>();
 
-        killQryLock.readLock().lock();
+        lock.readLock().lock();
 
         try {
             if (stopped)
@@ -490,7 +475,7 @@ public class CommandProcessor {
                     + cmd.nodeQueryId() + "]");
         }
         finally {
-            killQryLock.readLock().unlock();
+            lock.readLock().unlock();
         }
 
         try {
@@ -507,48 +492,12 @@ public class CommandProcessor {
     }
 
     /**
-     * Process kill scan query command.
-     *
-     * @param command Command.
-     */
-    private void processKillScanQueryCommand(SqlKillScanQueryCommand command) {
-        new QueryMXBeanImpl(ctx).cancelScan(command.getOriginNodeId(), command.getCacheName(), command.getQryId());
-    }
-
-    /**
      * Process kill service command.
      *
      * @param command Command.
      */
     private void processKillServiceTaskCommand(SqlKillServiceCommand command) {
         new ServiceMXBeanImpl(ctx).cancel(command.getName());
-    }
-
-    /**
-     * Process kill compute task command.
-     *
-     * @param command Command.
-     */
-    private void processKillComputeTaskCommand(SqlKillComputeTaskCommand command) {
-        new ComputeMXBeanImpl(ctx).cancel(command.getSessionId());
-    }
-
-    /**
-     * Process kill transaction command.
-     *
-     * @param command Command.
-     */
-    private void processKillTxCommand(SqlKillTxCommand command) {
-        new TransactionsMXBeanImpl(ctx).cancel(command.getXid());
-    }
-
-    /**
-     * Process kill continuous query command.
-     *
-     * @param command Command.
-     */
-    private void processKillContinuousQueryCommand(SqlKillContinuousQueryCommand command) {
-        new QueryMXBeanImpl(ctx).cancelContinuous(command.getRoutineId());
     }
 
     /**
