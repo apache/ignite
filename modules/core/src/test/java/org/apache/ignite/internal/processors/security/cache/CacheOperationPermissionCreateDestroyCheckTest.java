@@ -35,47 +35,47 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 @RunWith(Parameterized.class)
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
-    /** Parameters. */
+    /** */
     @Parameterized.Parameters(name = "clientMode={0}")
     public static Iterable<Boolean[]> data() {
         return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
     }
 
-    /** Client mode. */
+    /** */
     @Parameterized.Parameter()
     public boolean clientMode;
 
-    /** Cache name. */
-    private static final String TEST_CACHE = "TEST_CACHE";
-
-    /** Unallowed cache. */
-    private static final String UNALLOWED_CACHE = "UNALLOWED";
-
-    /** Server node name. */
+    /** */
     private static final String SRV = "srv";
 
-    /** Forbidden server node name. */
-    private static final String FORBIDDEN_SRV = "forbidden_srv";
+    /** */
+    private static final String SRV_WITHOUT_PERMS = "srv_without_perms";
 
-    /** Forbidden client node name. */
-    private static final String FORBIDDEN_CLNT = "forbidden_clnt";
+    /** */
+    private static final String CLNT_WITHOUT_PERMS = "clnt_without_perms";
 
-    /** Test node. */
+    /** */
     private static final String TEST_NODE = "test_node";
+
+    /** */
+    private static final String CACHE_NAME = "CACHE_NAME";
+
+    /** */
+    private static final String UNMANAGED_CACHE = "UNMANAGED_CACHE";
 
     /** */
     @Test
     public void testCreateCacheWithCachePermissions() throws Exception {
         SecurityPermissionSet secPermSet = builder()
-            .appendCachePermissions(TEST_CACHE, CACHE_CREATE)
+            .appendCachePermissions(CACHE_NAME, CACHE_CREATE)
             .build();
 
         try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
-            assertThrowsWithCause(() -> node.createCache(UNALLOWED_CACHE), SecurityException.class);
+            assertThrowsWithCause(() -> node.createCache(UNMANAGED_CACHE), SecurityException.class);
 
-            assertNull(grid(SRV).cache(UNALLOWED_CACHE));
+            assertNull(grid(SRV).cache(UNMANAGED_CACHE));
 
-            assertNotNull(node.createCache(TEST_CACHE));
+            assertNotNull(node.createCache(CACHE_NAME));
         }
     }
 
@@ -83,53 +83,55 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
     @Test
     public void testDestroyCacheWithCachePermissions() throws Exception {
         SecurityPermissionSet secPermSet = builder()
-            .appendCachePermissions(TEST_CACHE, CACHE_DESTROY)
+            .appendCachePermissions(CACHE_NAME, CACHE_DESTROY)
             .build();
 
-        grid(SRV).createCache(TEST_CACHE);
-        grid(SRV).createCache(UNALLOWED_CACHE);
+        grid(SRV).createCache(CACHE_NAME);
+        grid(SRV).createCache(UNMANAGED_CACHE);
 
         try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
-            node.destroyCache(TEST_CACHE);
+            node.destroyCache(CACHE_NAME);
 
-            assertThrowsWithCause(() -> node.destroyCache(UNALLOWED_CACHE), SecurityException.class);
+            assertThrowsWithCause(() -> node.destroyCache(UNMANAGED_CACHE), SecurityException.class);
 
-            assertNull(grid(SRV).cache(TEST_CACHE));
+            assertNull(grid(SRV).cache(CACHE_NAME));
 
-            assertNotNull(grid(SRV).cache(UNALLOWED_CACHE));
+            assertNotNull(grid(SRV).cache(UNMANAGED_CACHE));
         }
     }
 
     /** */
     @Test
     public void testCreateCacheWithSystemPermissions() throws Exception {
-        SecurityPermissionSetBuilder builder = builder()
-            .appendSystemPermissions(CACHE_CREATE);
+        SecurityPermissionSet secPermSet = builder()
+            .appendSystemPermissions(CACHE_CREATE)
+            .build();
 
-        try (Ignite node = startGrid(TEST_NODE, builder.build(), clientMode)) {
+        try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
 
-            assertThrowsWithCause(() -> forbidden(clientMode).createCache(TEST_CACHE), SecurityException.class);
+            assertThrowsWithCause(() -> forbidden(clientMode).createCache(CACHE_NAME), SecurityException.class);
 
-            assertNotNull(node.createCache(TEST_CACHE));
+            assertNotNull(node.createCache(CACHE_NAME));
         }
     }
 
     /** */
     @Test
     public void testDestroyCacheWithSystemPermissions() throws Exception {
-        SecurityPermissionSet securityPermissionSet = builder()
-        .appendSystemPermissions(CACHE_DESTROY).build();
+        SecurityPermissionSet secPermSet = builder()
+            .appendSystemPermissions(CACHE_DESTROY)
+            .build();
 
-        grid(SRV).createCache(TEST_CACHE);
+        grid(SRV).createCache(CACHE_NAME);
 
-        try (Ignite node = startGrid(TEST_NODE, securityPermissionSet, clientMode)) {
+        try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
 
-            assertThrowsWithCause(() -> forbidden(clientMode).destroyCache(TEST_CACHE), SecurityException.class);
+            assertThrowsWithCause(() -> forbidden(clientMode).destroyCache(CACHE_NAME), SecurityException.class);
 
-            node.destroyCache(TEST_CACHE);
+            node.destroyCache(CACHE_NAME);
         }
 
-        assertNull(grid(SRV).cache(TEST_CACHE));
+        assertNull(grid(SRV).cache(CACHE_NAME));
     }
 
     /** */
@@ -143,16 +145,16 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
      * @param isClnt Is client.
      */
     private Ignite forbidden(boolean isClnt) {
-        return isClnt ? grid(FORBIDDEN_CLNT) : grid(FORBIDDEN_SRV);
+        return isClnt ? grid(CLNT_WITHOUT_PERMS) : grid(SRV_WITHOUT_PERMS);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridAllowAll(SRV);
 
-        startGrid(FORBIDDEN_CLNT, builder().build(), true);
+        startGrid(CLNT_WITHOUT_PERMS, builder().build(), true);
 
-        startGrid(FORBIDDEN_SRV, builder().build(), false);
+        startGrid(SRV_WITHOUT_PERMS, builder().build(), false);
     }
 
     /** {@inheritDoc} */
