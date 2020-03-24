@@ -107,17 +107,21 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     public void checkClusterRebalancedMetric(boolean persistenceEnabled) throws Exception {
         IgniteEx ignite = startGrid(0, persistenceEnabled);
 
+        startClientGrid(1, persistenceEnabled);
+
         assertClusterRebalancedMetricOnAllNodes(false);
 
         ignite.cluster().state(ACTIVE);
 
-        awaitPartitionMapExchange(true, true, null, false);
-
-        assertClusterRebalancedMetricOnAllNodes(true);
+        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
 
         ignite.cache(TEST_CACHE).put("key", "val");
 
-        TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(1, persistenceEnabled);
+        startClientGrid(2, persistenceEnabled);
+
+        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+
+        TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(3, persistenceEnabled);
 
         if (persistenceEnabled) {
             awaitPartitionMapExchange(true, true, null, false);
@@ -133,9 +137,16 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         spi.stopBlock();
 
+        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+    }
+
+    /**
+     * @param exp Expected value of {@link GridMetricManager#CLUSTER_REBALANCED} metric.
+     */
+    private void awaitPmeAndAssertRebalancedMetricOnAllNodes(boolean exp) throws Exception {
         awaitPartitionMapExchange(true, true, null, true);
 
-        assertClusterRebalancedMetricOnAllNodes(true);
+        assertClusterRebalancedMetricOnAllNodes(exp);
     }
 
     /**
@@ -185,5 +196,13 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      */
     private IgniteEx startGrid(int idx, boolean persistenceEnabled) throws Exception {
         return startGrid(getConfiguration(idx, persistenceEnabled));
+    }
+
+    /**
+     * @param idx Index of the client node to be started.
+     * @param persistenceEnabled Whether native persistence is enabled.
+     */
+    private IgniteEx startClientGrid(int idx, boolean persistenceEnabled) throws Exception {
+        return startClientGrid(getConfiguration(idx, persistenceEnabled));
     }
 }
