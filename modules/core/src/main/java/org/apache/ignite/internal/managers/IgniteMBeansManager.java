@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
+import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
@@ -148,6 +150,10 @@ public class IgniteMBeansManager {
         // Transactions
         TransactionsMXBean txMXBean = new TransactionsMXBeanImpl(ctx);
         registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TransactionsMXBean.class);
+
+        // Compute task management
+        ComputeMXBean computeMXBean = new ComputeMXBeanImpl(ctx);
+        registerMBean("Compute", computeMXBean.getClass().getSimpleName(), computeMXBean, ComputeMXBean.class);
 
         // Service management
         ServiceMXBean serviceMXBean = new ServiceMXBeanImpl(ctx);

@@ -19,13 +19,17 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
@@ -37,8 +41,14 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     private static List<IgniteEx> srvs;
 
+    /** Client that starts task. */
+    private static IgniteEx startCli;
+
+    /** Client that kill task. */
+    private static IgniteEx killCli;
+
     /** */
-    private static IgniteEx cli;
+    private static ComputeMXBean computeMBean;
 
     /** */
     private static ServiceMXBean svcMxBean;
@@ -52,10 +62,26 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++)
             srvs.add(grid(i));
 
-        cli = startClientGrid("client");
+        startCli = startClientGrid("startClient");
+        killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
 
+        computeMBean = getMxBean(killCli.name(), "Compute",
+            ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelComputeTask() throws Exception {
+        doTestCancelComputeTask(startCli, srvs, sessId ->
+            computeMBean.cancel(sessId));
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownComputeTask() {
+        computeMBean.cancel(IgniteUuid.randomUuid().toString());
         svcMxBean = getMxBean(cli.name(), "Service",
             ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
     }

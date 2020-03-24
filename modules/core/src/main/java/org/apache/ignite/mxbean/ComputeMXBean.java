@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.query;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
- * Subcommands of the kill command.
- *
- * @see KillCommand
- * @see ComputeMXBean
- * @see ServiceMXBean
+ * Compute MXBean interface.
  */
-public enum KillSubcommand {
-    /** Kill compute task. */
-    COMPUTE,
-
-    /** Kill service. */
-    SERVICE
+public interface ComputeMXBean {
+    /**
+     * Kills compute task by the session idenitifier.
+     *
+     * @param sesId Session id.
+     * @see ComputeTaskView#sessionId()
+     * @see ComputeJobView#sessionId()
+     */
+    @MXBeanDescription("Kills compute task by the session idenitifier.")
+    public void cancel(
+        @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
+    );
 }

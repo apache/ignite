@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -98,6 +99,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
@@ -411,6 +413,8 @@ public class CommandProcessor {
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
             else if (cmdNative instanceof SqlKillQueryCommand)
                 processKillQueryCommand((SqlKillQueryCommand) cmdNative);
+            else if (cmdNative instanceof SqlKillComputeTaskCommand)
+                processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
             else if (cmdNative instanceof SqlKillServiceCommand)
                 processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
             else
@@ -489,6 +493,15 @@ public class CommandProcessor {
             throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
                 + cmd.nodeQueryId() + ",err=" + e + "]", e);
         }
+    }
+
+    /**
+     * Process kill compute task command.
+     *
+     * @param cmd Command.
+     */
+    private void processKillComputeTaskCommand(SqlKillComputeTaskCommand cmd) {
+        new ComputeMXBeanImpl(ctx).cancel(cmd.getSessionId());
     }
 
     /**

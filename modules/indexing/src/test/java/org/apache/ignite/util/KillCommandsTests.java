@@ -17,12 +17,17 @@
 
 package org.apache.ignite.util;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
@@ -31,8 +36,10 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.util.KillCommandsSQLTest.execute;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -46,11 +53,67 @@ class KillCommandsTests {
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
+    /** Latch to block compute task execution. */
+    private static CountDownLatch computeLatch;
+
     /** Service start barrier. */
     private static volatile CyclicBarrier svcStartBarrier;
 
     /** Service cancel barriers. */
     private static volatile CyclicBarrier svcCancelBarrier;
+
+    /**
+     * Test cancel of the compute task.
+     *
+     * @param cli Client node that starts tasks.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestCancelComputeTask(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> qryCanceler)
+        throws Exception {
+        computeLatch = new CountDownLatch(1);
+
+        IgniteFuture<Collection<Integer>> fut = cli.compute().broadcastAsync(() -> {
+            computeLatch.await();
+
+            return 1;
+        });
+
+        try {
+            String[] id = new String[1];
+
+            boolean res = waitForCondition(() -> {
+                for (IgniteEx srv : srvs) {
+                    List<List<?>> tasks = execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+
+                    if (tasks.size() == 1)
+                        id[0] = (String)tasks.get(0).get(0);
+                    else
+                        return false;
+                }
+
+                return true;
+            }, TIMEOUT);
+
+            assertTrue(res);
+
+            qryCanceler.accept(id[0]);
+
+            for (IgniteEx srv : srvs) {
+                res = waitForCondition(() -> {
+                    List<List<?>> tasks = execute(srv, "SELECT SESSION_ID FROM SYS.JOBS");
+
+                    return tasks.isEmpty();
+                }, TIMEOUT);
+
+                assertTrue(srv.configuration().getIgniteInstanceName(), res);
+            }
+
+            assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
+        } finally {
+            computeLatch.countDown();
+        }
+    }
 
     /**
      * Test cancel of the service.

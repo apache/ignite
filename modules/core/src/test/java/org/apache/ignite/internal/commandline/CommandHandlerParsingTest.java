@@ -524,6 +524,12 @@ public class CommandHandlerParsingTest {
     public void testKillArguments() {
         assertParseArgsThrows("Expected type of resource to kill.", "--kill");
 
+        // Compute command format errors.
+        assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "compute", "not_a_uuid");
+
         // Service command format errors.
         assertParseArgsThrows("Expected service name.", "--kill", "service");
     }

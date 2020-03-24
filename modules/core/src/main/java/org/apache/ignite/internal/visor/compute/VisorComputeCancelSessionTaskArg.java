@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.service;
+package org.apache.ignite.internal.visor.compute;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -23,50 +23,51 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Argument for {@link VisorCancelServiceTask}.
+ * Arguments for task {@link VisorComputeCancelSessionsTask}
  */
-public class VisorCancelServiceTaskArg extends VisorDataTransferObject {
+public class VisorComputeCancelSessionTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Service name. */
-    private String name;
+    /** Session IDs to cancel. */
+    private IgniteUuid sesId;
 
     /**
      * Default constructor.
      */
-    public VisorCancelServiceTaskArg() {
+    public VisorComputeCancelSessionTaskArg() {
         // No-op.
     }
 
     /**
-     * @param name Service name.
+     * @param sesId Session IDs to cancel.
      */
-    public VisorCancelServiceTaskArg(String name) {
-        this.name = name;
+    public VisorComputeCancelSessionTaskArg(IgniteUuid sesId) {
+        this.sesId = sesId;
     }
 
     /**
-     * @return Service name.
+     * @return Session IDs to cancel.
      */
-    public String getName() {
-        return name;
+    public IgniteUuid getSessionId() {
+        return sesId;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
+        U.writeGridUuid(out, sesId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
+        sesId = U.readGridUuid(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCancelServiceTaskArg.class, this);
+        return S.toString(VisorComputeCancelSessionTaskArg.class, this);
     }
 }

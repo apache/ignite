@@ -19,11 +19,17 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
+import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
@@ -33,13 +39,18 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public static final int  NODES_CNT = 3;
 
     /** */
+    public static final String KILL_COMPUTE_QRY = KILL + " " + COMPUTE;
+    /** */
     public static final String KILL_SVC_QRY = "KILL SERVICE";
 
     /** */
     private static List<IgniteEx> srvs;
 
-    /** */
-    private static IgniteEx cli;
+    /** Client that starts tasks. */
+    private static IgniteEx startCli;
+
+    /** Client that kills tasks. */
+    private static IgniteEx killCli;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -50,21 +61,48 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++)
             srvs.add(grid(i));
 
-        cli = startClientGrid("client");
+        startCli = startClientGrid("startClient");
+        killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
     }
 
     /** @throws Exception If failed. */
     @Test
+    public void testCancelComputeTask() throws Exception {
+        doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testCancelService() throws Exception {
-        doTestCancelService(cli, srvs.get(0), name -> execute(cli, KILL_SVC_QRY + " '" + name + "'"));
+        doTestCancelService(killCli, srvs.get(0), name -> execute(cli, KILL_SVC_QRY + " '" + name + "'"));
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownComputeTask() {
+        execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownService() throws Exception {
-        assertThrowsWithCause(() -> execute(cli, KILL_SVC_QRY + " 'unknown'"),
+        assertThrowsWithCause(() -> execute(killCli, KILL_SVC_QRY + " 'unknown'"),
             RuntimeException.class);
+    }
+
+    /**
+     * Execute query on given node.
+     *
+     * @param node Node.
+     * @param sql Statement.
+     */
+    static List<List<?>> execute(Ignite node, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql)
+            .setArgs(args)
+            .setSchema("PUBLIC");
+
+        return queryProcessor(node).querySqlFields(qry, true).getAll();
     }
 }
