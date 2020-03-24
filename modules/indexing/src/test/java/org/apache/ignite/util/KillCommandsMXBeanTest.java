@@ -69,6 +69,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
         computeMBean = getMxBean(killCli.name(), "Compute",
             ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
+
+        svcMxBean = getMxBean(killCli.name(), "Service",
+            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
     }
 
     /** @throws Exception If failed. */
@@ -78,25 +81,22 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
             computeMBean.cancel(sessId));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelService() throws Exception {
+        doTestCancelService(killCli, srvs.get(0), name ->
+            svcMxBean.cancel(name));
+    }
+
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
         computeMBean.cancel(IgniteUuid.randomUuid().toString());
-        svcMxBean = getMxBean(cli.name(), "Service",
-            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelService() throws Exception {
-        doTestCancelService(cli, srvs.get(0), name ->
-            svcMxBean.cancel(name));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownService() throws Exception {
-        assertThrowsWithCause(() -> svcMxBean.cancel("unknown"),
-            RuntimeException.class);
+        svcMxBean.cancel("unknown");
     }
 }
