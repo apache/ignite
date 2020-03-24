@@ -42,38 +42,38 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.REB
  * Tests {@link GridMetricManager#CLUSTER_REBALANCED} metric.
  */
 public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
-    /** Test cache name. */
-    private static final String TEST_CACHE = "TEST_CACHE";
-
-    /**
-     * @param idx Index of the node to be started.
-     * @param persistenceEnabled Whether node native persistence is enabled.
-     */
-    protected IgniteConfiguration getConfiguration(int idx, boolean persistenceEnabled) throws Exception {
-        DataRegionConfiguration drCfg = new DataRegionConfiguration()
-            .setPersistenceEnabled(persistenceEnabled);
-
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(drCfg);
-
-        return getConfiguration(getTestIgniteInstanceName(idx))
-            .setDataStorageConfiguration(dsCfg);
-    }
+    /** Whether node starts with persistence enabled. */
+    private boolean persistenceEnabled;
 
     /** {@inheritDoc} */
     @SuppressWarnings("rawtypes")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
-        CacheConfiguration cCfg = new CacheConfiguration(TEST_CACHE)
-            .setBackups(2)
+        DataRegionConfiguration drCfg = new DataRegionConfiguration()
+            .setPersistenceEnabled(persistenceEnabled)
+            .setMaxSize(10L * 1024 * 1024);
+
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(drCfg);
+
+        CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setBackups(1)
             .setCacheMode(PARTITIONED)
             .setAtomicityMode(TRANSACTIONAL);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(cCfg)
             .setCommunicationSpi(commSpi)
-            .setClusterStateOnStart(INACTIVE);
+            .setClusterStateOnStart(INACTIVE)
+            .setDataStorageConfiguration(dsCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -90,7 +90,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInMemoryClusterRebalancedMetric() throws Exception {
-        checkClusterRebalancedMetric(false);
+        checkClusterRebalancedMetric();
     }
 
     /**
@@ -98,16 +98,23 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPersistenceClusterRebalancedMetric() throws Exception {
-        checkClusterRebalancedMetric(true);
+        persistenceEnabled = true;
+
+        try {
+            checkClusterRebalancedMetric();
+        }
+        finally {
+            persistenceEnabled = false;
+        }
     }
 
     /**
-     * @param persistenceEnabled Whether native persistence is enabled.
+     * Checks {@link GridMetricManager#CLUSTER_REBALANCED} metric value.
      */
-    public void checkClusterRebalancedMetric(boolean persistenceEnabled) throws Exception {
-        IgniteEx ignite = startGrid(0, persistenceEnabled);
+    public void checkClusterRebalancedMetric() throws Exception {
+        IgniteEx ignite = startGrid(0);
 
-        startClientGrid(1, persistenceEnabled);
+        startClientGrid(1);
 
         assertClusterRebalancedMetricOnAllNodes(false);
 
@@ -115,13 +122,13 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
 
-        ignite.cache(TEST_CACHE).put("key", "val");
+        ignite.cache(DEFAULT_CACHE_NAME).put("key", "val");
 
-        startClientGrid(2, persistenceEnabled);
+        startClientGrid(2);
 
         awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
 
-        TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(3, persistenceEnabled);
+        TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(3);
 
         if (persistenceEnabled) {
             awaitPartitionMapExchange(true, true, null, false);
@@ -153,26 +160,22 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      * Checks that {@link GridMetricManager#CLUSTER_REBALANCED} metric is set to {@code exp} on all cluster nodes.
      */
     private void assertClusterRebalancedMetricOnAllNodes(boolean exp) {
-        G.allGrids().stream().allMatch(ignite -> {
-            BooleanMetric rebalancedMetric = ((IgniteEx) ignite)
+        assertTrue(G.allGrids().stream().allMatch(ignite -> {
+            BooleanMetric rebalancedMetric = ((IgniteEx)ignite)
                 .context()
                 .metric()
                 .registry(REBALANCE_METRICS)
                 .findMetric(CLUSTER_REBALANCED);
 
             return exp == rebalancedMetric.value();
-        });
+        }));
     }
 
     /**
      * @param idx Index of the node to be started.
-     * @param persistenceEnabled Whether native persistence is enabled.
      */
-    protected TestRecordingCommunicationSpi startGridWithRebalanceBlocked(
-        int idx,
-        boolean persistenceEnabled
-    ) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(idx, persistenceEnabled);
+    protected TestRecordingCommunicationSpi startGridWithRebalanceBlocked(int idx) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) cfg.getCommunicationSpi();
 
@@ -182,27 +185,11 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
             GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage) msg;
 
-            return CU.cacheId(TEST_CACHE) == demandMsg.groupId();
+            return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
         });
 
         startGrid(cfg);
 
         return spi;
-    }
-
-    /**
-     * @param idx Index of the node to be started.
-     * @param persistenceEnabled Whether native persistence is enabled.
-     */
-    private IgniteEx startGrid(int idx, boolean persistenceEnabled) throws Exception {
-        return startGrid(getConfiguration(idx, persistenceEnabled));
-    }
-
-    /**
-     * @param idx Index of the client node to be started.
-     * @param persistenceEnabled Whether native persistence is enabled.
-     */
-    private IgniteEx startClientGrid(int idx, boolean persistenceEnabled) throws Exception {
-        return startClientGrid(getConfiguration(idx, persistenceEnabled));
     }
 }
