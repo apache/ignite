@@ -23,12 +23,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
@@ -42,81 +42,64 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 /** */
 public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends AbstractRestProcessorSelfTest {
     /** */
-    private static final String CLNT_ADMIN = "clnt_admin";
+    private static final String CLIENT_WITH_ADMIN_PERMS = "client_with_admin_perms";
 
     /** */
-    private static final String ALLOWED_CLNT_CACHE = "allowed_clnt_cache";
+    private static final String CLIENT_WITH_CACHE_PERMS = "client_with_cache_perms";
 
     /** */
-    private static final String UNALLOWED_CLNT_CACHE = "unallowed_clnt_cache";
+    private static final String CLIENT_WITH_SYS_PERMS = "client_with_system_perms";
 
     /** */
-    private static final String ALLOWED_CLNT_SYSTEM = "allowed_clnt_system";
+    private static final String CLIENT_WITHOUT_PERMS = "client_without_perms";
 
     /** */
-    private static final String UNALLOWED_CLNT_SYSTEM = "unallowed_clnt_system";
-
-    /** */
-    protected static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
-
-    /** */
-    private static final String STATUS_FLD = "successStatus";
-
-    /** */
-    private static final String ERROR_FLD = "error";
+    private static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
 
     /** */
     private static final String SUCCESS_STATUS = "0";
 
     /** */
-    private static final String ERROR_STATUS = "3";
-
-    /** */
     private static final String CACHE_NAME = "TEST_CACHE";
 
     /** */
-    private static final String UNDECLARED_CACHE = "UNDECLARED_CACHE";
-
-    /** */
-    private static final SecurityPermission[] EMPTY_PERM = new SecurityPermission[0];
+    private static final String UNMANAGED_CACHE = "UNMANAGED_CACHE";
 
     /** */
     private static final int DFLT_REST_PORT = 8091;
 
-    /** */
-    private static final String REST_URL ="http://" + LOC_HOST +":" + DFLT_REST_PORT + "/ignite?";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TestSecurityData[] clientData = new TestSecurityData[] {
-            new TestSecurityData(CLNT_ADMIN,
-                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+            new TestSecurityData(CLIENT_WITH_ADMIN_PERMS,
+                createBuilder()
                     .appendSystemPermissions(ADMIN_CACHE)
                     .build()
             ),
-            new TestSecurityData(ALLOWED_CLNT_CACHE,
-                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+            new TestSecurityData(CLIENT_WITH_CACHE_PERMS,
+                createBuilder()
                     .appendCachePermissions(CACHE_NAME, CACHE_CREATE, CACHE_DESTROY)
                     .build()
             ),
-            new TestSecurityData(UNALLOWED_CLNT_CACHE,
-                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-                    .appendCachePermissions(CACHE_NAME, EMPTY_PERM)
-                    .build()
-            ),
-            new TestSecurityData(ALLOWED_CLNT_SYSTEM,
-                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+            new TestSecurityData(CLIENT_WITH_SYS_PERMS,
+                createBuilder()
                     .appendSystemPermissions(CACHE_CREATE, CACHE_DESTROY)
                     .build()
             ),
-            new TestSecurityData(UNALLOWED_CLNT_SYSTEM,
-                SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+            new TestSecurityData(CLIENT_WITHOUT_PERMS,
+                createBuilder()
                     .build()
             )
         };
 
         return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new TestSecurityPluginProvider(igniteInstanceName, "", ALLOW_ALL, false, clientData));
+            .setPluginProviders(
+                new TestSecurityPluginProvider(igniteInstanceName, "", ALLOW_ALL, false, clientData));
+    }
+
+    /** */
+    private SecurityPermissionSetBuilder createBuilder() {
+        return SecurityPermissionSetBuilder.create().defaultAllowAll(false);
     }
 
     /** {@inheritDoc} */
@@ -142,120 +125,91 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
     @Test
     public void testGetOrCreateWithAdminPerms() throws Exception {
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(CLNT_ADMIN, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
-        assertEquals(SUCCESS_STATUS,
-            jsonField(execute(CLNT_ADMIN, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
+            status(execute(CLIENT_WITH_ADMIN_PERMS, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE)));
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
     @Test
     public void testGetOrCreateWithCachePermission() throws Exception {
-        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE),
+        checkFailWithError(execute(CLIENT_WITHOUT_PERMS, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
-        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
+        checkFailWithError(execute(CLIENT_WITHOUT_PERMS, UNMANAGED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(UNDECLARED_CACHE));
+        assertNull(grid(0).cache(UNMANAGED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
+            status(execute(CLIENT_WITH_CACHE_PERMS, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE)));
 
-        checkFailWithError(execute(ALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
+        checkFailWithError(execute(CLIENT_WITH_CACHE_PERMS, UNMANAGED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
             CACHE_CREATE);
 
         assertNotNull(grid(0).cache(CACHE_NAME));
 
-        assertNull(grid(0).cache(UNDECLARED_CACHE));
+        assertNull(grid(0).cache(UNMANAGED_CACHE));
     }
 
     /** */
     @Test
     public void testGetOrCreateWithSystemPermission() throws Exception {
-        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE),
-            CACHE_CREATE);
-        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE),
-            CACHE_CREATE);
-
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
-        assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.GET_OR_CREATE_CACHE), STATUS_FLD));
+            status(execute(CLIENT_WITH_SYS_PERMS, CACHE_NAME, GridRestCommand.GET_OR_CREATE_CACHE)));
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
     @Test
     public void testDestroyCacheWithAdminPerms() throws Exception {
         assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(CLNT_ADMIN, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
-        assertEquals(SUCCESS_STATUS,
-            jsonField(execute(CLNT_ADMIN, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
+            status(execute(CLIENT_WITH_ADMIN_PERMS, CACHE_NAME, GridRestCommand.DESTROY_CACHE)));
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /** */
     @Test
     public void testDestroyCacheWithCachePermissions() throws Exception {
         assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(UNDECLARED_CACHE));
+        assertNotNull(grid(0).getOrCreateCache(UNMANAGED_CACHE));
 
-        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.DESTROY_CACHE),
+        checkFailWithError(execute(CLIENT_WITHOUT_PERMS, CACHE_NAME, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
-        checkFailWithError(execute(UNALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
+        checkFailWithError(execute(CLIENT_WITHOUT_PERMS, UNMANAGED_CACHE, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
 
         assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNMANAGED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_CACHE, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
+            status(execute(CLIENT_WITH_CACHE_PERMS, CACHE_NAME, GridRestCommand.DESTROY_CACHE)));
 
-        checkFailWithError(execute(ALLOWED_CLNT_CACHE, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
+        checkFailWithError(execute(CLIENT_WITH_CACHE_PERMS, UNMANAGED_CACHE, GridRestCommand.DESTROY_CACHE),
             CACHE_DESTROY);
 
         assertNull(grid(0).cache(CACHE_NAME));
 
-        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
+        assertNotNull(grid(0).cache(UNMANAGED_CACHE));
     }
 
     /** */
     @Test
     public void testDestroyCacheWithSystemPermissions() throws Exception {
         assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(UNDECLARED_CACHE));
-
-        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.DESTROY_CACHE),
-            CACHE_DESTROY);
-        checkFailWithError(execute(UNALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE),
-            CACHE_DESTROY);
-
-        assertNotNull(grid(0).cache(CACHE_NAME));
-        assertNotNull(grid(0).cache(UNDECLARED_CACHE));
 
         assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_SYSTEM, CACHE_NAME, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
-        assertEquals(SUCCESS_STATUS,
-            jsonField(execute(ALLOWED_CLNT_SYSTEM, UNDECLARED_CACHE, GridRestCommand.DESTROY_CACHE), STATUS_FLD));
+            status(execute(CLIENT_WITH_SYS_PERMS, CACHE_NAME, GridRestCommand.DESTROY_CACHE)));
 
         assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(UNDECLARED_CACHE));
     }
 
     /**
@@ -266,18 +220,13 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
      * @param cmd Command.
      */
     protected String execute(String login, String cacheName, GridRestCommand cmd) throws Exception {
-        SB sb = new SB(REST_URL);
-        sb.a("ignite.login=").a(login).a("&")
-            .a("ignite.password=&")
-            .a("cacheName=").a(cacheName).a('&')
-            .a("cmd=").a(cmd.key()).a('&');
-
-        URL url = new URL(sb.toString());
+        URL url = new URL(String.format("http://%s:%d/ignite?ignite.login=%s&ignite.password=&cacheName=%s&cmd=%s&",
+            LOC_HOST, DFLT_REST_PORT, login, cacheName , cmd.key()));
 
         try (InputStream in = url.openConnection().getInputStream()) {
             StringBuilder buf = new StringBuilder(256);
 
-            try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, "UTF-8"))) {
+            try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                 for (String line = rdr.readLine(); line != null; line = rdr.readLine())
                     buf.append(line);
             }
@@ -288,10 +237,16 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
 
     /**
      * @param json Json.
-     * @param fieldName Field name.
      */
-    private String jsonField(String json, String fieldName) throws IOException {
-        return JSON_MAPPER.readTree(json).get(fieldName).asText();
+    private String status(String json) throws IOException {
+        return JSON_MAPPER.readTree(json).get("successStatus").asText();
+    }
+
+    /**
+     * @param json Json.
+     */
+    private String errorMessage(String json) throws IOException {
+        return JSON_MAPPER.readTree(json).get("error").asText();
     }
 
     /**
@@ -299,8 +254,8 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
      * @param perm Missing permission.
      */
     private void checkFailWithError(String json, SecurityPermission perm) throws IOException {
-        assertEquals(ERROR_STATUS, jsonField(json, STATUS_FLD));
+        assertFalse(SUCCESS_STATUS.equals(status(json)));
 
-        assertTrue(JSON_MAPPER.readTree(json).get(ERROR_FLD).asText().contains("Authorization failed [perm=" + perm));
+        assertTrue(JSON_MAPPER.readTree(json).get("error").asText().contains("Authorization failed [perm=" + perm));
     }
 }
