@@ -50,23 +50,25 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
-        DataRegionConfiguration drCfg = new DataRegionConfiguration()
-            .setPersistenceEnabled(persistenceEnabled)
-            .setMaxSize(10L * 1024 * 1024);
-
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(drCfg);
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(persistenceEnabled)
+                .setMaxSize(10L * 1024 * 1024)
+            );
 
         CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setBackups(1)
             .setCacheMode(PARTITIONED)
             .setAtomicityMode(TRANSACTIONAL);
 
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(cCfg)
-            .setCommunicationSpi(commSpi)
-            .setClusterStateOnStart(INACTIVE)
-            .setDataStorageConfiguration(dsCfg);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(cCfg);
+        cfg.setCommunicationSpi(commSpi);
+        cfg.setClusterStateOnStart(INACTIVE);
+        cfg.setDataStorageConfiguration(dsCfg);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -100,12 +102,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     public void testPersistenceClusterRebalancedMetric() throws Exception {
         persistenceEnabled = true;
 
-        try {
-            checkClusterRebalancedMetric();
-        }
-        finally {
-            persistenceEnabled = false;
-        }
+        checkClusterRebalancedMetric();
     }
 
     /**
