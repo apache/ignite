@@ -975,6 +975,11 @@ namespace Apache.Ignite.Core.Cache
         void EnableStatistics(bool enabled);
 
         /// <summary>
+        /// Clears cluster statistics for this cache.
+        /// </summary>
+        void ClearStatistics();
+
+        /// <summary>
         /// Rebalances cache partitions. This method is usually used when rebalanceDelay configuration parameter
         /// has non-zero value. When many nodes are started or stopped almost concurrently,
         /// it is more efficient to delay rebalancing until the node topology is stable to make sure that no redundant
