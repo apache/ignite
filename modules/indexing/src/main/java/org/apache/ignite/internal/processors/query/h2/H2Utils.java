@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -38,6 +39,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -63,6 +65,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
@@ -78,6 +82,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
+import org.h2.value.CompareMode;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
@@ -109,6 +114,9 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  * H2 utility methods.
  */
 public class H2Utils {
+    /** Query context H2 variable name. */
+    static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
+
     /**
      * The default precision for a char/varchar value.
      */
@@ -407,27 +415,41 @@ public class H2Utils {
      * @param c Connection.
      * @return Session.
      */
+    public static Session session(H2PooledConnection c) {
+        return session(c.connection());
+    }
+
+    /**
+     * @param c Connection.
+     * @return Session.
+     */
     public static Session session(Connection c) {
         return (Session)((JdbcConnection)c).getSession();
     }
 
     /**
      * @param conn Connection to use.
+     * @param qctx Query context.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      */
-    public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
-        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
+    public static void setupConnection(H2PooledConnection conn, QueryContext qctx,
+        boolean distributedJoins, boolean enforceJoinOrder) {
+        assert qctx != null;
+
+        setupConnection(conn, qctx, distributedJoins, enforceJoinOrder, false);
     }
 
     /**
      * @param conn Connection to use.
+     * @param qctx Query context.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param lazy Lazy query execution mode.
      */
     public static void setupConnection(
-        Connection conn,
+        H2PooledConnection conn,
+        QueryContext qctx,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean lazy
@@ -437,6 +459,34 @@ public class H2Utils {
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
         s.setLazyQueryExecution(lazy);
+
+        QueryContext oldCtx = (QueryContext)s.getVariable(QCTX_VARIABLE_NAME).getObject();
+
+        assert oldCtx == null || oldCtx == qctx : oldCtx;
+
+        s.setVariable("IGNITE_QUERY_CONTEXT", new ValueRuntimeSimpleObject<>(qctx));
+    }
+
+    /**
+     * Clean up session for further reuse.
+     *
+     * @param conn Connection to use.
+     */
+    public static void resetSession(H2PooledConnection conn) {
+        Session s = session(conn);
+
+        s.setVariable("IGNITE_QUERY_CONTEXT", ValueNull.INSTANCE);
+    }
+
+    /**
+     * Clean up session for further reuse.
+     *
+     * @param conn Connection to use.
+     */
+    public static QueryContext context(H2PooledConnection conn) {
+        Session s = session(conn);
+
+        return (QueryContext)s.getVariable("IGNITE_QUERY_CONTEXT").getObject();
     }
 
     /**
@@ -984,4 +1034,167 @@ public class H2Utils {
         return keyCols.toArray(new IndexColumn[0]);
     }
 
+    /**
+     * @param <T>
+     */
+    public static class ValueRuntimeSimpleObject<T> extends Value {
+        /** */
+        private final T val;
+
+        /**
+         * @param val Object.
+         */
+        public ValueRuntimeSimpleObject(T val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSQL() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getType() {
+            return Value.JAVA_OBJECT;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPrecision() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getDisplaySize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getString() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getObject() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void set(PreparedStatement prep, int parameterIndex) throws SQLException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int compareSecure(Value v, CompareMode mode) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            ValueRuntimeSimpleObject<?> object = (ValueRuntimeSimpleObject<?>)o;
+            return Objects.equals(val, object.val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(val);
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @param fldName Fld name.
+     */
+    public static <T, R> Getter<T, R> getter(Class<? extends T> cls, String fldName) {
+        Field field;
+
+        try {
+            field = cls.getDeclaredField(fldName);
+        }
+        catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+
+        field.setAccessible(true);
+
+        return new Getter<>(field);
+    }
+
+    /**
+     * Field getter.
+     */
+    public static class Getter<T, R> {
+        /** */
+        private final Field fld;
+
+        /**
+         * @param fld Fld.
+         */
+        private Getter(Field fld) {
+            this.fld = fld;
+        }
+
+        /**
+         * @param obj Object.
+         * @return Result.
+         */
+        public R get(T obj) {
+            try {
+                return (R)fld.get(obj);
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @param fldName Fld name.
+     */
+    public static <T, R> Setter<T, R> setter(Class<? extends T> cls, String fldName) {
+        Field field;
+
+        try {
+            field = cls.getDeclaredField(fldName);
+        }
+        catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+
+        field.setAccessible(true);
+
+        return new Setter<>(field);
+    }
+
+    /**
+     * Field getter.
+     */
+    public static class Setter<T, R> {
+        /** */
+        private final Field fld;
+
+        /**
+         * @param fld Fld.
+         */
+        private Setter(Field fld) {
+            this.fld = fld;
+        }
+
+        /**
+         * @param obj Object.
+         * @param val Value.
+         */
+        public void set(T obj, R val) {
+            try {
+                fld.set(obj, val);
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
 }
