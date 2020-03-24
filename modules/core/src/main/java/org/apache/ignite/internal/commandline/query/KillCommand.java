@@ -32,7 +32,6 @@ import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.TransactionsMXBean;
 
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -118,6 +117,7 @@ public class KillCommand implements Command<Object> {
         Command.usage(log, "Kill compute task by session id:", KILL, params, COMPUTE.toString(),
             "session_id");
 
+        params.clear();
         params.put("name", "Service name.");
 
         Command.usage(log, "Kill service by name:", KILL, params, SERVICE.toString(), "name");

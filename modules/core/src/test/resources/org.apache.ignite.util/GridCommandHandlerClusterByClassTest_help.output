@@ -75,7 +75,7 @@ This utility can do the following commands:
       session_id  - Session identifier.
 
   Kill service by name:
-    control.(sh|bat) --kill service name
+    control.(sh|bat) --kill SERVICE name
 
     Parameters:
       name  - Service name.
