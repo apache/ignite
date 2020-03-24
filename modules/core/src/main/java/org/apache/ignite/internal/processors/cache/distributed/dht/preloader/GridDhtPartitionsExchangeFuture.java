@@ -3871,8 +3871,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     // Do not validate read or write through caches or caches with disabled rebalance
                     // or ExpiryPolicy is set or validation is disabled.
-                    boolean eternalExpiryPolicy = grpCtx != null && (grpCtx.config().getExpiryPolicyFactory() == null
-                        || grpCtx.config().getExpiryPolicyFactory().create() instanceof EternalExpiryPolicy);
+                    boolean customExpiryPlc = Optional.ofNullable(grpCtx)
+                        .map(CacheGroupContext::caches)
+                        .orElseGet(Collections::emptyList)
+                        .stream()
+                        .anyMatch(ctx -> ctx.expiry() != null && !(ctx.expiry() instanceof EternalExpiryPolicy));
 
                     if (grpCtx == null
                         || grpCtx.config().isReadThrough()
@@ -3880,7 +3883,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         || grpCtx.config().getCacheStoreFactory() != null
                         || grpCtx.config().getRebalanceDelay() == -1
                         || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
-                        || !eternalExpiryPolicy
+                        || customExpiryPlc
                         || SKIP_PARTITION_SIZE_VALIDATION)
                         return null;
 
