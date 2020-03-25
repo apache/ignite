@@ -15,58 +15,87 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.service;
+package org.apache.ignite.internal.visor.query;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Argument for {@link VisorCancelServiceTask}.
+ * Arguments of task for cancel SCAN query.
  */
-public class VisorCancelServiceTaskArg extends IgniteDataTransferObject {
+@GridInternal
+public class VisorScanQueryCancelTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Service name. */
-    private String name;
+    /** Query ID to cancel. */
+    private long qryId;
+
+    /** Cache name. */
+    private String cacheName;
+
+    /** Query originating node to cancel. */
+    private UUID originNodeId;
 
     /**
      * Default constructor.
      */
-    public VisorCancelServiceTaskArg() {
+    public VisorScanQueryCancelTaskArg() {
         // No-op.
     }
 
     /**
-     * @param name Service name.
+     * @param qryId Query ID to cancel.
      */
-    public VisorCancelServiceTaskArg(String name) {
-        this.name = name;
+    public VisorScanQueryCancelTaskArg(UUID originNodeId, String cacheName, long qryId) {
+        this.originNodeId = originNodeId;
+        this.cacheName = cacheName;
+        this.qryId = qryId;
     }
 
     /**
-     * @return Service name.
+     * @return Query ID to cancel.
      */
-    public String getName() {
-        return name;
+    public long getQueryId() {
+        return qryId;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Query originating node to cancel.
+     */
+    public UUID getOriginNodeId() {
+        return originNodeId;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
+        out.writeLong(qryId);
+        U.writeString(out, cacheName);
+        U.writeUuid(out, originNodeId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
+        qryId = in.readLong();
+        cacheName = U.readString(in);
+        originNodeId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCancelServiceTaskArg.class, this);
+        return S.toString(VisorScanQueryCancelTaskArg.class, this);
     }
 }

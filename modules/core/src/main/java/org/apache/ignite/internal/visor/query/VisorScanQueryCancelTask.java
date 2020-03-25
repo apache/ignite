@@ -18,41 +18,45 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Task to cancel queries.
+ * Task to cancel scan queries.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Boolean> {
+public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCancelTaskArg, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCancelQueriesJob job(VisorQueryCancelTaskArg arg) {
-        return new VisorCancelQueriesJob(arg, debug);
+    @Override protected VisorScanQueryCancelJob job(VisorScanQueryCancelTaskArg arg) {
+        return new VisorScanQueryCancelJob(arg, debug);
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorQueryCancelTaskArg> arg) {
-        return Collections.singleton(arg.getArgument().getNodeId());
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorScanQueryCancelTaskArg> arg) {
+        return F.transform(ignite.cluster().nodes(), ClusterNode::id);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteException {
         for (ComputeJobResult res : results) {
-            if (!res.isCancelled() && res.getData() != null && (Boolean)res.getData())
+            if (res.getData() != null && ((Boolean)res.getData()))
                 return true;
         }
 
@@ -60,9 +64,9 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
     }
 
     /**
-     * Job to cancel queries on node.
+     * Job to cancel scan queries on node.
      */
-    private static class VisorCancelQueriesJob extends VisorJob<VisorQueryCancelTaskArg, Boolean> {
+    private static class VisorScanQueryCancelJob extends VisorJob<VisorScanQueryCancelTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -72,13 +76,25 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCancelQueriesJob(VisorQueryCancelTaskArg arg, boolean debug) {
+        protected VisorScanQueryCancelJob(@Nullable VisorScanQueryCancelTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(VisorQueryCancelTaskArg arg) throws IgniteException {
-            return ignite.context().query().cancelQuery(arg.getQueryId());
+        @Override protected Boolean run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
+            IgniteLogger log = ignite.log().getLogger(VisorScanQueryCancelJob.class);
+
+            int cacheId = CU.cacheId(arg.getCacheName());
+
+            GridCacheContext<?, ?> ctx = ignite.context().cache().context().cacheContext(cacheId);
+
+            if (ctx == null) {
+                log.warning("Cache not found[cacheName=" + arg.getCacheName() + ']');
+
+                return false;
+            }
+
+            return ctx.queries().removeQueryResult(arg.getOriginNodeId(), arg.getQueryId());
         }
     }
 }

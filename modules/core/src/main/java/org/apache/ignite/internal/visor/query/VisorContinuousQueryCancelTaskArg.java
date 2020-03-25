@@ -15,58 +15,61 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.service;
+package org.apache.ignite.internal.visor.query;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Argument for {@link VisorCancelServiceTask}.
+ * Arguments of task for cancel CONTINUOUS query.
  */
-public class VisorCancelServiceTaskArg extends IgniteDataTransferObject {
+@GridInternal
+public class VisorContinuousQueryCancelTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Service name. */
-    private String name;
+    /** Routine id. */
+    private UUID routineId;
 
     /**
      * Default constructor.
      */
-    public VisorCancelServiceTaskArg() {
+    public VisorContinuousQueryCancelTaskArg() {
         // No-op.
     }
 
     /**
-     * @param name Service name.
+     * @param routineId Routine id.
      */
-    public VisorCancelServiceTaskArg(String name) {
-        this.name = name;
+    public VisorContinuousQueryCancelTaskArg(UUID routineId) {
+        this.routineId = routineId;
     }
 
     /**
-     * @return Service name.
+     * @return Routine ID.
      */
-    public String getName() {
-        return name;
+    public UUID getRoutineId() {
+        return routineId;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
+        U.writeUuid(out, routineId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
+        routineId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorCancelServiceTaskArg.class, this);
+        return S.toString(VisorContinuousQueryCancelTaskArg.class, this);
     }
 }
