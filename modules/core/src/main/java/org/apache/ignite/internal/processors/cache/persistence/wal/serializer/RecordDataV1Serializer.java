@@ -1328,8 +1328,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(tpDelta.pageId());
 
                 buf.putLong(tpDelta.pageIdToMark());
-                buf.putLong(tpDelta.nextSnapshotId());
-                buf.putLong(tpDelta.lastSuccessfulSnapshotId());
+                buf.putLong(tpDelta.nextSnapshotTag());
+                buf.putLong(tpDelta.lastSuccessfulSnapshotTag());
 
                 break;
 

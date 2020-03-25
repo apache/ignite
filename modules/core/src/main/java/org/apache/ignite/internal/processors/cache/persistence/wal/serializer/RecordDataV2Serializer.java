@@ -36,6 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -161,6 +162,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 return new RollbackRecord(grpId, partId, start, range);
 
+            case TRACKING_PAGE_REPAIR_DELTA:
+                int cacheId = in.readInt();
+                long pageId = in.readLong();
+
+                return new TrackingPageRepairDeltaRecord(cacheId, pageId);
+
             default:
                 return delegateSerializer.readRecord(type, in);
         }
@@ -239,6 +246,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 buf.putInt(rb.partitionId());
                 buf.putLong(rb.start());
                 buf.putLong(rb.range());
+
+                break;
+
+            case TRACKING_PAGE_REPAIR_DELTA:
+                TrackingPageRepairDeltaRecord tprDelta = (TrackingPageRepairDeltaRecord)rec;
+
+                buf.putInt(tprDelta.groupId());
+                buf.putLong(tprDelta.pageId());
 
                 break;
 
