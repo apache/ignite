@@ -108,7 +108,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
             .build();
 
         try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
-
             assertThrowsWithCause(() -> forbidden(clientMode).createCache(CACHE_NAME), SecurityException.class);
 
             assertNotNull(node.createCache(CACHE_NAME));
@@ -125,7 +124,6 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
         grid(SRV).createCache(CACHE_NAME);
 
         try (Ignite node = startGrid(TEST_NODE, secPermSet, clientMode)) {
-
             assertThrowsWithCause(() -> forbidden(clientMode).destroyCache(CACHE_NAME), SecurityException.class);
 
             node.destroyCache(CACHE_NAME);

@@ -35,8 +35,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.junit.Test;
@@ -81,13 +79,7 @@ public class CacheOperationPermissionRestCommandHandlerCheckTest extends GridCom
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
-
         IgniteConfiguration cfg = super.getConfiguration();
-
-        cfg.setDiscoverySpi(disco);
 
         SecurityPermissionSetBuilder builder = SecurityPermissionSetBuilder.create();
 
