@@ -24,7 +24,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 
 /**
- * KILL TX command.
+ * KILL TRANSACTION command.
  *
  * @see TransactionsMXBean#cancel(String)
  * @see TransactionView#xid()
