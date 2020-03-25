@@ -499,7 +499,6 @@ public class H2Utils {
         return (QueryContext)ses.getVariable("IGNITE_QUERY_CONTEXT").getObject();
     }
 
-
     /**
      * Convert value to column's expected type by means of H2.
      *

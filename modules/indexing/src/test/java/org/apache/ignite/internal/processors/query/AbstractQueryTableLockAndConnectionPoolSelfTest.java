@@ -386,7 +386,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             }
         }, qryThreads, "usr-qry");
 
-
         long tEnd = U.currentTimeMillis() + TEST_DUR;
 
         while (U.currentTimeMillis() < tEnd) {
