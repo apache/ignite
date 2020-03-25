@@ -108,12 +108,7 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
 
         URL url = new URL(sb.toString());
 
-        URLConnection conn = url.openConnection();
-
-        String signature = signature();
-
-        if (signature != null)
-            conn.setRequestProperty("X-Signature", signature);
+        URLConnection conn = openConnection(url);
 
         InputStream in = conn.getInputStream();
 
@@ -125,6 +120,24 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
         }
 
         return buf.toString();
+    }
+
+    /**
+     * Open REST connection, set signature header if needed.
+     *
+     * @param url URL to open.
+     * @return URL connection.
+     * @throws Exception If failed.
+     */
+    protected URLConnection openConnection(URL url) throws Exception {
+        URLConnection conn = url.openConnection();
+
+        String signature = signature();
+
+        if (signature != null)
+            conn.setRequestProperty("X-Signature", signature);
+
+        return conn;
     }
 
     /**

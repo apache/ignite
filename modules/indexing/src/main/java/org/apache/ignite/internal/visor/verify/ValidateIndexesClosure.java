@@ -111,6 +111,9 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
     /** If provided only each Kth element will be validated. */
     private final int checkThrough;
 
+    /** Check CRC */
+    private boolean checkCrc;
+
     /** Counter of processed partitions. */
     private final AtomicInteger processedPartitions = new AtomicInteger(0);
 
@@ -139,11 +142,13 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
      * @param cacheNames Cache names.
      * @param checkFirst If positive only first K elements will be validated.
      * @param checkThrough If positive only each Kth element will be validated.
+     * @param checkCrc Check CRC sum on stored pages on disk.
      */
-    public ValidateIndexesClosure(Set<String> cacheNames, int checkFirst, int checkThrough) {
+    public ValidateIndexesClosure(Set<String> cacheNames, int checkFirst, int checkThrough, boolean checkCrc) {
         this.cacheNames = cacheNames;
         this.checkFirst = checkFirst;
         this.checkThrough = checkThrough;
+        this.checkCrc = checkCrc;
     }
 
     /** {@inheritDoc} */
@@ -337,25 +342,27 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     throw new GridNotIdleException(IdleVerifyUtility.CLUSTER_NOT_IDLE_MSG);
             }
 
-            for (Integer grpId: grpIds) {
-                final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
+            if (checkCrc) {
+                for (Integer grpId: grpIds) {
+                    final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-                if (grpCtx == null || !grpCtx.persistenceEnabled()) {
-                    integrityCheckedIndexes.incrementAndGet();
+                    if (grpCtx == null || !grpCtx.persistenceEnabled()) {
+                        integrityCheckedIndexes.incrementAndGet();
 
-                    continue;
+                        continue;
+                    }
+
+                    Future<T2<Integer, IndexIntegrityCheckIssue>> checkFut =
+                            calcExecutor.submit(new Callable<T2<Integer, IndexIntegrityCheckIssue>>() {
+                                @Override public T2<Integer, IndexIntegrityCheckIssue> call() throws Exception {
+                                    IndexIntegrityCheckIssue issue = integrityCheckIndexPartition(grpCtx, cpFlag);
+
+                                    return new T2<>(grpCtx.groupId(), issue);
+                                }
+                            });
+
+                    integrityCheckFutures.add(checkFut);
                 }
-
-                Future<T2<Integer, IndexIntegrityCheckIssue>> checkFut =
-                        calcExecutor.submit(new Callable<T2<Integer, IndexIntegrityCheckIssue>>() {
-                            @Override public T2<Integer, IndexIntegrityCheckIssue> call() throws Exception {
-                                IndexIntegrityCheckIssue issue = integrityCheckIndexPartition(grpCtx, cpFlag);
-
-                                return new T2<>(grpCtx.groupId(), issue);
-                            }
-                        });
-
-                integrityCheckFutures.add(checkFut);
             }
 
             for (Future<T2<Integer, IndexIntegrityCheckIssue>> fut : integrityCheckFutures) {

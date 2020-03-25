@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 
 /**
  * Special field set iterator based on database result set.
@@ -44,9 +46,12 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker,
-        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn)
+        ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn,
+        int pageSize,
+        IgniteLogger log, IgniteH2Indexing h2,
+        QueryContext qctx, boolean lazy)
         throws IgniteCheckedException {
-        super(data);
+        super(data, pageSize, log, h2, qctx, lazy);
 
         assert detachedConn != null;
 

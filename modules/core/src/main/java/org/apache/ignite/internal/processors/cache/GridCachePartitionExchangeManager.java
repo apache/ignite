@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -756,9 +757,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param active Cluster state.
      * @param reconnect Reconnect flag.
+     * @return Topology version of local join exchange if cluster is active.
+     *         Topology version NONE if cluster is not active or reconnect.
      * @throws IgniteCheckedException If failed.
      */
-    public void onKernalStart(boolean active, boolean reconnect) throws IgniteCheckedException {
+    public AffinityTopologyVersion onKernalStart(boolean active, boolean reconnect) throws IgniteCheckedException {
         for (ClusterNode n : cctx.discovery().remoteNodes())
             cctx.versions().onReceived(n.id(), n.metrics().getLastDataVersion());
 
@@ -852,7 +855,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (log.isDebugEnabled())
                 log.debug("Finished waiting for initial exchange: " + fut.exchangeId());
+
+            return fut.initialVersion();
         }
+
+        return NONE;
     }
 
     /**
@@ -3376,14 +3383,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         int size = assignsMap.size();
 
-                        NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
+                        NavigableMap<CacheRebalanceOrder, List<Integer>> orderMap = new TreeMap<>();
 
                         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
                             int grpId = e.getKey();
 
                             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                            int order = grp.config().getRebalanceOrder();
+                            CacheRebalanceOrder order = new CacheRebalanceOrder(
+                                grp.config().getRebalanceOrder(),
+                                grp.config().getRebalanceMode());
 
                             if (orderMap.get(order) == null)
                                 orderMap.put(order, new ArrayList<Integer>(size));
@@ -3400,7 +3409,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
-                        for (Integer order : orderMap.descendingKeySet()) {
+                        for (CacheRebalanceOrder order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -3846,6 +3855,68 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             actionsCnt.keySet().removeIf(key -> !activeObjects.contains(key));
 
             activeObjects.clear();
+        }
+    }
+
+    /**
+     * Represents a cache rebalance order that takes into account both values: rebalance order itself and rebalance mode.
+     * It is assumed SYNC caches should be rebalanced in the first place.
+     */
+    private static class CacheRebalanceOrder implements Comparable<CacheRebalanceOrder> {
+        /** Cache rebalance order. */
+        private int order;
+
+        /** Cache rebalance mode. */
+        private CacheRebalanceMode mode;
+
+        /**
+         * Creates a new instance of CacheRebalanceOrder.
+         *
+         * @param order Cache rebalance order.
+         * @param mode Cache rebalance mode.
+         */
+        public CacheRebalanceOrder(int order, CacheRebalanceMode mode) {
+            this.order = order;
+            this.mode = mode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull CacheRebalanceOrder o) {
+            if (order == o.order) {
+                if (mode == o.mode)
+                    return 0;
+
+                switch (mode) {
+                    case SYNC: return -1;
+                    case ASYNC: return o.mode == CacheRebalanceMode.SYNC ? 1 : -1;
+                    case NONE: return 1;
+                    default:
+                        throw new IllegalArgumentException("Unknown cache rebalance mode [mode=" + mode + ']');
+                }
+            }
+            else
+                return (order < o.order) ? -1 : 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            CacheRebalanceOrder order1 = (CacheRebalanceOrder)o;
+
+            if (order != order1.order)
+                return false;
+            return mode == order1.mode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = order;
+            result = 31 * result + mode.hashCode();
+            return result;
         }
     }
 }

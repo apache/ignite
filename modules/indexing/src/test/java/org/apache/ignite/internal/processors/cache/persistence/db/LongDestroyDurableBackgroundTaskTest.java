@@ -322,7 +322,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         log.info("Doing indexes validation.");
 
         VisorValidateIndexesTaskArg taskArg =
-            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1);
+            new VisorValidateIndexesTaskArg(Collections.singleton("SQL_PUBLIC_T"), nodeIds, 0, 1, true);
 
         VisorValidateIndexesTaskResult taskRes =
             ignite.compute().execute(VisorValidateIndexesTask.class.getName(), new VisorTaskArgument<>(nodeIds, taskArg, false));
@@ -438,7 +438,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        query(cache, "create table t (id integer primary key, p integer, f integer, p integer) with \"BACKUPS=1\"");
+        query(cache, "create table t (id integer primary key, p integer, f integer) with \"BACKUPS=1\"");
 
         createIndex(cache, multicolumn);
 

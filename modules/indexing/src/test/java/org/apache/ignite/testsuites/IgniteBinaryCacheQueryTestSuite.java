@@ -208,6 +208,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateD
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.JdbcSqlCustomSchemaTest;
 import org.apache.ignite.internal.processors.query.JdbcSqlDefaultSchemaTest;
+import org.apache.ignite.internal.processors.query.KillQueryErrorOnCancelTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
 import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTest;
@@ -267,6 +268,9 @@ import org.apache.ignite.internal.sql.SqlParserUserSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridOrderedMessageCancelSelfTest;
 import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
+import org.apache.ignite.util.KillCommandsCommandShTest;
+import org.apache.ignite.util.KillCommandsMXBeanTest;
+import org.apache.ignite.util.KillCommandsSQLTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -596,6 +600,10 @@ import org.junit.runners.Suite;
     KillQueryFromNeighbourTest.class,
     KillQueryFromClientTest.class,
     KillQueryOnClientDisconnectTest.class,
+    KillQueryErrorOnCancelTest.class,
+    KillCommandsMXBeanTest.class,
+    KillCommandsCommandShTest.class,
+    KillCommandsSQLTest.class,
 
     // Table statistics.
     RowCountTableStatisticsUsageTest.class,

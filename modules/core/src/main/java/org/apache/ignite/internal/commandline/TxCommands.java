@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +28,9 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,6 +49,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 import static org.apache.ignite.internal.commandline.CommandList.TX;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -350,7 +348,7 @@ public class TxCommands implements Command<VisorTxTaskArg> {
      * @param client Client.
      */
     private Object transactionInfo(GridClient client, GridClientConfiguration conf) throws GridClientException {
-        checkFeatureSupportedByCluster(client, IgniteFeatures.TX_INFO_COMMAND, true);
+        checkFeatureSupportedByCluster(client, IgniteFeatures.TX_INFO_COMMAND, true, true);
 
         GridCacheVersion nearXidVer = executeTask(client, FetchNearXidVersionTask.class, args.txInfoArgument(), conf);
 
@@ -549,32 +547,6 @@ public class TxCommands implements Command<VisorTxTaskArg> {
             for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
                 logger.info(DOUBLE_INDENT + nodeDescription(entry.getKey()) + ':');
                 logger.info(DOUBLE_INDENT + DOUBLE_INDENT + "State: " + entry.getValue().getInfos().get(0).getState());
-            }
-        }
-    }
-
-    /**
-     * Checks that all cluster nodes support specified feature.
-     *
-     * @param client Client.
-     * @param feature Feature.
-     * @param validateClientNodes Whether client nodes should be checked as well.
-     */
-    private static void checkFeatureSupportedByCluster(
-        GridClient client,
-        IgniteFeatures feature,
-        boolean validateClientNodes
-    ) throws GridClientException {
-        Collection<GridClientNode> nodes = validateClientNodes ?
-            client.compute().nodes() :
-            client.compute().nodes(GridClientNode::connectable);
-
-        for (GridClientNode node : nodes) {
-            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
-
-            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
-                throw new IllegalStateException("Failed to execute command: cluster contains node that " +
-                    "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
             }
         }
     }

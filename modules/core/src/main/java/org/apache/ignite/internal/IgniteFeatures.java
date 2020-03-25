@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
@@ -87,14 +88,21 @@ public enum IgniteFeatures {
     /** ContinuousQuery with security subject id support. */
     CONT_QRY_SECURITY_AWARE(21),
 
-    /** Persistence caches can be snapshotted.  */
-    PERSISTENCE_CACHE_SNAPSHOT(22),
+    /**
+     * Preventing loss of in-memory data when deactivating the cluster.
+     *
+     * @see ClusterState#INACTIVE
+     */
+    SAFE_CLUSTER_DEACTIVATION(22),
 
     /** Long operations dump timeout. */
     LONG_OPERATIONS_DUMP_TIMEOUT(30),
 
+    /** Persistence caches can be snapshotted.  */
+    PERSISTENCE_CACHE_SNAPSHOT(23),
+
     /** */
-    CACHE_PARTITION_FILE_REBALANCE(23);
+    CACHE_PARTITION_FILE_REBALANCE(24);
 
     /**
      * Unique feature identifier.
