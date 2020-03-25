@@ -17,21 +17,19 @@
 
 package org.apache.ignite.internal.visor.service;
 
-import java.util.Optional;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.services.ServiceDescriptor;
 
 /**
  * Task for cancel services with specified name.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Boolean> {
+public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +41,7 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
     /**
      * Job for cancel services with specified name.
      */
-    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Boolean> {
+    private static class VisorCancelServiceJob extends VisorJob<VisorCancelServiceTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -58,21 +56,12 @@ public class VisorCancelServiceTask extends VisorOneNodeTask<VisorCancelServiceT
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(final VisorCancelServiceTaskArg arg) {
+        @Override protected Void run(final VisorCancelServiceTaskArg arg) {
             IgniteServices services = ignite.services();
 
-            String svcName = arg.getName();
+            services.cancel(arg.getName());
 
-            Optional<ServiceDescriptor> svc = services.serviceDescriptors().stream()
-                .filter(d -> d.name().equalsIgnoreCase(svcName))
-                .findFirst();
-
-            if (!svc.isPresent())
-                return false;
-
-            services.cancel(svcName);
-
-            return true;
+            return null;
         }
 
         /** {@inheritDoc} */
