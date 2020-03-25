@@ -372,7 +372,7 @@ public class CommonArgParser {
      */
     private String securityWarningMessage(String password) {
         final String pwdArgWarnFmt = "Warning: %s is insecure. " +
-                "Whenever possible, use interactive prompt for password (just discard %s option).";
+            "Whenever possible, use interactive prompt for password (just discard %s option).";
 
         return String.format(pwdArgWarnFmt, password, password);
     }

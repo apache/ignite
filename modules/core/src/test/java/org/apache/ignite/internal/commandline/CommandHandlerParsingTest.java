@@ -215,9 +215,7 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-    /**
-     *
-     */
+    /** */
     private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
         List<List<T>> res = new ArrayList<>();
 
@@ -232,9 +230,7 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-    /**
-     *
-     */
+    /** */
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
