@@ -25,6 +25,9 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
+import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
+import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -36,6 +39,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.TRANSACTION;
 
@@ -43,6 +47,7 @@ import static org.apache.ignite.internal.commandline.query.KillSubcommand.TRANSA
  * control.sh kill command.
  *
  * @see KillSubcommand
+ * @see ServiceMXBean
  * @see ComputeMXBean
  * @see TransactionsMXBean
  */
@@ -97,6 +102,13 @@ public class KillCommand implements Command<Object> {
 
                 break;
 
+            case SERVICE:
+                taskArgs = new VisorCancelServiceTaskArg(argIter.nextArg("Expected service name."));
+
+                taskName = VisorCancelServiceTask.class.getName();
+
+                break;
+
             case TRANSACTION:
                 String xid = argIter.nextArg("Expected transaction id.");
 
@@ -120,6 +132,11 @@ public class KillCommand implements Command<Object> {
 
         Command.usage(log, "Kill compute task by session id:", KILL, params, COMPUTE.toString(),
             "session_id");
+
+        params.clear();
+        params.put("name", "Service name.");
+
+        Command.usage(log, "Kill service by name:", KILL, params, SERVICE.toString(), "name");
 
         params.clear();
         params.put("xid", "Transaction identifier.");
