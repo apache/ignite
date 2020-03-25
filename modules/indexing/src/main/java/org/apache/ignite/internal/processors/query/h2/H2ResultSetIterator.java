@@ -30,8 +30,6 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -94,7 +92,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     private final Session ses;
 
     /** Closed. */
-    private volatile boolean closed;
+    private boolean closed;
 
     /** Canceled. */
     private boolean canceled;

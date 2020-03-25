@@ -24,7 +24,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 
 /**
  * Special field set iterator based on database result set.
