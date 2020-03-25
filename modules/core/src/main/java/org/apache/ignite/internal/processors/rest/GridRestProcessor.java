@@ -956,10 +956,10 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         }
 
         if (perm != null) {
-                if (req.command() == GET_OR_CREATE_CACHE || req.command() == DESTROY_CACHE)
-                    withPermissionAdminCacheCompatibility(name, perm);
-                else
-                    ctx.security().authorize(name, perm);
+            if (req.command() == GET_OR_CREATE_CACHE || req.command() == DESTROY_CACHE)
+                withPermissionAdminCacheCompatibility(name, perm);
+            else
+                ctx.security().authorize(name, perm);
 
         }
     }
