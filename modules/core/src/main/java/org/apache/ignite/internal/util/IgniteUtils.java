@@ -11738,7 +11738,6 @@ public abstract class IgniteUtils {
         return s == null ? null : s.replaceAll("^\"|\"$", "");
     }
 
-
     /**
      * Writes string to output stream accounting for {@code null} values. <br/>
      *
