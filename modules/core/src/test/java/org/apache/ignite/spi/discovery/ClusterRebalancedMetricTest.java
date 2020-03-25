@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -107,58 +108,64 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     public void checkClusterRebalancedMetric() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        assertClusterRebalancedMetricOnAllNodes(false);
+        assertMetric(false);
 
         ignite.cluster().state(ACTIVE);
 
-        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+        awaitPmeAndAssertMetric(true);
 
         ignite.cache(DEFAULT_CACHE_NAME).put("key", "val");
 
         startClientGrid(1);
 
-        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+        awaitPmeAndAssertMetric(true);
 
         TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(2);
 
         if (persistenceEnabled) {
-            awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+            awaitPmeAndAssertMetric(true);
 
             ignite.cluster().setBaselineTopology(ignite.cluster().forServers().nodes());
         }
 
         spi.waitForBlocked();
 
-        assertClusterRebalancedMetricOnAllNodes(false);
+        assertMetric(false);
 
         spi.stopBlock();
 
-        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+        awaitPmeAndAssertMetric(true);
 
         ignite.cluster().state(INACTIVE);
 
-        awaitPmeAndAssertRebalancedMetricOnAllNodes(false);
+        awaitPmeAndAssertMetric(false);
 
         ignite.cluster().state(ACTIVE);
 
-        awaitPmeAndAssertRebalancedMetricOnAllNodes(true);
+        awaitPmeAndAssertMetric(true);
+
+        stopGrid(2);
+
+        awaitPmeAndAssertMetric(true);
     }
 
     /**
-     * @param exp Expected value of {@link GridMetricManager#CLUSTER_REBALANCED} metric.
+     * Awaits PME process completion and checks value of {@link GridMetricManager#CLUSTER_REBALANCED} metric.
+     *
+     * @param exp Expected value of the metric.
      */
-    private void awaitPmeAndAssertRebalancedMetricOnAllNodes(boolean exp) throws Exception {
+    private void awaitPmeAndAssertMetric(boolean exp) throws Exception {
         awaitPartitionMapExchange(true, true, null);
 
-        assertClusterRebalancedMetricOnAllNodes(exp);
+        assertMetric(exp);
     }
 
     /**
      * Checks that {@link GridMetricManager#CLUSTER_REBALANCED} metric is set to {@code exp} on all cluster nodes.
      */
-    private void assertClusterRebalancedMetricOnAllNodes(boolean exp) {
+    private void assertMetric(boolean exp) {
         assertTrue(G.allGrids().stream().allMatch(ignite -> {
-            BooleanMetric rebalancedMetric = ((IgniteEx)ignite)
+            BooleanMetric rebalancedMetric = ((IgniteEx) ignite)
                 .context()
                 .metric()
                 .registry(REBALANCE_METRICS)
@@ -169,14 +176,18 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Starts node with blocked ability to demand {@link GridAbstractTest#DEFAULT_CACHE_NAME} partitions
+     * from other nodes.
+     *
      * @param idx Index of the node to be started.
+     * @return Communication SPI instance of the node that was started.
      */
     protected TestRecordingCommunicationSpi startGridWithRebalanceBlocked(int idx) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) cfg.getCommunicationSpi();
 
-        spi.blockMessages((node, msg) ->  {
+        spi.blockMessages((node, msg) -> {
             if (!(msg instanceof GridDhtPartitionDemandMessage))
                 return false;
 
