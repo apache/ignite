@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,7 +93,20 @@ public class H2PooledConnection implements AutoCloseable {
      * @return Prepared statement.
      */
     public PreparedStatement prepareStatementNoCache(String sql) throws IgniteCheckedException {
-        return delegate.prepareStatementNoCache(sql);
+        boolean insertHack = GridH2Table.insertHackRequired(sql);
+
+        if (insertHack) {
+            GridH2Table.insertHack(true);
+
+            try {
+                return delegate.prepareStatementNoCache(sql);
+            }
+            finally {
+                GridH2Table.insertHack(false);
+            }
+        }
+        else
+            return delegate.prepareStatementNoCache(sql);
     }
 
     /** {@inheritDoc} */

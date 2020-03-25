@@ -94,19 +94,10 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     private final Session ses;
 
     /** Closed. */
-    private boolean closed;
+    private volatile boolean closed;
 
     /** Canceled. */
     private boolean canceled;
-
-    /** Query context. */
-    private final QueryContext qctx;
-
-    /** Query context registry. */
-    private final QueryContextRegistry qryCtxReg;
-
-    /** Query context registry. */
-    private final boolean lazy;
 
     /**
      * @param data Data array.
@@ -115,13 +106,10 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      * @param pageSize Page size.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, int pageSize, IgniteLogger log, IgniteH2Indexing h2,
-        QueryContext qctx, boolean lazy) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data, int pageSize, IgniteLogger log, IgniteH2Indexing h2)
+        throws IgniteCheckedException {
+        this.pageSize = pageSize;
         this.data = data;
-        this.qctx = qctx;
-        qryCtxReg = h2.queryContextRegistry();
-        this.lazy = lazy;
-        this.pageSize = !lazy ? 1 : pageSize;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -243,7 +231,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
     /** */
     public void lockTables() {
-        if (ses.isLazyQueryExecution() && !isClosed())
+        if (!isClosed() && ses.isLazyQueryExecution())
             GridH2Table.readLockTables(ses);
     }
 

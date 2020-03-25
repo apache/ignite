@@ -30,11 +30,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
@@ -293,7 +291,7 @@ class MapQueryResult {
 
     /** */
     public void lockTables() {
-        if (ses.isLazyQueryExecution() && !closed)
+        if (!closed && ses.isLazyQueryExecution())
             GridH2Table.readLockTables(ses);
     }
 
@@ -305,7 +303,7 @@ class MapQueryResult {
 
     /** */
     public void unlockTables() {
-        if (ses.isLazyQueryExecution())
+        if (!closed && ses.isLazyQueryExecution())
             GridH2Table.unlockTables(ses);
     }
 

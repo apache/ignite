@@ -572,8 +572,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         );
 
                         return new H2FieldsIterator(rs, mvccTracker, conn, qryParams.pageSize(),
-                            log, IgniteH2Indexing.this,
-                            qctx, qryParams.lazy());
+                            log, IgniteH2Indexing.this);
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         conn.close();
