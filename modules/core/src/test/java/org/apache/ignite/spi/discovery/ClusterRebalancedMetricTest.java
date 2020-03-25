@@ -105,7 +105,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     /**
      * Checks {@link GridMetricManager#REBALANCED} metric value.
      */
-    public void checkClusterRebalancedMetric() throws Exception {
+    private void checkClusterRebalancedMetric() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         assertMetric(false);
@@ -182,7 +182,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
      * @param idx Index of the node to be started.
      * @return Communication SPI instance of the node that was started.
      */
-    protected TestRecordingCommunicationSpi startGridWithRebalanceBlocked(int idx) throws Exception {
+    private TestRecordingCommunicationSpi startGridWithRebalanceBlocked(int idx) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
         TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi) cfg.getCommunicationSpi();
