@@ -334,13 +334,11 @@ public class CommonArgParser {
 
                     case CMD_USER_ATTR:
                         userAttrStr = argIter.nextArg("Expected user attribute string.");
-                        ;
 
                         break;
 
                     case CMD_USER_ATTR_PATH:
                         userAttrPath = argIter.nextArg("Expected user attribute file.");
-                        ;
 
                         break;
 

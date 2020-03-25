@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.HashMap;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 import java.util.Map;
@@ -73,7 +74,7 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
-    /** Truststore Password. */
+    /** User attributes. */
     private Map<String, String> userAttrs;
 
     /** High-level command. */
@@ -296,7 +297,7 @@ public class ConnectionAndSslParameters {
      * @param userAttrs user attributes.
      */
     public ConnectionAndSslParameters withUserAttributes(Map<String, String> userAttrs){
-        this.userAttrs = userAttrs;
+        this.userAttrs = new HashMap<>(userAttrs);
 
         return this;
     }
