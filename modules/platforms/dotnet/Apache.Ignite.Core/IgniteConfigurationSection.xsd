@@ -1490,6 +1490,11 @@
                                             <xs:documentation>Active transactions count per connection limit.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="computeEnabled" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Is compute enabled for thin clients.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>

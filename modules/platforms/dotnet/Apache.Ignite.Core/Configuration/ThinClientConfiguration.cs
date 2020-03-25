@@ -30,6 +30,11 @@ namespace Apache.Ignite.Core.Configuration
         public const int DefaultMaxActiveTxPerConnection = 100;
 
         /// <summary>
+        /// Default value of compute enabled flag.
+        /// </summary>
+        public const bool DefaultComputeEnabled = false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ThinClientConfiguration"/> class.
         /// </summary>
         public ThinClientConfiguration()
@@ -42,5 +47,11 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultMaxActiveTxPerConnection)]
         public int MaxActiveTxPerConnection { get; set; }
+
+        /// <summary>
+        /// Gets or sets compute enabled flag.
+        /// </summary>
+        [DefaultValue(DefaultComputeEnabled)]
+        public int ComputeEnabled { get; set; }
     }
 }

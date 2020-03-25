@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_2_0_0;
 
 /**
  * Thin client request handler.
@@ -121,9 +122,11 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
 
-        if (ver.compareTo(VER_1_4_0) >= 0) {
+        if (ver.compareTo(VER_2_0_0) >= 0)
+            writer.writeByteArray(ClientFeature.marshallFeatures(ClientFeature.values()));
+
+        if (ver.compareTo(VER_1_4_0) >= 0)
             writer.writeUuid(ctx.kernalContext().localNodeId());
-        }
     }
 
     /** {@inheritDoc} */

@@ -41,6 +41,7 @@ import org.junit.runners.Suite;
     ConnectionTest.class,
     ConnectToStartingNodeTest.class,
     AsyncChannelTest.class,
+    ComputeTaskTest.class,
     ThinClientPartitionAwarenessStableTopologyTest.class,
     ThinClientPartitionAwarenessUnstableTopologyTest.class,
     ThinClientPartitionAwarenessResourceReleaseTest.class

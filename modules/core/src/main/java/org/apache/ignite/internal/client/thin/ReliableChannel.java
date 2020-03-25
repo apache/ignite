@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -48,7 +49,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Communication channel with failover and partition awareness.
  */
-final class ReliableChannel implements AutoCloseable {
+final class ReliableChannel implements AutoCloseable, NotificationListener {
     /** Timeout to wait for executor service to shutdown (in milliseconds). */
     private static final long EXECUTOR_SHUTDOWN_TIMEOUT = 10_000L;
 
@@ -72,6 +73,12 @@ final class ReliableChannel implements AutoCloseable {
 
     /** Node channels. */
     private final Map<UUID, ClientChannelHolder> nodeChannels = new ConcurrentHashMap<>();
+
+    /** Notification listeners. */
+    private final Collection<NotificationListener> notificationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** Listeners of channel close events. */
+    private final Collection<Consumer<ClientChannel>> channelCloseLsnrs = new CopyOnWriteArrayList<>();
 
     /** Async tasks thread pool. */
     private final ExecutorService asyncRunner = Executors.newSingleThreadExecutor(
@@ -240,6 +247,48 @@ final class ReliableChannel implements AutoCloseable {
 
         // Can't determine affinity node or request to affinity node failed - proceed with standart failover service.
         return service(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * Add notification listener.
+     *
+     * @param lsnr Listener.
+     */
+    public void addNotificationListener(NotificationListener lsnr) {
+        notificationLsnrs.add(lsnr);
+    }
+
+    /**
+     * Add listener of channel close event.
+     *
+     * @param lsnr Listener.
+     */
+    public void addChannelCloseListener(Consumer<ClientChannel> lsnr) {
+        channelCloseLsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, byte[] payload) {
+        for (NotificationListener lsnr : notificationLsnrs) {
+            try {
+                lsnr.acceptNotification(ch, op, rsrcId, payload);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void acceptError(ClientChannel ch, ClientOperation op, long rsrcId, Throwable err) {
+        for (NotificationListener lsnr : notificationLsnrs) {
+            try {
+                lsnr.acceptError(ch, op, rsrcId, err);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
     }
 
     /**
@@ -471,6 +520,7 @@ final class ReliableChannel implements AutoCloseable {
 
                 if (ch.serverNodeId() != null) {
                     ch.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
+                    ch.addNotificationListener(ReliableChannel.this);
 
                     nodeChannels.values().remove(this);
 
@@ -485,9 +535,14 @@ final class ReliableChannel implements AutoCloseable {
          * Close channel.
          */
         private synchronized void closeChannel() {
-            U.closeQuiet(ch);
+            if (ch != null) {
+                U.closeQuiet(ch);
 
-            ch = null;
+                for (Consumer<ClientChannel> lsnr : channelCloseLsnrs)
+                    lsnr.accept(ch);
+
+                ch = null;
+            }
         }
     }
 }

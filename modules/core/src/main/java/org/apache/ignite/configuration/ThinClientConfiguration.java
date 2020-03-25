@@ -28,8 +28,14 @@ public class ThinClientConfiguration {
     /** Default limit of active transactions count per connection. */
     public static final int DFLT_MAX_ACTIVE_TX_PER_CONNECTION = 100;
 
+    /** Default value of compute enabled flag. */
+    public static final boolean DFLT_COMPUTE_ENABLED = false;
+
     /** Active transactions count per connection limit. */
     private int maxActiveTxPerConn = DFLT_MAX_ACTIVE_TX_PER_CONNECTION;
+
+    /** Compute for thin clients enabled. */
+    private boolean computeEnabled = DFLT_COMPUTE_ENABLED;
 
     /**
      * Creates thin-client configuration with all default values.
@@ -47,6 +53,7 @@ public class ThinClientConfiguration {
         assert cfg != null;
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
+        computeEnabled = cfg.computeEnabled;
     }
 
     /**
@@ -63,6 +70,26 @@ public class ThinClientConfiguration {
      */
     public ThinClientConfiguration setMaxActiveTxPerConnection(int maxActiveTxPerConn) {
         this.maxActiveTxPerConn = maxActiveTxPerConn;
+
+        return this;
+    }
+
+    /**
+     * Gets compute enabled flag.
+     *
+     * @return {@code True} if compute is enabled for thin client.
+     */
+    public boolean isComputeEnabled() {
+        return computeEnabled;
+    }
+
+    /**
+     * Sets compute enabled flag.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ThinClientConfiguration setComputeEnabled(boolean computeEnabled) {
+        this.computeEnabled = computeEnabled;
 
         return this;
     }

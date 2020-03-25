@@ -58,6 +58,9 @@ public final class ClientStatus {
     /** Transaction not found. */
     public static final int TX_NOT_FOUND = 1021;
 
+    /** Functionality is disabled. */
+    public static final int FUNCTIONALITY_DISABLED = 1030;
+
     /** Authentication failed. */
     public static final int AUTH_FAILED = 2000;
 }

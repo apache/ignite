@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.jetbrains.annotations.Nullable;
+
 /** Operation codes. */
 enum ClientOperation {
     /** Resource close. */RESOURCE_CLOSE(0),
@@ -56,14 +60,26 @@ enum ClientOperation {
     /** Put binary type. */PUT_BINARY_TYPE(3003),
     /** Get binary type name. */GET_BINARY_TYPE_NAME(3000),
     /** Start new transaction. */TX_START(4000),
-    /** End the transaction (commit or rollback). */TX_END(4001);
+    /** End the transaction (commit or rollback). */TX_END(4001),
+    /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
+    /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true);
 
     /** Code. */
     private final int code;
 
+    /** Is notification. */
+    private final boolean notification;
+
     /** Constructor. */
     ClientOperation(int code) {
         this.code = code;
+        notification = false;
+    }
+
+    /** Constructor. */
+    ClientOperation(int code, boolean notification) {
+        this.code = code;
+        this.notification = notification;
     }
 
     /**
@@ -71,5 +87,30 @@ enum ClientOperation {
      */
     public short code() {
         return (short)code;
+    }
+
+    /**
+     * @return {@code True} if operation is notification.
+     */
+    public boolean isNotification() {
+        return notification;
+    }
+
+    /** Enum mapping from code to values. */
+    private static final Map<Short, ClientOperation> map;
+
+    static {
+        map = new HashMap<>();
+
+        for (ClientOperation op : values())
+            map.put(op.code(), op);
+    }
+
+    /**
+     * @param code Code to convert to enum.
+     * @return Enum.
+     */
+    @Nullable public static ClientOperation fromCode(short code) {
+        return map.get(code);
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,11 +67,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.7.0. Added: User attributes support. */
     public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
 
+    /** Version 2.0.0. Added: Client features, notifications. */
+    public static final ClientListenerProtocolVersion VER_2_0_0 = ClientListenerProtocolVersion.create(2, 0, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_2_0_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_2_0_0,
         VER_1_7_0,
         VER_1_6_0,
         VER_1_5_0,
@@ -99,11 +104,20 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
+    /** Client session. */
+    private GridNioSession ses;
+
+    /** Features, supported by the client. */
+    private BitSet supportedFeatures;
+
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
 
     /** Active tx count limit. */
     private final int maxActiveTxCnt;
+
+    /** Compute enabled. */
+    private final boolean computeEnabled;
 
     /** Tx id. */
     private final AtomicInteger txIdSeq = new AtomicInteger();
@@ -127,6 +141,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         this.maxCursors = maxCursors;
         maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();
+        computeEnabled = thinCfg.isComputeEnabled();
     }
 
     /**
@@ -164,6 +179,9 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         String user = null;
         String pwd = null;
 
+        if (ver.compareTo(VER_2_0_0) >= 0)
+            supportedFeatures = BitSet.valueOf(reader.readByteArray());
+
         if (ver.compareTo(VER_1_7_0) >= 0)
             userAttrs = reader.readMap();
 
@@ -188,6 +206,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         handler = new ClientRequestHandler(this, authCtx, ver);
 
         parser = new ClientMessageParser(this, ver);
+
+        this.ses = ses;
     }
 
     /** {@inheritDoc} */
@@ -207,6 +227,16 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         cleanupTxs();
 
         super.onDisconnected();
+    }
+
+    /**
+     * Check if feature is supported by the client.
+     *
+     * @param feature Feature to check.
+     * @return {@code True} if feature is supported by the client.
+     */
+    public boolean isFeatureSupported(ClientFeature feature) {
+        return supportedFeatures != null && supportedFeatures.get(feature.getFeatureId());
     }
 
     /**
@@ -309,5 +339,21 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             txCtx.close();
 
         txs.clear();
+    }
+
+    /**
+     * Send notification to the client.
+     *
+     * @param notification Notification.
+     */
+    public void notifyClient(ClientNotification notification) {
+        ses.send(parser.encode(notification));
+    }
+
+    /**
+     * Gets compute enabled flag.
+     */
+    public boolean isComputeEnabled() {
+        return computeEnabled;
     }
 }
