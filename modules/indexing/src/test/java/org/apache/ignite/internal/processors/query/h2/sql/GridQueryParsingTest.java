@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
@@ -977,16 +979,10 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = ((IgniteEx)ignite).context();
+    private H2PooledConnection connection() throws Exception {
+        IgniteH2Indexing idx = (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
 
-        GridQueryProcessor qryProcessor = ctx.query();
-
-        IgniteH2Indexing idx = U.field(qryProcessor, "idx");
-
-        String schemaName = idx.schema(DEFAULT_CACHE_NAME);
-
-        return (JdbcConnection)idx.connections().connectionForThread().connection(schemaName);
+        return idx.connections().connection(idx.schema(DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -994,48 +990,14 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      */
     @SuppressWarnings("unchecked")
     private <T extends Prepared> T parse(String sql) throws Exception {
-        Session ses = (Session)connection().getSession();
+        try (H2PooledConnection conn = connection()) {
+            Session ses = H2Utils.session(conn);
 
-        setQueryContext();
+            H2Utils.setupConnection(conn,
+                QueryContext.parseContext(null, true), false, false, false);
 
-        try {
             return (T)ses.prepare(sql);
         }
-        finally {
-            clearQueryContext();
-        }
-    }
-
-    /**
-     * Sets thread local query context.
-     */
-    private void setQueryContext() {
-        QueryContextRegistry qryCtxRegistry = indexing().queryContextRegistry();
-
-        QueryContext qctx = new QueryContext(
-            0,
-            null,
-            null,
-            null,
-            null,
-            true
-        );
-
-        qryCtxRegistry.setThreadLocal(qctx);
-    }
-
-    /**
-     * Clears thread local query context.
-     */
-    private void clearQueryContext() {
-        indexing().queryContextRegistry().clearThreadLocal();
-    }
-
-    /**
-     * @return H2 indexing manager.
-     */
-    private IgniteH2Indexing indexing() {
-        return (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
     }
 
     /**

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,6 +65,9 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(ccfg);
+
+        if (getTestIgniteInstanceIndex(igniteInstanceName) != 0)
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -171,12 +176,8 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
         boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (int i = 0; i < NODE_CNT; i++) {
-                    Map<Thread, ?> conns = perThreadConnections(i);
-
-                    for(Thread t : conns.keySet()) {
-                        if (!t.isAlive())
-                            return false;
-                    }
+                    if (!usedConnections(i).isEmpty())
+                        return false;
                 }
 
                 return true;
@@ -185,10 +186,10 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
         if (!notLeak) {
             for (int i = 0; i < NODE_CNT; i++) {
-                Map<Thread, ?> conns = perThreadConnections(i);
+                Set<H2PooledConnection> usedConns = usedConnections(i);
 
-                for(Thread t : conns.keySet())
-                    log.error("Connection is not closed for thread: " + t.getName());
+                if (!usedConnections(i).isEmpty())
+                    log.error("Not closed connections: " + usedConns);
             }
 
             fail("H2 JDBC connections leak detected. See the log above.");
@@ -196,11 +197,13 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * @param nodeIdx Node index.
-     * @return Per-thread connections.
+     * @param i Node index.
+     * @return Set of used connections.
      */
-    private Map<Thread, ?> perThreadConnections(int nodeIdx) {
-        return ((IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing()).connections().connectionsForThread();
+    private Set<H2PooledConnection> usedConnections(int i) {
+        ConnectionManager connMgr = ((IgniteH2Indexing)grid(i).context().query().getIndexing()).connections();
+
+        return  GridTestUtils.getFieldValue(connMgr, "usedConns");
     }
 
     /**
@@ -208,13 +211,11 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
      * @throws Exception On error.
      */
     private void startGridAndPopulateCache(int nodes) throws Exception {
-        startGrid(0);
-        startClientGridsMultiThreaded(1, NODE_CNT - 1);
+        startGrids(NODE_CNT);
 
         IgniteCache<Long, String> cache = grid(0).cache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put((long)i, String.valueOf(i));
-
     }
 }

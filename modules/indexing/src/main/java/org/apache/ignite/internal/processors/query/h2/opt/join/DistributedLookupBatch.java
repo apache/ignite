@@ -61,8 +61,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     /** */
     private final GridCacheContext<?,?> cctx;
 
-    /** Query context registry. */
-    private final QueryContextRegistry qryCtxRegistry;
+    /** Query context. */
+    private final QueryContext qctx;
 
     /** */
     private final boolean ucast;
@@ -96,11 +96,11 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @param ucast Unicast or broadcast query.
      * @param affColId Affinity column ID.
      */
-    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, QueryContextRegistry qryCtxRegistry,
+    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, QueryContext qctx,
         boolean ucast, int affColId) {
         this.idx = idx;
         this.cctx = cctx;
-        this.qryCtxRegistry = qryCtxRegistry;
+        this.qctx = qctx;
         this.ucast = ucast;
         this.affColId = affColId;
     }
@@ -155,8 +155,6 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (joinCtx == null) {
                 // It is the first call after query begin (may be after reuse),
                 // reinitialize query context and result.
-                QueryContext qctx = qryCtxRegistry.getThreadLocal();
-
                 res = new ArrayList<>();
 
                 assert qctx != null;

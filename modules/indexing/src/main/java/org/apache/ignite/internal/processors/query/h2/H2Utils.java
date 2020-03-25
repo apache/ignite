@@ -465,6 +465,10 @@ public class H2Utils {
         assert oldCtx == null || oldCtx == qctx : oldCtx;
 
         s.setVariable("IGNITE_QUERY_CONTEXT", new ValueRuntimeSimpleObject<>(qctx));
+
+        // Hack with thread local context is used only for H2 methods that is called without Session object.
+        // e.g. GridH2Table.getRowCountApproximation (used only on optimization phase, after parse).
+        QueryContext.threadLocal(qctx);
     }
 
     /**
@@ -479,15 +483,23 @@ public class H2Utils {
     }
 
     /**
-     * Clean up session for further reuse.
-     *
      * @param conn Connection to use.
+     * @return Query context.
      */
     public static QueryContext context(H2PooledConnection conn) {
         Session s = session(conn);
 
-        return (QueryContext)s.getVariable("IGNITE_QUERY_CONTEXT").getObject();
+        return context(s);
     }
+
+    /**
+     * @param ses Session.
+     * @return Query context.
+     */
+    public static QueryContext context(Session ses) {
+        return (QueryContext)ses.getVariable("IGNITE_QUERY_CONTEXT").getObject();
+    }
+
 
     /**
      * Convert value to column's expected type by means of H2.

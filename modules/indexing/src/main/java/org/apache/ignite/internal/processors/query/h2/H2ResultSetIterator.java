@@ -158,15 +158,10 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
      * @throws IgniteCheckedException On cancel.
      */
     private boolean fetchPage() throws IgniteCheckedException {
-        if (lazy) {
-            lockTables();
-
-            qryCtxReg.setThreadLocal(qctx);
-        }
+        lockTables();
 
         try {
-            if (lazy)
-                GridH2Table.checkTablesVersions(ses);
+            GridH2Table.checkTablesVersions(ses);
 
             page.clear();
 
@@ -217,11 +212,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
             }
         }
         finally {
-            if (lazy) {
-                qryCtxReg.clearThreadLocal();
-
-                unlockTables();
-            }
+            unlockTables();
         }
     }
 
@@ -258,7 +249,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
     /** */
     public void unlockTables() {
-        if (ses != null && ses.isLazyQueryExecution())
+        if (ses.isLazyQueryExecution())
             GridH2Table.unlockTables(ses);
     }
 

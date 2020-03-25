@@ -507,9 +507,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public ResultSet executeSqlQueryWithTimer(
             PreparedStatement stmt,
-            Connection conn,
+            H2PooledConnection conn,
             String sql,
-            @Nullable Collection<Object> params,
             int timeoutMillis,
             @Nullable GridQueryCancel cancel,
             Boolean dataPageScanEnabled,
@@ -518,7 +517,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             callsCnt.incrementAndGet();
             assertEquals(expectedDataPageScanEnabled, dataPageScanEnabled);
 
-            return super.executeSqlQueryWithTimer(stmt, conn, sql, params, timeoutMillis,
+            return super.executeSqlQueryWithTimer(stmt, conn, sql, timeoutMillis,
                 cancel, dataPageScanEnabled, qryInfo);
         }
     }

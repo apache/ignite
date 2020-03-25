@@ -40,10 +40,13 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
@@ -194,7 +197,7 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
-        Connection conn,
+        H2PooledConnection conn,
         GridSqlQuery qry,
         String originalSql,
         boolean collocatedGrpBy,
@@ -241,7 +244,7 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     private static GridCacheTwoStepQuery split0(
-        Connection conn,
+        H2PooledConnection conn,
         GridSqlQuery qry,
         String originalSql,
         boolean collocatedGrpBy,
@@ -272,7 +275,7 @@ public class GridSqlQuerySplitter {
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
         qry = GridSqlQueryParser.parseQuery(
-            prepare(conn, qry.getSQL(), false, enforceJoinOrder),
+            prepare(conn, H2Utils.context(conn), qry.getSQL(), false, enforceJoinOrder),
             true, log);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
@@ -288,7 +291,12 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared0 = prepare(conn, mapSqlQry.query(), true, enforceJoinOrder);
+                Prepared prepared0 = prepare(
+                    conn,
+                    H2Utils.context(conn),
+                    mapSqlQry.query(),
+                    true,
+                    enforceJoinOrder);
 
                 allCollocated &= isCollocated((Query)prepared0);
 
@@ -1768,11 +1776,11 @@ public class GridSqlQuerySplitter {
      * @return Optimized prepared command.
      * @throws SQLException If failed.
      */
-    public static Prepared prepare(Connection c, String qry, boolean distributedJoins,
-        boolean enforceJoinOrder) throws SQLException {
-        H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
+    private static Prepared prepare(H2PooledConnection c, QueryContext qctx, String qry, boolean distributedJoins,
+        boolean enforceJoinOrder) throws SQLException, IgniteCheckedException {
+        H2Utils.setupConnection(c, qctx, distributedJoins, enforceJoinOrder);
 
-        try (PreparedStatement s = c.prepareStatement(qry)) {
+        try (PreparedStatement s = c.prepareStatement(qry, H2StatementCache.queryFlags(distributedJoins, enforceJoinOrder))) {
             return GridSqlQueryParser.prepared(s);
         }
     }
