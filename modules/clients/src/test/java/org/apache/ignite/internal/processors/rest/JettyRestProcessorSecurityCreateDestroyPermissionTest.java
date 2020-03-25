@@ -114,91 +114,131 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         IgniteEx server = grid(0);
 
         server.cacheNames().forEach(server::destroyCache);
     }
 
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
     /** */
     @Test
     public void testGetOrCreateWithAdminPerms() throws Exception {
-        assertNull(grid(0).cache(CACHE_NAME));
-
-        checkSuccess(CLIENT_WITH_ADMIN_PERMS, CACHE_NAME, GET_OR_CREATE_CACHE);
+        checkSuccessCreate(CLIENT_WITH_ADMIN_PERMS, CACHE_NAME);
     }
 
     /** */
     @Test
     public void testGetOrCreateWithCachePermission() throws Exception {
-        assertNull(grid(0).cache(CACHE_NAME));
-        assertNull(grid(0).cache(UNMANAGED_CACHE));
+        checkFailCreate(CLIENT_WITHOUT_PERMS, CACHE_NAME);
 
-        checkFail(CLIENT_WITHOUT_PERMS, CACHE_NAME, GET_OR_CREATE_CACHE);
+        checkSuccessCreate(CLIENT_WITH_CACHE_PERMS, CACHE_NAME);
 
-        assertNull(grid(0).cache(CACHE_NAME));
-
-        checkSuccess(CLIENT_WITH_CACHE_PERMS, CACHE_NAME, GET_OR_CREATE_CACHE);
-
-        checkFail(CLIENT_WITH_CACHE_PERMS, UNMANAGED_CACHE, GET_OR_CREATE_CACHE);
-
-        assertNotNull(grid(0).cache(CACHE_NAME));
-
-        assertNull(grid(0).cache(UNMANAGED_CACHE));
+        checkFailCreate(CLIENT_WITH_CACHE_PERMS, UNMANAGED_CACHE);
     }
 
     /** */
     @Test
     public void testGetOrCreateWithSystemPermission() throws Exception {
-        assertNull(grid(0).cache(CACHE_NAME));
-
-        checkSuccess(CLIENT_WITH_SYS_PERMS, CACHE_NAME, GET_OR_CREATE_CACHE);
-
-        assertNotNull(grid(0).cache(CACHE_NAME));
+        checkSuccessCreate(CLIENT_WITH_SYS_PERMS, CACHE_NAME);
     }
 
     /** */
     @Test
     public void testDestroyCacheWithAdminPerms() throws Exception {
-        assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-
-        checkSuccess(CLIENT_WITH_ADMIN_PERMS, CACHE_NAME, DESTROY_CACHE);
-
-        assertNull(grid(0).cache(CACHE_NAME));
+        checkSuccessDestroy(CLIENT_WITH_ADMIN_PERMS, CACHE_NAME);
     }
 
     /** */
     @Test
     public void testDestroyCacheWithCachePermissions() throws Exception {
-        assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
-        assertNotNull(grid(0).getOrCreateCache(UNMANAGED_CACHE));
+        checkFailDestroy(CLIENT_WITHOUT_PERMS, CACHE_NAME);
 
-        checkFail(CLIENT_WITHOUT_PERMS, CACHE_NAME, DESTROY_CACHE);
+        checkSuccessDestroy(CLIENT_WITH_CACHE_PERMS, CACHE_NAME);
 
-        assertNotNull(grid(0).cache(CACHE_NAME));
-
-        checkSuccess(CLIENT_WITH_CACHE_PERMS, CACHE_NAME, DESTROY_CACHE);
-
-        checkFail(CLIENT_WITH_CACHE_PERMS, UNMANAGED_CACHE, DESTROY_CACHE);
-
-        assertNull(grid(0).cache(CACHE_NAME));
-
-        assertNotNull(grid(0).cache(UNMANAGED_CACHE));
+        checkFailDestroy(CLIENT_WITH_CACHE_PERMS, UNMANAGED_CACHE);
     }
 
     /** */
     @Test
     public void testDestroyCacheWithSystemPermissions() throws Exception {
-        assertNotNull(grid(0).getOrCreateCache(CACHE_NAME));
+        checkSuccessDestroy(CLIENT_WITH_SYS_PERMS, CACHE_NAME);
+    }
 
-        checkSuccess(CLIENT_WITH_SYS_PERMS, CACHE_NAME, DESTROY_CACHE);
+    /**
+     * @param client Client.
+     * @param cache Cache.
+     */
+    private void checkSuccessCreate(String client, String cache) throws Exception {
+        assertNull(grid(0).cache(cache));
 
-        assertNull(grid(0).cache(CACHE_NAME));
+        checkSuccess(client, cache, GET_OR_CREATE_CACHE);
+
+        assertNotNull(grid(0).cache(cache));
+    }
+
+    /**
+     * @param client Client.
+     * @param cache Cache.
+     */
+    private void checkSuccessDestroy(String client, String cache) throws Exception {
+        grid(0).getOrCreateCache(cache);
+
+        checkSuccess(client, cache, DESTROY_CACHE);
+
+        assertNull(grid(0).cache(cache));
+    }
+
+    /**
+     * @param client Client.
+     * @param cache Cache.
+     */
+    private void checkFailCreate(String client, String cache) throws Exception {
+        assertNull(grid(0).cache(cache));
+
+        checkFail(client, cache, GET_OR_CREATE_CACHE);
+
+        assertNull(grid(0).cache(cache));
+    }
+
+    /**
+     * @param client Client.
+     * @param cache Cache.
+     */
+    private void checkFailDestroy(String client, String cache) throws Exception {
+        grid(0).getOrCreateCache(cache);
+
+        checkFail(client, cache, DESTROY_CACHE);
+
+        assertNotNull(grid(0).cache(cache));
+    }
+
+    /**
+     * @param client Client.
+     * @param cache Cache.
+     * @param cmd GridRestCommand.
+     */
+    private void checkSuccess(String client, String cache, GridRestCommand cmd) throws Exception {
+        assertEquals(SUCCESS_STATUS, status(execute(client, cache, cmd)));
+    }
+
+    /**
+     * @param client Client.
+     * @param cache Cache.
+     * @param cmd GridRestCommand.
+     */
+    private void checkFail(String client, String cache, GridRestCommand cmd) throws Exception {
+        String resp = execute(client, cache, cmd);
+
+        assertFalse(SUCCESS_STATUS.equals(status(resp)));
+
+        SecurityPermission perm = cmd == GET_OR_CREATE_CACHE ? CACHE_CREATE : CACHE_DESTROY;
+
+        assertTrue(JSON_MAPPER.readTree(resp).get("error").asText().contains("Authorization failed [perm=" + perm));
     }
 
     /**
@@ -229,29 +269,5 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
      */
     private String status(String json) throws IOException {
         return JSON_MAPPER.readTree(json).get("successStatus").asText();
-    }
-
-    /**
-     * @param client Client.
-     * @param cache Cache.
-     * @param cmd GridRestCommand.
-     */
-    private void checkSuccess(String client, String cache, GridRestCommand cmd) throws Exception {
-        assertEquals(SUCCESS_STATUS, status(execute(client, cache, cmd)));
-    }
-
-    /**
-     * @param client Client.
-     * @param cache Cache.
-     * @param cmd GridRestCommand.
-     */
-    private void checkFail(String client, String cache, GridRestCommand cmd) throws Exception {
-        String resp = execute(client, cache, cmd);
-
-        assertFalse(SUCCESS_STATUS.equals(status(resp)));
-
-        SecurityPermission perm = cmd == GET_OR_CREATE_CACHE ? CACHE_CREATE : CACHE_DESTROY;
-
-        assertTrue(JSON_MAPPER.readTree(resp).get("error").asText().contains("Authorization failed [perm=" + perm));
     }
 }
