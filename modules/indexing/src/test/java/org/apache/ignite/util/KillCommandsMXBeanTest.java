@@ -32,7 +32,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 
@@ -95,15 +94,15 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
             txMBean.cancel(xid));
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCancelUnknownTx() throws Exception {
-        txMBean.cancel("unknown");
-    }
-
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
         computeMBean.cancel(IgniteUuid.randomUuid().toString());
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownTx() {
+        txMBean.cancel("unknown");
     }
 }
