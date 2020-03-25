@@ -234,7 +234,7 @@ public class JettyRestProcessorSecurityCreateDestroyPermissionTest extends Abstr
      * @param cacheName Cache name.
      * @param cmd GridRestCommand.
      */
-    protected String execute(String login, String cacheName, GridRestCommand cmd) throws Exception {
+    private String execute(String login, String cacheName, GridRestCommand cmd) throws Exception {
         URL url = new URL(String.format("http://%s:%d/ignite?ignite.login=%s&ignite.password=&cacheName=%s&cmd=%s&",
             LOC_HOST, DFLT_REST_PORT, login, cacheName , cmd.key()));
 
