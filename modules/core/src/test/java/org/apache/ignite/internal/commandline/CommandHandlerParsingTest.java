@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -46,10 +45,12 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
@@ -61,6 +62,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.ValidateInde
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -213,7 +215,7 @@ public class CommandHandlerParsingTest {
 
             T removed = sourceCopy.remove(i);
 
-            generateAllCombinations(Collections.singletonList(removed), sourceCopy, stopFunc, res);
+            generateAllCombinations(singletonList(removed), sourceCopy, stopFunc, res);
         }
 
         return res;
@@ -255,8 +257,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (skipCommand(cmd))
-                continue; // --cache subcommand requires its own specific arguments.
+            if (requireArgs(cmd))
+                continue;
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
@@ -278,24 +280,13 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * @param cmd Command.
-     * @return {@code True} if the command requires its own specific arguments.
-     */
-    private boolean skipCommand(CommandList cmd) {
-        return cmd == CommandList.CACHE ||
-            cmd == CommandList.WAL ||
-            cmd == CommandList.SET_STATE ||
-            cmd == CommandList.ENCRYPTION;
-    }
-
-    /**
      * Tests parsing and validation for user and password arguments.
      */
     @Test
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (skipCommand(cmd))
-                continue; // --cache, --wal and --set-state commands requires its own specific arguments.
+            if (requireArgs(cmd))
+                continue;
 
             assertParseArgsThrows("Expected user name", "--user");
             assertParseArgsThrows("Expected password", "--password");
@@ -446,8 +437,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (skipCommand(cmd))
-                continue; // --cache subcommand requires its own specific arguments.
+            if (requireArgs(cmd))
+                continue;
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
 
@@ -517,6 +508,22 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Test checks that option {@link CommonArgParser#CMD_VERBOSE} is parsed
+     * correctly and if it is not present, it takes the default value
+     * {@code false}.
+     */
+    @Test
+    public void testParseVerboseOption() {
+        for (CommandList cmd : CommandList.values()) {
+            if (requireArgs(cmd))
+                continue;
+
+            assertFalse(cmd.toString(), parseArgs(singletonList(cmd.text())).verbose());
+            assertTrue(cmd.toString(), parseArgs(asList(cmd.text(), CMD_VERBOSE)).verbose());
+        }
+    }
+
+    /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
@@ -548,5 +555,17 @@ public class CommandHandlerParsingTest {
      */
     private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
         assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
+    }
+
+    /**
+     * Return {@code True} if cmd there are required arguments.
+     *
+     * @return {@code True} if cmd there are required arguments.
+     */
+    private boolean requireArgs(@Nullable CommandList cmd) {
+        return cmd == CommandList.CACHE ||
+            cmd == CommandList.WAL ||
+            cmd == CommandList.SET_STATE ||
+            cmd == CommandList.ENCRYPTION;
     }
 }
