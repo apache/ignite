@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.Map;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -136,25 +135,19 @@ public class MetricUtils {
     }
 
     /**
-     * Gets histogram bucket names.
+     * Generates histogram bucket names.
      *
      * Example of metric names if bounds are 10,100:
      *  histogram_0_10 (less than 10)
      *  histogram_10_100 (between 10 and 100)
      *  histogram_100_inf (more than 100)
      *
-     * @param metric Histogram metric.
-     * @param cache Map that caches computed bucket names.
+     * @param metric Histogram metric
      * @return Histogram intervals names.
      */
-    public static String[] histogramBucketNames(HistogramMetric metric, Map<String, T2<long[], String[]>> cache) {
+    public static String[] histogramBucketNames(HistogramMetric metric) {
         String name = metric.name();
         long[] bounds = metric.bounds();
-
-        T2<long[], String[]> tuple = cache.get(name);
-
-        if (tuple != null && tuple.get1() == bounds)
-            return tuple.get2();
 
         String[] names = new String[bounds.length + 1];
 
@@ -167,8 +160,6 @@ public class MetricUtils {
         }
 
         names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
-
-        cache.put(name, new T2<>(bounds, names));
 
         return names;
     }
