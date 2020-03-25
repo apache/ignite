@@ -169,13 +169,13 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_REBALANCED;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCE_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  * Partition exchange manager.
@@ -495,9 +495,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
 
-        MetricRegistry rebalanceReg = cctx.kernalContext().metric().registry(REBALANCE_METRICS);
+        MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
 
-        rebalanceReg.register(CLUSTER_REBALANCED,
+        clusterReg.register(REBALANCED,
             this::clusterRebalanced,
             "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
                 " this metric in False regardless of the real partitions state."

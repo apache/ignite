@@ -36,11 +36,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_REBALANCED;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCE_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
- * Tests {@link GridMetricManager#CLUSTER_REBALANCED} metric.
+ * Tests {@link GridMetricManager#REBALANCED} metric.
  */
 public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     /** Whether node starts with persistence enabled. */
@@ -85,7 +85,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link GridMetricManager#CLUSTER_REBALANCED} metric in case of in-memory cluster.
+     * Tests {@link GridMetricManager#REBALANCED} metric in case of in-memory cluster.
      */
     @Test
     public void testInMemoryClusterRebalancedMetric() throws Exception {
@@ -93,7 +93,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link GridMetricManager#CLUSTER_REBALANCED} metric in case of cluster with native persistence enabled.
+     * Tests {@link GridMetricManager#REBALANCED} metric in case of cluster with native persistence enabled.
      */
     @Test
     public void testPersistenceClusterRebalancedMetric() throws Exception {
@@ -103,7 +103,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks {@link GridMetricManager#CLUSTER_REBALANCED} metric value.
+     * Checks {@link GridMetricManager#REBALANCED} metric value.
      */
     public void checkClusterRebalancedMetric() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -150,7 +150,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Awaits PME process completion and checks value of {@link GridMetricManager#CLUSTER_REBALANCED} metric.
+     * Awaits PME process completion and checks value of {@link GridMetricManager#REBALANCED} metric.
      *
      * @param exp Expected value of the metric.
      */
@@ -161,15 +161,15 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that {@link GridMetricManager#CLUSTER_REBALANCED} metric is set to {@code exp} on all cluster nodes.
+     * Checks that {@link GridMetricManager#REBALANCED} metric is set to {@code exp} on all cluster nodes.
      */
     private void assertMetric(boolean exp) {
         assertTrue(G.allGrids().stream().allMatch(ignite -> {
             BooleanMetric rebalancedMetric = ((IgniteEx) ignite)
                 .context()
                 .metric()
-                .registry(REBALANCE_METRICS)
-                .findMetric(CLUSTER_REBALANCED);
+                .registry(CLUSTER_METRICS)
+                .findMetric(REBALANCED);
 
             return exp == rebalancedMetric.value();
         }));
