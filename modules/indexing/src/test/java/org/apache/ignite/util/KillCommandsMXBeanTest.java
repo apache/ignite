@@ -23,11 +23,14 @@ import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
+import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
 /** Tests cancel of user created entities via JMX. */
 public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
@@ -46,6 +49,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     private static ComputeMXBean computeMBean;
 
+    /** */
+    private static ServiceMXBean svcMxBean;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_CNT);
@@ -62,18 +68,32 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
         computeMBean = getMxBean(killCli.name(), "Compute",
             ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
+
+        svcMxBean = getMxBean(killCli.name(), "Service",
+            ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        doTestCancelComputeTask(startCli, srvs, sessId ->
-            computeMBean.cancel(sessId));
+        doTestCancelComputeTask(startCli, srvs, sessId -> computeMBean.cancel(sessId));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelService() throws Exception {
+        doTestCancelService(startCli, killCli, srvs.get(0), name -> svcMxBean.cancel(name));
     }
 
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
         computeMBean.cancel(IgniteUuid.randomUuid().toString());
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownService() {
+        svcMxBean.cancel("unknown");
     }
 }

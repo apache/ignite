@@ -24,16 +24,26 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
+import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
  * General tests for the cancel command.
  */
 class KillCommandsTests {
+    /** Service name. */
+    public static final String SVC_NAME = "my-svc";
+
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
 
@@ -90,6 +100,72 @@ class KillCommandsTests {
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
         } finally {
             computeLatch.countDown();
+        }
+    }
+
+    /**
+     * Test cancel of the service.
+     *
+     * @param startCli Client node to start service.
+     * @param killCli Client node to kill service.
+     * @param srv Server node.
+     * @param svcCanceler Service cancel closure.
+     */
+    public static void doTestCancelService(IgniteEx startCli, IgniteEx killCli, IgniteEx srv,
+        Consumer<String> svcCanceler) throws Exception {
+        ServiceConfiguration scfg = new ServiceConfiguration();
+
+        scfg.setName(SVC_NAME);
+        scfg.setMaxPerNodeCount(1);
+        scfg.setNodeFilter(srv.cluster().predicate());
+        scfg.setService(new TestServiceImpl());
+
+        startCli.services().deploy(scfg);
+
+        SystemView<ServiceView> svcView = srv.context().systemView().view(SVCS_VIEW);
+        SystemView<ServiceView> killCliSvcView = killCli.context().systemView().view(SVCS_VIEW);
+
+        boolean res = waitForCondition(() -> svcView.size() == 1 && killCliSvcView.size() == 1, TIMEOUT);
+
+        assertTrue(res);
+
+        TestService svc = startCli.services().serviceProxy(SVC_NAME, TestService.class, true);
+
+        assertNotNull(svc);
+
+        svcCanceler.accept(SVC_NAME);
+
+        res = waitForCondition(() -> svcView.size() == 0, TIMEOUT);
+
+        assertTrue(res);
+    }
+
+    /** */
+    public interface TestService extends Service {
+        /** */
+        public void doTheJob();
+    }
+
+    /** */
+    public static class TestServiceImpl implements TestService {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void doTheJob() {
+            // No-op.
         }
     }
 }

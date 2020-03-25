@@ -52,6 +52,7 @@ import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -413,6 +415,8 @@ public class CommandProcessor {
                 processKillQueryCommand((SqlKillQueryCommand) cmdNative);
             else if (cmdNative instanceof SqlKillComputeTaskCommand)
                 processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
+            else if (cmdNative instanceof SqlKillServiceCommand)
+                processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
             else
                 processTxCommand(cmdNative, params);
         }
@@ -498,6 +502,15 @@ public class CommandProcessor {
      */
     private void processKillComputeTaskCommand(SqlKillComputeTaskCommand cmd) {
         new ComputeMXBeanImpl(ctx).cancel(cmd.getSessionId());
+    }
+
+    /**
+     * Process kill service command.
+     *
+     * @param cmd Command.
+     */
+    private void processKillServiceTaskCommand(SqlKillServiceCommand cmd) {
+        new ServiceMXBeanImpl(ctx).cancel(cmd.getName());
     }
 
     /**

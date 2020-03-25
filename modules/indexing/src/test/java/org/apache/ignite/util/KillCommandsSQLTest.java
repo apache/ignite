@@ -30,7 +30,9 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
+import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
 /** Tests cancel of user created entities via SQL. */
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
@@ -39,6 +41,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_COMPUTE_QRY = KILL + " " + COMPUTE;
+
+    /** */
+    public static final String KILL_SVC_QRY = KILL + " " + SERVICE;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -70,10 +75,23 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelService() throws Exception {
+        doTestCancelService(startCli, killCli, srvs.get(0),
+            name -> execute(srvs.get(0), KILL_SVC_QRY + " '" + name + "'"));
+    }
+
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
         execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownService() {
+        execute(killCli, KILL_SVC_QRY + " 'unknown'");
     }
 
     /**

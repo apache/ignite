@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.query;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 
 /**
- * Subcommands of the kill command.
- *
- * @see KillCommand
- * @see ComputeMXBean
- * @see ServiceMXBean
+ * Service MXBean interface.
  */
-public enum KillSubcommand {
-    /** Kill compute task. */
-    COMPUTE,
-
-    /** Kill service. */
-    SERVICE
+public interface ServiceMXBean {
+    /**
+     * @param name Service name.
+     * @see ServiceView#name()
+     */
+    @MXBeanDescription("Kills service by the name.")
+    public void cancel(
+        @MXBeanParameter(name = "name", description = "Service name.") String name
+    );
 }

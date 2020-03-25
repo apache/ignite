@@ -529,6 +529,9 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
             "--kill", "compute", "not_a_uuid");
+
+        // Service command format errors.
+        assertParseArgsThrows("Expected service name.", "--kill", "service");
     }
 
     /**
