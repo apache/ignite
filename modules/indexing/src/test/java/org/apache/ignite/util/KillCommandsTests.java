@@ -19,14 +19,10 @@ package org.apache.ignite.util;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -34,10 +30,8 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
 import static org.junit.Assert.assertNotNull;
@@ -55,12 +49,6 @@ class KillCommandsTests {
 
     /** Latch to block compute task execution. */
     private static CountDownLatch computeLatch;
-
-    /** Service start barrier. */
-    private static volatile CyclicBarrier svcStartBarrier;
-
-    /** Service cancel barriers. */
-    private static volatile CyclicBarrier svcCancelBarrier;
 
     /**
      * Test cancel of the compute task.
@@ -118,44 +106,38 @@ class KillCommandsTests {
     /**
      * Test cancel of the service.
      *
-     * @param cli Client node.
+     * @param startCli Client node to start service.
+     * @param killCli Client node to kill service.
      * @param srv Server node.
      * @param svcCanceler Service cancel closure.
      */
-    public static void doTestCancelService(IgniteEx cli, IgniteEx srv, Consumer<String> svcCanceler) throws Exception {
+    public static void doTestCancelService(IgniteEx startCli, IgniteEx killCli, IgniteEx srv,
+        Consumer<String> svcCanceler) throws Exception {
         ServiceConfiguration scfg = new ServiceConfiguration();
 
         scfg.setName(SVC_NAME);
         scfg.setMaxPerNodeCount(1);
-        scfg.setNodeFilter(n -> n.id().equals(srv.localNode().id()));
+        scfg.setNodeFilter(srv.cluster().predicate());
         scfg.setService(new TestServiceImpl());
 
-        cli.services().deploy(scfg);
+        startCli.services().deploy(scfg);
 
         SystemView<ServiceView> svcView = srv.context().systemView().view(SVCS_VIEW);
+        SystemView<ServiceView> killCliSvcView = killCli.context().systemView().view(SVCS_VIEW);
 
-        boolean res = waitForCondition(() -> svcView.size() == 1, TIMEOUT);
+        boolean res = waitForCondition(() -> svcView.size() == 1 && killCliSvcView.size() == 1, TIMEOUT);
 
         assertTrue(res);
 
-        TestService svc = cli.services().serviceProxy("my-svc", TestService.class, true);
+        TestService svc = startCli.services().serviceProxy(SVC_NAME, TestService.class, true);
 
         assertNotNull(svc);
-
-        svcStartBarrier = new CyclicBarrier(2);
-        svcCancelBarrier = new CyclicBarrier(2);
-
-        IgniteInternalFuture<?> fut = runAsync(svc::doTheJob);
-
-        svcStartBarrier.await(TIMEOUT, MILLISECONDS);
 
         svcCanceler.accept(SVC_NAME);
 
         res = waitForCondition(() -> svcView.size() == 0, TIMEOUT);
 
         assertTrue(res);
-
-        fut.get(TIMEOUT);
     }
 
     /** */
@@ -168,13 +150,7 @@ class KillCommandsTests {
     public static class TestServiceImpl implements TestService {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
-            try {
-                if (svcCancelBarrier != null)
-                    svcCancelBarrier.await(TIMEOUT, MILLISECONDS);
-            }
-            catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
-                throw new RuntimeException(e);
-            }
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -189,14 +165,7 @@ class KillCommandsTests {
 
         /** {@inheritDoc} */
         @Override public void doTheJob() {
-            try {
-                svcStartBarrier.await(TIMEOUT, MILLISECONDS);
-
-                svcCancelBarrier.await(TIMEOUT, MILLISECONDS);
-            }
-            catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
-                throw new RuntimeException(e);
-            }
+            // No-op.
         }
     }
 }

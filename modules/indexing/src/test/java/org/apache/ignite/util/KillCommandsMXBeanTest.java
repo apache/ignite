@@ -76,15 +76,13 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
-        doTestCancelComputeTask(startCli, srvs, sessId ->
-            computeMBean.cancel(sessId));
+        doTestCancelComputeTask(startCli, srvs, sessId -> computeMBean.cancel(sessId));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelService() throws Exception {
-        doTestCancelService(killCli, srvs.get(0), name ->
-            svcMxBean.cancel(name));
+        doTestCancelService(startCli, killCli, srvs.get(0), name -> svcMxBean.cancel(name));
     }
 
     /** */

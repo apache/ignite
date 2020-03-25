@@ -62,7 +62,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     /** @throws Exception If failed. */
     @Test
     public void testCancelService() throws Exception {
-        doTestCancelService(client, srvs.get(0), name -> {
+        doTestCancelService(client, client, srvs.get(0), name -> {
             int res = execute("--kill", "service", name);
 
             assertEquals(EXIT_CODE_OK, res);
