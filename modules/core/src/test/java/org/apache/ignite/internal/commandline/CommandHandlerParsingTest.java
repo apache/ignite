@@ -62,6 +62,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.ValidateInde
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -299,11 +300,13 @@ public class CommandHandlerParsingTest {
 
         cmdArgs.add(CommandList.TX.text());
         cmdArgs.add(CommonArgParser.CMD_USER_ATTR);
-        cmdArgs.add("attr1=val1,attr2=val2");
+        cmdArgs.add("attr1=val1,attr2=val2,attr3=mode=test");
 
         ConnectionAndSslParameters args = parseArgs(cmdArgs);
 
         assertEquals(args.userAttributes().get("attr1"), "val1");
+        assertNotEquals(args.userAttributes().get("attr1"), "val2");
+        assertEquals(args.userAttributes().get("attr3"), "mode=test");
     }
 
     /**
@@ -320,6 +323,7 @@ public class CommandHandlerParsingTest {
         ConnectionAndSslParameters args = parseArgs(cmdArgs);
 
         assertEquals(args.userAttributes().get("attr3"), "val3");
+        assertEquals(args.userAttributes().get("attr4"), "mode=test");
     }
 
     /**

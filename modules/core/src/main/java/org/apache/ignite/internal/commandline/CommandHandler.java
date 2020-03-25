@@ -465,8 +465,10 @@ public class CommandHandler {
         if (!F.isEmpty(args.sslKeyStorePath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
 
-        if (args.userAttributes() != null && !args.userAttributes().isEmpty())
+        if (clientCfg.getUserAttributes() == null)
             clientCfg.setUserAttributes(args.userAttributes());
+        else
+            throw new IgniteCheckedException("Internal error: User attributes already set!");
 
         return clientCfg;
     }

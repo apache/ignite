@@ -377,7 +377,15 @@ public class CommonArgParser {
         return String.format(pwdArgWarnFmt, password, password);
     }
 
+    /**
+     * Extracts user attributes from attribute string.
+     *
+     * @param attrMap {@code Map} Attribute map.
+     * @param attrs {@code String} Attribute string.
+     */
     private void extractAttributesFromString(Map<String, String> attrMap, String attrs) {
+        final int partsOfAttrStr = 2;
+
         for (String attr : attrs.split(",")) {
             if (!attr.contains("=")) {
                 logger.warning(String.format("Failed to parse attribute %s", attr));
@@ -385,13 +393,19 @@ public class CommonArgParser {
                 continue;
             }
 
-            String[] keyValue = attr.split("=");
+            String[] keyVal = attr.split("=", partsOfAttrStr);
 
-            if (!attrMap.containsKey(keyValue[0]))
-                attrMap.put(keyValue[0], keyValue[1]);
+            if (!attrMap.containsKey(keyVal[0]))
+                attrMap.put(keyVal[0], keyVal[1]);
         }
     }
 
+    /**
+     * Extracts user attributes from a given file.
+     *
+     * @param attrMap {@code Map} Attribute map.
+     * @param path {@code String} Path to the file.
+     */
     private void extractAttributesFromFile(Map<String, String> attrMap, String path) {
         Properties attrs = new Properties();
 
