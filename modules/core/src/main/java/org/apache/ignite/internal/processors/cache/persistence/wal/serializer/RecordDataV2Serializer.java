@@ -97,6 +97,9 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case ROLLBACK_TX_RECORD:
                 return 4 + 4 + 8 + 8;
 
+            case TRACKING_PAGE_REPAIR_DELTA:
+                return 4 + 8;
+
             default:
                 return delegateSerializer.size(rec);
         }
