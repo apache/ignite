@@ -127,9 +127,9 @@ public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecu
             assertThrowsWithCause(() -> forbidden(clientMode).destroyCache(CACHE_NAME), SecurityException.class);
 
             node.destroyCache(CACHE_NAME);
-        }
 
-        assertNull(grid(SRV).cache(CACHE_NAME));
+            assertNull(grid(SRV).cache(CACHE_NAME));
+        }
     }
 
     /** */
