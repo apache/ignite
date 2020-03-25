@@ -37,8 +37,6 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 
-import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
-
 /**
  * TransactionsMXBean implementation.
  */
@@ -125,39 +123,9 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
         IgniteCompute compute = ctx.cluster().get().compute();
 
-        Map<ClusterNode, VisorTxTaskResult> taskRes = compute.execute(new VisorTxTask(),
+        compute.execute(new VisorTxTask(),
             new VisorTaskArgument<>(ctx.localNodeId(), new VisorTxTaskArg(VisorTxOperation.KILL,
                 1, null, null, null, null, null, xid, null, null, null), false));
-
-        boolean res = isXidFound(xid, taskRes);
-
-        if (!res)
-            throw new RuntimeException("Transaction not found[xid=" + xid + ']');
-    }
-
-    /**
-     * Determine if task results contains information about xid.
-     *
-     * @param xid Xid.
-     * @param taskRes {@code VisorTxTask} results.
-     * @return {@code True} if {@code xid} was found in task results.
-     */
-    public static boolean isXidFound(String xid, Map<ClusterNode, VisorTxTaskResult> taskRes) {
-        if (!isEmpty(taskRes)) {
-            for (VisorTxTaskResult singleRes : taskRes.values()) {
-                if (isEmpty(singleRes.getInfos()))
-                    continue;
-
-                for (VisorTxInfo info : singleRes.getInfos()) {
-                    if (xid.equalsIgnoreCase(info.getXid().toString()))
-                        return true;
-
-                    break;
-                }
-            }
-        }
-
-        return false;
     }
 
     /** {@inheritDoc} */

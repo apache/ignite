@@ -34,7 +34,6 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 
@@ -83,23 +82,22 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
 
-    /** */
-    @Test
-    public void testCancelUnknownComputeTask() {
-        execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
-    }
-
     /** @throws Exception If failed. */
     @Test
     public void testCancelTx() throws Exception {
         doTestCancelTx(startCli, srvs, xid -> execute(killCli, KILL_TX_QRY + " '" + xid + "'"));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownTx() throws Exception {
-        assertThrowsWithCause(() -> execute(killCli, KILL_TX_QRY + " 'unknown'"),
-            RuntimeException.class);
+    public void testCancelUnknownComputeTask() {
+        execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownTx() {
+        execute(killCli, KILL_TX_QRY + " 'unknown'");
     }
 
     /**

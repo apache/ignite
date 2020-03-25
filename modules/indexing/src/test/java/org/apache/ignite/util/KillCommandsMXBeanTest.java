@@ -98,8 +98,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelUnknownTx() throws Exception {
-        assertThrowsWithCause(() -> txMBean.cancel("unknown"),
-            RuntimeException.class);
+        txMBean.cancel("unknown");
     }
 
     /** */
