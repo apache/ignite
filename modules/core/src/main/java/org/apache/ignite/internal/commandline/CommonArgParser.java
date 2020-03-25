@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -349,10 +350,10 @@ public class CommonArgParser {
         }
 
         if (userAttrStr != null)
-            extractAttributesFromString(userAttrs, userAttrStr);
+            parseAttributesFromString(userAttrs, userAttrStr);
 
         if (userAttrPath != null)
-            extractAttributesFromFile(userAttrs, userAttrPath);
+            parseAttributesFromFile(userAttrs, userAttrPath);
 
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
@@ -361,7 +362,7 @@ public class CommonArgParser {
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType).withUserAttributes(userAttrs);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, userAttrs);
     }
 
     /**
@@ -381,15 +382,12 @@ public class CommonArgParser {
      * @param attrMap {@code Map} Attribute map.
      * @param attrs {@code String} Attribute string.
      */
-    private void extractAttributesFromString(Map<String, String> attrMap, String attrs) {
+    private void parseAttributesFromString(Map<String, String> attrMap, String attrs) {
         final int partsOfAttrStr = 2;
 
         for (String attr : attrs.split(",")) {
-            if (!attr.contains("=")) {
-                logger.warning(String.format("Failed to parse attribute %s", attr));
-
-                continue;
-            }
+            if (!attr.contains("="))
+                throw new RuntimeException(String.format("Failed to parse attribute %s", attr));
 
             String[] keyVal = attr.split("=", partsOfAttrStr);
 
@@ -404,22 +402,21 @@ public class CommonArgParser {
      * @param attrMap {@code Map} Attribute map.
      * @param path {@code String} Path to the file.
      */
-    private void extractAttributesFromFile(Map<String, String> attrMap, String path) {
+    private void parseAttributesFromFile(Map<String, String> attrMap, String path) {
         Properties attrs = new Properties();
 
         try (InputStream is = new FileInputStream(new File(path))) {
             attrs.load(is);
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
             logger.log(Level.SEVERE, "Failed to read property file: " + path, e);
 
             throw new RuntimeException(e);
         }
 
-        attrs.forEach((key, value) ->
-                {
-                    if (!attrMap.containsKey(key.toString()))
-                        attrMap.put(key.toString(), value.toString());
-                }
-        );
+        attrs.forEach((key, value) -> {
+            if (!attrMap.containsKey(key.toString()))
+                attrMap.put(key.toString(), value.toString());
+        });
     }
 }

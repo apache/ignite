@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.HashMap;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-
 import java.util.Map;
+import org.apache.ignite.internal.client.GridClientConfiguration;
 
 /**
  * Container with common parsed and validated arguments.
@@ -103,7 +102,8 @@ public class ConnectionAndSslParameters {
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType,
+        Map<String, String> userAttrs
     ) {
         this.command = command;
         this.host = host;
@@ -127,6 +127,8 @@ public class ConnectionAndSslParameters {
         this.sslTrustStorePath = sslTrustStorePath;
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
+
+        this.userAttrs = userAttrs;
     }
 
     /**
@@ -276,13 +278,6 @@ public class ConnectionAndSslParameters {
     }
 
     /**
-     * @return {@code Map} User attributes.
-     */
-    public Map<String, String> userAttributes(){
-        return userAttrs;
-    }
-
-    /**
      * Set truststore password.
      *
      * @param sslTrustStorePassword Truststore password.
@@ -292,13 +287,18 @@ public class ConnectionAndSslParameters {
     }
 
     /**
+     * @return {@code Map} User attributes.
+     */
+    public Map<String, String> userAttributes() {
+        return userAttrs;
+    }
+
+    /**
      * Set user attributes.
      *
-     * @param userAttrs user attributes.
+     * @param userAttrs {@code Map} User attributes.
      */
-    public ConnectionAndSslParameters withUserAttributes(Map<String, String> userAttrs){
+    public void userAttributes(Map<String, String> userAttrs) {
         this.userAttrs = new HashMap<>(userAttrs);
-
-        return this;
     }
 }
