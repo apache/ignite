@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheComman
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
-import org.apache.ignite.internal.processors.security.rest.handlers.cache.CacheOperationPermissionRestCommandHandlerCheckTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -35,7 +34,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     GridCacheCommandHandlerSelfTest.class,
     GridCacheAtomicCommandHandlerSelfTest.class,
-    CacheOperationPermissionRestCommandHandlerCheckTest.class,
     GridLogCommandHandlerTest.class,
     GridQueryCommandHandlerTest.class,
     CacheTopologyCommandHandlerTest.class,
