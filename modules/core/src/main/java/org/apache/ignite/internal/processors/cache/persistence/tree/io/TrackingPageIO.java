@@ -37,12 +37,12 @@ import org.jetbrains.annotations.Nullable;
  * N depends on page size (how many bytes we can use for tracking).
  *
  *
- *                      +-----------------------------------------+-----------------------------------------+
- *                      |                left half                |               right half                |
- * +---------+----------+----+------------------------------------+----+------------------------------------+
- * |  HEADER | Last     |size|                                    |size|                                    |
- * |         |SnapshotId|2b. |  tracking bits                     |2b. |  tracking bits                     |
- * +---------+----------+----+------------------------------------+----+------------------------------------+
+ *                       +-----------------------------------------+-----------------------------------------+
+ *                       |                left half                |               right half                |
+ * +---------+-----------+----+------------------------------------+----+------------------------------------+
+ * |  HEADER | Last      |size|                                    |size|                                    |
+ * |         |SnapshotTag|2b. |  tracking bits                     |2b. |  tracking bits                     |
+ * +---------+--------- -+----+------------------------------------+----+------------------------------------+
  *
  */
 public class TrackingPageIO extends PageIO {
@@ -122,8 +122,8 @@ public class TrackingPageIO extends PageIO {
 
     /**
      * @param buf Buffer.
-     * @param nextSnapshotTag Next snapshot id.
-     * @param lastSuccessfulSnapshotTag Last successful snapshot id.
+     * @param nextSnapshotTag Next snapshot tag.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
      * @param pageSize Page size.
      *
      * @return <code>-1</code> if everything is ok, otherwise last saved tag.
@@ -134,7 +134,7 @@ public class TrackingPageIO extends PageIO {
 
         long last = getLastSnapshotTag(buf);
 
-        if(last > nextSnapshotTag) { //we have lost snapshot tag therefore should mark this tracking as corrupted
+        if (last > nextSnapshotTag) { //we have lost snapshot tag therefore should mark this tracking as corrupted
             PageHandler.zeroMemory(buf, LAST_SNAPSHOT_TAG_OFFSET, buf.capacity() - LAST_SNAPSHOT_TAG_OFFSET);
 
             setLastSnasphotTag(buf, nextSnapshotTag | CORRUPT_FLAG_MASK);
