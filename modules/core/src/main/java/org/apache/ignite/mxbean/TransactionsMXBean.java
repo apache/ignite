@@ -69,8 +69,7 @@ public interface TransactionsMXBean {
      */
     @MXBeanDescription("Kills transactions by the xid.")
     public void cancel(
-        @MXBeanParameter(name = "xid", description = "Transaction XID.")
-        String xid
+        @MXBeanParameter(name = "xid", description = "Transaction XID.") String xid
     );
 
     /**

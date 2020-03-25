@@ -30,6 +30,7 @@ import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.jetbrains.annotations.Nullable;
@@ -291,6 +292,9 @@ public class SqlParser {
             switch (lex.token()) {
                 case QUERY:
                     return new SqlKillQueryCommand().parse(lex);
+
+                case TRANSACTION:
+                    return new SqlKillTransactionCommand().parse(lex);
 
                 case COMPUTE:
                     return new SqlKillComputeTaskCommand().parse(lex);

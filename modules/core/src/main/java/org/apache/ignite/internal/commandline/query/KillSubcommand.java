@@ -18,14 +18,19 @@
 package org.apache.ignite.internal.commandline.query;
 
 import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
 
 /**
  * Subcommands of the kill command.
  *
  * @see KillCommand
  * @see ComputeMXBean
+ * @see TransactionsMXBean
  */
 public enum KillSubcommand {
     /** Kill compute task. */
-    COMPUTE
+    COMPUTE,
+
+    /** Kill transaction. */
+    TRANSACTION
 }
