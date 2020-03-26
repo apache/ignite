@@ -99,5 +99,11 @@
             <artifactId>ant</artifactId>
             <version>1.8.2</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>${checkstyle.puppycrawl.version}</version>
+        </dependency>
     </dependencies>
 </project>
