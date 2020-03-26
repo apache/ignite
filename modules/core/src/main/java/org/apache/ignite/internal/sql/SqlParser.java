@@ -28,7 +28,9 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
+import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -48,6 +51,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
+import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
@@ -289,6 +293,12 @@ public class SqlParser {
             switch (lex.token()) {
                 case QUERY:
                     return new SqlKillQueryCommand().parse(lex);
+
+                case COMPUTE:
+                    return new SqlKillComputeTaskCommand().parse(lex);
+
+                case SERVICE:
+                    return new SqlKillServiceCommand().parse(lex);
             }
         }
 
