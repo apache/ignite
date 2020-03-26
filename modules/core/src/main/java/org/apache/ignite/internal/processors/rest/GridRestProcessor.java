@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProto
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
-import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -78,7 +77,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -88,12 +86,11 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
+import static java.util.Arrays.*;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
@@ -116,9 +113,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
     /** The default interval used to invalidate sessions, in seconds. */
     private static final int DFLT_SES_TOKEN_INVALIDATE_INTERVAL = 5 * 60;
-
-    /** Index of task name wrapped by VisorGatewayTask */
-    private static final int WRAPPED_TASK_IDX = 1;
 
     /** Protocols. */
     private final Collection<GridRestProtocol> protos = new ArrayList<>();
@@ -840,129 +834,25 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @throws SecurityException If authorization failed.
      */
     private void authorize(GridRestRequest req) throws SecurityException {
-        SecurityPermission perm = null;
-        String name = null;
+        GridRestCommand cmd = req.command();
 
-        switch (req.command()) {
-            case CACHE_GET:
-            case CACHE_CONTAINS_KEY:
-            case CACHE_CONTAINS_KEYS:
-            case CACHE_GET_ALL:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((GridRestCacheRequest)req).cacheName();
+        SecurityPermission[] perms = cmd.permissions();
 
-                break;
+        if (perms.length != 0) {
+            for (int i = 0; i < perms.length; i++) {
+                try {
+                    ctx.security().authorize(cmd.name(req), perms[i]);
 
-            case EXECUTE_SQL_QUERY:
-            case EXECUTE_SQL_FIELDS_QUERY:
-            case EXECUTE_SCAN_QUERY:
-            case CLOSE_SQL_QUERY:
-            case FETCH_SQL_QUERY:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((RestQueryRequest)req).cacheName();
-
-                break;
-
-            case CACHE_PUT:
-            case CACHE_ADD:
-            case CACHE_PUT_ALL:
-            case CACHE_REPLACE:
-            case CACHE_CAS:
-            case CACHE_APPEND:
-            case CACHE_PREPEND:
-            case CACHE_GET_AND_PUT:
-            case CACHE_GET_AND_REPLACE:
-            case CACHE_GET_AND_PUT_IF_ABSENT:
-            case CACHE_PUT_IF_ABSENT:
-            case CACHE_REPLACE_VALUE:
-                perm = SecurityPermission.CACHE_PUT;
-                name = ((GridRestCacheRequest)req).cacheName();
-
-                break;
-
-            case CACHE_REMOVE:
-            case CACHE_REMOVE_ALL:
-            case CACHE_CLEAR:
-            case CACHE_GET_AND_REMOVE:
-            case CACHE_REMOVE_VALUE:
-                perm = SecurityPermission.CACHE_REMOVE;
-                name = ((GridRestCacheRequest)req).cacheName();
-
-                break;
-
-            case EXE:
-            case RESULT:
-                perm = SecurityPermission.TASK_EXECUTE;
-
-                GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
-                name = taskReq.taskName();
-
-                // We should extract task name wrapped by VisorGatewayTask.
-                if (VisorGatewayTask.class.getName().equals(name))
-                    name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
-
-                break;
-
-            case GET_OR_CREATE_CACHE:
-                perm = SecurityPermission.CACHE_CREATE;
-                name = ((GridRestCacheRequest)req).cacheName();
-
-                break;
-
-            case DESTROY_CACHE:
-                perm = SecurityPermission.CACHE_DESTROY;
-                name = ((GridRestCacheRequest)req).cacheName();
-
-                break;
-
-            case CLUSTER_ACTIVE:
-            case CLUSTER_INACTIVE:
-            case CLUSTER_ACTIVATE:
-            case CLUSTER_DEACTIVATE:
-            case BASELINE_SET:
-            case BASELINE_ADD:
-            case BASELINE_REMOVE:
-            case CLUSTER_SET_STATE:
-                perm = SecurityPermission.ADMIN_OPS;
-
-                break;
-
-            case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
-            case CACHE_METRICS:
-            case CACHE_SIZE:
-            case CACHE_METADATA:
-            case TOPOLOGY:
-            case NODE:
-            case VERSION:
-            case NOOP:
-            case QUIT:
-            case ATOMIC_INCREMENT:
-            case ATOMIC_DECREMENT:
-            case NAME:
-            case LOG:
-            case CLUSTER_CURRENT_STATE:
-            case CLUSTER_NAME:
-            case BASELINE_CURRENT_STATE:
-            case CLUSTER_STATE:
-            case AUTHENTICATE:
-            case ADD_USER:
-            case REMOVE_USER:
-            case UPDATE_USER:
-                break;
-
-            default:
-                throw new AssertionError("Unexpected command: " + req.command());
-        }
-
-        if (perm != null) {
-            if (req.command() == GET_OR_CREATE_CACHE || req.command() == DESTROY_CACHE)
-                withPermissionAdminCacheCompatibility(name, perm);
-            else
-                ctx.security().authorize(name, perm);
-
+                    break;
+                }
+                catch (SecurityException e) {
+                    if (i == perms.length - 1)
+                        throw e;
+                }
+            }
         }
     }
+
 
     /**
      * Maintaining compatibility SecurityPermission.ADMIN_CACHE.
@@ -970,13 +860,21 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @param name name.
      * @param perm SecurityPermission.
      */
-    private void withPermissionAdminCacheCompatibility(String name, SecurityPermission perm){
-        try {
-            ctx.security().authorize(name, SecurityPermission.ADMIN_CACHE);
+
+    private static List forAdminCache = asList(SecurityPermission.CACHE_CREATE, SecurityPermission.CACHE_DESTROY);
+
+    private void withPermissionAdminCacheCompatibility(String name, SecurityPermission perm) {
+        if (forAdminCache.contains(perm)) {
+            try {
+                ctx.security().authorize(name, SecurityPermission.ADMIN_CACHE);
+                return;
+            }
+            catch (SecurityException ignored) {
+                // No-op.
+            }
         }
-        catch (SecurityException e) {
-            ctx.security().authorize(name, perm);
-        }
+
+        ctx.security().authorize(name, perm);
     }
 
     /**
