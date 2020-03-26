@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
 /** Tests cancel of user created entities via control.sh. */
 public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -58,10 +59,28 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         });
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelService() throws Exception {
+        doTestCancelService(client, client, srvs.get(0), name -> {
+            int res = execute("--kill", "service", name);
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
+    }
+
     /** */
     @Test
     public void testCancelUnknownComputeTask() {
         int res = execute("--kill", "compute", IgniteUuid.randomUuid().toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownService() {
+        int res = execute("--kill", "service", "unknown");
 
         assertEquals(EXIT_CODE_OK, res);
     }
