@@ -206,6 +206,12 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     /** */
     private final QueuePolicy qPlc;
 
+    /** Initial capacity for a single segment */
+    private final int segmentInitCap;
+
+    /** Load factor for every data structure in class */
+    private final float loadFactor;
+
     /* ---------------- Small Utilities -------------- */
 
     /**
@@ -1015,6 +1021,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         this.maxCap = maxCap;
         this.qPlc = qPlc;
+        this.loadFactor = loadFactor;
 
         entryQ = qPlc == SINGLE_Q ? new ConcurrentLinkedDeque8<HashEntry<K, V>>() : null;
 
@@ -1046,6 +1053,8 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         while (cap < c)
             cap <<= 1;
+
+        segmentInitCap = cap;
 
         for (int i = 0; i < segments.length; ++i)
             segments[i] = new Segment<>(cap, loadFactor);
@@ -1545,7 +1554,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
         try {
             for (int i = 0; i < segments.length; i++)
-                segments[i] = new Segment<>(DFLT_INIT_CAP, DFLT_LOAD_FACTOR);
+                segments[i] = new Segment<>(segmentInitCap, loadFactor);
 
             modCnt.increment();
 
