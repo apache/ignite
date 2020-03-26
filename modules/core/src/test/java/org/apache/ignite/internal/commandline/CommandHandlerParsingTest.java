@@ -80,7 +80,7 @@ public class CommandHandlerParsingTest {
         "--ssl-protocol", "testSSLProtocol");
 
     /** */
-    private static final String USER_ATTRIBUTE_PATH = "modules/core/src/test/resources/user-attribute.properties";
+    private static final String USER_ATTRIBUTE_PATH = "modules/core/src/test/resources/user.properties";
 
     /** */
     @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
@@ -299,14 +299,14 @@ public class CommandHandlerParsingTest {
         List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
 
         cmdArgs.add(CommandList.TX.text());
-        cmdArgs.add(CommonArgParser.CMD_USER_ATTR);
-        cmdArgs.add("attr1=val1,attr2=val2,attr3=mode=test");
+        cmdArgs.add(CommonArgParser.CMD_USER_PROPS);
+        cmdArgs.add("prop1=val1,prop2=val2,prop3=mode=test");
 
         ConnectionAndSslParameters args = parseArgs(cmdArgs);
 
-        assertEquals(args.userAttributes().get("attr1"), "val1");
-        assertNotEquals(args.userAttributes().get("attr1"), "val2");
-        assertEquals(args.userAttributes().get("attr3"), "mode=test");
+        assertEquals(args.userProperties().get("prop1"), "val1");
+        assertNotEquals(args.userProperties().get("prop1"), "val2");
+        assertEquals(args.userProperties().get("prop3"), "mode=test");
     }
 
     /**
@@ -317,13 +317,13 @@ public class CommandHandlerParsingTest {
         List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
 
         cmdArgs.add(CommandList.TX.text());
-        cmdArgs.add(CommonArgParser.CMD_USER_ATTR_PATH);
+        cmdArgs.add(CommonArgParser.CMD_USER_PROPS_PATH);
         cmdArgs.add(IgniteUtils.resolveIgnitePath(USER_ATTRIBUTE_PATH).getAbsolutePath());
 
         ConnectionAndSslParameters args = parseArgs(cmdArgs);
 
-        assertEquals(args.userAttributes().get("attr3"), "val3");
-        assertEquals(args.userAttributes().get("attr4"), "mode=test");
+        assertEquals(args.userProperties().get("prop3"), "val3");
+        assertEquals(args.userProperties().get("prop4"), "mode=test");
     }
 
     /**
@@ -334,14 +334,16 @@ public class CommandHandlerParsingTest {
         List<String> cmdArgs = new ArrayList<>(DFLT_ARGS);
 
         cmdArgs.add(CommandList.TX.text());
-        cmdArgs.add(CommonArgParser.CMD_USER_ATTR_PATH);
+        cmdArgs.add(CommonArgParser.CMD_USER_PROPS_PATH);
         cmdArgs.add(IgniteUtils.resolveIgnitePath(USER_ATTRIBUTE_PATH).getAbsolutePath());
-        cmdArgs.add(CommonArgParser.CMD_USER_ATTR);
-        cmdArgs.add("attr1=val1,attr3=val4");
+        cmdArgs.add(CommonArgParser.CMD_USER_PROPS);
+        cmdArgs.add("prop1=val1,prop3=val4");
 
         ConnectionAndSslParameters args = parseArgs(cmdArgs);
 
-        assertEquals(args.userAttributes().get("attr3"), "val4");
+        assertEquals(args.userProperties().get("prop1"), "val1");
+        assertEquals(args.userProperties().get("prop3"), "val4");
+        assertEquals(args.userProperties().get("prop4"), "mode=test");
     }
 
     /**

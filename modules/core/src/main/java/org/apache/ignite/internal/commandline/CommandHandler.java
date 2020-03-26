@@ -465,7 +465,7 @@ public class CommandHandler {
         if (!F.isEmpty(args.sslKeyStorePath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
 
-        clientCfg.setUserAttributes(args.userAttributes());
+        clientCfg.setUserAttributes(args.userProperties());
 
         return clientCfg;
     }

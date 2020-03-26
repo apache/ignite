@@ -100,10 +100,10 @@ public class CommonArgParser {
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
     /** */
-    static final String CMD_USER_ATTR = "--user-attributes";
+    static final String CMD_USER_PROPS = "--user-properties";
 
     /** */
-    static final String CMD_USER_ATTR_PATH = "--user-attribute-path";
+    static final String CMD_USER_PROPS_PATH = "--user-properties-path";
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
@@ -132,8 +132,8 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
 
-        AUX_COMMANDS.add(CMD_USER_ATTR);
-        AUX_COMMANDS.add(CMD_USER_ATTR_PATH);
+        AUX_COMMANDS.add(CMD_USER_PROPS);
+        AUX_COMMANDS.add(CMD_USER_PROPS_PATH);
     }
 
     /**
@@ -210,11 +210,9 @@ public class CommonArgParser {
 
         char sslTrustStorePassword[] = null;
 
-        Map<String, String> userAttrs = new HashMap<>();
+        String userPropStr = null;
 
-        String userAttrStr = null;
-
-        String userAttrPath = null;
+        String userPropPath = null;
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
@@ -333,13 +331,13 @@ public class CommonArgParser {
 
                         break;
 
-                    case CMD_USER_ATTR:
-                        userAttrStr = argIter.nextArg("Expected user attribute string.");
+                    case CMD_USER_PROPS:
+                        userPropStr = argIter.nextArg("Expected user property string.");
 
                         break;
 
-                    case CMD_USER_ATTR_PATH:
-                        userAttrPath = argIter.nextArg("Expected user attribute file.");
+                    case CMD_USER_PROPS_PATH:
+                        userPropPath = argIter.nextArg("Expected user property path.");
 
                         break;
 
@@ -349,20 +347,16 @@ public class CommonArgParser {
             }
         }
 
-        if (userAttrStr != null)
-            parseAttributesFromString(userAttrs, userAttrStr);
-
-        if (userAttrPath != null)
-            parseAttributesFromFile(userAttrs, userAttrPath);
-
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
+
+        Map<String, String> userProps = userProperties(userPropStr, userPropPath);
 
         return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, userAttrs);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, userProps);
     }
 
     /**
@@ -377,46 +371,68 @@ public class CommonArgParser {
     }
 
     /**
-     * Extracts user attributes from attribute string.
+     * Extracts user properties from property string or file.
      *
-     * @param attrMap {@code Map} Attribute map.
-     * @param attrs {@code String} Attribute string.
+     * @param userPropStr {@code String} Property string.
+     * @param userPropPath {@code String} Property file path.
      */
-    private void parseAttributesFromString(Map<String, String> attrMap, String attrs) {
-        final int partsOfAttrStr = 2;
+    private Map<String, String> userProperties(String userPropStr, String userPropPath){
+        Map<String, String> res = parsePropertiesFromString(userPropStr);
 
-        for (String attr : attrs.split(",")) {
-            if (!attr.contains("="))
-                throw new RuntimeException(String.format("Failed to parse attribute %s", attr));
+        parsePropertiesFromFile(userPropPath).forEach(res::putIfAbsent);
 
-            String[] keyVal = attr.split("=", partsOfAttrStr);
-
-            if (!attrMap.containsKey(keyVal[0]))
-                attrMap.put(keyVal[0], keyVal[1]);
-        }
+        return res;
     }
 
     /**
-     * Extracts user attributes from a given file.
+     * Extracts user properties from attribute string.
      *
-     * @param attrMap {@code Map} Attribute map.
-     * @param path {@code String} Path to the file.
+     * @param propStr {@code String} Attribute string.
      */
-    private void parseAttributesFromFile(Map<String, String> attrMap, String path) {
-        Properties attrs = new Properties();
+    private Map<String, String> parsePropertiesFromString(String propStr) {
+        Map<String, String> res = new HashMap<>();
 
-        try (InputStream is = new FileInputStream(new File(path))) {
-            attrs.load(is);
+        if(propStr == null)
+            return res;
+
+        final int partsOfPropStr = 2;
+
+        for (String prop : propStr.split(",")) {
+            if (!prop.contains("="))
+                throw new RuntimeException(String.format("Failed to parse property %s", prop));
+
+            String[] keyVal = prop.split("=", partsOfPropStr);
+
+            res.putIfAbsent(keyVal[0], keyVal[1]);
+        }
+
+        return res;
+    }
+
+    /**
+     * Extracts user properties from a given file.
+     *
+     * @param userPropPath {@code String} Property file path.
+     */
+    private Map<String, String> parsePropertiesFromFile(String userPropPath) {
+        Map<String, String> res = new HashMap<>();
+
+        if(userPropPath == null)
+            return res;
+
+        Properties props = new Properties();
+
+        try (InputStream is = new FileInputStream(new File(userPropPath))) {
+            props.load(is);
         }
         catch (IOException e) {
-            logger.log(Level.SEVERE, "Failed to read property file: " + path, e);
+            logger.log(Level.SEVERE, "Failed to read property file: " + userPropPath, e);
 
             throw new RuntimeException(e);
         }
 
-        attrs.forEach((key, value) -> {
-            if (!attrMap.containsKey(key.toString()))
-                attrMap.put(key.toString(), value.toString());
-        });
+        props.forEach((key, value) -> res.put(key.toString(), value.toString()));
+
+        return res;
     }
 }

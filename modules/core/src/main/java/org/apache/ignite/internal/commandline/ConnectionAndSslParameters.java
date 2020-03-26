@@ -74,7 +74,7 @@ public class ConnectionAndSslParameters {
     private char[] sslTrustStorePassword;
 
     /** User attributes. */
-    private Map<String, String> userAttrs;
+    private Map<String, String> userProps;
 
     /** High-level command. */
     private Command command;
@@ -97,13 +97,14 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStorePath Truststore.
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
+     * @param userProps User properties.
      */
     public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
         String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType,
-        Map<String, String> userAttrs
+        Map<String, String> userProps
     ) {
         this.command = command;
         this.host = host;
@@ -128,7 +129,7 @@ public class ConnectionAndSslParameters {
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
 
-        this.userAttrs = userAttrs;
+        this.userProps = userProps;
     }
 
     /**
@@ -287,18 +288,18 @@ public class ConnectionAndSslParameters {
     }
 
     /**
-     * @return {@code Map} User attributes.
+     * @return {@code Map} User properties.
      */
-    public Map<String, String> userAttributes() {
-        return userAttrs;
+    public Map<String, String> userProperties() {
+        return userProps;
     }
 
     /**
-     * Set user attributes.
+     * Set user properties.
      *
-     * @param userAttrs {@code Map} User attributes.
+     * @param userProps {@code Map} User properties.
      */
-    public void userAttributes(Map<String, String> userAttrs) {
-        this.userAttrs = new HashMap<>(userAttrs);
+    public void userProperties(Map<String, String> userProps) {
+        this.userProps = new HashMap<>(userProps);
     }
 }
