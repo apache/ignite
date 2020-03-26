@@ -1540,21 +1540,18 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     @Override public void clear() {
-        for (Segment<K, V> segment : segments) {
+        for (Segment<K, V> segment : segments)
             segment.writeLock().lock();
-        }
 
         try {
-            for (int i = 0; i < segments.length; i++) {
+            for (int i = 0; i < segments.length; i++)
                 segments[i] = new Segment<>(DFLT_INIT_CAP, DFLT_LOAD_FACTOR);
-            }
 
             modCnt.increment();
 
         } finally {
-            for (Segment<K, V> segment : segments) {
+            for (Segment<K, V> segment : segments)
                 segment.writeLock().unlock();
-            }
         }
     }
 
