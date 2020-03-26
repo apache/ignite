@@ -1538,44 +1538,23 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     /**
      * Removes all of the mappings from this map. Performs global locking of the table.
      */
-    @Override public void clear() {
-        lockWriteLocks();
-        try {
-            replaceOldSegments();
-        } finally {
-            unlockWriteLocks();
-        }
-    }
-
-    /**
-     * Replaces all segments with the new ones and increments modification count for the table.
-     */
-    private void replaceOldSegments() {
-        for (int i = 0; i < segments.length; i++) {
-            segments[i] = new Segment<>(DFLT_INIT_CAP, DFLT_LOAD_FACTOR);
-        }
-
-        modCnt.increment();
-    }
-
-    /**
-     * Tries to lock all segments in order which they appear to be in an underlying array.
-     */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private void lockWriteLocks() {
+    @Override public void clear() {
         for (Segment<K, V> segment : segments) {
             segment.writeLock().lock();
         }
-    }
 
-    /**
-     * Tries to unlock all segment locks in reverse order of which they were acquired.
-     * @see ConcurrentLinkedHashMap#lockWriteLocks()
-     */
-    private void unlockWriteLocks() {
-        //unlock in reverse order to prevent possible context switches, etc.
-        for (int i = segments.length - 1; i >= 0; i--) {
-            segments[i].writeLock().unlock();
+        try {
+            for (int i = 0; i < segments.length; i++) {
+                segments[i] = new Segment<>(DFLT_INIT_CAP, DFLT_LOAD_FACTOR);
+            }
+
+            modCnt.increment();
+
+        } finally {
+            for (int i = segments.length - 1; i >= 0; i--) {
+                segments[i].writeLock().unlock();
+            }
         }
     }
 
