@@ -897,8 +897,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             if (recreate)
                 loc.resetUpdateCounter();
-//            else if (ctx.kernalContext().state().clusterState().state() == ACTIVE && ctx.preloader() != null && ctx.preloader().supports(grp))
-//                loc.disable();
 
             long updCntr = cntrMap.updateCounter(p);
 
@@ -2424,7 +2422,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        // Should not start clearing partition that can be rebalanced by files (prevent fast eviction too).
         if (clear)
             exchFut.addClearingPartition(grp, part.id());
 

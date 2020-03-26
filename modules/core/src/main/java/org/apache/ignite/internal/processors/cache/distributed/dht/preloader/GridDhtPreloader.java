@@ -235,6 +235,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
+        boolean fileRebalanceSupported = ctx.preloader().supports(grp);
+
         for (int p = 0; p < partitions; p++) {
             if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
@@ -336,19 +338,20 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     else {
                         ClusterNode n = null;
 
-                        // file rebalance
-                        if (exchFut != null) {
-                            UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, countersMap.updateCounter(p));
+                        if (fileRebalanceSupported && exchFut != null) {
+                            // Pick a supplier to preload the partition file.
+                            UUID nodeId =
+                                exchFut.partitionHistorySupplier(grp.groupId(), p, countersMap.updateCounter(p));
 
                             if (nodeId != null) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("File supplier [node=" + nodeId + ", grp=" +
-                                        grp.cacheOrGroupName() + ", p=" + p + "]");
-                                }
-
                                 n = ctx.discovery().node(nodeId);
 
                                 assert picked.contains(n);
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Partition file supplier [node=" + nodeId + ", grp=" +
+                                        grp.cacheOrGroupName() + ", p=" + p + "]");
+                                }
                             }
                         }
 

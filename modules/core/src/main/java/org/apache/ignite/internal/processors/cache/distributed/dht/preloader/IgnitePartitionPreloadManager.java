@@ -297,7 +297,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
             GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-            assert part != null : "grp=" + grp.cacheOrGroupName() + ", id=" + part.id();
+            assert part != null : "grp=" + grp.cacheOrGroupName() + ", p=" + part.id();
 
             if (part.state() != MOVING)
                 return false;

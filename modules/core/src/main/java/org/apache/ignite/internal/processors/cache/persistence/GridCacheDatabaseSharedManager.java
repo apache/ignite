@@ -1530,8 +1530,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (oldFut != null)
             oldFut.onDone();
 
-        log.info("prepare idx usr future: " + cacheId);
-
         return newFut;
     }
 
@@ -1599,6 +1597,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param grp Cache group.
+     * @return Future that will be completed when indexes for all caches in the specified group are ready for use.
      */
     @Override public IgniteInternalFuture<?> rebuildIndexes(CacheGroupContext grp) {
         if (!cctx.kernalContext().query().moduleEnabled())
@@ -1968,7 +1967,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CheckpointEntry cpEntry = cpHistory.searchCheckpointEntry(grpId, partId, cntr);
 
         if (cpEntry == null) {
-            log.error("Unable to reserve history for preloading, checkpoint not found [grp=" +
+            log.error("Unable to reserve history for preloading, checkpoint entry not found [grp=" +
                 cctx.cache().cacheGroup(grpId).cacheOrGroupName() + ", p=" + partId + ", cntr=" + cntr + "]");
 
             return false;
@@ -1991,7 +1990,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cctx.wal().release(saved.get2());
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Could not release WAL reservation", e);
+                log.error("Could not release WAL reservation", e);
 
                 throw new IgniteException(e);
             }

@@ -192,7 +192,7 @@ public class GridCacheSharedContext<K, V> {
     /** Cluster is in read-only mode. */
     private volatile boolean readOnlyMode;
 
-    /** Partition files preloader. Can be {@code null} if persistence is disabled. */
+    /** Partition files preloader. */
     private IgnitePartitionPreloadManager preloadMgr;
 
     /**

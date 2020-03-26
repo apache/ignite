@@ -464,7 +464,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             return false;
 
         if (state() != MOVING)
-            throw new IgniteException("Expected MIVING partition, actual state is " + state());
+            throw new IgniteException("Expected MOVING partition [p=" + id() + ", state=" + state() + "]");
 
         if (store.enable()) {
             // Clear all on-heap entries before start processing updates.
@@ -491,7 +491,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             return false;
 
         if (state() != MOVING)
-            throw new IgniteException("Expected MOVING partition, actual state is " + state());
+            throw new IgniteException("Expected MOVING partition [p=" + id() + ", state=" + state() + "]");
 
         return store.disable();
     }
