@@ -38,7 +38,6 @@ import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -119,7 +118,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
@@ -3125,9 +3123,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             });
         }
         else if (cacheCtx.isColocated()) {
-            if (readRepair || (optimistic() && serializable() && !async
-                && cacheCtx.config().getRebalanceMode() != SYNC &&
-                cacheCtx.config().getWriteSynchronizationMode() != CacheWriteSynchronizationMode.FULL_SYNC)) {
+            if (readRepair) {
                 return new GridNearReadRepairCheckOnlyFuture(
                     cacheCtx,
                     keys,
@@ -3169,7 +3165,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return cacheCtx.colocated().loadAsync(
                     key,
                     readThrough,
-                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup(),
+                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
+                        || (optimistic() && serializable()),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -3202,7 +3199,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return cacheCtx.colocated().loadAsync(
                     keys,
                     readThrough,
-                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup(),
+                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
+                        || (optimistic() && serializable()),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),

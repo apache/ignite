@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collections;
 import java.util.Map;
@@ -43,7 +43,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Test for optimistic tx with read/through cache.
  */
-public class GridCacheReplicatedOptimisticTxTest extends GridCommonAbstractTest {
+public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
     /** Shared read/write-through store. */
     private static Map<Object, Object> storeMap = new ConcurrentHashMap<>();
 

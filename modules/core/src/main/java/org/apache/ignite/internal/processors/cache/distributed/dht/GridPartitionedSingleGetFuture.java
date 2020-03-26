@@ -377,6 +377,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
+        if (forcePrimary)
+            affNodes = Collections.singletonList(affNodes.get(0));
+
         ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap);
 
         // Failed if none balanced node found.
