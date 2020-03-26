@@ -428,7 +428,7 @@ public class GridReduceQueryExecutor {
                         .partitions(convert(mapping.partitionsMap()))
                         .queries(mapQueries)
                         .parameters(params)
-                        .flags(queryFlags(qry, enforceJoinOrder || !singlePartMode, lazy, dataPageScanEnabled))
+                        .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
                         .timeout(timeoutMillis)
                         .schemaName(schemaName);
 
@@ -1093,6 +1093,9 @@ public class GridReduceQueryExecutor {
         }
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
+        }
+        finally {
+            U.closeQuiet(rs);
         }
     }
 
