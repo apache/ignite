@@ -61,12 +61,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param cacheName Cache name.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest cacheName(String cacheName) {
+    public void cacheName(String cacheName) {
         this.cacheName = cacheName;
-
-        return this;
     }
 
     /**
@@ -78,12 +75,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param templateName Template name.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest templateName(String templateName) {
+    public void templateName(String templateName) {
         this.templateName = templateName;
-
-        return this;
     }
 
     /**
@@ -95,12 +89,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param key Key.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest key(Object key) {
+    public void key(Object key) {
         this.key = key;
-
-        return this;
     }
 
     /**
@@ -112,12 +103,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param val Value 1.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest value(Object val) {
+    public void value(Object val) {
         this.val = val;
-
-        return this;
     }
 
     /**
@@ -129,12 +117,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param val2 Value 2.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest value2(Object val2) {
+    public void value2(Object val2) {
         this.val2 = val2;
-
-        return this;
     }
 
     /**
@@ -146,12 +131,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param vals Keys and values for put all, get all, remove all operations.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest values(Map<Object, Object> vals) {
+    public void values(Map<Object, Object> vals) {
         this.vals = vals;
-
-        return this;
     }
 
     /**
@@ -163,22 +145,16 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param cfg Cache configuration.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest configuration(CacheConfigurationOverride cfg) {
+    public void configuration(CacheConfigurationOverride cfg) {
         this.cfg = cfg;
-
-        return this;
     }
 
     /**
      * @param cacheFlags Bit representation of cache flags.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest cacheFlags(int cacheFlags) {
+    public void cacheFlags(int cacheFlags) {
         this.cacheFlags = cacheFlags;
-
-        return this;
     }
 
     /**
@@ -197,12 +173,9 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /**
      * @param ttl Expiration time.
-     * @return This GridRestCacheRequest for chaining.
      */
-    public GridRestCacheRequest ttl(Long ttl) {
+    public void ttl(Long ttl) {
         this.ttl = ttl;
-
-        return this;
     }
 
     /** {@inheritDoc} */

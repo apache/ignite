@@ -64,12 +64,9 @@ public class GridRestRequest {
 
     /**
      * @param destId Destination ID.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest destinationId(UUID destId) {
+    public void destinationId(UUID destId) {
         this.destId = destId;
-
-        return this;
     }
 
     /**
@@ -81,12 +78,9 @@ public class GridRestRequest {
 
     /**
      * @param cmd Command.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest command(GridRestCommand cmd) {
+    public void command(GridRestCommand cmd) {
         this.cmd = cmd;
-
-        return this;
     }
 
     /**
@@ -102,12 +96,9 @@ public class GridRestRequest {
      * Sets client ID that performed request.
      *
      * @param clientId Client ID.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest clientId(UUID clientId) {
+    public void clientId(UUID clientId) {
         this.clientId = clientId;
-
-        return this;
     }
 
     /**
@@ -123,12 +114,9 @@ public class GridRestRequest {
      * Sets client credentials for authentication.
      *
      * @param cred Credentials.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest credentials(Object cred) {
+    public void credentials(Object cred) {
         this.cred = cred;
-
-        return this;
     }
 
     /**
@@ -144,12 +132,9 @@ public class GridRestRequest {
      * Sets session token for already authenticated client.
      *
      * @param sesTok Session token.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest sessionToken(byte[] sesTok) {
+    public void sessionToken(byte[] sesTok) {
         this.sesTok = sesTok;
-
-        return this;
     }
 
     /**
@@ -161,12 +146,9 @@ public class GridRestRequest {
 
     /**
      * @param addr Client address.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest address(InetSocketAddress addr) {
+    public void address(InetSocketAddress addr) {
         this.addr = addr;
-
-        return this;
     }
 
     /**
@@ -178,12 +160,9 @@ public class GridRestRequest {
 
     /**
      * @param authCtx Authorization context.
-     * @return This GridRestRequest for chaining.
      */
-    public GridRestRequest authorizationContext(AuthorizationContext authCtx) {
+    public void authorizationContext(AuthorizationContext authCtx) {
         this.authCtx = authCtx;
-
-        return this;
     }
 
     /**
