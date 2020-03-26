@@ -1539,11 +1539,9 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * Removes all of the mappings from this map. Performs global locking of the table.
      */
     @Override public void clear() {
-
+        lockWriteLocks();
         try {
-            lockWriteLocks();
             replaceOldSegments();
-
         } finally {
             unlockWriteLocks();
         }
