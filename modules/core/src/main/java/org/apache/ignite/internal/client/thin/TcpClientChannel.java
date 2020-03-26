@@ -162,7 +162,8 @@ class TcpClientChannel implements ClientChannel {
     private Thread receiverThread;
 
     /** Constructor. */
-    TcpClientChannel(ClientChannelConfiguration cfg) throws ClientConnectionException, ClientAuthenticationException {
+    TcpClientChannel(ClientChannelConfiguration cfg)
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
 
         try {
@@ -209,8 +210,11 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
+    @Override public <T> T service(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientConnectionException, ClientAuthorizationException, ClientServerError, ClientException {
         long id = send(op, payloadWriter);
 
         return receive(id, payloadReader);
@@ -222,7 +226,7 @@ class TcpClientChannel implements ClientChannel {
      * @return Request ID.
      */
     private long send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
-        throws ClientConnectionException {
+        throws ClientException, ClientConnectionException {
         long id = reqId.getAndIncrement();
 
         // Only one thread at a time can have access to write to the channel.
@@ -267,7 +271,7 @@ class TcpClientChannel implements ClientChannel {
      * @return Received operation payload or {@code null} if response has no payload.
      */
     private <T> T receive(long reqId, Function<PayloadInputChannel, T> payloadReader)
-        throws ClientConnectionException, ClientAuthorizationException {
+        throws ClientServerError, ClientException, ClientConnectionException, ClientAuthorizationException {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
@@ -475,7 +479,7 @@ class TcpClientChannel implements ClientChannel {
 
     /** Client handshake. */
     private void handshake(String user, String pwd, Map<String, String> userAttrs)
-        throws ClientConnectionException, ClientAuthenticationException {
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         handshakeReq(user, pwd, userAttrs);
         handshakeRes(user, pwd, userAttrs);
     }
@@ -513,7 +517,7 @@ class TcpClientChannel implements ClientChannel {
 
     /** Receive and handle handshake response. */
     private void handshakeRes(String user, String pwd, Map<String, String> userAttrs)
-        throws ClientConnectionException, ClientAuthenticationException {
+        throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         int resSize = dataInput.readInt();
 
         if (resSize <= 0)

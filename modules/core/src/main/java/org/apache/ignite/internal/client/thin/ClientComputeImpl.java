@@ -25,7 +25,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
@@ -181,7 +180,14 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader =
                 ch -> new T2<>(ch.clientChannel(), ch.in().readLong());
 
-            T2<ClientChannel, Long> taskParams = ch.service(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
+            T2<ClientChannel, Long> taskParams;
+
+            try {
+                taskParams = ch.service(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
+            }
+            catch (ClientServerError error) {
+                throw new ClientException(error.getMessage());
+            }
 
             ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
@@ -338,10 +344,14 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             this.taskId = taskId;
 
             fut = new GridFutureAdapter<R>() {
-                @Override public boolean cancel() throws IgniteCheckedException {
-                    ch.service(RESOURCE_CLOSE, req -> req.out().writeLong(taskId), null);
+                @Override public boolean cancel() {
+                    if (onCancelled()) {
+                        ch.service(RESOURCE_CLOSE, req -> req.out().writeLong(taskId), null);
 
-                    return super.cancel();
+                        return true;
+                    }
+                    else
+                        return false;
                 }
             };
         }

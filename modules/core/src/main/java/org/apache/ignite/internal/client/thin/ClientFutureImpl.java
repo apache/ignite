@@ -24,9 +24,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFuture;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.lang.IgniteFutureTimeoutException;
 
 /**
  * Implementation of {@link ClientFuture}.
@@ -65,7 +65,7 @@ class ClientFutureImpl<R>  implements ClientFuture<R> {
         catch (IgniteInterruptedCheckedException e) {
             throw new InterruptedException(e.getMessage());
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             throw new TimeoutException(e.getMessage());
         }
         catch (IgniteCheckedException e) {

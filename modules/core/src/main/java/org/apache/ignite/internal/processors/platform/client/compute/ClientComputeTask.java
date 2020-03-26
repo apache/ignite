@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientCloseableReso
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientNotification;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectNotification;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -102,6 +104,10 @@ class ClientComputeTask implements ClientCloseableResource {
         task.setThreadContext(TC_NO_RESULT_CACHE, (flags & NO_RESULT_CACHE_FLAG_MASK) != 0);
 
         taskFut = task.execute(taskName, arg);
+
+        // Fail fast.
+        if (taskFut.isDone() && taskFut.error() != null)
+            throw new IgniteClientException(ClientStatus.FAILED, taskFut.error().getMessage());
     }
 
     /**
