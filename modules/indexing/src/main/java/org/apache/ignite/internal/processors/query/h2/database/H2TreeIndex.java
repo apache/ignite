@@ -739,9 +739,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             }
         }
 
-        GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
-
-        return new DistributedLookupBatch(this, cctx, qctx, ucast, affColId);
+        return new DistributedLookupBatch(this, cctx, ucast, affColId);
     }
 
     /**

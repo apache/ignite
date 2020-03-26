@@ -59,9 +59,6 @@ public class DistributedLookupBatch implements IndexLookupBatch {
     /** */
     private final GridCacheContext<?,?> cctx;
 
-    /** Query context. */
-    private final QueryContext qctx;
-
     /** */
     private final boolean ucast;
 
@@ -94,11 +91,10 @@ public class DistributedLookupBatch implements IndexLookupBatch {
      * @param ucast Unicast or broadcast query.
      * @param affColId Affinity column ID.
      */
-    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx, QueryContext qctx,
+    public DistributedLookupBatch(H2TreeIndex idx, GridCacheContext<?, ?> cctx,
         boolean ucast, int affColId) {
         this.idx = idx;
         this.cctx = cctx;
-        this.qctx = qctx;
         this.ucast = ucast;
         this.affColId = affColId;
     }
@@ -153,6 +149,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
             if (joinCtx == null) {
                 // It is the first call after query begin (may be after reuse),
                 // reinitialize query context and result.
+                QueryContext qctx = QueryContext.threadLocal();
+
                 res = new ArrayList<>();
 
                 assert qctx != null;
@@ -271,9 +269,8 @@ public class DistributedLookupBatch implements IndexLookupBatch {
         joinCtx.putStreams(batchLookupId, rangeStreams);
 
         // Start streaming.
-        for (RangeStream stream : rangeStreams.values()) {
+        for (RangeStream stream : rangeStreams.values())
             stream.start();
-        }
     }
 
     /** {@inheritDoc} */
