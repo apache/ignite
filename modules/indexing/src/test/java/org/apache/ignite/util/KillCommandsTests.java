@@ -31,8 +31,6 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -52,9 +50,6 @@ class KillCommandsTests {
 
     /** Cache name. */
     public static final String DEFAULT_CACHE_NAME = "default";
-
-    /** Page size. */
-    public static final int PAGE_SZ = 5;
 
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
@@ -122,35 +117,32 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param txCanceler Transaction cancel closure.
      */
-    public static void doTestCancelTx(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> txCanceler) throws Exception {
+    public static void doTestCancelTx(IgniteEx cli, List<IgniteEx> srvs, Consumer<String> txCanceler) {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
-        int testKey = PAGE_SZ * PAGE_SZ + 42;
+        int testKey = 42;
 
-        for (TransactionConcurrency txConc : TransactionConcurrency.values()) {
-            for (TransactionIsolation txIsolation : TransactionIsolation.values()) {
-                try (Transaction tx = cli.transactions().txStart(txConc, txIsolation)) {
-                    cache.put(testKey, 1);
+        try (Transaction tx = cli.transactions().txStart()) {
+            cache.put(testKey, 1);
 
-                    List<List<?>> txs = execute(cli, "SELECT xid FROM SYS.TRANSACTIONS");
-                    assertEquals(1, txs.size());
+            List<List<?>> txs = execute(cli, "SELECT xid FROM SYS.TRANSACTIONS");
 
-                    String xid = (String)txs.get(0).get(0);
+            assertEquals(1, txs.size());
 
-                    txCanceler.accept(xid);
+            String xid = (String)txs.get(0).get(0);
 
-                    assertThrowsWithCause(tx::commit, IgniteException.class);
+            txCanceler.accept(xid);
 
-                    for (int i = 0; i < srvs.size(); i++) {
-                        txs = execute(srvs.get(i), "SELECT xid FROM SYS.TRANSACTIONS");
+            assertThrowsWithCause(tx::commit, IgniteException.class);
 
-                        assertEquals(0, txs.size());
-                    }
-                }
+            for (int i = 0; i < srvs.size(); i++) {
+                txs = execute(srvs.get(i), "SELECT xid FROM SYS.TRANSACTIONS");
 
-                assertNull(cache.get(testKey));
+                assertEquals(0, txs.size());
             }
         }
+
+        assertNull(cache.get(testKey));
     }
 
     /**

@@ -20,7 +20,6 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -76,7 +75,7 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
         srvs.get(0).cluster().state(ACTIVE);
 
-        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
+        startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
     }

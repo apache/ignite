@@ -19,7 +19,6 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -45,7 +44,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         for (int i = 0; i < SERVER_NODE_CNT; i++)
             srvs.add(grid(i));
 
-        IgniteCache<Object, Object> cache = client.getOrCreateCache(
+        client.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
