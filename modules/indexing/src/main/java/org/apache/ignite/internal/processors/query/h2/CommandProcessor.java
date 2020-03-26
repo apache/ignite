@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -97,6 +98,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -309,10 +311,10 @@ public class CommandProcessor {
         if (err == null) {
             try {
                 runningQryInfo.cancel();
-            } catch (Exception e){
+            } catch (Exception e) {
                 U.warn(log, "Cancellation of query failed: [qryId=" + qryId + "]", e);
 
-                if(!msg.asyncResponse())
+                if (!msg.asyncResponse())
                     sendKillResponse(msg, node, e.getMessage());
 
                 return;
@@ -407,8 +409,10 @@ public class CommandProcessor {
             }
             else if (cmdNative instanceof SqlSetStreamingCommand)
                 processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
-            else if(cmdNative instanceof SqlKillQueryCommand)
+            else if (cmdNative instanceof SqlKillQueryCommand)
                 processKillQueryCommand((SqlKillQueryCommand) cmdNative);
+            else if (cmdNative instanceof SqlKillComputeTaskCommand)
+                processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
             else
                 processTxCommand(cmdNative, params);
         }
@@ -456,7 +460,7 @@ public class CommandProcessor {
                     null,
                     locNodeMsgHnd,
                     GridIoPolicy.MANAGEMENT_POOL,
-                    false
+                    cmd.async()
                 );
 
                 if (!snd) {
@@ -485,6 +489,15 @@ public class CommandProcessor {
             throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
                 + cmd.nodeQueryId() + ",err=" + e + "]", e);
         }
+    }
+
+    /**
+     * Process kill compute task command.
+     *
+     * @param cmd Command.
+     */
+    private void processKillComputeTaskCommand(SqlKillComputeTaskCommand cmd) {
+        new ComputeMXBeanImpl(ctx).cancel(cmd.getSessionId());
     }
 
     /**

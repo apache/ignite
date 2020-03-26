@@ -389,5 +389,24 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
+        
+        /// <summary>
+        /// Gets the dot net source dir.
+        /// </summary>
+        public static DirectoryInfo GetDotNetSourceDir()
+        {
+            // ReSharper disable once AssignNullToNotNullAttribute
+            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+
+            while (dir != null)
+            {
+                if (dir.GetFiles().Any(x => x.Name == "Apache.Ignite.sln"))
+                    return dir;
+
+                dir = dir.Parent;
+            }
+
+            throw new InvalidOperationException("Could not resolve Ignite.NET source directory.");
+        }
     }
 }

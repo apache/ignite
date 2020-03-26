@@ -25,8 +25,8 @@ import org.apache.ignite.ml.util.generators.primitives.vector.VectorGeneratorsFa
 
 /**
  * Example of using distribution families. Each distribution from family represents a class. Distribution family is a
- * distribution hence such family can be used as element of hight-level family where this distribution will represent
- * one class. Such families helps to construct ditributions with complex shape.
+ * distribution hence such family can be used as element of high-level family where this distribution will represent
+ * one class. Such families helps to construct distributions with complex shape.
  */
 public class VectorGeneratorFamilyExample {
     /**

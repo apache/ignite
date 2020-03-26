@@ -45,26 +45,26 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     private final LongAdderMetric physicalReadCtr;
 
     /** */
-    private final String cacheName;
+    private final String grpName;
 
     /** */
     private final int grpId;
 
     /**
-     * @param cacheName Name of cache.
+     * @param grpName Name of the group.
      * @param grpId Group id.
      * @param mmgr Metric manager.
      */
-    public IoStatisticsHolderCache(String cacheName, int grpId, GridMetricManager mmgr) {
-        assert cacheName != null;
+    public IoStatisticsHolderCache(String grpName, int grpId, GridMetricManager mmgr) {
+        assert grpName != null;
 
-        this.cacheName = cacheName;
+        this.grpName = grpName;
         this.grpId = grpId;
 
-        MetricRegistry mreg = mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), cacheName));
+        MetricRegistry mreg = mmgr.registry(metricRegistryName());
 
         mreg.longMetric("startTime", null).value(U.currentTimeMillis());
-        mreg.objectMetric("name", String.class, null).value(cacheName);
+        mreg.objectMetric("name", String.class, null).value(grpName);
         mreg.intMetric("grpId", null).value(grpId);
 
         this.logicalReadCtr = mreg.longAdderMetric(LOGICAL_READS, null);
@@ -105,6 +105,11 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         return physicalReadCtr.value();
     }
 
+    /** {@inheritDoc} */
+    @Override public String metricRegistryName() {
+        return metricName(CACHE_GROUP.metricGroupName(), grpName);
+    }
+
     /**
      * @return Cache group id.
      */
@@ -117,6 +122,6 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         return S.toString(IoStatisticsHolderCache.class, this,
             "logicalReadCtr", logicalReadCtr,
             "physicalReadCtr", physicalReadCtr,
-            "cacheName", cacheName);
+            "grpName", grpName);
     }
 }

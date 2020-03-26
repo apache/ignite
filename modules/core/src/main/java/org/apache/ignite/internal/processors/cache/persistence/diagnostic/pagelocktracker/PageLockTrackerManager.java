@@ -67,7 +67,6 @@ public class PageLockTrackerManager implements LifecycleAware {
     /** */
     private final boolean trackingEnable;
 
-
     /**
      * Default constructor.
      */

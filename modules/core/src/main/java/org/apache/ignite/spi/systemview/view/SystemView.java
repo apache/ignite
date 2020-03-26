@@ -26,9 +26,6 @@ public interface SystemView<R> extends Iterable<R> {
     /** @return Helper for exporters. */
     public SystemViewRowAttributeWalker<R> walker();
 
-    /** @return Class of the row. */
-    public Class<R> rowClass();
-
     /** @return View name. */
     public String name();
 

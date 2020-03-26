@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         public void TestLocalQuery()
         {
             // Create partitioned cache
-            var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", 
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache",
                     new QueryEntity(typeof(int), typeof(int)))
                 {
                     SqlEscapeAll = GetSqlEscapeAll()
@@ -343,7 +343,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             });
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<IgniteException>(() =>
+            var ex = Assert.Throws<CacheException>(() =>
                 persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));

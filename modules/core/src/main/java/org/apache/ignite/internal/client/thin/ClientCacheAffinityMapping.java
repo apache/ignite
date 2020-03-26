@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Affinity mapping (partition to nodes) for each cache.
  */
 public class ClientCacheAffinityMapping {
-    /** CacheAffinityInfo for caches with not applicable affinity awareness. */
+    /** CacheAffinityInfo for caches with not applicable partition awareness. */
     private static final CacheAffinityInfo NOT_APPLICABLE_CACHE_AFFINITY_INFO =
         new CacheAffinityInfo(null, null);
 
@@ -158,7 +158,7 @@ public class ClientCacheAffinityMapping {
 
                 int cachesCnt = in.readInt();
 
-                if (applicable) { // Affinity awareness is applicable for this caches.
+                if (applicable) { // Partition awareness is applicable for this caches.
                     Map<Integer, Map<Integer, Integer>> cacheKeyCfg = U.newHashMap(cachesCnt);
 
                     for (int j = 0; j < cachesCnt; j++)
@@ -169,7 +169,7 @@ public class ClientCacheAffinityMapping {
                     for (Map.Entry<Integer, Map<Integer, Integer>> keyCfg : cacheKeyCfg.entrySet())
                         aff.cacheAffinity.put(keyCfg.getKey(), new CacheAffinityInfo(keyCfg.getValue(), partToNode));
                 }
-                else { // Affinity awareness is not applicable for this caches.
+                else { // Partition awareness is not applicable for this caches.
                     for (int j = 0; j < cachesCnt; j++)
                         aff.cacheAffinity.put(in.readInt(), NOT_APPLICABLE_CACHE_AFFINITY_INFO);
                 }
@@ -243,8 +243,8 @@ public class ClientCacheAffinityMapping {
         private final int affinityMask;
 
         /**
-         * @param keyCfg Cache key configuration or {@code null} if affinity awareness is not applicable for this cache.
-         * @param partMapping Partition to node mapping or {@code null} if affinity awareness is not applicable for
+         * @param keyCfg Cache key configuration or {@code null} if partition awareness is not applicable for this cache.
+         * @param partMapping Partition to node mapping or {@code null} if partition awareness is not applicable for
          * this cache.
          */
         private CacheAffinityInfo(Map<Integer, Integer> keyCfg, UUID[] partMapping) {

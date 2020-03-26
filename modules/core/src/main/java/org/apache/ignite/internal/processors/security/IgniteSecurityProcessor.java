@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -42,6 +48,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
@@ -50,6 +59,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
+
+    /** Number of started nodes with the sandbox enabled. */
+    private static final AtomicInteger SANDBOXED_NODES_COUNTER = new AtomicInteger();
 
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
@@ -65,6 +77,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** Map of security contexts. Key is the node's id. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
+
+    /** Instance of IgniteSandbox. */
+    private IgniteSandbox sandbox;
 
     /**
      * @param ctx Grid kernal context.
@@ -96,10 +111,26 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         return withContext(
             secCtxs.computeIfAbsent(nodeId,
                 uuid -> nodeSecurityContext(
-                    marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
+                    marsh, U.resolveClassLoader(ctx.config()), findNode(uuid)
                 )
             )
         );
+    }
+
+    /**
+     * Resolves cluster node by its ID.
+     *
+     * @param nodeId Node id.
+     * @throws IllegalStateException If node with provided ID doesn't exist.
+     */
+    private ClusterNode findNode(UUID nodeId) {
+        ClusterNode node = Optional.ofNullable(ctx.discovery().node(nodeId))
+            .orElseGet(() -> ctx.discovery().historicalNode(nodeId));
+
+        if (node == null)
+            throw new IllegalStateException("Failed to find node with given ID for security context setup: " + nodeId);
+
+        return node;
     }
 
     /** {@inheritDoc} */
@@ -152,6 +183,11 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteSandbox sandbox() {
+        return sandbox;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean enabled() {
         return true;
     }
@@ -161,11 +197,64 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
         secPrc.start();
+
+        if (hasSecurityManager() && secPrc.sandboxEnabled()) {
+            sandbox = new AccessControllerSandbox(this);
+
+            updatePackageAccessProperty();
+        }
+        else {
+            if (secPrc.sandboxEnabled()) {
+                ctx.log(getClass()).warning("GridSecurityProcessor#sandboxEnabled returns true, " +
+                    "but system SecurityManager is not defined, " +
+                    "that may be a cause of security lack when IgniteCompute or IgniteCache operations perform.");
+            }
+
+            sandbox = new NoOpSandbox();
+        }
+    }
+
+    /**
+     * Updates the package access property to specify the internal Ignite package.
+     */
+    private void updatePackageAccessProperty() {
+        synchronized (SANDBOXED_NODES_COUNTER) {
+            if (SANDBOXED_NODES_COUNTER.getAndIncrement() == 0) {
+                String packAccess = Security.getProperty("package.access");
+
+                if (!F.isEmpty(packAccess)) {
+                    if (!packAccess.contains(IGNITE_INTERNAL_PACKAGE))
+                        Security.setProperty("package.access", packAccess + ',' + IGNITE_INTERNAL_PACKAGE);
+                }
+                else
+                    Security.setProperty("package.access", IGNITE_INTERNAL_PACKAGE);
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        clearPackageAccessProperty();
+
         secPrc.stop(cancel);
+    }
+
+    /**
+     *
+     */
+    private void clearPackageAccessProperty() {
+        if (hasSecurityManager() && secPrc.sandboxEnabled()) {
+            synchronized (SANDBOXED_NODES_COUNTER) {
+                if (SANDBOXED_NODES_COUNTER.decrementAndGet() == 0) {
+                    String packAccess = Security.getProperty("package.access");
+
+                    if (packAccess.equals(IGNITE_INTERNAL_PACKAGE))
+                        Security.setProperty("package.access", null);
+                    else if (packAccess.contains(',' + IGNITE_INTERNAL_PACKAGE))
+                        Security.setProperty("package.access", packAccess.replace(',' + IGNITE_INTERNAL_PACKAGE, ""));
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

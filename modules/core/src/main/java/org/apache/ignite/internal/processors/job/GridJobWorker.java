@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -277,8 +278,28 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return Create time.
      */
-    long getCreateTime() {
+    public long getCreateTime() {
         return createTime;
+    }
+
+    /** @return Start time. */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /** @return Finish time. */
+    public long getFinishTime() {
+        return finishTime;
+    }
+
+    /** @return Is started. */
+    public boolean isStarted() {
+        return isStarted;
+    }
+
+    /** @return Grid reservable resource. */
+    public GridReservable getPartsReservation() {
+        return partsReservation;
     }
 
     /**
@@ -326,14 +347,14 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @return {@code true} if job is being finished after execution
      *      and {@code false} otherwise.
      */
-    boolean isFinishing() {
+    public boolean isFinishing() {
         return finishing.get();
     }
 
     /**
      * @return Parent task node ID.
      */
-    ClusterNode getTaskNode() {
+    public ClusterNode getTaskNode() {
         return taskNode;
     }
 
@@ -374,7 +395,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * @return {@code True} if job is timed out.
      */
-    boolean isTimedOut() {
+    public boolean isTimedOut() {
         return timedOut;
     }
 
@@ -460,6 +481,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             if (!internal && ctx.event().isRecordable(EVT_JOB_QUEUED))
                 recordEvent(EVT_JOB_QUEUED, "Job got queued for computation.");
+
+            job = SecurityUtils.sandboxedProxy(ctx, ComputeJob.class, job);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);

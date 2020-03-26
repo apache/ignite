@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Extensions for <see cref="Task"/> classes.
     /// Fixes the issue with <see cref="TaskScheduler.Current"/> being used by default by system APIs.
     /// Current scheduler can be anything, but in most cases we just want thread pool when starting a task.
-    /// <see cref="TaskScheduler.Default"/> is normally <see cref="ThreadPoolTaskScheduler"/>.
+    /// <see cref="TaskScheduler.Default"/> is normally ThreadPoolTaskScheduler.
     /// </summary>
     internal static class TaskRunner
     {

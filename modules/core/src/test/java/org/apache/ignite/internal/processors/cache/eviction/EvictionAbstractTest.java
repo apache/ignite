@@ -736,6 +736,24 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testEvictionPolicyMbeanValidity() throws Exception {
+        try {
+            Ignite ignite = startGrids(2);
+
+            //Instantiate policy object to know exact class.
+            EvictionPolicy plc = createPolicy(0);
+
+            validateMbeans(ignite, plc.getClass().getName());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     protected void checkPartitioned() throws Exception {

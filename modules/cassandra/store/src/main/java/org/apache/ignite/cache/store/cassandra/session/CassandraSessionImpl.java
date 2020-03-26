@@ -47,6 +47,7 @@ import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSe
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 
 /**
  * Implementation for {@link org.apache.ignite.cache.store.cassandra.session.CassandraSession}.
@@ -295,7 +296,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     error = hostsAvailEx;
                 else if (prepStatEx != null)
                     error = prepStatEx;
-                
+
                 // Clean errors info before next communication with Cassandra.
                 unknownEx = null;
                 tblAbsenceEx = null;
@@ -365,7 +366,7 @@ public class CassandraSessionImpl implements CassandraSession {
             " of " + dataSize + " elements, during " + assistant.operationName() +
             " operation with Cassandra";
 
-        log.error(errorMsg, error);
+        LT.warn(log, error, errorMsg, false, false);
 
         throw new IgniteException(errorMsg, error);
     }

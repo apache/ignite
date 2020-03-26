@@ -34,13 +34,13 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Examples source code path.
         /// </summary>
         public static readonly string ExamplesSourcePath =
-            Path.Combine(IgniteHome, @"modules\platforms\dotnet\examples");
+            Path.Combine(IgniteHome, "modules", "platforms", "dotnet", "examples");
 
         /// <summary>
         /// Examples application configuration path.
         /// </summary>
         public static readonly string ExamplesAppConfigPath =
-            Path.Combine(ExamplesSourcePath, @"Apache.Ignite.Examples\App.config");
+            Path.Combine(ExamplesSourcePath, "Apache.Ignite.Examples", "App.config");
 
         /// <summary>
         /// Gets the full configuration path.

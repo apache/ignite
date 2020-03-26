@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,9 +46,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Communication channel with failover and affinity awareness.
+ * Communication channel with failover and partition awareness.
  */
 final class ReliableChannel implements AutoCloseable {
+    /** Timeout to wait for executor service to shutdown (in milliseconds). */
+    private static final long EXECUTOR_SHUTDOWN_TIMEOUT = 10_000L;
+
+    /** Async runner thread name. */
+    static final String ASYNC_RUNNER_THREAD_NAME = "thin-client-channel-async-runner";
+
     /** Channel factory. */
     private final Function<ClientChannelConfiguration, ClientChannel> chFactory;
 
@@ -57,10 +64,10 @@ final class ReliableChannel implements AutoCloseable {
     /** Index of the current channel. */
     private int curChIdx;
 
-    /** Affinity awareness enabled. */
-    private final boolean affinityAwarenessEnabled;
+    /** Partition awareness enabled. */
+    private final boolean partitionAwarenessEnabled;
 
-    /** Cache affinity awareness context. */
+    /** Cache partition awareness context. */
     private final ClientCacheAffinityContext affinityCtx;
 
     /** Node channels. */
@@ -70,7 +77,11 @@ final class ReliableChannel implements AutoCloseable {
     private final ExecutorService asyncRunner = Executors.newSingleThreadExecutor(
         new ThreadFactory() {
             @Override public Thread newThread(@NotNull Runnable r) {
-                return new Thread(r, "thin-client-channel-async-runner");
+                Thread thread = new Thread(r, ASYNC_RUNNER_THREAD_NAME);
+
+                thread.setDaemon(true);
+
+                return thread;
             }
         }
     );
@@ -82,7 +93,7 @@ final class ReliableChannel implements AutoCloseable {
     private final AtomicBoolean affinityUpdateInProgress = new AtomicBoolean();
 
     /** Channel is closed. */
-    private boolean closed;
+    private volatile boolean closed;
 
     /**
      * Constructor.
@@ -109,7 +120,7 @@ final class ReliableChannel implements AutoCloseable {
 
         curChIdx = new Random().nextInt(channels.length); // We already verified there is at least one address.
 
-        affinityAwarenessEnabled = clientCfg.isAffinityAwarenessEnabled() && channels.length > 1;
+        partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled() && channels.length > 1;
 
         affinityCtx = new ClientCacheAffinityContext(binary);
 
@@ -119,7 +130,7 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 channels[curChIdx].getOrCreateChannel();
 
-                if (affinityAwarenessEnabled)
+                if (partitionAwarenessEnabled)
                     initAllChannelsAsync();
 
                 return;
@@ -136,6 +147,15 @@ final class ReliableChannel implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public synchronized void close() {
         closed = true;
+
+        asyncRunner.shutdown();
+
+        try {
+            asyncRunner.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException ignore) {
+            // No-op.
+        }
 
         for (ClientChannelHolder hld : channels)
             hld.closeChannel();
@@ -197,7 +217,7 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException {
-        if (affinityAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
+        if (partitionAwarenessEnabled && !nodeChannels.isEmpty() && affinityInfoIsUpToDate(cacheId)) {
             UUID affinityNodeId = affinityCtx.affinityNode(cacheId, key);
 
             if (affinityNodeId != null) {
@@ -363,8 +383,8 @@ final class ReliableChannel implements AutoCloseable {
                     scheduledChannelsReinit.set(false);
 
                     for (ClientChannelHolder hld : channels) {
-                        if (scheduledChannelsReinit.get())
-                            return; // New reinit task scheduled.
+                        if (scheduledChannelsReinit.get() || closed)
+                            return; // New reinit task scheduled or channel is closed.
 
                         try {
                             hld.getOrCreateChannel(true);
@@ -384,7 +404,7 @@ final class ReliableChannel implements AutoCloseable {
      * @param ch Channel.
      */
     private void onTopologyChanged(ClientChannel ch) {
-        if (affinityAwarenessEnabled && affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(),
+        if (partitionAwarenessEnabled && affinityCtx.updateLastTopologyVersion(ch.serverTopologyVersion(),
             ch.serverNodeId()))
             initAllChannelsAsync();
     }

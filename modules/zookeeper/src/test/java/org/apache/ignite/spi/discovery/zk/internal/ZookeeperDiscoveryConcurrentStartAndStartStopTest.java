@@ -57,9 +57,10 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
                 @Override public Void call() throws Exception {
                     int threadIdx = idx.getAndIncrement();
 
-                    helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
-
-                    startGrid(threadIdx);
+                    if (threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean())
+                        startClientGrid(threadIdx);
+                    else
+                        startGrid(threadIdx);
 
                     return null;
                 }
@@ -448,14 +449,12 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
 
         startGrids(SRVS);
 
-        helper.clientMode(true);
-
         final int THREADS = 30;
 
         for (int i = 0; i < GridTestUtils.SF.applyLB(5, 2); i++) {
             info("Iteration: " + i);
 
-            startGridsMultiThreaded(SRVS, THREADS);
+            startClientGridsMultiThreaded(SRVS, THREADS);
 
             waitForTopology(SRVS + THREADS);
 

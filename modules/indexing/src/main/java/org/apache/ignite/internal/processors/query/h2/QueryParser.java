@@ -69,6 +69,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
+import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -90,7 +91,7 @@ public class QueryParser {
     /** A pattern for commands having internal implementation in Ignite. */
     private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
         "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
-            "|^kill\\s+query|show|help|grant|revoke",
+            "|^kill\\s+(query|compute)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
@@ -101,6 +102,9 @@ public class QueryParser {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Query parser metrics holder. */
+    private final QueryParserMetricsHolder metricsHolder;
 
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<QueryDescriptor, QueryParserCacheEntry> cache =
@@ -116,7 +120,8 @@ public class QueryParser {
         this.idx = idx;
         this.connMgr = connMgr;
 
-        log = idx.kernalContext().log(QueryParser.class);
+        this.log = idx.kernalContext().log(QueryParser.class);
+        this.metricsHolder = new QueryParserMetricsHolder(idx.kernalContext().metric());
     }
 
     /**
@@ -191,7 +196,9 @@ public class QueryParser {
 
         QueryParserCacheEntry cached = cache.get(qryDesc);
 
-        if (cached != null)
+        if (cached != null) {
+            metricsHolder.countCacheHit();
+
             return new QueryParserResult(
                 qryDesc,
                 queryParameters(qry),
@@ -201,6 +208,9 @@ public class QueryParser {
                 cached.dml(),
                 cached.command()
             );
+        }
+
+        metricsHolder.countCacheMiss();
 
         // Try parsing as native command.
         QueryParserResult parseRes = parseNative(schemaName, qry, remainingAllowed);
@@ -255,7 +265,8 @@ public class QueryParser {
                 || nativeCmd instanceof SqlCreateUserCommand
                 || nativeCmd instanceof SqlAlterUserCommand
                 || nativeCmd instanceof SqlDropUserCommand
-                || nativeCmd instanceof SqlKillQueryCommand)
+                || nativeCmd instanceof SqlKillQueryCommand
+                || nativeCmd instanceof SqlKillComputeTaskCommand)
             )
                 return null;
 
@@ -409,7 +420,7 @@ public class QueryParser {
 
             // Do actual parsing.
             if (CommandProcessor.isCommand(prepared)) {
-                GridSqlStatement cmdH2 = new GridSqlQueryParser(false).parse(prepared);
+                GridSqlStatement cmdH2 = new GridSqlQueryParser(false, log).parse(prepared);
 
                 QueryParserResultCommand cmd = new QueryParserResultCommand(null, cmdH2, false);
 
@@ -455,7 +466,7 @@ public class QueryParser {
             }
 
             // Parse SELECT.
-            GridSqlQueryParser parser = new GridSqlQueryParser(false);
+            GridSqlQueryParser parser = new GridSqlQueryParser(false, log);
 
             GridSqlQuery selectStmt = (GridSqlQuery)parser.parse(prepared);
 
@@ -534,7 +545,8 @@ public class QueryParser {
                         newQry.isEnforceJoinOrder(),
                         locSplit,
                         idx,
-                        paramsCnt
+                        paramsCnt,
+                        log
                     );
                 }
             }
@@ -551,7 +563,8 @@ public class QueryParser {
                     newQry.isEnforceJoinOrder(),
                     locSplit,
                     idx,
-                    paramsCnt
+                    paramsCnt,
+                    log
                 );
             }
 
@@ -656,7 +669,7 @@ public class QueryParser {
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         // Prepare AST.
-        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+        GridSqlQueryParser parser = new GridSqlQueryParser(false, log);
 
         GridSqlStatement stmt = parser.parse(prepared);
 
@@ -701,7 +714,8 @@ public class QueryParser {
                 planKey,
                 stmt,
                 mvccEnabled,
-                idx
+                idx,
+                log
             );
         }
         catch (Exception e) {

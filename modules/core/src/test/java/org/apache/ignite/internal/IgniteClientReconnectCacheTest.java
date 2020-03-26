@@ -159,9 +159,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnect() throws Exception {
-        clientMode = true;
-
-        IgniteEx client = startGrid(SRV_CNT);
+        IgniteEx client = startClientGrid(SRV_CNT);
 
         final IgniteDiscoverySpi clientSpi = spi0(client);
 
@@ -300,8 +298,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertEquals(21, nearCache.localPeek(20));
 
-        this.clientMode = false;
-
         IgniteEx srv2 = startGrid(SRV_CNT + 1);
 
         Integer key = primaryKey(srv2.cache(DEFAULT_CACHE_NAME));
@@ -339,9 +335,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectTransactions() throws Exception {
-        clientMode = true;
-
-        IgniteEx client = startGrid(SRV_CNT);
+        IgniteEx client = startClientGrid(SRV_CNT);
 
         Ignite srv = ignite(0);
 
@@ -409,9 +403,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testTxStateAfterClientReconnect() throws Exception {
-        clientMode = true;
-
-        IgniteEx client = startGrid(SRV_CNT);
+        IgniteEx client = startClientGrid(SRV_CNT);
 
         Ignite srv = ignite(0);
 
@@ -440,8 +432,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 }, TransactionRollbackException.class);
             }
         }
-
-        clientMode = false;
     }
 
     /**
@@ -449,9 +439,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectTransactionInProgress1() throws Exception {
-        clientMode = true;
-
-        IgniteEx client = startGrid(SRV_CNT);
+        IgniteEx client = startClientGrid(SRV_CNT);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -611,9 +599,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectTransactionInProgress2() throws Exception {
-        clientMode = true;
-
-        final IgniteEx client = startGrid(SRV_CNT);
+        final IgniteEx client = startClientGrid(SRV_CNT);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -671,9 +657,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectExchangeInProgress() throws Exception {
-        clientMode = true;
-
-        IgniteEx client = startGrid(SRV_CNT);
+        IgniteEx client = startClientGrid(SRV_CNT);
 
         Ignite srv = ignite(0);
 
@@ -682,8 +666,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         TestCommunicationSpi coordCommSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
         coordCommSpi.blockMessages(GridDhtPartitionsFullMessage.class, client.localNode().id());
-
-        clientMode = false;
 
         startGrid(SRV_CNT + 1);
 
@@ -756,14 +738,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         srvCommSpi.blockMessages(GridDhtPartitionsFullMessage.class, clientId);
 
-        clientMode = true;
-
         nodeId = clientId;
 
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    startGrid(optimize(getConfiguration(getTestIgniteInstanceName(SRV_CNT))));
+                    startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(SRV_CNT))));
 
                     // Commented due to IGNITE-4473, because
                     // IgniteClientDisconnectedException won't
@@ -823,9 +803,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectOperationInProgress() throws Exception {
-        clientMode = true;
-
-        IgniteEx client = startGrid(SRV_CNT);
+        IgniteEx client = startClientGrid(SRV_CNT);
 
         client.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -908,9 +886,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectCacheDestroyed() throws Exception {
-        clientMode = true;
-
-        final IgniteEx client = startGrid(SRV_CNT);
+        final IgniteEx client = startClientGrid(SRV_CNT);
 
         assertTrue(client.cluster().localNode().isClient());
 
@@ -946,9 +922,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectCacheDestroyedAndCreated() throws Exception {
-        clientMode = true;
-
-        final Ignite client = startGrid(SRV_CNT);
+        final Ignite client = startClientGrid(SRV_CNT);
 
         assertTrue(client.cluster().localNode().isClient());
 
@@ -990,9 +964,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectMarshallerCache() throws Exception {
-        clientMode = true;
-
-        final Ignite client = startGrid(SRV_CNT);
+        final Ignite client = startClientGrid(SRV_CNT);
 
         assertTrue(client.cluster().localNode().isClient());
 
@@ -1033,9 +1005,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectClusterRestart() throws Exception {
-        clientMode = true;
-
-        final Ignite client = startGrid(SRV_CNT);
+        final Ignite client = startClientGrid(SRV_CNT);
 
         assertTrue(client.cluster().localNode().isClient());
 
@@ -1068,8 +1038,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertTrue(disconnectLatch.await(30_000, MILLISECONDS));
 
-        clientMode = false;
-
         Ignite srv = startGrid(0);
 
         assertTrue(reconnectLatch.await(10_000, MILLISECONDS));
@@ -1098,8 +1066,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectClusterRestartMultinode() throws Exception {
-        clientMode = true;
-
         final int CLIENTS = 5;
 
         CountDownLatch disconnectLatch = new CountDownLatch(CLIENTS);
@@ -1110,7 +1076,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         for (int i = 0; i < CLIENTS; i++) {
             int g = SRV_CNT + i;
 
-            IgniteEx client = startGrid(g);
+            IgniteEx client = startClientGrid(g);
 
             info(">>>>> Started client: " + g);
 
@@ -1129,8 +1095,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         assertTrue(disconnectLatch.await(30_000, MILLISECONDS));
 
         log.info("Restart servers.");
-
-        clientMode = false;
 
         startGridsMultiThreaded(0, SRV_CNT);
 
@@ -1180,14 +1144,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     private void reconnectMultinode(boolean longHist) throws Exception {
         grid(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        clientMode = true;
-
         final int CLIENTS = 5;
 
         List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++) {
-            Ignite client = startGrid(SRV_CNT + i);
+            Ignite client = startClientGrid(SRV_CNT + i);
 
             assertNotNull(client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)));
 
@@ -1203,7 +1165,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     int idx = nodeIdx.incrementAndGet();
 
                     for (int i = 0; i < 25; i++) {
-                        startGrid(idx);
+                        startClientGrid(idx);
 
                         stopGrid(idx);
                     }
@@ -1269,15 +1231,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 assertEquals(CLIENTS, grp.nodes().size());
             }
 
-            clientMode = false;
-
             startGrid(nodes++);
 
             srvNodes++;
 
-            clientMode = true;
-
-            startGrid(nodes++);
+            startClientGrid(nodes++);
         }
     }
 
@@ -1286,9 +1244,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      */
     @Test
     public void testReconnectDestroyCache() throws Exception {
-        clientMode = true;
-
-        Ignite client = startGrid(SRV_CNT);
+        Ignite client = startClientGrid(SRV_CNT);
 
         CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg1.setName("cache1");

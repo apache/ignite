@@ -52,6 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -125,6 +126,25 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertFalse(U.isPow2(6));
         assertFalse(U.isPow2(7));
         assertFalse(U.isPow2(9));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testNextPowOf2() {
+        assertEquals(1, U.nextPowerOf2(0));
+        assertEquals(1, U.nextPowerOf2(1));
+        assertEquals(2, U.nextPowerOf2(2));
+        assertEquals(4, U.nextPowerOf2(3));
+        assertEquals(4, U.nextPowerOf2(4));
+
+        assertEquals(8, U.nextPowerOf2(5));
+        assertEquals(8, U.nextPowerOf2(6));
+        assertEquals(8, U.nextPowerOf2(7));
+        assertEquals(8, U.nextPowerOf2(8));
+
+        assertEquals(32768, U.nextPowerOf2(32767));
     }
 
     /**
@@ -354,7 +374,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             ref = this;
 
-            arr = new SelfReferencedJob[] {this, this};
+            arr = new SelfReferencedJob[]{this, this};
 
             col = asList(this, this, this);
 
@@ -1178,7 +1198,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     if (Integer.valueOf(1).equals(i))
                         throw new IgniteCheckedException(expectedException);
 
-                    return  null;
+                    return null;
                 }
             );
 

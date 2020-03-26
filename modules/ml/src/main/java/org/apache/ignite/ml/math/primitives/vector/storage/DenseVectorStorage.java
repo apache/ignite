@@ -215,9 +215,9 @@ public class DenseVectorStorage implements VectorStorage {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = Arrays.hashCode(rawData);
-        result = 31 * result + Arrays.hashCode(data);
-        return result;
+        int res = Arrays.hashCode(rawData);
+        res = 31 * res + Arrays.hashCode(data);
+        return res;
     }
 
     /**

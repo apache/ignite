@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +35,7 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
  * A compound Naive Bayes model which uses a composition of{@code GaussianNaiveBayesModel} and {@code
  * DiscreteNaiveBayesModel}.
  */
-public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable, DeployableObject {
+public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -5045925321135798960L;
 
@@ -65,19 +64,19 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** {@inheritDoc} */
     @Override public Double predict(Vector vector) {
-        double[] probapilityPowers = new double[priorProbabilities.length];
+        double[] probabilityPowers = new double[priorProbabilities.length];
         for (int i = 0; i < priorProbabilities.length; i++)
-            probapilityPowers[i] = Math.log(priorProbabilities[i]);
+            probabilityPowers[i] = Math.log(priorProbabilities[i]);
 
         if (discreteModel != null)
-            probapilityPowers = sum(probapilityPowers, discreteModel.probabilityPowers(skipFeatures(vector, discreteFeatureIdsToSkip)));
+            probabilityPowers = sum(probabilityPowers, discreteModel.probabilityPowers(skipFeatures(vector, discreteFeatureIdsToSkip)));
 
         if (gaussianModel != null)
-            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(skipFeatures(vector, gaussianFeatureIdsToSkip)));
+            probabilityPowers = sum(probabilityPowers, gaussianModel.probabilityPowers(skipFeatures(vector, gaussianFeatureIdsToSkip)));
 
         int maxLbIdx = 0;
-        for (int i = 0; i < probapilityPowers.length; i++) {
-            if (probapilityPowers[i] > probapilityPowers[maxLbIdx])
+        for (int i = 0; i < probabilityPowers.length; i++) {
+            if (probabilityPowers[i] > probabilityPowers[maxLbIdx])
                 maxLbIdx = i;
         }
         return labels[maxLbIdx];
@@ -94,7 +93,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     /** Sets prior probabilities. */
-    public CompoundNaiveBayesModel wirhPriorProbabilities(double[] priorProbabilities) {
+    public CompoundNaiveBayesModel withPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }

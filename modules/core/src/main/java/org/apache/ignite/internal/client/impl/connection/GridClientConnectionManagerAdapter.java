@@ -473,7 +473,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                 try {
                     conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                         cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                        cfg.isTcpNoDelay(), marsh, marshId, top, cred);
+                        cfg.isTcpNoDelay(), marsh, marshId, top, cred, cfg.getUserAttributes());
                 }
                 catch (GridClientException e) {
                     if (marsh instanceof GridClientZipOptimizedMarshaller) {
@@ -483,7 +483,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                         conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                             cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
                             cfg.isTcpNoDelay(), ((GridClientZipOptimizedMarshaller)marsh).defaultMarshaller(), marshId,
-                            top, cred);
+                            top, cred, cfg.getUserAttributes());
                     }
                     else
                         throw e;

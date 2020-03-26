@@ -16,10 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
-import java.lang.management.ManagementFactory;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteRequest;
@@ -27,8 +23,9 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -55,6 +52,9 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
     /** */
     private static String longOpTimeoutCommon;
 
+    /** */
+    private final LogListener dumpLsnr = LogListener.matches("Dumping the near node thread that started transaction").build();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -64,9 +64,6 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         boolean isClient = "client".equals(igniteInstanceName);
-
-        cfg.setClientMode(isClient);
-
         if (!isClient) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -76,6 +73,12 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
 
             cfg.setCacheConfiguration(ccfg);
         }
+
+        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+
+        testLog.registerListener(dumpLsnr);
+
+        cfg.setGridLogger(testLog);
 
         return cfg;
     }
@@ -154,9 +157,11 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
      * @throws Exception if failed.
      */
     private void imitateLongTransaction(boolean shouldRcvThreadDumpReq) throws Exception {
+        dumpLsnr.reset();
+
         final int val = 0;
 
-        final IgniteEx client = startGrid("client");
+        final IgniteEx client = startClientGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 
@@ -181,20 +186,13 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
             shouldRcvThreadDumpReq,
             FetchActiveTxOwnerTraceClosure.class.getName().equals(taskNameContainer.toString())
         );
+
+        assertEquals(shouldRcvThreadDumpReq, dumpLsnr.check());
     }
 
-    /**
-     *
-     */
+    /** */
     private TransactionsMXBean txMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "Transactions",
-            TransactionsMXBeanImpl.class.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TransactionsMXBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(igniteInt), "Transactions",
+            TransactionsMXBeanImpl.class, TransactionsMXBean.class);
     }
 }

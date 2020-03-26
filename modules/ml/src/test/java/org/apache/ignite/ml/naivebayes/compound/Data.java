@@ -47,7 +47,7 @@ final class Data {
     /** */
     static double[] classProbabilities;
 
-    /** Thresholds to binarize discret data. */
+    /** Thresholds to binarize discrete data. */
     static double[][] binarizedDataThresholds;
 
     /** Discrete probabilities. */

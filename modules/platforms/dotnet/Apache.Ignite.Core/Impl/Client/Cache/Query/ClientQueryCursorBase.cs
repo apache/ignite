@@ -70,7 +70,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         protected override T[] GetBatch()
         {
-            return _ignite.Socket.DoOutInOp(_getPageOp, w => w.WriteLong(_cursorId), s => ConvertGetBatch(s));
+            return _ignite.Socket.DoOutInOp(_getPageOp, ctx => ctx.Stream.WriteLong(_cursorId),
+                ctx => ConvertGetBatch(ctx.Stream));
         }
 
         /** <inheritdoc /> */
@@ -78,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         {
             try
             {
-                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose, w => w.WriteLong(_cursorId), null);
+                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose, ctx => ctx.Writer.WriteLong(_cursorId), null);
             }
             finally
             {

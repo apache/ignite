@@ -17,27 +17,34 @@
 
 package org.apache.ignite.client;
 
-import java.lang.management.ManagementFactory;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
+import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -50,8 +57,10 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -59,6 +68,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.apache.ignite.testframework.junits.GridAbstractTest.getMxBean;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -194,7 +204,8 @@ public class FunctionalTest {
                     .setDefaultFieldValues(Collections.singletonMap("id", 0))
                     .setIndexes(Collections.singletonList(new QueryIndex("id", true, "IDX_EMPLOYEE_ID")))
                     .setAliases(Stream.of("id", "orgId").collect(Collectors.toMap(f -> f, String::toUpperCase)))
-                );
+                )
+                .setExpiryPolicy(new PlatformExpiryPolicy(10, 20, 30));
 
             ClientCache cache = client.createCache(cacheCfg);
 
@@ -267,6 +278,132 @@ public class FunctionalTest {
 
             assertEquals(val, cachedVal);
         }
+    }
+
+    /**
+     * Test cache operations with different data types.
+     */
+    @Test
+    public void testDataTypes() throws Exception {
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ignite.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+            Person person = new Person(1, "name");
+
+            // Primitive and built-in types.
+            checkDataType(client, ignite, (byte)1);
+            checkDataType(client, ignite, (short)1);
+            checkDataType(client, ignite, 1);
+            checkDataType(client, ignite, 1L);
+            checkDataType(client, ignite, 1.0f);
+            checkDataType(client, ignite, 1.0d);
+            checkDataType(client, ignite, 'c');
+            checkDataType(client, ignite, true);
+            checkDataType(client, ignite, "string");
+            checkDataType(client, ignite, UUID.randomUUID());
+            checkDataType(client, ignite, new Date());
+
+            // Enum.
+            checkDataType(client, ignite, CacheAtomicityMode.ATOMIC);
+
+            // Binary object.
+            checkDataType(client, ignite, person);
+
+            // Arrays.
+            checkDataType(client, ignite, new byte[] {(byte)1});
+            checkDataType(client, ignite, new short[] {(short)1});
+            checkDataType(client, ignite, new int[] {1});
+            checkDataType(client, ignite, new long[] {1L});
+            checkDataType(client, ignite, new float[] {1.0f});
+            checkDataType(client, ignite, new double[] {1.0d});
+            checkDataType(client, ignite, new char[] {'c'});
+            checkDataType(client, ignite, new boolean[] {true});
+            checkDataType(client, ignite, new String[] {"string"});
+            checkDataType(client, ignite, new UUID[] {UUID.randomUUID()});
+            checkDataType(client, ignite, new Date[] {new Date()});
+            checkDataType(client, ignite, new int[][] {new int[] {1}});
+
+            checkDataType(client, ignite, new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
+
+            checkDataType(client, ignite, new Person[] {person});
+            checkDataType(client, ignite, new Person[][] {new Person[] {person}});
+            checkDataType(client, ignite, new Object[] {1, "string", person, new Person[] {person}});
+
+            // Lists.
+            checkDataType(client, ignite, Collections.emptyList());
+            checkDataType(client, ignite, Collections.singletonList(person));
+            checkDataType(client, ignite, Arrays.asList(person, person));
+            checkDataType(client, ignite, new ArrayList<>(Arrays.asList(person, person)));
+            checkDataType(client, ignite, new LinkedList<>(Arrays.asList(person, person)));
+            checkDataType(client, ignite, Arrays.asList(Arrays.asList(person, person), person));
+
+            // Sets.
+            checkDataType(client, ignite, Collections.emptySet());
+            checkDataType(client, ignite, Collections.singleton(person));
+            checkDataType(client, ignite, new HashSet<>(Arrays.asList(1, 2)));
+            checkDataType(client, ignite, new HashSet<>(Arrays.asList(Arrays.asList(person, person), person)));
+            checkDataType(client, ignite, new HashSet<>(new ArrayList<>(Arrays.asList(Arrays.asList(person,
+                person), person))));
+
+            // Maps.
+            checkDataType(client, ignite, Collections.emptyMap());
+            checkDataType(client, ignite, Collections.singletonMap(1, person));
+            checkDataType(client, ignite, F.asMap(1, person));
+            checkDataType(client, ignite, new HashMap<>(F.asMap(1, person)));
+            checkDataType(client, ignite, new HashMap<>(F.asMap(new HashSet<>(Arrays.asList(1, 2)),
+                Arrays.asList(person, person))));
+        }
+    }
+
+    /**
+     * Check that we get the same value from the cache as we put before.
+     *
+     * @param client Thin client.
+     * @param ignite Ignite node.
+     * @param obj Value of data type to check.
+     */
+    private void checkDataType(IgniteClient client, Ignite ignite, Object obj) {
+        IgniteCache<Object, Object> thickCache = ignite.cache(Config.DEFAULT_CACHE_NAME);
+        ClientCache<Object, Object> thinCache = client.cache(Config.DEFAULT_CACHE_NAME);
+
+        Integer key = 1;
+
+        thinCache.put(key, obj);
+
+        assertTrue(thinCache.containsKey(key));
+
+        Object cachedObj = thinCache.get(key);
+
+        assertEqualsArraysAware(obj, cachedObj);
+
+        assertEqualsArraysAware(obj, thickCache.get(key));
+
+        assertEquals(client.binary().typeId(obj.getClass().getName()), ignite.binary().typeId(obj.getClass().getName()));
+
+        if (!obj.getClass().isArray()) { // TODO IGNITE-12578
+            // Server-side comparison with the original object.
+            assertTrue(thinCache.replace(key, obj, obj));
+
+            // Server-side comparison with the restored object.
+            assertTrue(thinCache.remove(key, cachedObj));
+        }
+    }
+
+    /**
+     * Assert values equals (deep equals for arrays).
+     *
+     * @param exp Expected value.
+     * @param actual Actual value.
+     */
+    private void assertEqualsArraysAware(Object exp, Object actual) {
+        if (exp instanceof Object[])
+            assertArrayEquals((Object[])exp, (Object[])actual);
+        else if (U.isPrimitiveArray(exp))
+            assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
+        else
+            assertEquals(exp, actual);
     }
 
     /**
@@ -544,10 +681,8 @@ public class FunctionalTest {
             cache.put(1, "value5");
 
             // Test failover.
-            ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Clients", ClientListenerProcessor.class.getSimpleName());
-
-            ClientProcessorMXBean mxBean = MBeanServerInvocationHandler.newProxyInstance(
-                ManagementFactory.getPlatformMBeanServer(), mbeanName, ClientProcessorMXBean.class, true);
+            ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
+                ClientListenerProcessor.class, ClientProcessorMXBean.class);
 
             try (ClientTransaction tx = client.transactions().txStart()) {
                 cache.put(1, "value6");
@@ -813,6 +948,109 @@ public class FunctionalTest {
             t.start();
 
             t.join();
+        }
+    }
+
+    /**
+     * Test cache with expire policy.
+     */
+    @Test
+    public void testExpirePolicy() throws Exception {
+        long ttl = 600L;
+        int MAX_RETRIES = 5;
+
+        try (Ignite ignite = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(getClientConfiguration())
+        ) {
+            ClientCache<Integer, Object> cache = client.createCache(new ClientCacheConfiguration()
+                .setName("cache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            );
+
+            Duration dur = new Duration(TimeUnit.MILLISECONDS, ttl);
+
+            ClientCache<Integer, Object> cachePlcCreated = cache.withExpirePolicy(new CreatedExpiryPolicy(dur));
+            ClientCache<Integer, Object> cachePlcUpdated = cache.withExpirePolicy(new ModifiedExpiryPolicy(dur));
+            ClientCache<Integer, Object> cachePlcAccessed = cache.withExpirePolicy(new AccessedExpiryPolicy(dur));
+
+            for (int i = 0; i < MAX_RETRIES; i++) {
+                cache.clear();
+
+                long ts = U.currentTimeMillis();
+
+                cache.put(0, 0);
+                cachePlcCreated.put(1, 1);
+                cachePlcUpdated.put(2, 2);
+                cachePlcAccessed.put(3, 3);
+
+                U.sleep(ttl / 3 * 2);
+
+                boolean containsKey0 = cache.containsKey(0);
+                boolean containsKey1 = cache.containsKey(1);
+                boolean containsKey2 = cache.containsKey(2);
+                boolean containsKey3 = cache.containsKey(3);
+
+                if (U.currentTimeMillis() - ts >= ttl) // Retry if this block execution takes too long.
+                    continue;
+
+                assertTrue(containsKey0);
+                assertTrue(containsKey1);
+                assertTrue(containsKey2);
+                assertTrue(containsKey3);
+
+                ts = U.currentTimeMillis();
+
+                cachePlcCreated.put(1, 2);
+                cachePlcCreated.get(1); // Update and access key with created expire policy.
+                cachePlcUpdated.put(2, 3); // Update key with modified expire policy.
+                cachePlcAccessed.get(3); // Access key with accessed expire policy.
+
+                U.sleep(ttl / 3 * 2);
+
+                containsKey0 = cache.containsKey(0);
+                containsKey1 = cache.containsKey(1);
+                containsKey2 = cache.containsKey(2);
+                containsKey3 = cache.containsKey(3);
+
+                if (U.currentTimeMillis() - ts >= ttl) // Retry if this block execution takes too long.
+                    continue;
+
+                assertTrue(containsKey0);
+                assertFalse(containsKey1);
+                assertTrue(containsKey2);
+                assertTrue(containsKey3);
+
+                U.sleep(ttl / 3 * 2);
+
+                cachePlcUpdated.get(2); // Access key with updated expire policy.
+
+                U.sleep(ttl / 3 * 2);
+
+                assertTrue(cache.containsKey(0));
+                assertFalse(cache.containsKey(1));
+                assertFalse(cache.containsKey(2));
+                assertFalse(cache.containsKey(3));
+
+                // Expire policy, keep binary and transactional flags together.
+                ClientCache<Integer, Object> binCache = cachePlcCreated.withKeepBinary();
+
+                try (ClientTransaction tx = client.transactions().txStart()) {
+                    binCache.put(4, new T2<>("test", "test"));
+
+                    tx.commit();
+                }
+
+                assertTrue(binCache.get(4) instanceof BinaryObject);
+                assertFalse(cache.get(4) instanceof BinaryObject);
+
+                U.sleep(ttl / 3 * 4);
+
+                assertFalse(cache.containsKey(4));
+
+                return;
+            }
+
+            fail("Failed to check expire policy within " + MAX_RETRIES + " retries (block execution takes too long)");
         }
     }
 

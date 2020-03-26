@@ -95,8 +95,6 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         ccfgs.add(buildCacheConfiguration(CACHE_SQL));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
 
         return c;
     }
@@ -111,7 +109,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         startGrid(0);
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */

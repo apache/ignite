@@ -69,7 +69,6 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
             ccfg2.setDataRegionName("nopersistence");
 
             cfg.setCacheConfiguration(ccfg1, ccfg2);
-            cfg.setClientMode(true);
         }
 
         return cfg;
@@ -97,7 +96,7 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
     @Test
     public void testRebuildIndexes() throws Exception {
         startGrid("server");
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         client.cluster().active(true);
 
@@ -108,7 +107,7 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
         startGrid("server");
 
         stopGrid("client");
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /**

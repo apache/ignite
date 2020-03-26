@@ -98,12 +98,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             /** <inheritdoc /> */
-            public int[] GetSchema(int typeId, int schemaId)
-            {
-                return null;
-            }
-
-            /** <inheritdoc /> */
             public void PutBinaryTypes(ICollection<BinaryType> types)
             {
                 // No-op.

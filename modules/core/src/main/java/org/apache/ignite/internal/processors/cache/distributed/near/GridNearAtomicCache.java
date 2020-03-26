@@ -420,6 +420,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
+        warnIfUnordered(keys, BulkOperation.GET);
+
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);

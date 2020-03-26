@@ -36,7 +36,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * This preprocessor can transforms label column.
  * </p>
  * <p>
- * NOTE: it doesn’t add new column but change data in-place.
+ * NOTE: it does not add new column but change data in-place.
  *</p>
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.

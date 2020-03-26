@@ -26,4 +26,10 @@ public interface DistributedConfigurationLifecycleListener {
      * Notify about processor ready to register properties.
      */
     void onReadyToRegister(DistributedPropertyDispatcher dispatcher);
+
+    /**
+     * Notify about processor ready to write.
+     */
+    default void onReadyToWrite() {
+    }
 }

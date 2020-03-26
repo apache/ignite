@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -49,12 +51,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.spi.systemview.view.CacheGroupView;
-import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -72,6 +75,8 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.systemview.view.CacheGroupView;
+import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -153,6 +158,9 @@ public class ClusterCachesInfo {
     /** {@code True} if joined cluster while cluster state change was in progress. */
     private boolean joinOnTransition;
 
+    /** Flag that caches were already filtered out. */
+    private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
     /**
      * @param ctx Context.
      */
@@ -160,12 +168,12 @@ public class ClusterCachesInfo {
         this.ctx = ctx;
 
         ctx.systemView().registerView(CACHES_VIEW, CACHES_VIEW_DESC,
-            CacheView.class,
+            new CacheViewWalker(),
             registeredCaches.values(),
             CacheView::new);
 
         ctx.systemView().registerView(CACHE_GRPS_VIEW, CACHE_GRPS_VIEW_DESC,
-            CacheGroupView.class,
+            new CacheGroupViewWalker(),
             registeredCacheGrps.values(),
             CacheGroupView::new);
 
@@ -182,6 +190,9 @@ public class ClusterCachesInfo {
         if (ctx.isDaemon())
             return;
 
+        if (!alreadyFiltered.compareAndSet(false, true))
+            return;
+
         filterRegisteredCachesAndCacheGroups(localCachesOnStart);
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = locJoinCachesCtx.caches();
@@ -196,7 +207,8 @@ public class ClusterCachesInfo {
             locJoinStartCaches,
             initCaches,
             registeredCacheGrps,
-            registeredCaches);
+            registeredCaches
+        );
     }
 
     /**
@@ -959,6 +971,31 @@ public class ClusterCachesInfo {
         }
 
         CacheConfiguration<?, ?> ccfg = req.startCacheConfiguration();
+
+        GridEncryptionManager encMgr = ctx.encryption();
+
+        if (ccfg.isEncryptionEnabled()) {
+            IgniteCheckedException error = null;
+
+            if (encMgr.isMasterKeyChangeInProgress())
+                error = new IgniteCheckedException("Cache start failed. Master key change is in progress.");
+            else if (encMgr.masterKeyDigest() != null &&
+                !Arrays.equals(encMgr.masterKeyDigest(), req.masterKeyDigest())) {
+                error = new IgniteCheckedException("Cache start failed. The request was initiated before " +
+                    "the master key change and can't be processed.");
+            }
+
+            if (error != null) {
+                U.warn(log, "Ignore cache start request during the master key change process.", error);
+
+                if (persistedCfgs)
+                    res.errs.add(error);
+                else
+                    ctx.cache().completeCacheStartFuture(req, false, error);
+
+                return false;
+            }
+        }
 
         assert req.cacheType() != null : req;
         assert F.eq(ccfg.getName(), cacheName) : req;

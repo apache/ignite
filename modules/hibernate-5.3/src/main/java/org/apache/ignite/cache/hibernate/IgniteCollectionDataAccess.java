@@ -25,27 +25,41 @@ import org.hibernate.cache.spi.access.CollectionDataAccess;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
 
-/** */
+/**
+ * Implementation of {@link CollectionDataAccess} contract for managing transactional and concurrent
+ * L2 cache access to cached collection data.
+ */
 public class IgniteCollectionDataAccess extends IgniteCachedDomainDataAccess implements CollectionDataAccess {
-    /** */
+    /** Access strategiy type. */
     private final AccessType accessType;
 
-    /** */
-    public IgniteCollectionDataAccess(HibernateAccessStrategyAdapter stgy, AccessType accessType,
+    /**
+     * @param stgy Access strategy implementation.
+     * @param accessType Strategy access type.
+     * @param regionFactory Region factory.
+     * @param domainDataRegion Data region.
+     * @param ignite Ignite instance.
+     * @param cache Cache proxy.
+     */
+    public IgniteCollectionDataAccess(
+        HibernateAccessStrategyAdapter stgy,
+        AccessType accessType,
         RegionFactory regionFactory,
-        DomainDataRegion domainDataRegion, Ignite ignite,
-        HibernateCacheProxy cache) {
+        DomainDataRegion domainDataRegion,
+        Ignite ignite,
+        HibernateCacheProxy cache
+    ) {
         super(stgy, regionFactory, domainDataRegion, ignite, cache);
 
         this.accessType = accessType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public AccessType getAccessType() {
         return accessType;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Object generateCacheKey(
         Object id,
         CollectionPersister persister,
@@ -54,7 +68,7 @@ public class IgniteCollectionDataAccess extends IgniteCachedDomainDataAccess imp
         return HibernateKeyWrapper.staticCreateCollectionKey(id, persister, tenantIdentifier);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Object getCacheKeyId(Object cacheKey) {
         return ((HibernateKeyWrapper)cacheKey).id();
     }

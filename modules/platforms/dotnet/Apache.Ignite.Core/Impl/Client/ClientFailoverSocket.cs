@@ -31,11 +31,13 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Log;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
     /// </summary>
-    internal class ClientFailoverSocket : IClientSocket
+    internal class ClientFailoverSocket : IDisposable
     {
         /** Underlying socket. */
         private ClientSocket _socket;
@@ -70,6 +72,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Distribution map locker. */
         private readonly object _distributionMapSyncRoot = new object();
 
+        /** Logger. */
+        private readonly ILogger _logger;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
@@ -98,23 +103,28 @@ namespace Apache.Ignite.Core.Impl.Client
                 throw new IgniteClientException("Failed to resolve all specified hosts.");
             }
 
+            _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
+            
             Connect();
-        }
+       }
 
-        /** <inheritdoc /> */
-        public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
+        /// <summary>
+        /// Performs a send-receive operation.
+        /// </summary>
+        public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+            Func<ClientResponseContext, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
         /// <summary>
-        /// Performs a send-receive operation with affinity awareness.
+        /// Performs a send-receive operation with partition awareness.
         /// </summary>
         public T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
-            Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
             int cacheId,
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
@@ -125,12 +135,12 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Performs an async send-receive operation with affinity awareness.
+        /// Performs an async send-receive operation with partition awareness.
         /// </summary>
         public Task<T> DoOutInOpAffinityAsync<T, TKey>(
             ClientOp opId,
-            Action<IBinaryStream> writeAction,
-            Func<IBinaryStream, T> readFunc,
+            Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc,
             int cacheId,
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
@@ -140,39 +150,45 @@ namespace Apache.Ignite.Core.Impl.Client
             return socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        /// <summary>
+        /// Performs an async send-receive operation.
+        /// </summary>
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction, 
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
-        public ClientProtocolVersion ServerVersion
+        /// <summary>
+        /// Gets the current protocol version.
+        /// Only used for tests.
+        /// </summary>
+        public ClientProtocolVersion CurrentProtocolVersion
         {
             get { return GetSocket().ServerVersion; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the remote endpoint.
+        /// </summary>
         public EndPoint RemoteEndPoint
         {
             get
             {
-                lock (_syncRoot)
-                {
-                    return _socket != null ? _socket.RemoteEndPoint : null;
-                }
+                var socket = _socket;
+                return socket != null ? socket.RemoteEndPoint : null;
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the local endpoint.
+        /// </summary>
         public EndPoint LocalEndPoint
         {
             get
             {
-                lock (_syncRoot)
-                {
-                    return _socket != null ? _socket.LocalEndPoint : null;
-                }
+                var socket = _socket;
+                return socket != null ? socket.LocalEndPoint : null;
             }
         }
 
@@ -196,7 +212,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
-            if (!_config.EnableAffinityAwareness)
+            if (!_config.EnablePartitionAwareness)
             {
                 return null;
             }
@@ -290,8 +306,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
-                        OnAffinityTopologyVersionChange);
+                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, 
+                        _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
 
                     endPoint.Socket = _socket;
 
@@ -314,9 +330,17 @@ namespace Apache.Ignite.Core.Impl.Client
                                              "examine inner exceptions for details.", errors);
             }
 
-            if (_config.EnableAffinityAwareness)
+            if (_socket != null &&
+                _config.EnablePartitionAwareness &&
+                _socket.ServerVersion < ClientOp.CachePartitions.GetMinVersion())
             {
-                InitSocketMap();
+                _config.EnablePartitionAwareness = false;
+
+                _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
+                             "is lower than required {1}",
+                    _socket.ServerVersion,
+                    ClientOp.CachePartitions.GetMinVersion()
+                );
             }
         }
 
@@ -326,6 +350,11 @@ namespace Apache.Ignite.Core.Impl.Client
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
             _affinityTopologyVersion = affinityTopologyVersion;
+
+            if (_config.EnablePartitionAwareness)
+            {
+                InitSocketMap();
+            }
         }
 
         /// <summary>
@@ -392,8 +421,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 DoOutInOp(
                     ClientOp.CachePartitions,
-                    s => WriteDistributionMapRequest(cacheId, s),
-                    s => ReadDistributionMapResponse(s));
+                    s => WriteDistributionMapRequest(cacheId, s.Stream),
+                    s => ReadDistributionMapResponse(s.Stream));
             }
         }
 
@@ -405,7 +434,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             for (int i = 0; i < size; i++)
             {
-                var grp = new ClientCacheAffinityAwarenessGroup(s);
+                var grp = new ClientCachePartitionAwarenessGroup(s);
 
                 if (grp.PartitionMap == null)
                 {
@@ -500,8 +529,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     try
                     {
-                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, null,
-                            OnAffinityTopologyVersionChange);
+                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, 
+                            _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
 
                         endPoint.Socket = socket;
                     }

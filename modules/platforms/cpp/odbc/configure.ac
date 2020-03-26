@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite ODBC driver for C++], [2.7.0.30114], [dev@ignite.apache.org], [ignite-odbc], [ignite.apache.org])
+AC_INIT([Apache Ignite ODBC driver for C++], [2.9.0.42453], [dev@ignite.apache.org], [ignite-odbc], [ignite.apache.org])
 AC_CONFIG_SRCDIR(src)
 
 AC_CANONICAL_SYSTEM

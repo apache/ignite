@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
@@ -47,6 +48,7 @@ import org.junit.rules.TestRule;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -253,7 +255,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (skipCommand(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             assertParseArgsThrows("Expected SSL trust store path", "--truststore");
@@ -275,6 +277,17 @@ public class CommandHandlerParsingTest {
         }
     }
 
+    /**
+     * @param cmd Command.
+     * @return {@code True} if the command requires its own specific arguments.
+     */
+    private boolean skipCommand(CommandList cmd) {
+        return cmd == CommandList.CACHE ||
+            cmd == CommandList.WAL ||
+            cmd == CommandList.SET_STATE ||
+            cmd == CommandList.ENCRYPTION ||
+            cmd == CommandList.KILL;
+    }
 
     /**
      * Tests parsing and validation for user and password arguments.
@@ -282,8 +295,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (skipCommand(cmd))
+                continue; // --cache, --wal and --set-state commands requires its own specific arguments.
 
             assertParseArgsThrows("Expected user name", "--user");
             assertParseArgsThrows("Expected password", "--password");
@@ -331,29 +344,62 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAutoConfirmationFlag() {
-        for (CommandList cmd : CommandList.values()) {
-            if (cmd.command().confirmationPrompt() == null)
+        for (CommandList cmdL : CommandList.values()) {
+            // SET_STATE command have mandatory argument, which used in confirmation message.
+            Command cmd = cmdL != SET_STATE ? cmdL.command() : parseArgs(asList(cmdL.text(), "ACTIVE")).command();
+
+            if (cmd.confirmationPrompt() == null)
                 continue;
 
-            ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
+            ConnectionAndSslParameters args;
 
-            checkCommonParametersCorrectlyParsed(cmd, args, false);
+            if (cmdL == SET_STATE)
+                args = parseArgs(asList(cmdL.text(), "ACTIVE"));
+            else
+                args = parseArgs(asList(cmdL.text()));
 
-            switch (cmd) {
-                case DEACTIVATE:
-                case READ_ONLY_DISABLE:
-                case READ_ONLY_ENABLE: {
-                    args = parseArgs(asList(cmd.text(), "--yes"));
+            checkCommonParametersCorrectlyParsed(cmdL, args, false);
 
-                    checkCommonParametersCorrectlyParsed(cmd, args, true);
+            switch (cmdL) {
+                case DEACTIVATE: {
+                    args = parseArgs(asList(cmdL.text(), "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    args = parseArgs(asList(cmdL.text(), "--force", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    break;
+                }
+                case SET_STATE: {
+                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                        args = parseArgs(asList(cmdL.text(), newState, "--yes"));
+
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+
+                        assertEquals(newState, argState.toString());
+                    }
+
+                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                        args = parseArgs(asList(cmdL.text(), newState, "--force", "--yes"));
+
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+
+                        assertEquals(newState, argState.toString());
+                    }
 
                     break;
                 }
                 case BASELINE: {
                     for (String baselineAct : asList("add", "remove", "set")) {
-                        args = parseArgs(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
+                        args = parseArgs(asList(cmdL.text(), baselineAct, "c_id1,c_id2", "--yes"));
 
-                        checkCommonParametersCorrectlyParsed(cmd, args, true);
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
@@ -365,9 +411,9 @@ public class CommandHandlerParsingTest {
                 }
 
                 case TX: {
-                    args = parseArgs(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
+                    args = parseArgs(asList(cmdL.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
-                    checkCommonParametersCorrectlyParsed(cmd, args, true);
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
                     VisorTxTaskArg txTaskArg = ((TxCommands)args.command()).arg();
 
@@ -375,6 +421,9 @@ public class CommandHandlerParsingTest {
                     assertEquals(10_000, txTaskArg.getMinDuration().longValue());
                     assertEquals(VisorTxOperation.KILL, txTaskArg.getOperation());
                 }
+
+                default:
+                    fail("Unknown command: " + cmd);
             }
         }
     }
@@ -398,7 +447,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (skipCommand(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
@@ -423,7 +472,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * test parsing dump transaction arguments
+     * Test parsing dump transaction arguments.
      */
     @Test
     public void testTransactionArguments() {
@@ -469,6 +518,20 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Test parsing kill arguments.
+     */
+    @Test
+    public void testKillArguments() {
+        assertParseArgsThrows("Expected type of resource to kill.", "--kill");
+
+        // Compute command format errors.
+        assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "compute", "not_a_uuid");
+    }
+
+    /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
@@ -499,6 +562,17 @@ public class CommandHandlerParsingTest {
      * @param args Incoming arguments.
      */
     private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
-        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
+        assertParseArgsThrows(failMsg, IllegalArgumentException.class, args);
+    }
+
+    /**
+     * Checks that parse arguments fails with {@code exception} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param cls Exception class.
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> cls, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), cls, failMsg);
     }
 }

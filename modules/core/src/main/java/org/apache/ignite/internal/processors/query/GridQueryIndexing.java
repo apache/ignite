@@ -332,7 +332,7 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @return Future completed when index rebuild finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
+    IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Mark as rebuild needed for the given cache.
@@ -415,6 +415,13 @@ public interface GridQueryIndexing {
      * @return Cache context for registered cache or {@code null} in case the cache has not been registered.
      */
     @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
+
+    /**
+     * Clear cache info and clear parser cache on call cache.close() on client node.
+     *
+     * @param cacheName Cache name to clear.
+     */
+    public void closeCacheOnClient(String cacheName);
 
     /**
      * Initialize table's cache context created for not started cache.

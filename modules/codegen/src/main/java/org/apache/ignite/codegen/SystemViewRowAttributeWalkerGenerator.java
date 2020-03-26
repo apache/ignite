@@ -32,8 +32,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.ObjIntConsumer;
+import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.SystemViewLocal;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.spi.systemview.jmx.SystemViewMBean;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
@@ -51,6 +56,7 @@ import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
 import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.TransactionView;
@@ -87,6 +93,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CacheView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ServiceView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ComputeTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(ComputeJobView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ClientConnectionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(TransactionView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ContinuousQueryView.class, DFLT_SRC_DIR);
@@ -94,6 +101,9 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(ScanQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(SqlQueryView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(SqlQueryHistoryView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StripedExecutorTaskView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(PagesListView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(CachePagesListView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
@@ -153,6 +163,38 @@ public class SystemViewRowAttributeWalkerGenerator {
         code.add(" * @see " + simpleName);
         code.add(" */");
         code.add("public class " + simpleName + "Walker implements SystemViewRowAttributeWalker<" + simpleName + "> {");
+
+        List<String> filtrableAttrs = new ArrayList<>();
+
+        forEachMethod(clazz, (m, i) -> {
+            if (m.getAnnotation(Filtrable.class) != null) {
+                code.add(TAB + "/** Filter key for attribute \"" + m.getName() + "\" */");
+                code.add(TAB + "public static final String " + m.getName()
+                    .replaceAll("(\\p{Upper})", "_$1")
+                    .toUpperCase() + "_FILTER = \"" + m.getName() + "\";");
+                code.add("");
+
+                filtrableAttrs.add(m.getName());
+            }
+        });
+
+        if (!filtrableAttrs.isEmpty()) {
+            addImport(imports, F.class);
+            addImport(imports, List.class);
+            addImport(imports, Collections.class);
+
+            code.add(TAB + "/** List of filtrable attributes. */");
+            code.add(TAB + "private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(");
+            code.add(TAB + TAB + '\"' + String.join("\", \"", filtrableAttrs) + '\"');
+            code.add(TAB + "));");
+            code.add("");
+            code.add(TAB + "/** {@inheritDoc} */");
+            code.add(TAB + "@Override public List<String> filtrableAttributes() {");
+            code.add(TAB + TAB + "return FILTRABLE_ATTRS;");
+            code.add(TAB + "}");
+            code.add("");
+        }
+
         code.add(TAB + "/** {@inheritDoc} */");
         code.add(TAB + "@Override public void visitAll(AttributeVisitor v) {");
 

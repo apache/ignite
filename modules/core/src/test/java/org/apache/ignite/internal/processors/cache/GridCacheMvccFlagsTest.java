@@ -91,12 +91,13 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
             true,
             true,
             null,
-            false
+            true
         );
 
         c.setOwner();
         c.setReady();
         c.setUsed();
+        c.setRemoved();
 
         short flags = c.flags();
 

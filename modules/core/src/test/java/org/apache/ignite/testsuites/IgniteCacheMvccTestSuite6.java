@@ -33,12 +33,15 @@ import org.apache.ignite.internal.processors.cache.ReplicatedMvccTxPessimisticCa
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
@@ -81,6 +84,8 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(CacheExchangeMergeTest.class);
         ignoredTests.add(ExchangeMergeStaleServerNodesTest.class);
         ignoredTests.add(IgniteExchangeLatchManagerCoordinatorFailTest.class);
+        ignoredTests.add(IgniteExchangeLatchManagerDiscoHistoryTest.class);
+        ignoredTests.add(ExchangeLatchManagerTest.class);
         ignoredTests.add(PartitionsExchangeCoordinatorFailoverTest.class);
         ignoredTests.add(CacheParallelStartTest.class);
         ignoredTests.add(IgniteCache150ClientsTest.class);
@@ -98,6 +103,9 @@ public class IgniteCacheMvccTestSuite6 {
         // Add mvcc versions for skipped tests.
         suite.add(PartitionedMvccTxPessimisticCacheGetsDistributionTest.class);
         suite.add(ReplicatedMvccTxPessimisticCacheGetsDistributionTest.class);
+
+        // This exchange test is irrelevant to MVCC.
+        suite.add(PartitionsExchangeAwareTest.class);
 
         return suite;
     }

@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
+import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -26,9 +30,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.UUID;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
@@ -47,6 +48,9 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
     /** Authorization context. */
     private AuthorizationContext authCtx;
+
+    /** User attributes. */
+    protected Map<String, String> userAttrs;
 
     /**
      * Constructor.
@@ -87,9 +91,10 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
      * @return Auth context.
      * @throws IgniteCheckedException If failed.
      */
-    protected AuthorizationContext authenticate(String user, String pwd) throws IgniteCheckedException {
+    protected AuthorizationContext authenticate(Certificate[] certificates, String user, String pwd)
+        throws IgniteCheckedException {
         if (ctx.security().enabled())
-            authCtx = authenticateExternal(user, pwd).authorizationContext();
+            authCtx = authenticateExternal(certificates, user, pwd).authorizationContext();
         else if (ctx.authentication().enabled()) {
             if (F.isEmpty(user))
                 throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
@@ -108,22 +113,25 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /**
      * Do 3-rd party authentication.
      */
-    private AuthenticationContext authenticateExternal(String user, String pwd) throws IgniteCheckedException {
+    private AuthenticationContext authenticateExternal(Certificate[] certificates, String user, String pwd)
+        throws IgniteCheckedException {
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
 
         AuthenticationContext authCtx = new AuthenticationContext();
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(UUID.randomUUID());
-        authCtx.nodeAttributes(Collections.emptyMap());
+        authCtx.nodeAttributes(F.isEmpty(userAttrs) ? Collections.emptyMap() : userAttrs);
         authCtx.credentials(cred);
+        authCtx.certificates(certificates);
 
         secCtx = ctx.security().authenticate(authCtx);
 
-        if (secCtx == null)
+        if (secCtx == null) {
             throw new IgniteAccessControlException(
                 String.format("The user name or password is incorrect [userName=%s]", user)
             );
+        }
 
         return authCtx;
     }

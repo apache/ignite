@@ -39,23 +39,29 @@ public class H2OMojoModelParser implements ModelParser<NamedVector, Double, H2OM
         try (InputStream mojoInputStream = new ByteArrayInputStream(mojoBytes)) {
             MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoInputStream,
                     MojoReaderBackendFactory.CachingStrategy.MEMORY);
-            MojoModel mojoModel = MojoModel.load(readerBackend);
-            validateMojoModel(mojoModel);
+
+            MojoModel mojoMdl = MojoModel.load(readerBackend);
+
+            validateMojoModel(mojoMdl);
             // we expect categorical values to be already encoded
-            EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+            EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
                     .setUseExternalEncoding(true)
                     .setConvertInvalidNumbersToNa(true)
                     .setConvertUnknownCategoricalLevelsToNa(true)
-                    .setModel(mojoModel);
-            EasyPredictModelWrapper easyPredict = new EasyPredictModelWrapper(config);
+                    .setModel(mojoMdl);
+            EasyPredictModelWrapper easyPredict = new EasyPredictModelWrapper(cfg);
             return new H2OMojoModel(easyPredict);
         } catch (IOException e) {
             throw new RuntimeException("Failed to parse MOJO", e);
         }
     }
 
-    private void validateMojoModel(MojoModel mojoModel) {
-        switch (mojoModel.getModelCategory()) {
+    /**
+     * Validates the mojo model.
+     * @param mojoMdl Mojo model.
+     */
+    private void validateMojoModel(MojoModel mojoMdl) {
+        switch (mojoMdl.getModelCategory()) {
             case Binomial:
             case Multinomial:
             case Ordinal:
@@ -63,17 +69,17 @@ public class H2OMojoModelParser implements ModelParser<NamedVector, Double, H2OM
             case Clustering:
                 break; // ok - supported
             default:
-                throw new UnsupportedOperationException("Model Category " + mojoModel.getModelCategory() + " is not supported yet.");
+                throw new UnsupportedOperationException("Model Category " + mojoMdl.getModelCategory() + " is not supported yet.");
         }
-        if (mojoModel.getCategoricalEncoding() == CategoricalEncoding.OneHotExplicit) {
+        if (mojoMdl.getCategoricalEncoding() == CategoricalEncoding.OneHotExplicit)
             return;
-        }
-        for (int i = 0; i < mojoModel.nfeatures(); i++) {
-            if (mojoModel.getDomainValues(i) != null) {
-                String columnName = mojoModel.getNames()[i];
+
+        for (int i = 0; i < mojoMdl.nfeatures(); i++) {
+            if (mojoMdl.getDomainValues(i) != null) {
+                String colName = mojoMdl.getNames()[i];
                 throw new UnsupportedOperationException("Unsupported MOJO model: only models using trained using " +
                         "OneHotExplicit categorical encoding and models without categorical features are currently supported. " +
-                        "Column `" + columnName + "` is categorical.");
+                        "Column `" + colName + "` is categorical.");
             }
         }
     }

@@ -123,9 +123,6 @@
     <ClInclude Include="..\..\src\impl\affinity\affinity_assignment.h">
       <Filter>Code\impl\affinity</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\impl\affinity\affinity_awareness_group.h">
-      <Filter>Code\impl\affinity</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\impl\affinity\affinity_topology_version.h">
       <Filter>Code\impl\affinity</Filter>
     </ClInclude>
@@ -136,6 +133,9 @@
       <Filter>Code\impl\affinity</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\impl\affinity\affinity_manager.h">
+      <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\affinity\partition_awareness_group.h">
       <Filter>Code\impl\affinity</Filter>
     </ClInclude>
   </ItemGroup>

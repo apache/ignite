@@ -141,7 +141,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
             DistributedMetaStorageHistoryItem lastHistItem;
 
             DistributedMetaStorageHistoryItem histItem =
-                (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id + 1));
+                (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id() + 1));
 
             if (histItem != null) {
                 lastHistItem = histItem;
@@ -149,7 +149,7 @@ class InMemoryCachedDistributedMetaStorageBridge {
                 ver = storedVer.nextVersion(histItem);
             }
             else
-                lastHistItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
+                lastHistItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id()));
 
             metastorage.iterate(
                 localKeyPrefix(),
@@ -159,9 +159,9 @@ class InMemoryCachedDistributedMetaStorageBridge {
 
             // Last item rollover.
             if (lastHistItem != null) {
-                for (int i = 0, len = lastHistItem.keys.length; i < len; i++) {
-                    String key = lastHistItem.keys[i];
-                    byte[] valBytes = lastHistItem.valBytesArray[i];
+                for (int i = 0, len = lastHistItem.keys().length; i < len; i++) {
+                    String key = lastHistItem.keys()[i];
+                    byte[] valBytes = lastHistItem.valuesBytesArray()[i];
 
                     if (valBytes == null)
                         cache.remove(key);

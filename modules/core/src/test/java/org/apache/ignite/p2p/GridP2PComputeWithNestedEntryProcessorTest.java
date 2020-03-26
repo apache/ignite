@@ -87,9 +87,6 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
             .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME))
             .setDeploymentMode(depMode);
 
-        if (igniteInstanceName.startsWith("client"))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -129,7 +126,7 @@ public class GridP2PComputeWithNestedEntryProcessorTest extends GridCommonAbstra
             awaitPartitionMapExchange();
 
             for (int i = 0; i < 10; i++) {
-                try (Ignite client = startGrid("client")) {
+                try (Ignite client = startClientGrid("client")) {
 
                     IgniteCache cache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 

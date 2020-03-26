@@ -135,7 +135,7 @@ public interface PreprocessingTrainer<K, V> {
     }
 
     /**
-     * Returns local learning environment with initialized deploying context by base preptocessor.
+     * Returns local learning environment with initialized deploying context by base preprocessor.
      *
      * @param basePreprocessor Preprocessor.
      * @return Learning environment.

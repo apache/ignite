@@ -50,6 +50,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -156,7 +157,7 @@ public class ValidationOnNodeJoinUtils {
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
                     try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
-                        GridCacheProcessor.authorizeCacheCreate(cacheInfo.cacheData().config(), ctx);
+                        GridCacheProcessor.authorizeCacheCreate(ctx.security(), cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {
                         if (errorMsg.length() > 0)
@@ -241,7 +242,7 @@ public class ValidationOnNodeJoinUtils {
             throw new IgniteCheckedException("DataRegion for client caches must be explicitly configured " +
                 "on client node startup. Use DataStorageConfiguration to configure DataRegion.");
 
-        if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(GridCacheProcessor.LocalAffinityFunction.class))
+        if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
                 U.maskName(cc.getName()) + ']');
 

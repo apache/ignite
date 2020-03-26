@@ -51,26 +51,33 @@ public class H2OMojoModel implements Model<NamedVector, Double> {
         }
     }
 
+    /**
+     * Extracts the raw value.
+     * @param prediction Prediction.
+     */
     private static double extractRawValue(AbstractPrediction prediction) {
-        if (prediction instanceof BinomialModelPrediction) {
+        if (prediction instanceof BinomialModelPrediction)
             return ((BinomialModelPrediction) prediction).labelIndex;
-        } else if (prediction instanceof MultinomialModelPrediction) {
+        else if (prediction instanceof MultinomialModelPrediction)
             return ((MultinomialModelPrediction) prediction).labelIndex;
-        } else if (prediction instanceof RegressionModelPrediction) {
+        else if (prediction instanceof RegressionModelPrediction)
             return ((RegressionModelPrediction) prediction).value;
-        } else if (prediction instanceof OrdinalModelPrediction) {
+        else if (prediction instanceof OrdinalModelPrediction)
             return ((OrdinalModelPrediction) prediction).labelIndex;
-        } else if (prediction instanceof ClusteringModelPrediction) {
+        else if (prediction instanceof ClusteringModelPrediction)
             return ((ClusteringModelPrediction) prediction).cluster;
-        } else
+        else
             throw new UnsupportedOperationException("Prediction " + prediction + " cannot be converted to a raw value.");
     }
 
+    /**
+     * Converts the named vector to row data.
+     * @param input Input.
+     */
     private static RowData toRowData(NamedVector input) {
         RowData row = new RowData();
-        for (String key : input.getKeys()) {
+        for (String key : input.getKeys())
             row.put(key, input.get(key));
-        }
         return row;
     }
 

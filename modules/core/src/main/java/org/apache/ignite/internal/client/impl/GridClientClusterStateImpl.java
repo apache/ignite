@@ -19,15 +19,17 @@ package org.apache.ignite.internal.client.impl;
 
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFuture;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 
 /**
  *
@@ -52,37 +54,27 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void active(final boolean active) throws GridClientException {
-        withReconnectHandling(new ClientProjectionClosure<Void>() {
-            @Override public GridClientFuture apply(
-                GridClientConnection conn,
-                UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.changeState(active, nodeId);
+    @Override public ClusterState state() throws GridClientException {
+        return withReconnectHandling(GridClientConnection::state).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean forceDeactivation) throws GridClientException {
+        // Check compatibility of new forced deactivation on all nodes.
+        UUID oldVerNode = checkFeatureSupportedByCluster(client, IgniteFeatures.SAFE_CLUSTER_DEACTIVATION, false,
+            false);
+
+        if (oldVerNode == null)
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId, forceDeactivation)).get();
+        else {
+            if (newState == INACTIVE && !forceDeactivation) {
+                throw new GridClientException("Deactivation stopped. Found a node not supporting checking of " +
+                    "safety of this operation: " + oldVerNode + ". Deactivation clears in-memory caches (without " +
+                    "persistence) including the system caches. To deactivate cluster pass flag 'force'.");
             }
-        }).get();
-    }
 
-    /** {@inheritDoc} */
-    @Override public boolean active() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::currentState).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readOnly() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::readOnlyState).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readOnly(boolean readOnly) throws GridClientException {
-        withReconnectHandling(new ClientProjectionClosure<Void>() {
-            @Override public GridClientFuture apply(
-                GridClientConnection conn,
-                UUID nodeId
-            ) throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.changeReadOnlyState(readOnly, nodeId);
-            }
-        }).get();
+            withReconnectHandling((con, nodeId) -> con.changeState(newState, nodeId)).get();
+        }
     }
 
     /** {@inheritDoc} */

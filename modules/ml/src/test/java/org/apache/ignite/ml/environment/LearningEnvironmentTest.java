@@ -143,7 +143,7 @@ public class LearningEnvironmentTest {
         return IntStream.range(0, partsCnt).boxed().collect(Collectors.toMap(x -> x, x -> x));
     }
 
-    /** Mock random numners generator. */
+    /** Mock random numbers generator. */
     private static class MockRandom extends Random {
         /** Serial version uuid. */
         private static final long serialVersionUID = -7738558243461112988L;

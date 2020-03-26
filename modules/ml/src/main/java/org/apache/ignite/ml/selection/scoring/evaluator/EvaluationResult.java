@@ -59,7 +59,7 @@ public class EvaluationResult {
      *
      * @return Metric value.
      */
-    public double getSignle() {
+    public double getSingle() {
         A.ensure(values.size() == 1, "getSingle expects only one metric");
         return values.values().stream().findFirst().get();
     }
@@ -76,14 +76,12 @@ public class EvaluationResult {
     /**
      * Returns string representation of model estimation.
      *
-     * @param precition Precition.
+     * @param precision Precision.
      * @return String representation of model estimation.
      */
-    public String toString(int precition) {
+    public String toString(int precision) {
         StringBuilder sb = new StringBuilder();
-        values.forEach((k, v) -> {
-            sb.append(String.format("%s = %." + precition + "f\n", k.getPrettyName(), v));
-        });
+        values.forEach((k, v) -> sb.append(String.format("%s = %." + precision + "f\n", k.getPrettyName(), v)));
         return sb.toString();
     }
 

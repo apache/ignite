@@ -76,7 +76,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
-            .wirhPriorProbabilities(priorProbabilities);
+            .withPriorProbabilities(priorProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
             if (priorProbabilities != null)
@@ -89,7 +89,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             compoundModel.withGaussianModel(model)
                 .withGaussianFeatureIdsToSkip(gaussianFeatureIdsToSkip)
                 .withLabels(model.getLabels())
-                .wirhPriorProbabilities(priorProbabilities);
+                .withPriorProbabilities(priorProbabilities);
         }
 
         if (discreteNaiveBayesTrainer != null) {
@@ -103,7 +103,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             compoundModel.withDiscreteModel(model)
                 .withDiscreteFeatureIdsToSkip(discreteFeatureIdsToSkip)
                 .withLabels(model.getLabels())
-                .wirhPriorProbabilities(priorProbabilities);
+                .withPriorProbabilities(priorProbabilities);
         }
 
         return compoundModel;

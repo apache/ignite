@@ -48,11 +48,11 @@ public interface MetricStatsAggregator<L, Ctx, Self extends MetricStatsAggregato
     public Self mergeWith(Self other);
 
     /**
-     * Returns unitialized context.
+     * Returns initialized context.
      *
-     * @return Unitialized evaluation context.
+     * @return initialized evaluation context.
      */
-    public Ctx createUnitializedContext();
+    public Ctx createInitializedContext();
 
     /**
      * Inits this aggtegator by evaluation context.

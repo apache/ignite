@@ -124,7 +124,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * Then you can create and execute queries that check various salary ranges like so:
  * <pre name="code" class="java">
- * Cache&lt;Long, Person&gt; cache = G.grid().cache();
+ * Cache&lt;Long, Person&gt; cache = Ignition.ignite().cache();
  * ...
  * // Create query which selects salaries based on range for all employees
  * // that work for a certain company.

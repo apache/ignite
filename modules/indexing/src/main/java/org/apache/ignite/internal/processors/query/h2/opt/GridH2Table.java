@@ -31,13 +31,12 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.cache.query.QueryRetryException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -492,7 +491,7 @@ public class GridH2Table extends TableBase {
         }
 
         // Acquire the lock.
-        lock(exclusive);
+        lock(exclusive, true);
 
         if (destroyed) {
             unlock(exclusive);
@@ -523,7 +522,7 @@ public class GridH2Table extends TableBase {
         SessionLock sesLock = sessions.get(ses);
 
         assert sesLock != null && !sesLock.isExclusive()
-            : "Invalid table lock [name=" + getName() + ", lock=" + sesLock.ver + ']';
+            : "Invalid table lock [name=" + getName() + ", lock=" + sesLock == null ? "null" : sesLock.ver + ']';
 
         if (!sesLock.locked) {
             lock(false);
@@ -541,7 +540,7 @@ public class GridH2Table extends TableBase {
         SessionLock sesLock = sessions.get(ses);
 
         assert sesLock != null && !sesLock.isExclusive()
-            : "Invalid table unlock [name=" + getName() + ", lock=" + sesLock.ver + ']';
+            : "Invalid table unlock [name=" + getName() + ", lock=" + sesLock == null ? "null" : sesLock.ver + ']';
 
         if (sesLock.locked) {
             sesLock.locked = false;
@@ -555,13 +554,27 @@ public class GridH2Table extends TableBase {
      *
      * @param exclusive Exclusive flag.
      */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
     private void lock(boolean exclusive) {
+        lock(exclusive, false);
+    }
+
+    /**
+     * Acquire table lock.
+     *
+     * @param exclusive Exclusive flag.
+     * @param interruptibly Acquires interruptibly lock or not interruplible lock flag.
+     */
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
+    private void lock(boolean exclusive, boolean interruptibly) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive)
-                l.lockInterruptibly();
+            if (!exclusive) {
+                if (interruptibly)
+                    l.lockInterruptibly();
+                else
+                    l.lock();
+            }
             else {
                 for (;;) {
                     if (l.tryLock(200, TimeUnit.MILLISECONDS))
@@ -1087,7 +1100,7 @@ public class GridH2Table extends TableBase {
                         cctx0.shared().database().checkpointReadLock();
 
                         try {
-                            ((GridH2IndexBase)idx).destroy(rmIndex);
+                            ((GridH2IndexBase)idx).asyncDestroy(rmIndex);
                         }
                         finally {
                             cctx0.shared().database().checkpointReadUnlock();

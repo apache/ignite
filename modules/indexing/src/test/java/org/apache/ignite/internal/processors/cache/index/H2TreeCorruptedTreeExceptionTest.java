@@ -30,16 +30,17 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.lang.String.format;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 
 /** */
 public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
@@ -50,15 +51,24 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
     private static final String GRP_NAME = "cacheGrp";
 
     /** */
+    private static final String VERY_SENS_STR_DATA = "here_comes_very_sensitive_data@#123#321#@";
+
+    /** */
     private final AtomicBoolean failWithCorruptTree = new AtomicBoolean(false);
 
     /** */
-    private PageHandlerWrapper<BPlusTree.Result> regularWrapper;
+    private final LogListener logListener = new MessageOrderLogListener(
+        format(
+                ".*?Tree is corrupted.*?cacheId=65, cacheName=A, indexName=%s, groupName=%s" +
+                    ", msg=Runtime failure on row: Row@.*?key: 1, val: .*?%s.*",
+                IDX_NAME,
+                GRP_NAME,
+                IGNITE_TO_STRING_INCLUDE_SENSITIVE
+        )
+    );
 
     /** */
-    private final LogListener logListener = new MessageOrderLogListener(
-        format(".*?Tree is corrupted.*?cacheId=65, cacheName=A, indexName=%s, groupName=%s.*", IDX_NAME, GRP_NAME)
-    );
+    private final LogListener logSensListener = new MessageOrderLogListener(format(".*%s.*", VERY_SENS_STR_DATA));
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -76,6 +86,8 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         listeningTestLog.registerListener(logListener);
 
+        listeningTestLog.registerListener(logSensListener);
+
         cfg.setGridLogger(listeningTestLog);
 
         return cfg;
@@ -89,9 +101,7 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        regularWrapper = BPlusTree.pageHndWrapper;
-
-        BPlusTree.pageHndWrapper = (tree, hnd) -> {
+        BPlusTree.testHndWrapper = (tree, hnd) -> {
             if (hnd instanceof BPlusTree.Insert) {
                 PageHandler<Object, BPlusTree.Result> delegate = (PageHandler<Object, BPlusTree.Result>)hnd;
 
@@ -124,18 +134,20 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        //restoring wrapper
-        BPlusTree.pageHndWrapper = regularWrapper;
-
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        clearGridToStringClassCache();
+
+        BPlusTree.testHndWrapper = null;
 
         super.afterTest();
     }
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testCorruptedTree() throws Exception {
         IgniteEx srv = startGrid(0);
 
@@ -143,13 +155,15 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        cache.query(new SqlFieldsQuery("create table a (id integer primary key, a integer) with \"CACHE_GROUP=" + GRP_NAME + "\""));
-        cache.query(new SqlFieldsQuery("create index " + IDX_NAME + " on a(a)"));
+        cache.query(new SqlFieldsQuery("create table a (col1 varchar primary key, col2 varchar) with " +
+            "\"CACHE_GROUP=" + GRP_NAME + "\""));
+        cache.query(new SqlFieldsQuery("create index " + IDX_NAME + " on a(col2)"));
 
         failWithCorruptTree.set(true);
 
         try {
-            cache.query(new SqlFieldsQuery("insert into a(id, a) values (11, 1)"));
+            cache.query(new SqlFieldsQuery("insert into a(col1, col2) values (1, ?1)")
+                .setArgs(VERY_SENS_STR_DATA));
 
             fail("Cache operations are expected to fail");
         }
@@ -158,5 +172,27 @@ public class H2TreeCorruptedTreeExceptionTest extends GridCommonAbstractTest {
         }
 
         assertTrue(logListener.check());
+
+        assertFalse(logSensListener.check());
+
+        System.setProperty(IGNITE_TO_STRING_INCLUDE_SENSITIVE, Boolean.TRUE.toString());
+
+        clearGridToStringClassCache();
+
+        logListener.reset();
+
+        logSensListener.reset();
+
+        try {
+            cache.query(new SqlFieldsQuery("insert into a(col1, col2) values (2, ?1)")
+                .setArgs(VERY_SENS_STR_DATA));
+        }
+        catch (Throwable e) {
+            assertTrue(X.hasCause(e, CorruptedTreeException.class));
+        }
+
+        assertFalse(logListener.check());
+
+        assertTrue(logSensListener.check());
     }
 }

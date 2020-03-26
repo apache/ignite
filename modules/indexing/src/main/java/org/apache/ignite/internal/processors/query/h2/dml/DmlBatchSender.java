@@ -36,10 +36,10 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
@@ -233,7 +233,7 @@ public class DmlBatchSender {
                 cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
             }
 
-            if (X.hasCause(e, ClusterReadOnlyModeCheckedException.class)) {
+            if (X.hasCause(e, IgniteClusterReadOnlyException.class)) {
                 SQLException sqlEx = new SQLException(
                     e.getMessage(),
                     SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED,

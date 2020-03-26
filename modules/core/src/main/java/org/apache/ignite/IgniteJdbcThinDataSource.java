@@ -386,6 +386,26 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     }
 
     /**
+     * Gets cipher suites.
+     *
+     * @return SSL cipher suites.
+     */
+    public String getCipherSuites() {
+        return props.getSslCipherSuites();
+    }
+
+    /**
+     * Override default cipher suites.
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
+     * @param cipherSuites SSL cipher suites.
+     */
+    public void setCipherSuites(String cipherSuites) {
+        props.setSslCipherSuites(cipherSuites);
+    }
+
+    /**
      * Gets algorithm that will be used to create a key manager.
      *
      * @return Key manager algorithm.

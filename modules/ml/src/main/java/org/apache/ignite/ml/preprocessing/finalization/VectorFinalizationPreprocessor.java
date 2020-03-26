@@ -61,7 +61,7 @@ public final class VectorFinalizationPreprocessor<K, V> implements Preprocessor<
         for (int i = 0; i < res.size(); i++) {
             // if(res.get(i) instanceof Double)
 
-            // Doulbe convertedValue =
+            // Double convertedValue =
 
             //   res.set(i, "".equals(res[i]) ? Double.NaN : Double.valueOf(cells[i])); =
 

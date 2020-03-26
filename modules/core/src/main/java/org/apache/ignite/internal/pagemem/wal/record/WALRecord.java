@@ -223,8 +223,14 @@ public abstract class WALRecord {
         /** Partition meta page containing update counter gaps. */
         PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (58, PHYSICAL),
 
-        /** Partition meta page containing tombstone presence flag. */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V3 (60, PHYSICAL);
+        /** Init root meta page (with flags and created version) */
+        BTREE_META_PAGE_INIT_ROOT_V3(59, PHYSICAL),
+
+        /** Master key change record. */
+        MASTER_KEY_CHANGE_RECORD(60, LOGICAL),
+
+        /** Record that indicates that "corrupted" flag should be removed from tracking page. */
+        TRACKING_PAGE_REPAIR_DELTA (61, PHYSICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */
         private final int idx;

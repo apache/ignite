@@ -119,6 +119,9 @@ public class H2Utils {
      */
     static final int DECIMAL_DEFAULT_PRECISION = 65535;
 
+    /** */
+    public static final IndexColumn[] EMPTY_COLUMNS = new IndexColumn[0];
+
     /**
      * The default scale for a decimal value.
      */
@@ -472,7 +475,7 @@ public class H2Utils {
     @SuppressWarnings("unchecked")
     public static QueryCursorImpl<List<?>> zeroCursor() {
         QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(0L)), null, false);
+            (Collections.singletonList(0L)), null, false, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 

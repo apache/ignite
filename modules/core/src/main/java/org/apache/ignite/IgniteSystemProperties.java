@@ -17,13 +17,13 @@
 
 package org.apache.ignite;
 
+import javax.net.ssl.HostnameVerifier;
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
-import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -206,6 +207,9 @@ public final class IgniteSystemProperties {
     /** */
     public static final String IGNITE_EXCHANGE_MERGE_DELAY = "IGNITE_EXCHANGE_MERGE_DELAY";
 
+    /** PME-free switch explicitly disabled. */
+    public static final String IGNITE_PME_FREE_SWITCH_DISABLED = "IGNITE_PME_FREE_SWITCH_DISABLED";
+
     /**
      * Name of the system property defining name of command line program.
      */
@@ -250,12 +254,6 @@ public final class IgniteSystemProperties {
      * with warning level. {@code 0} (default value) disables warning on slow transactions.
      */
     public static final String IGNITE_SLOW_TX_WARN_TIMEOUT = "IGNITE_SLOW_TX_WARN_TIMEOUT";
-
-    /**
-     * Timeout after which all uncompleted transactions originated by left node will be
-     * salvaged (i.e. invalidated and committed).
-     */
-    public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
 
     /**
      * Specifies maximum number of iterations for deadlock detection procedure.
@@ -701,7 +699,9 @@ public final class IgniteSystemProperties {
 
     /**
      * Time interval for calculating rebalance rate statistics, in milliseconds. Defaults to 60000.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public static final String IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL = "IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL";
 
     /**
@@ -993,6 +993,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
+     * Throttling time out for thread dump generation during failure handling.
+     *
+     * Default is failure detection timeout. {@code 0} or negative value - throttling is disabled.
+     */
+    public static final String IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT =
+            "IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT";
+
+    /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.
@@ -1156,11 +1164,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_NODE_IDS_HISTORY_SIZE = "IGNITE_NODE_IDS_HISTORY_SIZE";
 
     /**
-     * Flag to enable baseline auto-adjust by default.
-     */
-    public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
-
-    /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.
      */
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
@@ -1244,15 +1247,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
 
     /**
-     * Index rebuilding parallelism level. It sets a number of threads will be used for index rebuilding.
-     * Zero value means default should be used.
-     * Default value is calculated as <code>CPU count / 4</code> with upper limit of <code>4</code>.
-     * <p>
-     * Note: Number of threads is bounded within the range from <code>1</code> up to <code>CPU count</code>.
-     */
-    public static final String INDEX_REBUILDING_PARALLELISM = "INDEX_REBUILDING_PARALLELISM";
-
-    /**
      * Threshold timeout for long transactions, if transaction exceeds it, it will be dumped in log with
      * information about how much time did it spent in system time (time while aquiring locks, preparing,
      * commiting, etc) and user time (time when client node runs some code while holding transaction and not
@@ -1283,6 +1277,16 @@ public final class IgniteSystemProperties {
      * Default value is <code>false</code>.
      */
     public static final String IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING = "IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING";
+
+    /**
+     * The master key name that the node will use during the recovery.
+     * <p>
+     * If a node was unavailable during a master key change process it won't be able to join to cluster with old the
+     * master key. Set up this property to re-encrypt cache keys on startup and join to cluster with the valid
+     * master key name.
+     */
+    public static final String IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP =
+        "IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP";
 
     /**
      * Enforces singleton.

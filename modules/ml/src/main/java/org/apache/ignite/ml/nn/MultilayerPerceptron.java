@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -43,8 +41,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
-    Serializable {
+public final class MultilayerPerceptron implements SmoothParametrized<MultilayerPerceptron> {
     /**
      * This MLP architecture.
      */
@@ -549,10 +546,10 @@ public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, 
     }
 
     /**
-     * Differentiate nonlinearity.
+     * Differentiate non-linearity.
      *
      * @param linearOut Linear output of current layer.
-     * @param nonlinearity Nonlinearity of current layer.
+     * @param nonlinearity Non-linearity of current layer.
      * @return Gradients matrix.
      */
     private Matrix differentiateNonlinearity(Matrix linearOut,

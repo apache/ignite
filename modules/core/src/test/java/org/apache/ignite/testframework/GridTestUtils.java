@@ -17,6 +17,11 @@
 
 package org.apache.ignite.testframework;
 
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,8 +39,10 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -64,11 +71,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -77,6 +79,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -343,18 +346,18 @@ public final class GridTestUtils {
     }
 
     /**
-     * Checks that collection {@param col} contains string {@param str}. Logs collection, string
+     * Checks that collection {@param col} contains element {@param elem}. Logs collection, element
      * and throws {@link java.lang.AssertionError}, if not.
      *
      * @param log Logger (optional).
      * @param col Collection.
-     * @param str String.
+     * @param elem Element.
      */
-    public static  <C extends Collection<String>> void assertContains(@Nullable IgniteLogger log, C col, String str) {
+    public static <C extends Collection<T>, T> void assertContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
-            assertTrue(col.contains(str));
+            assertTrue(col.contains(elem));
         } catch (AssertionError e) {
-            U.warn(log, String.format("Collection does not contain string: '%s':", str));
+            U.warn(log, String.format("Collection does not contain: '%s':", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
 
@@ -363,18 +366,18 @@ public final class GridTestUtils {
     }
 
     /**
-     * Checks that collection {@param col} doesn't contains string {@param str}. Logs collection, string
+     * Checks that collection {@param col} doesn't contains element {@param str}. Logs collection, element
      * and throws {@link java.lang.AssertionError}, if contains.
      *
      * @param log Logger (optional).
      * @param col Collection.
-     * @param str String.
+     * @param elem Element.
      */
-    public static <C extends Collection<String>> void assertNotContains(@Nullable IgniteLogger log, C col, String str) {
+    public static <C extends Collection<T>, T> void assertNotContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
-            assertFalse(col.contains(str));
+            assertFalse(col.contains(elem));
         } catch (AssertionError e) {
-            U.warn(log, String.format("Collection contain string: '%s' but shouldn't:", str));
+            U.warn(log, String.format("Collection contain element: '%s' but shouldn't:", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
 
@@ -1541,6 +1544,28 @@ public final class GridTestUtils {
     }
 
     /**
+     * Change static final fields.
+     * @param field Need to be changed.
+     * @param newVal New value.
+     * @throws Exception If failed.
+     */
+    public static void setFieldValue(Field field, Object newVal) throws Exception {
+        field.setAccessible(true);
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+
+        AccessController.doPrivileged(new PrivilegedAction() {
+            @Override
+            public Object run() {
+                modifiersField.setAccessible(true);
+                return null;
+            }
+        });
+
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(null, newVal);
+    }
+
+    /**
      * Get inner class by its name from the enclosing class.
      *
      * @param parentCls Parent class to resolve inner class for.
@@ -2100,11 +2125,26 @@ public final class GridTestUtils {
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
-     * @param maxLen Maximal length of string
+     * @param maxLen Maximal length of string.
      * @return Random string object.
      */
     public static String randomString(Random rnd, int maxLen) {
-        int len = rnd.nextInt(maxLen);
+        return randomString(rnd, 0, maxLen);
+    }
+
+    /**
+     * Generate random alphabetical string.
+     *
+     * @param rnd Random object.
+     * @param minLen Minimum length of string.
+     * @param maxLen Maximal length of string.
+     * @return Random string object.
+     */
+    public static String randomString(Random rnd, int minLen, int maxLen) {
+        assert minLen >= 0 : "minLen >= 0";
+        assert maxLen >= minLen : "maxLen >= minLen";
+
+        int len = maxLen == minLen ? minLen : minLen + rnd.nextInt(maxLen - minLen);
 
         StringBuilder b = new StringBuilder(len);
 
@@ -2130,6 +2170,26 @@ public final class GridTestUtils {
     public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
+    }
+
+    /**
+     * Checks that {@code state} is active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertActive(ClusterState state) {
+        assertTrue(state + " isn't active state", ClusterState.active(state));
+    }
+
+    /**
+     * Checks that {@code state} isn't active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertInactive(ClusterState state) {
+        assertFalse(state + " isn't inactive state", ClusterState.active(state));
     }
 
     /** Test parameters scale factor util. */
@@ -2319,5 +2379,12 @@ public final class GridTestUtils {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /**
+     * @param runnableX Runnable with exception.
+     */
+    public static void suppressException(RunnableX runnableX) {
+        runnableX.run();
     }
 }

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
@@ -42,23 +45,21 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -83,6 +84,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
@@ -90,6 +92,8 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
+import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 
 /**
  *
@@ -98,6 +102,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
     public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
+
+    /** DataRegionConfiguration names reserved for various internal needs. */
+    public static Set<String> INTERNAL_DATA_REGION_NAMES = Collections.unmodifiableSet(
+        new HashSet<>(Arrays.asList(SYSTEM_DATA_REGION_NAME, TX_LOG_CACHE_NAME, METASTORE_DATA_REGION_NAME)));
+
+    /** System view name for page lists. */
+    public static final String DATA_REGION_PAGE_LIST_VIEW = "dataRegionPageLists";
+
+    /** System view description for page lists. */
+    public static final String DATA_REGION_PAGE_LIST_VIEW_DESC = "Data region page lists";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
@@ -141,6 +155,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
@@ -155,102 +170,22 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
-    }
 
-    /**
-     * @param row Row.
-     * @return {@code True} if given row is tombstone.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean isTombstone(@Nullable CacheDataRow row) throws IgniteCheckedException {
-        if (row == null)
-            return false;
+        cctx.kernalContext().systemView().registerView(
+            DATA_REGION_PAGE_LIST_VIEW,
+            DATA_REGION_PAGE_LIST_VIEW_DESC,
+            new PagesListViewWalker(),
+            () -> {
+                Map<String, CacheFreeList> freeLists = freeListMap;
 
-        CacheObject val = row.value();
+                if (freeLists == null)
+                    return Collections.emptyList();
 
-        assert val != null : row;
-
-        return val.cacheObjectType() == CacheObject.TOMBSTONE;
-    }
-
-    /**
-     * @param buf Buffer.
-     * @param key Row key.
-     * @param incomplete Incomplete object.
-     * @return Tombstone flag or {@code null} if there is no enough data.
-     */
-    public Boolean isTombstone(
-        ByteBuffer buf,
-        @Nullable KeyCacheObject key,
-        @Nullable IncompleteCacheObject incomplete
-    ) {
-        if (key == null) {
-            if (incomplete == null) { // Did not start read key yet.
-                if (buf.remaining() < IncompleteCacheObject.HEAD_LEN)
-                    return null;
-
-                int keySize = buf.getInt(buf.position());
-
-                int headOffset = (IncompleteCacheObject.HEAD_LEN + keySize) /* key */ +
-                    8 /* expire time */;
-
-                int requiredSize = headOffset + IncompleteCacheObject.HEAD_LEN; // Value header.
-
-                if (buf.remaining() < requiredSize)
-                    return  null;
-
-                return isTombstone(buf, headOffset);
-            }
-            else { // Reading key, check if there is enogh data to check value header.
-                byte[] data = incomplete.data();
-
-                if (data == null) // Header is not available yet.
-                    return null;
-
-                int keyRemaining = data.length - incomplete.dataOffset();
-
-                assert keyRemaining > 0 : keyRemaining;
-
-                int headOffset = keyRemaining + 8 /* expire time */;
-
-                int requiredSize = headOffset + IncompleteCacheObject.HEAD_LEN; // Value header.
-
-                if (buf.remaining() < requiredSize)
-                    return  null;
-
-                return isTombstone(buf, headOffset);
-            }
-        }
-
-        if (incomplete == null) { // Did not start read value yet.
-            if (buf.remaining() < IncompleteCacheObject.HEAD_LEN)
-                return null;
-
-            return isTombstone(buf, 0);
-        }
-
-        return incomplete.type() == CacheObject.TOMBSTONE;
-     }
-
-    /**
-     * @param buf Buffer.
-     * @param offset Value offset.
-     * @return Tombstone flag or {@code null} if there is no enough data.
-     */
-     private Boolean isTombstone(ByteBuffer buf, int offset) {
-         byte valType = buf.get(buf.position() + offset + 4);
-
-         return valType == CacheObject.TOMBSTONE;
-     }
-
-    /**
-     * @param addr Row address.
-     * @return {@code True} if stored value is tombstone.
-     */
-    public boolean isTombstone(long addr) {
-        byte type = PageUtils.getByte(addr, 4);
-
-        return type == CacheObject.TOMBSTONE;
+                return freeLists.values().stream().flatMap(fl -> IntStream.range(0, fl.bucketsCount()).mapToObj(
+                    bucket -> new PagesListView(fl, bucket))).collect(Collectors.toList());
+            },
+            Function.identity()
+        );
     }
 
     /**
@@ -368,7 +303,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 0L,
                 true,
                 lsnr,
-                cctx.kernalContext()
+                cctx.kernalContext(),
+                null
             );
 
             freeListMap.put(memPlcCfg.getName(), freeList);
@@ -808,8 +744,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (observedNames.contains(regName))
             throw new IgniteCheckedException("Two MemoryPolicies have the same name: " + regName);
 
-        if (SYSTEM_DATA_REGION_NAME.equals(regName))
-            throw new IgniteCheckedException("'" + SYSTEM_DATA_REGION_NAME + "' policy name is reserved for internal use.");
+        if (INTERNAL_DATA_REGION_NAMES.contains(regName))
+            throw new IgniteCheckedException("'" + regName + "' policy name is reserved for internal use.");
 
         observedNames.add(regName);
     }
@@ -991,7 +927,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param reason Reason.
      */
-    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+    @Nullable public CheckpointProgress forceCheckpoint(String reason) {
         return null;
     }
 
@@ -1417,7 +1353,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         dataRegionsStarted = true;
 
-        U.log(log, "Configured data regions started successfully [total=" + dataRegionMap.size() + ']');
+        if (log.isQuiet()) {
+            U.quiet(false, "Data Regions Started: " + dataRegionMap.size());
+
+            U.quietMultipleLines(false, IgniteKernal.dataStorageReport(this, false));
+        }
+        else if (log.isInfoEnabled()) {
+            log.info("Data Regions Started: " + dataRegionMap.size());
+
+            log.info(IgniteKernal.dataStorageReport(this, false));
+        }
     }
 
     /** {@inheritDoc} */

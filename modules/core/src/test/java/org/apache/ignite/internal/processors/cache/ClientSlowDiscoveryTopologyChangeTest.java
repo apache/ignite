@@ -75,8 +75,6 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
         for (int k = 0; k < 64; k++)
             crd.cache(CACHE_NAME).put(k, k);
 
-        clientMode = true;
-
         TestRecordingCommunicationSpi clientCommSpi = new TestRecordingCommunicationSpi();
 
         // Delay client join process.
@@ -114,7 +112,7 @@ public class ClientSlowDiscoveryTopologyChangeTest extends ClientSlowDiscoveryAb
 
         discoverySpiSupplier = () -> clientDiscoSpi;
 
-        IgniteInternalFuture<IgniteEx> clientStartFut = GridTestUtils.runAsync(() -> startGrid(3));
+        IgniteInternalFuture<IgniteEx> clientStartFut = GridTestUtils.runAsync(() -> startClientGrid(3));
 
         // Wait till client node starts join process.
         clientCommSpi.waitForBlocked();

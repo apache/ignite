@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cluster;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -27,6 +28,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /**
  * A pojo-object representing current cluster global state. The state includes cluster active flag and cluster
@@ -43,14 +46,11 @@ public class DiscoveryDataClusterState implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Flag indicating if the cluster in in active state. */
-    private final boolean active;
+    /** Current cluster state. */
+    private final ClusterState state;
 
-    /** Flag indicating if the cluster in read-only mode. */
-    private final boolean readOnly;
-
-    /** Read-only mode change time. Correctly work's only for enabling read-only mode. */
-    private final long readOnlyChangeTime;
+    /** Time of last cluster state change. */
+    private final long lastStateChangeTime;
 
     /** Current cluster baseline topology. */
     @Nullable private final BaselineTopology baselineTopology;
@@ -60,6 +60,9 @@ public class DiscoveryDataClusterState implements Serializable {
      * The ID is assigned on the initiating node.
      */
     private final UUID transitionReqId;
+
+    /** Previous cluster state. May not null only if cluster in transition. */
+    private final ClusterState prevClusterState;
 
     /**
      * Topology version in the cluster when state change request was received by the coordinator.
@@ -76,7 +79,7 @@ public class DiscoveryDataClusterState implements Serializable {
      * Local flag for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means that state change is not completed yet.
      */
-    private transient volatile Boolean transitionRes;
+    private transient volatile ClusterState transitionRes;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
@@ -90,29 +93,29 @@ public class DiscoveryDataClusterState implements Serializable {
     private transient volatile boolean locBaselineAutoAdjustment;
 
     /**
-     * @param active Current status.
+     * @param state Current cluster state.
+     * @param baselineTopology Baseline topology associated with this state.
      * @return State instance.
      */
     static DiscoveryDataClusterState createState(
-        boolean active,
-        boolean readOnly,
+        ClusterState state,
         @Nullable BaselineTopology baselineTopology
     ) {
-        return new DiscoveryDataClusterState(null, active, readOnly, baselineTopology, null, null, null);
+        return new DiscoveryDataClusterState(null, state, baselineTopology, null, null, null, null);
     }
 
     /**
-     * @param active New status.
-     * @param readOnly New read-only mode.
+     * @param state New cluster state.
+     * @param prevState Previous state.
+     * @param baselineTopology Baseline topology for new cluster state.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
-     * @return State instance.
+     * @return Discovery cluster state instance.
      */
     static DiscoveryDataClusterState createTransitionState(
+        ClusterState state,
         DiscoveryDataClusterState prevState,
-        boolean active,
-        boolean readOnly,
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
@@ -125,46 +128,59 @@ public class DiscoveryDataClusterState implements Serializable {
 
         return new DiscoveryDataClusterState(
             prevState,
-            active,
-            readOnly,
+            state,
             baselineTopology,
             transitionReqId,
             transitionTopVer,
-            transitionNodes
+            transitionNodes,
+            prevState.state
         );
     }
 
     /**
      * @param prevState Previous state. May be non-null only for transitional states.
-     * @param active New state.
-     * @param readOnly New read-only mode.
+     * @param state New cluster state.
+     * @param baselineTopology Baseline topology for new cluster state.
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
+     * @param prevClusterState Nodes participating in state change exchange.
      */
     private DiscoveryDataClusterState(
         DiscoveryDataClusterState prevState,
-        boolean active,
-        boolean readOnly,
+        ClusterState state,
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
-        @Nullable Set<UUID> transitionNodes
+        @Nullable Set<UUID> transitionNodes,
+        @Nullable ClusterState prevClusterState
     ) {
+        assert state != null;
+
         this.prevState = prevState;
-        this.active = active;
-        this.readOnly = readOnly;
-        this.readOnlyChangeTime = U.currentTimeMillis();
+        this.state = state;
+        this.lastStateChangeTime = U.currentTimeMillis();
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
         this.transitionNodes = transitionNodes;
+        this.prevClusterState = prevClusterState;
+    }
+
+    /**
+     * @return Cluster state before transition if cluster in transition and current cluster state otherwise.
+     */
+    public ClusterState lastState() {
+        if (transition())
+            return prevClusterState;
+        else
+            return state;
     }
 
     /**
      * @return Local flag for state transition result (global state is updated asynchronously by custom message).
      */
-    @Nullable public Boolean transitionResult() {
+    @Nullable public ClusterState transitionResult() {
         return transitionRes;
     }
 
@@ -173,11 +189,11 @@ public class DiscoveryDataClusterState implements Serializable {
      * for public API calls.
      *
      * @param reqId Request ID.
-     * @param active New cluster state.
+     * @param state New cluster state.
      */
-    public void setTransitionResult(UUID reqId, boolean active) {
+    public void setTransitionResult(UUID reqId, ClusterState state) {
         if (reqId.equals(transitionReqId))
-            transitionRes = active;
+            transitionRes = state;
     }
 
     /**
@@ -203,23 +219,25 @@ public class DiscoveryDataClusterState implements Serializable {
 
     /**
      * @return Current cluster state (or new state in case when transition is in progress).
+     * @deprecated Use {@link #state()} instead.
      */
+    @Deprecated
     public boolean active() {
-        return active;
+        return ClusterState.active(state);
     }
 
     /**
-     * @return Read only mode enabled flag.
+     * @return Current cluster state (or new state in case when transition is in progress).
      */
-    public boolean readOnly() {
-        return readOnly;
+    public ClusterState state() {
+        return state;
     }
 
     /**
-     * @return Change time read-only mode.
+     * @return Time of last cluster state change.
      */
-    public long readOnlyModeChangeTime() {
-        return readOnlyChangeTime;
+    public long lastStateChangeTime() {
+        return lastStateChangeTime;
     }
 
     /**
@@ -307,17 +325,10 @@ public class DiscoveryDataClusterState implements Serializable {
      * @return Cluster state that finished transition.
      */
     public DiscoveryDataClusterState finish(boolean success) {
-        return success ?
-            new DiscoveryDataClusterState(
-                null,
-                active,
-                readOnly,
-                baselineTopology,
-                null,
-                null,
-                null
-            ) :
-            prevState != null ? prevState : createState(false, false, null);
+        if(success)
+            return createState(state, baselineTopology);
+        else
+            return prevState != null ? prevState : createState(INACTIVE, null);
     }
 
     /** {@inheritDoc} */

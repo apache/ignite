@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -224,31 +225,33 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             return  false;
         }
-        catch (SocketException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to bind HTTP server to configured port.");
-
-            stopJetty();
-
-            return false;
-        }
-        catch (MultiException e) {
-            if (log.isDebugEnabled())
-                log.debug("Caught multi exception: " + e);
-
-            for (Object obj : e.getThrowables())
-                if (!(obj instanceof SocketException))
-                    throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
-
-            if (log.isDebugEnabled())
-                log.debug("Failed to bind HTTP server to configured port.");
-
-            stopJetty();
-
-            return false;
-        }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
+            boolean failedToBind = e instanceof SocketException;
+
+            if (e instanceof MultiException) {
+                if (log.isDebugEnabled())
+                    log.debug("Caught multi exception: " + e);
+
+                failedToBind = true;
+
+                for (Object obj : ((MultiException)e).getThrowables())
+                    if (!(obj instanceof SocketException))
+                        failedToBind = false;
+            }
+
+            if (e instanceof IOException && X.hasCause(e, SocketException.class))
+                failedToBind = true;
+
+            if (failedToBind) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to bind HTTP server to configured port.");
+
+                stopJetty();
+            }
+            else
+                throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
+
+            return false;
         }
     }
 

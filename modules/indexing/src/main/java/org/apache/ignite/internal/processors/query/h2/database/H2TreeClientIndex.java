@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -38,43 +40,62 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
     private final int inlineSize;
 
     /**
-     * @param table Table.
+     * @param tbl Table.
      * @param name Index name.
-     * @param pk Primary key.
-     * @param colsList Index columns.
+     * @param cols Index columns.
+     * @param idxType Index type.
      * @param inlineSize Inline size.
+     * @param inlineCols Inline helpers for index columns.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public H2TreeClientIndex(GridH2Table table, String name, boolean pk, List<IndexColumn> colsList, int inlineSize) {
-        super(table);
+    private H2TreeClientIndex(GridH2Table tbl, String name, IndexColumn[] cols, IndexType idxType,
+        int inlineSize, List<InlineIndexHelper> inlineCols) {
+        super(tbl, name, cols, idxType);
 
-        this.table = table;
+        this.inlineSize = inlineSize;
+    }
 
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
+    /**
+     * @param tbl Table.
+     * @param idxName Index name.
+     * @param pk Primary key.
+     * @param colsList Indexed columns.
+     * @param inlineSize Inline size.
+     * @param log Logger.
+     * @return Index.
+     */
+    public static H2TreeClientIndex createIndex(
+        GridH2Table tbl,
+        String idxName,
+        boolean pk,
+        List<IndexColumn> colsList,
+        int inlineSize,
+        IgniteLogger log
+    ) {
+        IndexColumn[] cols = GridH2IndexBase.columnsArray(tbl, colsList);
 
-        this.inlineSize = calculateInlineSize(cols, inlineSize, table.cacheInfo().config());
+        IndexType idxType = pk ? IndexType.createPrimaryKey(false, false) :
+            IndexType.createNonUnique(false, false, false);
 
-        IndexColumn.mapColumns(cols, table);
+        CacheConfiguration ccfg = tbl.cacheInfo().config();
 
-        initBaseIndex(table, 0, name, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+        List<InlineIndexHelper> inlineCols = getAvailableInlineColumns(
+            false,
+            ccfg.getName(),
+            idxName,
+            log,
+            pk,
+            tbl,
+            cols);
+
+        inlineSize = computeInlineSize(inlineCols, inlineSize, ccfg.getSqlIndexMaxInlineSize());
+
+        return new H2TreeClientIndex(tbl, idxName, cols, idxType, inlineSize, inlineCols);
     }
 
     /** {@inheritDoc} */
     @Override public int inlineSize() {
         return inlineSize;
-    }
-
-    /**
-     * @param cols Index columns.
-     * @param inlineSize Inline size.
-     * @param cacheConf Cache configuration.
-     * @return Calculated inline size for given indexed columns.
-     */
-    private int calculateInlineSize(IndexColumn[] cols, int inlineSize, CacheConfiguration<?, ?> cacheConf) {
-        List<InlineIndexHelper> inlineCols = getAvailableInlineColumns(cols);
-
-        return computeInlineSize(inlineCols, inlineSize, cacheConf);
     }
 
     /** {@inheritDoc} */

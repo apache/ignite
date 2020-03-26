@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +47,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
+
 /**
  * Class loader that is able to resolve task subclasses and resources
  * by requesting remote node. Every class that could not be resolved
@@ -54,6 +58,20 @@ import org.jetbrains.annotations.Nullable;
  */
 @SuppressWarnings({"CustomClassloader"})
 class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInfo {
+    /** */
+    private static final ProtectionDomain PROTECTION_DOMAIN;
+
+    static {
+        Permissions perms = new Permissions();
+
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE));
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE + ".*"));
+
+        perms.setReadOnly();
+
+        PROTECTION_DOMAIN = new ProtectionDomain(null, perms);
+    }
+
     /** Class loader ID. */
     private final IgniteUuid id;
 
@@ -520,7 +538,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (byteMap != null)
                     byteMap.put(path, byteSrc.array());
 
-                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
+                cls = ctx.security().sandbox().enabled()
+                    ? defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN)
+                    : defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');

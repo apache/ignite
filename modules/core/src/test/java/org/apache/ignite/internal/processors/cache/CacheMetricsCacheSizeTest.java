@@ -47,9 +47,6 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
     /** Entities cnt. */
     private static final int ENTITIES_CNT = 100;
 
-    /** Client mode. */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -65,9 +62,6 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        if (clientMode)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -78,9 +72,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
     @Test
     public void testCacheSize() throws Exception {
-        clientMode = true;
-
-        startGrid(GRID_CNT);
+        startClientGrid(GRID_CNT);
 
         IgniteCache cacheNode0 = grid(0).cache(DEFAULT_CACHE_NAME);
 

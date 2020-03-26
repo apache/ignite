@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.encryption;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
@@ -28,7 +29,9 @@ import org.junit.Test;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -69,12 +72,24 @@ public class KeystoreEncryptionSpiSelfTest {
         }, IgniteException.class);
     }
 
+    /** */
+    @Test
+    public void testCantLoadMasterKeyDoesntExist() {
+        GridTestUtils.assertThrowsWithCause(() -> {
+            EncryptionSpi encSpi = spi();
+
+            encSpi.setMasterKeyName("Unknown key");
+
+            return null;
+        }, IgniteException.class);
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
 
-        KeystoreEncryptionKey k = GridTestUtils.getFieldValue(encSpi, "masterKey");
+        KeystoreEncryptionKey k = (KeystoreEncryptionKey)encSpi.create();
 
         assertNotNull(k);
         assertNotNull(k.key());
@@ -97,6 +112,21 @@ public class KeystoreEncryptionSpiSelfTest {
 
     /** @throws Exception If failed. */
     @Test
+    public void testMasterKeysDigest() throws Exception {
+        EncryptionSpi encSpi = spi();
+
+        byte[] digest = encSpi.masterKeyDigest();
+
+        encSpi.setMasterKeyName(MASTER_KEY_NAME_2);
+
+        byte[] digest2 = encSpi.masterKeyDigest();
+
+        assertNotNull(digest);
+        assertFalse(Arrays.equals(digest, digest2));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testKeyEncryptDecrypt() throws Exception {
         EncryptionSpi encSpi = spi();
 
@@ -105,6 +135,15 @@ public class KeystoreEncryptionSpiSelfTest {
         assertNotNull(k);
         assertNotNull(k.key());
 
+        checkKeyEncryptDecrypt(encSpi, k);
+
+        encSpi.setMasterKeyName(MASTER_KEY_NAME_2);
+
+        checkKeyEncryptDecrypt(encSpi, k);
+    }
+
+    /** */
+    private void checkKeyEncryptDecrypt(EncryptionSpi encSpi, KeystoreEncryptionKey k) {
         byte[] encGrpKey = encSpi.encryptKey(k);
 
         assertNotNull(encGrpKey);

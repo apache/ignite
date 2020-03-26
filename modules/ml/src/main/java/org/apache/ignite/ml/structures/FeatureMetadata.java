@@ -21,10 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 
 /** Class for feature metadata. */
-public class FeatureMetadata implements Serializable, Externalizable {
+public class FeatureMetadata implements Externalizable {
     /** Feature name */
     private String name;
 

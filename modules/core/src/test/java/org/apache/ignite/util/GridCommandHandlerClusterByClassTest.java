@@ -35,11 +35,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -75,8 +79,9 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.of;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -313,7 +318,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
         }
 
-        checkHelp(output, "org.apache.ignite.util/control.sh_cache_help.output");
+        checkHelp(output, "org.apache.ignite.util/" + getClass().getSimpleName() + "_cache_help.output");
     }
 
     /** */
@@ -344,7 +349,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertNotContains(log, testOutStr, "Control.sh");
 
-        checkHelp(testOutStr, "org.apache.ignite.util/control.sh_help.output");
+        checkHelp(testOutStr, "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output");
     }
 
     /**
@@ -383,6 +388,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             throw e;
         }
+    }
+
+    /** */
+    @Test
+    public void testOldReadOnlyApiNotAvailable() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on"));
+
+        assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-on");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off"));
+
+        assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-off");
     }
 
     /** */
@@ -1503,33 +1522,120 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /**
-     * Don't show wal commands by --help in case
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     * Test is that when the --help control.sh command is executed, output
+     * will contain non-experimental commands. In case system property
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
+     * {@code true}.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
+    public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalTrue() {
+        checkContainsNotExperimentalCmdInHelpOutput();
+    }
+
+    /**
+     * Test is that when the --help control.sh command is executed, output
+     * will contain non-experimental commands. In case system property
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
+     * {@code false}.
      */
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
-    public void testHideWalInHelpWhenDisableExperimentalCommand() {
+    public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalFalse() {
+        checkContainsNotExperimentalCmdInHelpOutput();
+    }
+
+    /**
+     * Test for contains of experimental commands in output of the --help
+     * control.sh command.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
+    public void testContainsExperimentalCmdInHelpOutput() {
+        checkExperimentalCmdInHelpOutput(true);
+    }
+
+    /**
+     * Test for not contains of experimental commands in output of the --help
+     * control.sh command.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testNotContainsExperimentalCmdInHelpOutput() {
+        checkExperimentalCmdInHelpOutput(false);
+    }
+
+    /**
+     * Test to verify that the experimental command will not be executed if
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
+     * {@code false}, a warning will be displayed instead.
+     * */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testContainsWarnInsteadExecExperimentalCmdWhenEnableExperimentalFalse() {
+        injectTestSystemOut();
+
+        Map<CommandList, Collection<String>> cmdArgs = new EnumMap<>(CommandList.class);
+
+        cmdArgs.put(WAL, asList("print", "delete"));
+
+        String warning = String.format(
+            "For use experimental command add %s=true to JVM_OPTS in %s",
+            IGNITE_ENABLE_EXPERIMENTAL_COMMAND,
+            UTILITY_NAME
+        );
+
+        stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
+            .peek(cmd -> assertTrue(cmdArgs.containsKey(cmd)))
+            .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
+                assertEquals(EXIT_CODE_OK, execute(cmd.text(), cmdArg));
+
+                assertContains(log, testOut.toString(), warning);
+            }));
+    }
+
+    /**
+     * Checking for contains or not of experimental commands in output of the
+     * --help control.sh command.
+     *
+     * @param contains Check contains or not.
+     */
+    private void checkExperimentalCmdInHelpOutput(boolean contains) {
+        execHelpCmd(helpOut -> {
+            stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
+                .forEach(cmd -> {
+                    if (contains)
+                        assertContains(log, helpOut, cmd.text());
+                    else
+                        assertNotContains(log, helpOut, cmd.text());
+                });
+        });
+    }
+
+    /**
+     * Check that when executing the "--help" control.sh command, the output
+     * will contain non-experimental commands.
+     */
+    private void checkContainsNotExperimentalCmdInHelpOutput() {
+        execHelpCmd(helpOut -> {
+            stream(CommandList.values()).filter(cmd -> !cmd.command().experimental())
+                .forEach(cmd -> assertContains(log, helpOut, cmd.text()));
+        });
+    }
+
+    /**
+     * Executing the command "--help" control.sh with transfer of output to
+     * consumer.
+     *
+     * @param consumer Consumer.
+     */
+    private void execHelpCmd(Consumer<String> consumer) {
+        assert nonNull(consumer);
+
         injectTestSystemOut();
 
         execute("--help");
 
-        assertNotContains(log, testOut.toString(), WAL.text());
-    }
-
-    /**
-     * Wal commands should ignored and print warning in case
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
-     * */
-    @Test
-    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
-    public void testWalCommandsInCaseDisableExperimentalCommand() {
-        injectTestSystemOut();
-
-        String warning = String.format("For use experimental command add %s=true to JVM_OPTS in %s",
-            IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME);
-
-        of("print", "delete")
-            .peek(c -> assertEquals(EXIT_CODE_OK, execute(WAL.text(), c)))
-            .forEach(c -> assertContains(log, testOut.toString(), warning));
+        consumer.accept(testOut.toString());
     }
 }

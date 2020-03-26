@@ -44,12 +44,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
-    private String url = affinityAwareness ?
-        "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" :
-        "jdbc:ignite:thin://127.0.0.1?affinityAwareness=false";
+    private String url = partitionAwareness ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true" :
+        "jdbc:ignite:thin://127.0.0.1?partitionAwareness=false";
 
     /** Nodes count. */
-    private int nodesCnt = affinityAwareness ? 4 : 3;
+    private int nodesCnt = partitionAwareness ? 4 : 3;
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
