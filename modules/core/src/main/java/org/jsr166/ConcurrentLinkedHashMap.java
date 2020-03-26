@@ -1552,8 +1552,8 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             modCnt.increment();
 
         } finally {
-            for (int i = segments.length - 1; i >= 0; i--) {
-                segments[i].writeLock().unlock();
+            for (Segment<K, V> segment : segments) {
+                segment.writeLock().unlock();
             }
         }
     }
