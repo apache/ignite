@@ -65,8 +65,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration().setAddresses(clientConnAddresses).setPartitionAwarenessEnabled(true);
+    private IgniteClient startClient(String ... addrs) {
+        return Ignition.startClient(new ClientConfiguration().setAddresses(addrs));
     }
 
     /** {@inheritDoc} */
@@ -98,8 +98,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCompute() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(clientConnAddresses[0]))) {
-            T2<UUID, List<UUID>> val = client.compute().execute(TestComputeTask.class.getName(), null);
+        try (IgniteClient client = startClient(clientConnAddresses[0])) {
+            T2<UUID, List<UUID>> val = client.compute().execute(TestTask.class.getName(), null);
 
             assertEquals(grid(0).localNode().id(), val.get1());
             assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
@@ -111,8 +111,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComputeTaskCancelation() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(clientConnAddresses[0]))) {
-            ClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync(TestComputeTask.class.getName(), 1_000L);
+        try (IgniteClient client = startClient(clientConnAddresses)) {
+            ClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync(TestTask.class.getName(), 1_000L);
 
             fut.cancel();
 
@@ -125,10 +125,10 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      */
     @Test
     public void testComputeClusterGroup() throws Exception {
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(clientConnAddresses[0]))) {
+        try (IgniteClient client = startClient(clientConnAddresses[0])) {
             ClientClusterGroup grp = client.cluster().forNodeIds(nodeIds(1, 2));
 
-            T2<UUID, List<UUID>> val = client.compute(grp).execute(TestComputeTask.class.getName(), null);
+            T2<UUID, List<UUID>> val = client.compute(grp).execute(TestTask.class.getName(), null);
 
             assertEquals(grid(0).localNode().id(), val.get1());
             assertEquals(nodeIds(1, 2), val.get2());
@@ -140,13 +140,13 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      */
     @Test(expected = ClientException.class)
     public void testComputeUnknownTask() throws Exception {
-        try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+        try (IgniteClient client = startClient(clientConnAddresses)) {
             client.compute().execute("NoSuchTask", null);
         }
     }
 
     /**
-     * Return set of node IDs by given grid indexes.
+     * Returns set of node IDs by given grid indexes.
      *
      * @param gridIdxs Grid indexes.
      */
@@ -160,9 +160,9 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test compute job wich return node id where it was executed.
+     * Test compute job which return node id where it was executed.
      */
-    private static class TestComputeJob implements ComputeJob {
+    private static class TestJob implements ComputeJob {
         /** Ignite. */
         @IgniteInstanceResource
         Ignite ignite;
@@ -173,7 +173,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         /**
          * @param sleepTime Sleep time.
          */
-        private TestComputeJob(Long sleepTime) {
+        private TestJob(Long sleepTime) {
             this.sleepTime = sleepTime;
         }
 
@@ -192,11 +192,10 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test compute task wich returns node id for routing node and list of node ids for each node was affected.
+     * Test compute task which returns node id for routing node and list of node ids for each node was affected.
      */
-    @ComputeTaskName("TestComputeTask")
-    private static class TestComputeTask implements ComputeTask<Long, T2<UUID, Set<UUID>>> {
-
+    @ComputeTaskName("TestTask")
+    private static class TestTask implements ComputeTask<Long, T2<UUID, Set<UUID>>> {
         /** Ignite. */
         @IgniteInstanceResource
         Ignite ignite;
@@ -204,11 +203,11 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Long arg) throws IgniteException {
-            return subgrid.stream().collect(Collectors.toMap(node -> new TestComputeJob(arg), node -> node));
+            return subgrid.stream().collect(Collectors.toMap(node -> new TestJob(arg), node -> node));
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             return ComputeJobResultPolicy.WAIT;
         }
 

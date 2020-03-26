@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientFeature;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ClientOperation.COMPUTE_TASK_EXECUTE;
@@ -112,19 +111,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
     /** {@inheritDoc} */
     @Override public <T, R> ClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
-        return executeAsync0(null, null, taskName, arg, cluster, (byte)0, 0L);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> R affinityExecute(String cacheName, Object affKey, String taskName,
-        @Nullable T arg) throws ClientException, InterruptedException {
-        return (R)affinityExecuteAsync(cacheName, affKey, taskName, arg).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T, R> ClientFuture<R> affinityExecuteAsync(String cacheName, Object affKey, String taskName,
-        @Nullable T arg) throws ClientException {
-        return executeAsync0(cacheName, affKey, taskName, arg, cluster, (byte)0, 0L);
+        return executeAsync0(taskName, arg, cluster, (byte)0, 0L);
     }
 
     /** {@inheritDoc} */
@@ -156,8 +143,6 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
      * @param arg Argument.
      */
     private <T, R> ClientFuture<R> executeAsync0(
-        @Nullable String cacheName,
-        @Nullable Object affKey,
         String taskName,
         @Nullable T arg,
         ClientClusterGroupImpl clusterGrp,
@@ -196,9 +181,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader =
                 ch -> new T2<>(ch.clientChannel(), ch.in().readLong());
 
-            T2<ClientChannel, Long> taskParams = (cacheName != null && affKey != null) ?
-                ch.affinityService(CU.cacheId(cacheName), affKey, COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader) :
-                ch.service(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
+            T2<ClientChannel, Long> taskParams = ch.service(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
 
             ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
 
@@ -310,19 +293,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
         /** {@inheritDoc} */
         @Override public <T, R> ClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
-            return delegate.executeAsync0(null, null, taskName, arg, clusterGrp, flags, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R affinityExecute(String cacheName, Object affKey, String taskName,
-            @Nullable T arg) throws ClientException, InterruptedException {
-            return (R)affinityExecuteAsync(cacheName, affKey, taskName, arg).get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> ClientFuture<R> affinityExecuteAsync(String cacheName, Object affKey, String taskName,
-            @Nullable T arg) throws ClientException {
-            return delegate.executeAsync0(cacheName, affKey, taskName, arg, clusterGrp, flags, timeout);
+            return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 
         /** {@inheritDoc} */

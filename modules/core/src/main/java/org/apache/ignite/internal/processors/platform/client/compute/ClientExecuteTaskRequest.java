@@ -79,12 +79,12 @@ public class ClientExecuteTaskRequest extends ClientRequest {
                 "To enable it set up ThinClientConfiguration.ComputeEnabled property.");
         }
 
-        ClientComputeTask task = new ClientComputeTask(ctx, taskName, arg, nodeIds, flags, timeout);
+        ClientComputeTask task = new ClientComputeTask(ctx);
 
         long taskId = ctx.resources().put(task);
 
-        task.execute(taskId);
+        task.execute(taskId, taskName, arg, nodeIds, flags, timeout);
 
-        return new ClientLongResponse(requestId(), taskId);
+        return new ClientExecuteTaskResponse(requestId(), task);
     }
 }

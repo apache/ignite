@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
@@ -51,20 +52,11 @@ class ClientComputeTask implements ClientCloseableResource {
     /** Context. */
     private final ClientConnectionContext ctx;
 
-    /** Task name. */
-    private final String taskName;
+    /** Logger. */
+    private final IgniteLogger log;
 
-    /** Task argument. */
-    private final Object arg;
-
-    /** Node ids. */
-    private final Set<UUID> nodeIds;
-
-    /** Flags. */
-    private final byte flags;
-
-    /** Timeout. */
-    private final long timeout;
+    /** Task id. */
+    private volatile long taskId;
 
     /** Task future. */
     private volatile ComputeTaskInternalFuture<Object> taskFut;
@@ -76,28 +68,28 @@ class ClientComputeTask implements ClientCloseableResource {
      * Ctor.
      *
      * @param ctx Connection context.
+     */
+    ClientComputeTask(ClientConnectionContext ctx) {
+        assert ctx != null;
+
+        this.ctx = ctx;
+
+        log = ctx.kernalContext().log(getClass());
+    }
+
+    /**
+     * @param taskId Task ID.
      * @param taskName Task name.
      * @param arg Task arguments.
      * @param nodeIds Nodes to run task jobs.
      * @param flags Flags for task.
      * @param timeout Task timeout.
      */
-    ClientComputeTask(ClientConnectionContext ctx, String taskName, Object arg, Set<UUID> nodeIds, byte flags, long timeout) {
-        assert ctx != null;
+    void execute(long taskId, String taskName, Object arg, Set<UUID> nodeIds, byte flags, long timeout) {
         assert taskName != null;
 
-        this.ctx = ctx;
-        this.taskName = taskName;
-        this.arg = arg;
-        this.nodeIds = nodeIds;
-        this.flags = flags;
-        this.timeout = timeout;
-    }
+        this.taskId = taskId;
 
-    /**
-     * @param taskId Task id.
-     */
-    void execute(long taskId) {
         GridTaskProcessor task = ctx.kernalContext().task();
 
         IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? F.alwaysTrue() : F.nodeForNodeIds(nodeIds);
@@ -110,25 +102,40 @@ class ClientComputeTask implements ClientCloseableResource {
         task.setThreadContext(TC_NO_RESULT_CACHE, (flags & NO_RESULT_CACHE_FLAG_MASK) != 0);
 
         taskFut = task.execute(taskName, arg);
+    }
 
+    /**
+     * Callback for response sent event.
+     */
+    void onResponseSent() {
+        // Listener should be registered only after response for this task was sent, to ensure that client doesn't
+        // receive notification before response for the task.
         taskFut.listen(f -> {
             try {
                 ClientNotification notification;
 
-                try {
-                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.get());
-                }
-                catch (Throwable e) {
-                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, e.getMessage());
-                }
+                if (f.error() != null)
+                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.error().getMessage());
+                else if (f.isCancelled())
+                    notification = new ClientNotification(OP_COMPUTE_TASK_FINISHED, taskId, "Task was cancelled");
+                else
+                    notification = new ClientObjectNotification(OP_COMPUTE_TASK_FINISHED, taskId, f.result());
 
                 ctx.notifyClient(notification);
             }
             finally {
-                if (!closed.get()) // If task was explicitly closed before, resource is already released.
+                // If task was explicitly closed before, resource is already released.
+                if (closed.compareAndSet(false, true))
                     ctx.resources().release(taskId);
             }
         });
+    }
+
+    /**
+     * Gets task ID.
+     */
+    long taskId() {
+        return taskId;
     }
 
     /**
@@ -137,10 +144,11 @@ class ClientComputeTask implements ClientCloseableResource {
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
             try {
-                taskFut.cancel();
+                if (taskFut != null)
+                    taskFut.cancel();
             }
-            catch (IgniteCheckedException ignore) {
-                // No-op.
+            catch (IgniteCheckedException e) {
+                log.warning("Failed to cancel task", e);
             }
         }
     }
