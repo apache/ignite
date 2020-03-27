@@ -72,14 +72,14 @@ public class SchemaIndexCacheStat {
     }
 
     /**
-     * @return Unmodifieble collection of processed type names.
+     * @return Unmodifiable collection of processed type names.
      */
     public Collection<String> typeNames() {
         return Collections.unmodifiableCollection(types.keySet());
     }
 
     /**
-     * @return Unmodifieble collection of processed types.
+     * @return Unmodifiable collection of processed types.
      */
     public Collection<QueryTypeDescriptorImpl> types() {
         return Collections.unmodifiableCollection(types.values());
