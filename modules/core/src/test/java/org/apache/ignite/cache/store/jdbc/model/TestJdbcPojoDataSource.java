@@ -47,8 +47,7 @@ import javax.sql.DataSource;
 public class TestJdbcPojoDataSource implements DataSource {
     /** */
     private final ThreadLocal<ConnectionHolder> holder = new ThreadLocal<ConnectionHolder>() {
-        @Override
-        protected ConnectionHolder initialValue() {
+        @Override protected ConnectionHolder initialValue() {
             return new ConnectionHolder();
         }
     };
@@ -201,8 +200,7 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public PreparedStatement prepareStatement(String sql) throws SQLException {
+        @Override public PreparedStatement prepareStatement(String sql) throws SQLException {
             return conn.prepareStatement(sql);
         }
 
@@ -277,8 +275,7 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void clearWarnings() throws SQLException {
+        @Override public void clearWarnings() throws SQLException {
             conn.clearWarnings();
         }
 
@@ -294,8 +291,8 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+        @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency)
+            throws SQLException {
             return conn.prepareCall(sql, resultSetType, resultSetConcurrency);
         }
 
@@ -315,8 +312,7 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public int getHoldability() throws SQLException {
+        @Override public int getHoldability() throws SQLException {
             return conn.getHoldability();
         }
 
@@ -331,8 +327,7 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void rollback(Savepoint savepoint) throws SQLException {
+        @Override public void rollback(Savepoint savepoint) throws SQLException {
             conn.rollback(savepoint);
         }
 

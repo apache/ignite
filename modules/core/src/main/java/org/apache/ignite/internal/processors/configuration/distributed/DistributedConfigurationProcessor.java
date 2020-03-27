@@ -236,9 +236,8 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
                 return distributedMetastorage.writeAsync(toMetaStorageKey(key), newValue);
             }
 
-            @Override
-            public GridFutureAdapter<?> casUpdate(String key, Serializable expectedValue, Serializable newValue)
-                throws IgniteCheckedException {
+            @Override public GridFutureAdapter<?> casUpdate(String key, Serializable expectedValue,
+                Serializable newValue) throws IgniteCheckedException {
                 return distributedMetastorage.compareAndSetAsync(toMetaStorageKey(key), expectedValue, newValue);
             }
         });
