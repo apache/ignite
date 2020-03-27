@@ -55,7 +55,17 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_S
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 
 /**
- * Default IgniteSecurity implementation.
+ * Default {@code IgniteSecurity} implementation.
+ * <p>
+ * {@code IgniteSecurityProcessor} serves here as a facade with is exposed to Ignite internal code,
+ * while {@code GridSecurityProcessor} is hidden and managed from {@code IgniteSecurityProcessor}.
+ * <p>
+ * This implementation of {@code IgniteSecurity} is responsible for:
+ * <ul>
+ *     <li>Keeping and propagating authenticated security contexts for cluster nodes;</li>
+ *     <li>Delegating calls for all aforementioned actions to {@code GridSecurityProcessor};</li>
+ *     <li>Managing sandbox and proving point of entry to the internal sandbox API.</li>
+ * </ul>
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */

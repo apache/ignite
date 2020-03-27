@@ -54,7 +54,7 @@ public interface IgniteSecurity {
     /**
      * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or
      * {@link #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is
-     * owned by the node with given subjId until holder {@link OperationSecurityContext} will be closed.
+     * associated with the security subject with given subjId until holder {@link OperationSecurityContext} will be closed.
      *
      * @param subjId Subject id.
      * @return Security context holder.
