@@ -30,7 +30,7 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     /** Different line error message. */
     public static final String DIFF_LINE_ERR_MSG =
-        "@Override annotation on different line than target method declaration.";
+        "@Override annotation on a different line than the target method declaration!";
 
     /** No method declaration error message. */
     public static final String NO_METHOD_ERR_MSG =
@@ -125,6 +125,13 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
         return identNode.getText();
     }
 
+    /**
+     * Checks whether or not annotation is located on a different line than the target method declaration.
+     *
+     * @param annotationNode {@code DetailAST} Annotation node.
+     * @return {@code true} if annotation is located on a different line than the target method declaration or
+     * {@code false} otherwise.
+     */
     private boolean onDifferentLines(DetailAST annotationNode){
         DetailAST nextNode = getNextNode(annotationNode);
 
