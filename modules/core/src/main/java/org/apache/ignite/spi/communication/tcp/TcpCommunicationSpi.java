@@ -3200,7 +3200,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         final long time = System.currentTimeMillis() - start;
 
             if (time > CONNECTION_ESTABLISH_THRESHOLD_MS)
-                log.warning("TCP client creation took longer than expected [threshold=" + CONNECTION_ESTABLISH_THRESHOLD_MS + ", client=" + clientString(client, node) + ", duration=" + time + "ms]");
+                log.warning("TCP client creation took longer than expected [threshold=" + CONNECTION_ESTABLISH_THRESHOLD_MS +
+                    ", client=" + clientString(client, node) + ", duration=" + time + "ms]");
             else if (log.isDebugEnabled())
                 log.debug("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
 
