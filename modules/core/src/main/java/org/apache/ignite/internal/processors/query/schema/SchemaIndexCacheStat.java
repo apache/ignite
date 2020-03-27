@@ -34,7 +34,6 @@ public class SchemaIndexCacheStat {
     /** Number of indexed keys. */
     private int scanned;
 
-
     /**
      * Adds statistics from {@code stat} to the current statistics.
      *
