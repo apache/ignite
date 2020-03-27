@@ -70,15 +70,13 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     @Override public void visitToken(DetailAST ast) {
         DetailAST nodeWithAnnotations = ast;
 
-        if (ast.getType() == TokenTypes.TYPECAST) {
+        if (ast.getType() == TokenTypes.TYPECAST)
             nodeWithAnnotations = ast.findFirstToken(TokenTypes.TYPE);
-        }
 
         DetailAST modifiersNode = nodeWithAnnotations.findFirstToken(TokenTypes.MODIFIERS);
 
-        if (modifiersNode == null) {
+        if (modifiersNode == null)
             modifiersNode = nodeWithAnnotations.findFirstToken(TokenTypes.ANNOTATIONS);
-        }
 
         if (modifiersNode != null) {
             for (DetailAST annotationNode = modifiersNode.getFirstChild();
@@ -86,9 +84,8 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
                  annotationNode = annotationNode.getNextSibling()) {
                 if (annotationNode.getType() == TokenTypes.ANNOTATION
                     && OVERRIDE.equals(getAnnotationName(annotationNode))
-                    && onDifferentLines(annotationNode)) {
+                    && onDifferentLines(annotationNode))
                     log(annotationNode.getLineNo(), DIFF_LINE_ERR_MSG, getAnnotationName(annotationNode));
-                }
             }
         }
     }
@@ -102,9 +99,8 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     private static DetailAST getNextNode(DetailAST node) {
         DetailAST nextNode = node.getNextSibling();
 
-        if (nextNode == null) {
+        if (nextNode == null)
             nextNode = node.getParent().getNextSibling();
-        }
 
         return nextNode;
     }
@@ -118,9 +114,8 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     private static String getAnnotationName(DetailAST annotation) {
         DetailAST identNode = annotation.findFirstToken(TokenTypes.IDENT);
 
-        if (identNode == null) {
+        if (identNode == null)
             identNode = annotation.findFirstToken(TokenTypes.DOT).getLastChild();
-        }
 
         return identNode.getText();
     }

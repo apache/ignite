@@ -206,9 +206,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Invoke update on cache.
         for (int i = 0; i < KEY_CNT; i++)
             jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
-                @Override public Object process(MutableEntry<Object, Object> entry,
-                                      Object... arguments) throws EntryProcessorException {
-
+                @Override public Object process(
+                    MutableEntry<Object, Object> entry,
+                    Object... arguments
+                ) throws EntryProcessorException {
                     Object key = entry.getKey();
 
                     entry.setValue(key);
