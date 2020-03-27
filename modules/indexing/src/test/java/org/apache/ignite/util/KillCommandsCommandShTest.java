@@ -66,9 +66,9 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         });
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelTx() throws Exception {
+    public void testCancelTx() {
         doTestCancelTx(client, srvs, xid -> {
             int res = execute("--kill", "transaction", xid);
 

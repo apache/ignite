@@ -100,9 +100,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         doTestCancelService(startCli, killCli, srvs.get(0), name -> svcMxBean.cancel(name));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelTx() throws Exception {
+    public void testCancelTx() {
         doTestCancelTx(startCli, srvs, xid -> txMBean.cancel(xid));
     }
 

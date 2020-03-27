@@ -86,9 +86,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelTx() throws Exception {
+    public void testCancelTx() {
         doTestCancelTx(startCli, srvs, xid -> execute(killCli, KILL_TX_QRY + " '" + xid + "'"));
     }
 
