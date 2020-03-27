@@ -409,7 +409,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     @Test
     public void testExecuteTaskConcurrentLoad() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            int threadsCnt = 5;
+            int threadsCnt = 20;
             int iterations = 20;
 
             ClientCache<Integer, Integer> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);

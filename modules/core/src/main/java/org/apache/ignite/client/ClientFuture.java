@@ -31,6 +31,7 @@ public interface ClientFuture<R> {
      * @return Completed future result.
      * @throws ClientException In case of error.
      * @throws CancellationException If the computation was cancelled.
+     * @throws InterruptedException If the wait for future completion was interrupted.
      */
     public R get() throws ClientException, CancellationException, InterruptedException;
 
@@ -43,8 +44,10 @@ public interface ClientFuture<R> {
      * @throws ClientException In case of error.
      * @throws TimeoutException If timed out before future finishes.
      * @throws CancellationException If the computation was cancelled.
+     * @throws InterruptedException If the wait for future completion was interrupted.
      */
-    public R get(long timeout, TimeUnit unit) throws ClientException, TimeoutException, InterruptedException;
+    public R get(long timeout, TimeUnit unit)
+        throws ClientException, TimeoutException, CancellationException, InterruptedException;
 
     /**
      * Checks if future is done.

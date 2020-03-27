@@ -277,22 +277,16 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, byte[] payload) {
+    @Override public void acceptNotification(
+        ClientChannel ch,
+        ClientOperation op,
+        long rsrcId,
+        byte[] payload,
+        Exception err
+    ) {
         for (NotificationListener lsnr : notificationLsnrs) {
             try {
-                lsnr.acceptNotification(ch, op, rsrcId, payload);
-            }
-            catch (Exception ignore) {
-                // No-op.
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptError(ClientChannel ch, ClientOperation op, long rsrcId, Throwable err) {
-        for (NotificationListener lsnr : notificationLsnrs) {
-            try {
-                lsnr.acceptError(ch, op, rsrcId, err);
+                lsnr.acceptNotification(ch, op, rsrcId, payload, err);
             }
             catch (Exception ignore) {
                 // No-op.

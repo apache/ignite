@@ -52,7 +52,7 @@ public interface ClientCompute {
      *
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
-     * @return a Future representing pending completion of the task.
+     * @return A Future representing pending completion of the task.
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
      */

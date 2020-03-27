@@ -58,7 +58,8 @@ class ClientFutureImpl<R>  implements ClientFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws ClientException, TimeoutException, InterruptedException {
+    @Override public R get(long timeout, TimeUnit unit)
+        throws ClientException, TimeoutException, CancellationException, InterruptedException {
         try {
             return delegate.get(timeout, unit);
         }

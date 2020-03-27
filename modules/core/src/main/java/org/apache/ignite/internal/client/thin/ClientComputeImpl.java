@@ -70,7 +70,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /** Active tasks. */
     private final Map<ClientChannel, Map<Long, ClientComputeTask<Object>>> activeTasks = new ConcurrentHashMap<>();
 
-    /** Guard lock. */
+    /** Guard lock for active tasks. */
     private final ReadWriteLock guard = new ReentrantReadWriteLock();
 
     /** Constructor. */
@@ -203,24 +203,24 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     }
 
     /** {@inheritDoc} */
-    @Override public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, byte[] payload) {
+    @Override public void acceptNotification(
+        ClientChannel ch,
+        ClientOperation op,
+        long rsrcId,
+        byte[] payload,
+        Exception err
+    ) {
         if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
             Object res = payload == null ? null : utils.readObject(new BinaryHeapInputStream(payload), false);
 
             ClientComputeTask<Object> task = removeTask(ch, rsrcId);
 
-            if (task != null) // If channel is closed concurrently, task is already done with "channel closed" reason.
-                task.fut.onDone(res);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptError(ClientChannel ch, ClientOperation op, long rsrcId, Throwable err) {
-        if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
-            ClientComputeTask<Object> task = removeTask(ch, rsrcId);
-
-            if (task != null) // If channel is closed concurrently, task is already done with "channel closed" reason.
-                task.fut.onDone(err);
+            if (task != null) { // If channel is closed concurrently, task is already done with "channel closed" reason.
+                if (err == null)
+                    task.fut.onDone(res);
+                else
+                    task.fut.onDone(err);
+            }
         }
     }
 

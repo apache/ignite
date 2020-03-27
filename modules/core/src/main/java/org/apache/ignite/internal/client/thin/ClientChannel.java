@@ -74,7 +74,7 @@ interface ClientChannel extends AutoCloseable {
     public void addTopologyChangeListener(Consumer<ClientChannel> lsnr);
 
     /**
-     * Add server to client notification listener.
+     * Add notifications (from server to client) listener.
      */
     public void addNotificationListener(NotificationListener lsnr);
 

@@ -22,22 +22,13 @@ package org.apache.ignite.internal.client.thin;
  */
 interface NotificationListener {
     /**
-     * Accept succesful notification.
+     * Accept notification.
      *
      * @param ch Client channel which was notified.
      * @param op Client operation.
      * @param rsrcId Resource id.
      * @param payload Notification payload or {@code null} if there is no payload.
-     */
-    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, byte[] payload);
-
-    /**
-     * Accept unsuccesful notification.
-     *
-     * @param ch Client channel which was notified.
-     * @param op Client operation.
-     * @param rsrcId Resource id.
      * @param err Error.
      */
-    public void acceptError(ClientChannel ch, ClientOperation op, long rsrcId, Throwable err);
+    public void acceptNotification(ClientChannel ch, ClientOperation op, long rsrcId, byte[] payload, Exception err);
 }

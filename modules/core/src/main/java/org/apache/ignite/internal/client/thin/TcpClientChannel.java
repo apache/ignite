@@ -375,7 +375,7 @@ class TcpClientChannel implements ClientChannel {
         int hdrSize = (int)(dataInput.totalBytesRead() - bytesReadOnStartMsg);
 
         byte[] res = null;
-        Throwable err = null;
+        Exception err = null;
 
         if (status == 0) {
             if (msgSize > hdrSize)
@@ -400,12 +400,8 @@ class TcpClientChannel implements ClientChannel {
             pendingReq.onDone(res, err);
         }
         else { // Notification received.
-            for (NotificationListener lsnr : notificationLsnrs) {
-                if (err == null)
-                    lsnr.acceptNotification(this, notificationOp, resId, res);
-                else
-                    lsnr.acceptError(this, notificationOp, resId, err);
-            }
+            for (NotificationListener lsnr : notificationLsnrs)
+                lsnr.acceptNotification(this, notificationOp, resId, res, err);
         }
     }
 
