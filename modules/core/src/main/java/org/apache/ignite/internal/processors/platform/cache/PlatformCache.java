@@ -356,6 +356,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_ENABLE_STATISTICS = 93;
 
+    /** */
+    public static final int OP_CLEAR_STATISTICS = 94;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -1181,6 +1184,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_ENABLE_STATISTICS:
                 cache.enableStatistics(val == TRUE);
+
+                return TRUE;
+
+            case OP_CLEAR_STATISTICS:
+                cache.clearStatistics();
 
                 return TRUE;
         }
