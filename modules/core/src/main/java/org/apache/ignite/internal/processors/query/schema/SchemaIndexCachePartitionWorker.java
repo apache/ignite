@@ -147,7 +147,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 cctx.group().metrics().addIndexBuildCountPartitionsLeft(-cnt);
         }
         finally {
-            fut.onDone(err);
+            fut.onDone(indexCacheStat, err);
         }
     }
 
