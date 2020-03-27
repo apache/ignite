@@ -206,7 +206,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 }
 
                 if (nonNull(indexCacheStat))
-                    indexCacheStat.scanned += cntr;
+                    indexCacheStat.add(cntr);
             }
             finally {
                 if (locked)

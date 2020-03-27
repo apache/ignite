@@ -144,10 +144,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     compoundFut.futures().stream()
                         .map(IgniteInternalFuture::result)
                         .filter(Objects::nonNull)
-                        .forEach(stat -> {
-                            resStat.scanned += stat.scanned;
-                            resStat.types.putAll(stat.types);
-                        });
+                        .forEach(resStat::accumulate);
 
                     log.info(indexStatStr(resStat));
                 }
@@ -174,12 +171,12 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         res.a("Details for cache rebuilding [name=" + cctx.cache().name() + ", grpName=" + cctx.group().name() + ']');
         res.a(U.nl());
-        res.a("   Scanned rows " + stat.scanned + ", visited types " + stat.types.keySet());
+        res.a("   Scanned rows " + stat.scannedKeys() + ", visited types " + stat.typeNames());
         res.a(U.nl());
 
         final GridQueryIndexing idx = cctx.kernalContext().query().getIndexing();
 
-        for (QueryTypeDescriptorImpl type : stat.types.values()) {
+        for (QueryTypeDescriptorImpl type : stat.types()) {
             res.a("        Type name=" + type.name());
             res.a(U.nl());
 

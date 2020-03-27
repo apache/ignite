@@ -4497,7 +4497,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     );
 
                     if (type != null)
-                        stat.types.put(type.name(), type);
+                        stat.addType(type);
                 }
             }
         }
