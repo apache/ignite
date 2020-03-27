@@ -1070,7 +1070,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return new File(storeWorkDir, cacheDirName);
     }
 
-
     /**
      * @param isSharedGroup {@code True} if cache is sharing the same `underlying` cache.
      * @param cacheOrGroupName Cache name.

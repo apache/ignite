@@ -32,18 +32,15 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Class handles saving/restoring binary metadata to/from disk.
@@ -51,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * Current implementation needs to be rewritten as it issues IO operations from discovery thread which may lead to
  * segmentation of nodes from cluster.
  */
-class BinaryMetadataFileStore implements BinaryTypeWriter {
+class BinaryMetadataFileStore {
     /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File workDir;
 
@@ -77,15 +74,13 @@ class BinaryMetadataFileStore implements BinaryTypeWriter {
      * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
-     * @param binaryMetadataFileStoreDir Path to binary metadata store configured by user, should include binary_meta
      * and consistentId
      */
     BinaryMetadataFileStore(
         final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
-        final String igniteWorkDir,
-        @Nullable final File binaryMetadataFileStoreDir
+        final File workDir
     ) {
         this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
@@ -96,30 +91,11 @@ class BinaryMetadataFileStore implements BinaryTypeWriter {
             return;
 
         fileIOFactory = ctx.config().getDataStorageConfiguration().getFileIOFactory();
-
-        try {
-            if (binaryMetadataFileStoreDir != null)
-                workDir = binaryMetadataFileStoreDir;
-            else {
-                final String subFolder = ctx.pdsFolderResolver().resolveFolders().folderName();
-
-                workDir = new File(U.resolveWorkDirectory(
-                    igniteWorkDir,
-                    "binary_meta",
-                    false
-                ),
-                    subFolder);
-            }
-
-            U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        this.workDir = workDir;
     }
 
     /**
-     * Starts worker thread for acyn writing of binary metadata.
+     * Starts worker thread for acync writing of binary metadata.
      */
     void start() {
         writer = new BinaryMetadataAsyncWriter();
@@ -132,14 +108,6 @@ class BinaryMetadataFileStore implements BinaryTypeWriter {
      */
     void stop() {
         U.cancel(writer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeMeta(int typeId, BinaryType type) {
-        assert type instanceof BinaryTypeImpl;
-        assert !ctx.clientNode();
-
-        mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
     }
 
     /**
@@ -168,7 +136,7 @@ class BinaryMetadataFileStore implements BinaryTypeWriter {
 
             U.error(log, msg);
 
-            writer.cancel();
+            U.cancel(writer);
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 

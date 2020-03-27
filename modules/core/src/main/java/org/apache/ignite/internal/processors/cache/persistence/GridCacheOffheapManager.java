@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
@@ -239,8 +238,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean needSnapshot = ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
 
-        if (needSnapshot ||
-            ctx.collectPartStat().getOrDefault(grp.groupId(), new HashSet<>()).contains(PageIdAllocator.INDEX_PARTITION)) {
+        if (needSnapshot) {
             if (execSvc == null)
                 addIndexPartition(ctx);
             else {
@@ -265,14 +263,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     private void syncMetadata(Context ctx, Executor execSvc, boolean needSnapshot) throws IgniteCheckedException {
-        Set<Integer> partsToCollect = ctx.collectPartStat()
-            .getOrDefault(grp.groupId(), new HashSet<>());
-
         if (execSvc == null) {
             reuseList.saveMetadata(grp.statisticsHolderData());
 
             for (CacheDataStore store : partDataStores.values())
-                saveStoreMetadata(store, ctx, false, needSnapshot || partsToCollect.contains(store.partId()));
+                saveStoreMetadata(store, ctx, false, needSnapshot);
         }
         else {
             execSvc.execute(() -> {
@@ -287,7 +282,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             for (CacheDataStore store : partDataStores.values())
                 execSvc.execute(() -> {
                     try {
-                        saveStoreMetadata(store, ctx, false, needSnapshot || partsToCollect.contains(store.partId()));
+                        saveStoreMetadata(store, ctx, false, needSnapshot);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -304,10 +299,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         CacheDataStore store,
         Context ctx,
         boolean beforeDestroy,
-        boolean savePagesCount
+        boolean needSnapshot
     ) throws IgniteCheckedException {
         if (!store.active()) {
-            assert !savePagesCount : "You should not request partition while store is inactive: " + store;
+            assert !needSnapshot : "You should not request partition while store is inactive: " + store;
 
             return;
         }
@@ -443,7 +438,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         int pageCnt;
 
-                        if (savePagesCount) {
+                        if (needSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
 
                             io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0 : pageCnt);
@@ -503,10 +498,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
-            else if (savePagesCount)
+            else if (needSnapshot)
                 tryAddEmptyPartitionToSnapshot(store, ctx);
         }
-        else if (savePagesCount)
+        else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);
     }
 

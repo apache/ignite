@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cacheobject.BinaryTypeWriter;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
@@ -202,11 +201,36 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         marsh = ctx.grid().configuration().getMarshaller();
     }
 
+    /**
+     * @param igniteWorkDir Basic ignite working directory.
+     * @return Working directory.
+     */
+    public File binaryFileStoreWorkDir(String igniteWorkDir) {
+        try {
+            File workDir = new File(U.resolveWorkDirectory(
+                igniteWorkDir,
+                "binary_meta",
+                false),
+                ctx.pdsFolderResolver().resolveFolders().folderName());
+
+            U.ensureDirectory(workDir, "directory for serialized binary metadata", log);
+
+            return workDir;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (marsh instanceof BinaryMarshaller) {
             if (!ctx.clientNode()) {
-                metadataFileStore = (BinaryMetadataFileStore)createBinaryWriter(ctx.config().getWorkDirectory());
+                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache,
+                    ctx,
+                    log,
+                    binaryMetadataFileStoreDir == null ?
+                        binaryFileStoreWorkDir(ctx.config().getWorkDirectory()) : binaryMetadataFileStoreDir);
 
                 metadataFileStore.start();
             }
@@ -535,11 +559,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             enumMap);
 
         binaryCtx.updateMetadata(typeId, meta, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinaryTypeWriter createBinaryWriter(String igniteWorkDir) {
-        return new BinaryMetadataFileStore(metadataLocCache, ctx, log, igniteWorkDir, binaryMetadataFileStoreDir);
     }
 
     /** {@inheritDoc} */
@@ -892,6 +911,17 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 return metaHolder.metadata().wrap(binaryCtx);
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void saveMetadata(Collection<BinaryType> types, File dir) {
+        BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(),
+            ctx,
+            log,
+            binaryFileStoreWorkDir(dir.getAbsolutePath()));
+
+        for (BinaryType type : types)
+            writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
     }
 
     /** {@inheritDoc} */

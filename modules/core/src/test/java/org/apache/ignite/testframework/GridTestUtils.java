@@ -17,11 +17,6 @@
 
 package org.apache.ignite.testframework;
 
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -71,6 +66,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -441,9 +441,8 @@ public final class GridTestUtils {
      * @param cls Exception class.
      * @param msg Exception message (optional). If provided exception message
      *      and this message should be equal.
-     * @return Thrown throwable.
      */
-    public static Throwable assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
+    public static void assertThrowsAnyCause(@Nullable IgniteLogger log, Callable<?> call,
         Class<? extends Throwable> cls, @Nullable String msg) {
         assert call != null;
         assert cls != null;
@@ -459,7 +458,7 @@ public final class GridTestUtils {
                     if (log != null && log.isInfoEnabled())
                         log.info("Caught expected exception: " + t.getMessage());
 
-                    return t;
+                    return;
                 }
 
                 t = t.getCause();

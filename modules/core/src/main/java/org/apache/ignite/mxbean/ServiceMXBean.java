@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cacheobject;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.spi.systemview.view.ServiceView;
 
 /**
- * Class represents an API to write metadata for binary types to storage.
- * Default implementation assumes that all binary metadata will be written to local file system.
+ * Service MXBean interface.
  */
-public interface BinaryTypeWriter {
+public interface ServiceMXBean {
     /**
-     * @param typeId Meta type id.
-     * @param type Binary metadata type to write.
+     * @param name Service name.
+     * @see ServiceView#name()
      */
-    public void writeMeta(int typeId, final BinaryType type);
+    @MXBeanDescription("Kills service by the name.")
+    public void cancel(
+        @MXBeanParameter(name = "name", description = "Service name.") String name
+    );
 }

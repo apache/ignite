@@ -19,12 +19,16 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 
 /** Tests cancel of user created entities via control.sh. */
 public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -39,6 +43,10 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
         for (int i = 0; i < SERVER_NODE_CNT; i++)
             srvs.add(grid(i));
+
+        client.getOrCreateCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         awaitPartitionMapExchange();
     }
@@ -60,8 +68,44 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
     /** */
     @Test
+    public void testCancelTx() {
+        doTestCancelTx(client, srvs, xid -> {
+            int res = execute("--kill", "transaction", xid);
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelService() throws Exception {
+        doTestCancelService(client, client, srvs.get(0), name -> {
+            int res = execute("--kill", "service", name);
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
+    }
+
+    /** */
+    @Test
     public void testCancelUnknownComputeTask() {
         int res = execute("--kill", "compute", IgniteUuid.randomUuid().toString());
+
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownService() {
+        int res = execute("--kill", "service", "unknown");
+
+        assertEquals(EXIT_CODE_OK, res);
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownTx() {
+        int res = execute("--kill", "transaction", "unknown");
 
         assertEquals(EXIT_CODE_OK, res);
     }

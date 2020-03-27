@@ -74,6 +74,18 @@ This utility can do the following commands:
     Parameters:
       session_id  - Session identifier.
 
+  Kill service by name:
+    control.(sh|bat) --kill SERVICE name
+
+    Parameters:
+      name  - Service name.
+
+  Kill transaction by xid:
+    control.(sh|bat) --kill TRANSACTION xid
+
+    Parameters:
+      xid  - Transaction identifier.
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

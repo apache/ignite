@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -40,8 +41,8 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
     private static final long serialVersionUID = 0L;
 
     /** Map of cache group ids and corresponding set of its partition ids. */
-    @GridDirectMap(keyType = Integer.class, valueType = GridIntList.class)
-    private Map<Integer, GridIntList> parts;
+    @GridDirectMap(keyType = Integer.class, valueType = int[].class)
+    private Map<Integer, int[]> parts;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -54,22 +55,30 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
      * @param snpName Unique snapshot name.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshotted.
      */
-    public SnapshotRequestMessage(String snpName, Map<Integer, GridIntList> parts) {
+    public SnapshotRequestMessage(String snpName, Map<Integer, Set<Integer>> parts) {
         super(snpName);
 
         assert parts != null && !parts.isEmpty();
 
-        this.parts = U.newHashMap(parts.size());
-
-        for (Map.Entry<Integer, GridIntList> e : parts.entrySet())
-            this.parts.put(e.getKey(), e.getValue().copy());
+        this.parts = parts.entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey,
+                e -> e.getValue()
+                        .stream()
+                        .mapToInt(Integer::intValue)
+                        .toArray()));
     }
 
     /**
      * @return The demanded cache group partions per each cache group.
      */
-    public Map<Integer, GridIntList> parts() {
-        return parts;
+    public Map<Integer, Set<Integer>> parts() {
+        return parts.entrySet()
+            .stream()
+            .collect(Collectors.toMap(Map.Entry::getKey,
+                e -> Arrays.stream(e.getValue())
+                        .boxed()
+                        .collect(Collectors.toSet())));
     }
 
     /** {@inheritDoc} */
@@ -87,7 +96,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
         }
 
         if (writer.state() == 1) {
-            if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
+            if (!writer.writeMap("parts", parts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
                 return false;
 
             writer.incrementState();
@@ -107,7 +116,7 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
             return false;
 
         if (reader.state() == 1) {
-            parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+            parts = reader.readMap("parts", MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
 
             if (!reader.isLastRead())
                 return false;
