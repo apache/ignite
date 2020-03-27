@@ -119,41 +119,34 @@ public class CassandraSessionImplTest {
 
         private Set<Integer> processed = new HashSet<>();
 
-        @Override
-        public void process(Row row, int seqNum) {
+        @Override public void process(Row row, int seqNum) {
             if (processed.contains(seqNum))
                 return;
 
             processed.add(seqNum);
         }
 
-        @Override
-        public boolean alreadyProcessed(int seqNum) {
+        @Override public boolean alreadyProcessed(int seqNum) {
             return processed.contains(seqNum);
         }
 
-        @Override
-        public int processedCount() {
+        @Override public int processedCount() {
             return processed.size();
         }
 
-        @Override
-        public boolean tableExistenceRequired() {
+        @Override public boolean tableExistenceRequired() {
             return false;
         }
 
-        @Override
-        public String getTable() {
+        @Override public String getTable() {
             return null;
         }
 
-        @Override
-        public String getStatement() {
+        @Override public String getStatement() {
             return null;
         }
 
-        @Override
-        public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
+        @Override public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
             if (statement instanceof WrappedPreparedStatement)
                 statement = ((WrappedPreparedStatement)statement).getWrappedStatement();
 
@@ -167,21 +160,17 @@ public class CassandraSessionImplTest {
             throw new RuntimeException("unexpected");
         }
 
-        @Override
-        public KeyValuePersistenceSettings getPersistenceSettings() {
+        @Override public KeyValuePersistenceSettings getPersistenceSettings() {
             return null;
         }
 
-        @Override
-        public String operationName() {
+        @Override public String operationName() {
             return null;
         }
 
-        @Override
-        public Object processedData() {
+        @Override public Object processedData() {
             return null;
         }
-
     }
 
     private static class MyBoundStatement1 extends BoundStatement {
@@ -198,5 +187,4 @@ public class CassandraSessionImplTest {
             super(ps);
         }
     }
-
 }

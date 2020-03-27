@@ -54,24 +54,19 @@ public class TestStormSpout implements IRichSpout {
      *
      * @param outputFieldsDeclarer Declarer to declare fields on.
      */
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
+    @Override public void declareOutputFields(OutputFieldsDeclarer outputFieldsDeclarer) {
         outputFieldsDeclarer.declare(new Fields(IGNITE_TUPLE_FIELD));
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
+    /** {@inheritDoc} */
+    @Override public void open(Map map, TopologyContext topologyContext, SpoutOutputCollector spoutOutputCollector) {
         this.collector = spoutOutputCollector;
     }
 
     /**
      * Requests to emit a tuple to the output collector.
      */
-    @Override
-    public void nextTuple() {
+    @Override public void nextTuple() {
         // No-op. Sent via mocked sources.
     }
 
@@ -96,46 +91,28 @@ public class TestStormSpout implements IRichSpout {
         return keyValMap;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void ack(Object msgId) {
+    /** {@inheritDoc} */
+    @Override public void ack(Object msgId) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void fail(Object msgId) {
+    /** {@inheritDoc} */
+    @Override public void fail(Object msgId) {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
+    /** {@inheritDoc} */
+    @Override public void close() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void activate() {
+    /** {@inheritDoc} */
+    @Override public void activate() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deactivate() {
+    /** {@inheritDoc} */
+    @Override public void deactivate() {
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> getComponentConfiguration() {
         return null;
     }
 }
