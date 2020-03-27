@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collections;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 
@@ -42,27 +41,24 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(String sessionId) {
-        A.notNull(sessionId, "sessionId");
+    @Override public void cancel(String sesId) {
+        A.notNull(sesId, "sessionId");
 
-        cancel(IgniteUuid.fromString(sessionId));
+        cancel(IgniteUuid.fromString(sesId));
     }
 
     /**
      * Kills compute task by the session idenitifier.
      *
-     * @param sessionId Session id.
+     * @param sesId Session id.
      */
-    public void cancel(IgniteUuid sessionId) {
+    public void cancel(IgniteUuid sesId) {
         try {
             IgniteCompute compute = ctx.cluster().get().compute();
 
-            boolean res = compute.execute(new VisorComputeCancelSessionsTask(),
-                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(),
-                    new VisorComputeCancelSessionsTaskArg(Collections.singleton(sessionId)), false));
-
-            if (!res)
-                throw new RuntimeException("Compute task not found[sessionId=" + sessionId + ']');
+            compute.execute(new VisorComputeCancelSessionTask(),
+                new VisorTaskArgument<>(ctx.localNodeId(),
+                    new VisorComputeCancelSessionTaskArg(sesId), false));
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

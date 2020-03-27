@@ -20,30 +20,30 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
-import org.apache.ignite.mxbean.ServiceMXBean;
-import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.spi.systemview.view.TransactionView;
 
 /**
- * KILL SERVICE command.
+ * KILL TRANSACTION command.
  *
- * @see ServiceMXBean#cancel(String)
- * @see ServiceView#name()
+ * @see TransactionsMXBean#cancel(String)
+ * @see TransactionView#xid()
  */
-public class SqlKillServiceCommand implements SqlCommand {
-    /** Service name. */
-    private String name;
+public class SqlKillTransactionCommand implements SqlCommand {
+    /** Transaction xid. */
+    private String xid;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         if (lex.shift()) {
             if (lex.tokenType() == SqlLexerTokenType.STRING) {
-                name = lex.token();
+                xid = lex.token();
 
                 return this;
             }
         }
 
-        throw SqlParserUtils.error(lex, "Expected service name.");
+        throw SqlParserUtils.error(lex, "Expected transaction xid.");
     }
 
     /** {@inheritDoc} */
@@ -56,8 +56,8 @@ public class SqlKillServiceCommand implements SqlCommand {
         // No-op.
     }
 
-    /** @return Service name. */
-    public String getName() {
-        return name;
+    /** @return Xid. */
+    public String getXid() {
+        return xid;
     }
 }

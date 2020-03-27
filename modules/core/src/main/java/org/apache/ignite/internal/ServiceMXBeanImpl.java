@@ -57,11 +57,8 @@ public class ServiceMXBeanImpl implements ServiceMXBean {
 
             IgniteCompute compute = cluster.compute();
 
-            boolean res = compute.execute(new VisorCancelServiceTask(),
+            compute.execute(new VisorCancelServiceTask(),
                 new VisorTaskArgument<>(ctx.localNodeId(), new VisorCancelServiceTaskArg(name), false));
-
-            if (!res)
-                throw new RuntimeException("Service not found or can't be canceled[name=" + name + ']');
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

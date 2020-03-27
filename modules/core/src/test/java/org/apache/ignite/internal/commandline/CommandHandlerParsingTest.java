@@ -525,42 +525,23 @@ public class CommandHandlerParsingTest {
     public void testKillArguments() {
         assertParseArgsThrows("Expected type of resource to kill.", "--kill");
 
-        String uuid = UUID.randomUUID().toString();
-
-        // Scan command format errors.
-        assertParseArgsThrows("Expected query originating node id.", "--kill", "scan");
-        assertParseArgsThrows("Expected cache name.", "--kill", "scan", uuid);
-        assertParseArgsThrows("Expected query identifier.", "--kill", "scan", uuid, "cache");
-
-        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
-            "--kill", "scan", "not_a_uuid");
-
-        assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
-            "--kill", "scan", uuid, "my-cache", "not_a_number");
-
-        // Continuous command format errors.
-        assertParseArgsThrows("Expected continuous query id.", "--kill", "continuous");
-
-        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
-            "--kill", "continuous", "not_a_uuid");
-
-        // SQL command format errors.
-        assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
-
-        assertParseArgsThrows("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT,
-            "--kill", "sql", "not_sql_id");
-
         // Compute command format errors.
         assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
 
         assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
             "--kill", "compute", "not_a_uuid");
 
+        // Service command format errors.
+        assertParseArgsThrows("Expected service name.", "--kill", "service");
+
         // Transaction command format errors.
         assertParseArgsThrows("Expected transaction id.", "--kill", "tx");
 
-        // Service command format errors.
-        assertParseArgsThrows("Expected service name.", "--kill", "service");
+        // SQL command format errors.
+        assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
+
+        assertParseArgsThrows("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT,
+            "--kill", "sql", "not_sql_id");
     }
 
     /**

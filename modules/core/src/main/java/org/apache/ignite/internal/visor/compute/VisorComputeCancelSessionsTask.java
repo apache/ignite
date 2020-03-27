@@ -37,7 +37,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cancels given tasks sessions.
+ * Cancels given task session.
  */
 @GridInternal
 @GridVisorManagementTask
@@ -66,7 +66,7 @@ public class VisorComputeCancelSessionsTask extends VisorOneNodeTask<VisorComput
     }
 
     /**
-     * Job that cancel tasks.
+     * Job that cancel task.
      */
     private static class VisorComputeCancelSessionsJob extends VisorJob<VisorComputeCancelSessionsTaskArg, Boolean> {
         /** */
