@@ -47,7 +47,7 @@ public class SchemaIndexCacheStat {
     /**
      * Adds type to indexed types.
      *
-     * @param type
+     * @param type Type.
      */
     public void addType(QueryTypeDescriptorImpl type) {
         types.put(type.name(), type);
