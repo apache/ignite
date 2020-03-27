@@ -30,12 +30,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
@@ -50,6 +55,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -68,6 +74,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
@@ -77,9 +84,14 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTA
 import static org.apache.ignite.TestStorageUtils.corruptDataEntry;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
@@ -104,16 +116,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Special word for defining any char sequence from special word to the end of line in golden copy of help output */
     private static final String ANY = "<!any!>";
+    /** Error stack trace prefix. */
+    protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
      * Very basic tests for running the command in different enviroment which other command are running in.
      */
+    @Test
     public void testFindAndDeleteGarbage() {
         Ignite ignite = crd;
 
         injectTestSystemOut();
 
-        ignite.createCaches(Arrays.asList(
+        ignite.createCaches(asList(
             new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
             new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
 
@@ -135,6 +150,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Smoke test for --tx --info command.
      */
+    @Test
     public void testTransactionInfo() throws Exception {
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL).setBackups(1).setWriteSynchronizationMode(FULL_SYNC));
@@ -183,6 +199,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Smoke test for historical mode of --tx --info command.
      */
+    @Test
     public void testTransactionHistoryInfo() throws Exception {
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL).setBackups(2).setWriteSynchronizationMode(FULL_SYNC));
@@ -247,6 +264,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheHelp() throws Exception {
         Set<String> skippedCommands = new HashSet<>();
         skippedCommands.add(RECHECK_DELAY.toString());
@@ -277,6 +295,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
@@ -290,6 +309,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testHelp() throws Exception {
         injectTestSystemOut();
 
@@ -344,6 +364,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testPrintTimestampAtEndsOfExecution() {
         injectTestSystemOut();
 
@@ -358,6 +379,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheIdleVerify() {
         IgniteEx ignite = crd;
 
@@ -379,6 +401,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheIdleVerifyNodeFilter() {
         IgniteEx ignite = crd;
 
@@ -404,6 +427,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Tests that both update counter and hash conflicts are detected.
      */
+    @Test
     public void testCacheIdleVerifyTwoConflictTypes() {
         IgniteEx ignite = crd;
 
@@ -431,6 +455,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
         IgniteEx ignite = crd;
 
@@ -483,6 +508,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDump() throws Exception {
         IgniteEx ignite = crd;
 
@@ -540,6 +566,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Common method for idle_verify tests with multiple options.
      */
+    @Test
     public void testCacheIdleVerifyMultipleCacheFilterOptions()
             throws Exception {
         IgniteEx ignite = crd;
@@ -711,6 +738,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedData() throws Exception {
         IgniteEx ignite = crd;
 
@@ -726,6 +754,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyForCorruptedData() throws Exception {
         IgniteEx ignite = crd;
 
@@ -779,6 +808,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnSystemCache() throws Exception {
         int parts = 32;
 
@@ -843,6 +873,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
         IgniteEx ignite = crd;
 
@@ -856,6 +887,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
         IgniteEx ignite = crd;
 
@@ -893,6 +925,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
         IgniteEx ignite = crd;
 
@@ -943,6 +976,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheContention() throws Exception {
         int cnt = 10;
 
@@ -1014,6 +1048,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheGroups() {
         Ignite ignite = crd;
 
@@ -1034,6 +1069,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheAffinity() {
         Ignite ignite = crd;
 
@@ -1058,36 +1094,43 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheConfigNoOutputFormat() {
         testCacheConfig(null, 1, 1);
     }
 
     /** */
+    @Test
     public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() {
         testCacheConfigSingleLineOutputFormat(1, 1);
     }
 
     /** */
+    @Test
     public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() {
         testCacheConfigSingleLineOutputFormat(2, 1);
     }
 
     /** */
+    @Test
     public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() {
         testCacheConfigSingleLineOutputFormat(2, 100);
     }
 
     /** */
+    @Test
     public void testCacheConfigMultiLineOutputFormatSingleNodeSingleCache() {
         testCacheConfigMultiLineOutputFormat(1, 1);
     }
 
     /** */
+    @Test
     public void testCacheConfigMultiLineOutputFormatTwoNodeSingleCache() {
         testCacheConfigMultiLineOutputFormat(2, 1);
     }
 
     /** */
+    @Test
     public void testCacheConfigMultiLineOutputFormatTwoNodeManyCaches() {
         testCacheConfigMultiLineOutputFormat(2, 100);
     }
@@ -1158,6 +1201,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheDistribution() {
         Ignite ignite = crd;
 
@@ -1199,6 +1243,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /** */
+    @Test
     public void testCacheResetLostPartitions() {
         Ignite ignite = crd;
 
@@ -1243,6 +1288,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Test execution of --wal print command.
      */
+    @Test
     public void testUnusedWalPrint() {
         Ignite ignite = crd;
 
@@ -1274,6 +1320,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     /**
      * Test execution of --wal delete command.
      */
+    @Test
     public void testUnusedWalDelete() {
         Ignite ignite = crd;
 
@@ -1390,6 +1437,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * Test is that when the --help control.sh command is executed, output will contain non-experimental commands. In
      * case system property {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = {@code true}.
      */
+    @Test
     public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalTrue() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
 
@@ -1402,6 +1450,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
      * {@code false}.
      */
+    @Test
     public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalFalse() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "false");
 
@@ -1412,6 +1461,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * Test for contains of experimental commands in output of the --help
      * control.sh command.
      */
+    @Test
     public void testContainsExperimentalCmdInHelpOutput() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
 
@@ -1422,6 +1472,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * Test for not contains of experimental commands in output of the --help
      * control.sh command.
      */
+    @Test
     public void testNotContainsExperimentalCmdInHelpOutput() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "false");
 
@@ -1433,6 +1484,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
      * {@code false}, a warning will be displayed instead.
      * */
+    @Test
     public void testContainsWarnInsteadExecExperimentalCmdWhenEnableExperimentalFalse() {
         withSystemProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "false");
 
@@ -1455,6 +1507,90 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
                 assertContains(log, testOut.toString(), warning);
             }));
+    }
+
+    /**
+     * Test checks that there will be no error when executing the command with
+     * option {@link CommonArgParser#CMD_VERBOSE}.
+     */
+    @Test
+    public void testCorrectExecCmdWithVerboseInDiffParamsOrder() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_OK;
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE.text()));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for incorrect arguments will be output
+     * only if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     */
+    @Test
+    public void testErrInvalidArgumentsWithVerbose() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_INVALID_ARGUMENTS;
+        String uuid = UUID.randomUUID().toString();
+
+        assertEquals(resCode, execute(BASELINE.text(), uuid));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, uuid));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for connection error will be output only
+     * if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     */
+    @Test
+    public void testErrConnectionWithVerbose() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_CONNECTION_FAILED;
+        String uuid = UUID.randomUUID().toString();
+
+        assertEquals(resCode, execute(BASELINE.text(), "--host", uuid));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, "--host", uuid));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for unexpected error will be output with or
+     * without {@link CommonArgParser#CMD_VERBOSE} flag.
+     */
+    @Test
+    public void testErrUnexpectedWithWithoutVerbose() {
+        injectTestSystemOut();
+
+        Logger logger = CommandHandler.initLogger(null);
+        logger.addHandler(new StreamHandler(System.out, new Formatter() {
+            /** {@inheritDoc} */
+            @Override public String format(LogRecord record) {
+                String msg = record.getMessage();
+
+                if (msg.contains("Cluster state:"))
+                    throw new Error();
+
+                return msg + "\n";
+            }
+        }));
+
+        int resCode = EXIT_CODE_UNEXPECTED_ERROR;
+        CommandHandler cmd = new CommandHandler(logger);
+
+        assertEquals(resCode, execute(cmd, BASELINE.text()));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(cmd, BASELINE.text(), CMD_VERBOSE));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
     }
 
     /**

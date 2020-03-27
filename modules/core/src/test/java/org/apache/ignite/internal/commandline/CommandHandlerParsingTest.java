@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -40,11 +39,15 @@ import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
@@ -77,6 +80,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * validate_indexes command arguments parsing and validation
      */
+    @Test
     public void testValidateIndexArguments() {
         //happy case for all parameters
         try {
@@ -84,7 +88,7 @@ public class CommandHandlerParsingTest extends TestCase {
             int expectedCheckThrough = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
                 VALIDATE_INDEXES.text(),
                 "cache1, cache2",
@@ -113,7 +117,7 @@ public class CommandHandlerParsingTest extends TestCase {
             int expectedParam = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
                 VALIDATE_INDEXES.text(),
                 nodeId.toString(),
@@ -138,7 +142,7 @@ public class CommandHandlerParsingTest extends TestCase {
 
         try {
             parseArgs(
-                Arrays.asList(
+                asList(
                     CACHE.text(),
                     VALIDATE_INDEXES.text(),
                     CHECK_FIRST.toString(),
@@ -153,7 +157,7 @@ public class CommandHandlerParsingTest extends TestCase {
         }
 
         try {
-            parseArgs(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
+            parseArgs(asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
 
             fail("Expected exception hasn't been thrown");
         }
@@ -162,9 +166,8 @@ public class CommandHandlerParsingTest extends TestCase {
         }
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
         String delete = FindAndDeleteGarbageArg.DELETE.toString();
@@ -205,7 +208,7 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>... optional) {
-        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(asList(optional), (x) -> x.get2());
 
         ArrayList<List<String>> res = new ArrayList<>();
 
@@ -235,7 +238,7 @@ public class CommandHandlerParsingTest extends TestCase {
 
             T removed = sourceCopy.remove(i);
 
-            generateAllCombinations(Collections.singletonList(removed), sourceCopy, stopFunc, res);
+            generateAllCombinations(singletonList(removed), sourceCopy, stopFunc, res);
         }
 
         return res;
@@ -274,10 +277,11 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation for the SSL arguments.
      */
+    @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.DATA_CENTER_REPLICATION)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (requireArgs(cmd))
+                continue;
 
             try {
                 parseArgs(asList("--truststore"));
@@ -308,10 +312,11 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation for user and password arguments.
      */
+    @Test
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.DATA_CENTER_REPLICATION)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (requireArgs(cmd))
+                continue;
 
             try {
                 parseArgs(asList("--user"));
@@ -342,8 +347,9 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation  of WAL commands.
      */
+    @Test
     public void testParseAndValidateWalActions() {
-        ConnectionAndSslParameters args = parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
+        ConnectionAndSslParameters args = parseArgs(asList(WAL.text(), WAL_PRINT));
 
         assertEquals(WAL.command(), args.command());
 
@@ -353,7 +359,7 @@ public class CommandHandlerParsingTest extends TestCase {
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = parseArgs(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
+        args = parseArgs(asList(WAL.text(), WAL_DELETE, nodes));
 
         arg = ((WalCommands)args.command()).arg();
 
@@ -362,7 +368,7 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(nodes, arg.get2());
 
         try {
-            parseArgs(Collections.singletonList(WAL.text()));
+            parseArgs(singletonList(WAL.text()));
 
             fail("expected exception: invalid arguments for --wal command");
         }
@@ -371,7 +377,7 @@ public class CommandHandlerParsingTest extends TestCase {
         }
 
         try {
-            parseArgs(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
+            parseArgs(asList(WAL.text(), UUID.randomUUID().toString()));
 
             fail("expected exception: invalid arguments for --wal command");
         }
@@ -383,6 +389,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests that the auto confirmation flag was correctly parsed.
      */
+    @Test
     public void testParseAutoConfirmationFlag() {
         for (CommandList cmd : CommandList.values()) {
             if (cmd != CommandList.DEACTIVATE
@@ -420,7 +427,7 @@ public class CommandHandlerParsingTest extends TestCase {
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(Arrays.asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(asList("c_id1", "c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
@@ -447,10 +454,11 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests host and port arguments. Tests connection settings arguments.
      */
+    @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.DATA_CENTER_REPLICATION)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (requireArgs(cmd))
+                continue;
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
 
@@ -499,6 +507,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * test parsing dump transaction arguments
      */
+    @Test
     public void testTransactionArguments() {
         ConnectionAndSslParameters args;
 
@@ -586,12 +595,11 @@ public class CommandHandlerParsingTest extends TestCase {
         arg = ((TxCommands)args.command()).arg();
 
         assertNull(arg.getProjection());
-        assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+        assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
     public void testValidateIndexesNotAllowedForSystemCache() {
         GridTestUtils.assertThrows(
             null,
@@ -601,9 +609,8 @@ public class CommandHandlerParsingTest extends TestCase {
         );
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
     public void testIdleVerifyWithCheckCrcNotAllowedForSystemCache() {
         GridTestUtils.assertThrows(
             null,
@@ -651,6 +658,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * As invalid values use values that produce NumberFormatException and out-of-range values. Also ensure that in case
      * of appropriate parameters parseArgs() doesn't throw any exceptions.
      */
+    @Test
     public void testPartitionReconciliationArgumentsValidation() {
         assertParseArgsThrows("The repair algorithm should be specified. The following values can be used: "
             + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition-reconciliation", "--repair");
@@ -659,7 +667,7 @@ public class CommandHandlerParsingTest extends TestCase {
                 + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition-reconciliation", "--repair",
             "invalid-repair-alg");
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--fix-alg", "PRIMARY"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--fix-alg", "PRIMARY"));
 
         // --load-factor
         assertParseArgsThrows("The parallelism level should be specified.",
@@ -674,11 +682,11 @@ public class CommandHandlerParsingTest extends TestCase {
         assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "-1"),
             "--cache", "partition-reconciliation", "--parallelism", "-1");
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--parallelism", "8"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--parallelism", "8"));
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--parallelism", "1"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--parallelism", "1"));
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--parallelism", "0"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--parallelism", "0"));
 
         // --batch-size
         assertParseArgsThrows("The batch size should be specified.",
@@ -690,7 +698,7 @@ public class CommandHandlerParsingTest extends TestCase {
         assertParseArgsThrows("Invalid batch size: 0. Integer value greater than zero should be used.",
             "--cache", "partition-reconciliation", "--batch-size", "0");
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--batch-size", "10"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--batch-size", "10"));
 
         // --recheck-attempts
         assertParseArgsThrows("The recheck attempts should be specified.",
@@ -702,9 +710,9 @@ public class CommandHandlerParsingTest extends TestCase {
         assertParseArgsThrows("Invalid recheck attempts: 6. Integer value between 1 (inclusive) and 5 (exclusive) should be used.",
             "--cache", "partition-reconciliation", "--recheck-attempts", "6");
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-attempts", "1"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-attempts", "1"));
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-attempts", "5"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-attempts", "5"));
 
         // --recheck-delay
         assertParseArgsThrows("The recheck delay should be specified.",
@@ -716,9 +724,25 @@ public class CommandHandlerParsingTest extends TestCase {
         assertParseArgsThrows("Invalid recheck delay: 101. Integer value between 0 (inclusive) and 100 (exclusive) should be used.",
             "--cache", "partition-reconciliation", "--recheck-delay", "101");
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-delay", "0"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-delay", "0"));
 
-        parseArgs(Arrays.asList("--cache", "partition-reconciliation", "--recheck-delay", "50"));
+        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-delay", "50"));
+    }
+
+    /**
+     * Test checks that option {@link CommonArgParser#CMD_VERBOSE} is parsed
+     * correctly and if it is not present, it takes the default value
+     * {@code false}.
+     */
+    @Test
+    public void testParseVerboseOption() {
+        for (CommandList cmd : CommandList.values()) {
+            if (requireArgs(cmd))
+                continue;
+
+            assertFalse(cmd.toString(), parseArgs(singletonList(cmd.text())).verbose());
+            assertTrue(cmd.toString(), parseArgs(asList(cmd.text(), CMD_VERBOSE)).verbose());
+        }
     }
 
     /**
@@ -756,5 +780,16 @@ public class CommandHandlerParsingTest extends TestCase {
         result.addHandler(CommandHandler.setupStreamHandler());
 
         return result;
+    }
+
+    /**
+     * Return {@code True} if cmd there are required arguments.
+     *
+     * @return {@code True} if cmd there are required arguments.
+     */
+    private boolean requireArgs(@Nullable CommandList cmd) {
+        return cmd == CommandList.CACHE ||
+            cmd == CommandList.WAL ||
+            cmd == CommandList.DATA_CENTER_REPLICATION;
     }
 }
