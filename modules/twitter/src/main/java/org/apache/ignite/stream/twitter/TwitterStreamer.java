@@ -124,9 +124,7 @@ public class TwitterStreamer<K, V> extends StreamAdapter<String, K, V> {
 
         for (int i = 0; i < threadsCount; i++) {
             Callable<Boolean> task = new Callable<Boolean>() {
-
-                @Override
-                public Boolean call() {
+                @Override public Boolean call() {
                     while (true) {
                         try {
                             String tweet = tweetQueue.take();
