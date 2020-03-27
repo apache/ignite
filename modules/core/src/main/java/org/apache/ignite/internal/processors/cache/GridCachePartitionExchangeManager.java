@@ -287,11 +287,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Histogram of blocking PME durations. */
     private volatile HistogramMetricImpl blockingDurationHistogram;
 
-    /** Metric that shows whether cluster is in fully rebalanced state. */
-    private volatile BooleanMetricImpl rebalanced;
-
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
+
+    /** Metric that shows whether cluster is in fully rebalanced state. */
+    private volatile BooleanMetricImpl rebalanced;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
