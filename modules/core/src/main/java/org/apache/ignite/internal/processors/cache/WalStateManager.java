@@ -291,13 +291,28 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Change WAL mode.
+     *
+     * @param cacheNames Cache names.
+     * @param enabled Enabled flag.
+     * @return Future completed when operation finished.
+     */
+    public IgniteInternalFuture<Boolean> changeWalMode(Collection<String> cacheNames, boolean enabled) {
+        cctx.tm().checkEmptyTransactions(() ->
+            String.format("Cache WAL mode cannot be changed within lock or transaction " +
+                    "[cacheNames=%s, walEnabled=%s]", cacheNames, enabled));
+
+        return init(cacheNames, enabled);
+    }
+
+    /**
      * Initiate WAL mode change operation.
      *
      * @param cacheNames Cache names.
      * @param enabled Enabled flag.
      * @return Future completed when operation finished.
      */
-    public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
+    private IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
         if (!enabled && prohibitDisabling)
             return errorFuture("WAL disabling is prohibited.");
 

@@ -383,6 +383,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     protected ExecutorService idxExecSvc;
 
+    /** Thread pool for create/rebuild indexes. */
+    @GridToStringExclude
+    private ExecutorService buildIdxExecSvc;
+
     /** */
     @GridToStringExclude
     protected IgniteStripedThreadPoolExecutor callbackExecSvc;
@@ -490,6 +494,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param restExecSvc REST executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
+     * @param buildIdxExecSvc Create/rebuild indexes executor service.
      * @param callbackExecSvc Callback executor service.
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
@@ -519,6 +524,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
         @Nullable ExecutorService idxExecSvc,
+        @Nullable ExecutorService buildIdxExecSvc,
         IgniteStripedThreadPoolExecutor callbackExecSvc,
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
@@ -550,6 +556,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.restExecSvc = restExecSvc;
         this.affExecSvc = affExecSvc;
         this.idxExecSvc = idxExecSvc;
+        this.buildIdxExecSvc = buildIdxExecSvc;
         this.callbackExecSvc = callbackExecSvc;
         this.qryExecSvc = qryExecSvc;
         this.schemaExecSvc = schemaExecSvc;
@@ -1316,5 +1323,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor() {
         return durableBackgroundTasksProcessor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService buildIndexExecutorService() {
+        return buildIdxExecSvc;
     }
 }

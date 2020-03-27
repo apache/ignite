@@ -965,6 +965,20 @@ namespace Apache.Ignite.Core.Cache
             Justification = "Expensive operation.")]
         ICacheMetrics GetLocalMetrics();
 
+        
+        /// <summary>
+        /// Sets statistics (metrics) enabled flag cluster wide for this cache.
+        /// </summary>
+        /// <param name="enabled">Enabled flag</param>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate",
+            Justification = "Expensive operation.")]
+        void EnableStatistics(bool enabled);
+
+        /// <summary>
+        /// Clears cluster statistics for this cache.
+        /// </summary>
+        void ClearStatistics();
+
         /// <summary>
         /// Rebalances cache partitions. This method is usually used when rebalanceDelay configuration parameter
         /// has non-zero value. When many nodes are started or stopped almost concurrently,

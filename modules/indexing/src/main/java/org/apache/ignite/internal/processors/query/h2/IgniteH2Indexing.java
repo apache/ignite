@@ -158,6 +158,7 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -166,8 +167,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -189,7 +188,11 @@ import org.h2.util.JdbcUtils;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
@@ -445,7 +448,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 H2RowCache cache = rowCache.forGroup(cacheInfo.groupId());
 
-                return new H2TreeIndex(
+                return H2TreeIndex.createIndex(
                     cacheInfo.cacheContext(),
                     cache,
                     tbl,
@@ -456,11 +459,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     wrappedCols,
                     inlineSize,
                     segments,
-                    qryCtxRegistry
+                    qryCtxRegistry,
+                    log
                 );
             }
             else
-                return new H2TreeClientIndex(tbl, name, pk, unwrappedCols, inlineSize);
+                return H2TreeClientIndex.createIndex(tbl, name, pk, unwrappedCols, inlineSize, log);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -575,7 +579,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry)
                         );
 
-                        return new H2FieldsIterator(rs, mvccTracker, conn);
+                        return new H2FieldsIterator(rs, mvccTracker, conn, qryParams.pageSize(),
+                            log, IgniteH2Indexing.this,
+                            qctx, qryParams.lazy());
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
                         conn.recycle();
@@ -615,7 +621,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tx != null) {
             int remaining = (int)tx.remainingTime();
 
-            return remaining > 0 && qryTimeout > 0 ? Math.min(remaining, qryTimeout) : Math.max(remaining, qryTimeout);
+            return remaining > 0 && qryTimeout > 0 ? min(remaining, qryTimeout) : max(remaining, qryTimeout);
         }
 
         return qryTimeout;
@@ -797,7 +803,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
         int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         if (cancel != null)
-            cancel.set(() -> cancelStatement(stmt));
+            cancel.add(() -> cancelStatement(stmt));
 
         Session ses = session(conn);
 
@@ -1189,7 +1195,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     @Override public Iterator<List<?>> iterator() {
                         return new IgniteSingletonIterator<>(singletonList(updRes.counter()));
                     }
-                }, cancel));
+                }, cancel, true, false));
             }
         }
         catch (IgniteException e) {
@@ -1286,9 +1292,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (select.forUpdate() && inTx)
                 iter = lockSelectedRows(iter, mvccCctx, timeout, qryParams.pageSize());
 
-            QueryCursorImpl<List<?>> cursor = qryId != null
-                ? new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryId)
-                : new QueryCursorImpl<>(iter, cancel);
+            RegisteredQueryCursor<List<?>> cursor =
+                new RegisteredQueryCursor<>(iter, cancel, runningQueryManager(), qryParams.lazy(), qryId);
+
+            cancel.add(cursor::cancel);
 
             cursor.fieldsMeta(select.meta());
 
@@ -1344,7 +1351,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             timeout
         );
 
-        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(iter, cancel);
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(iter, cancel, true, parseRes.queryParameters().lazy());
 
         cursor.fieldsMeta(select.meta());
 
@@ -1631,7 +1638,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw new IgniteException(e);
                     }
                 }
-            }, cancel);
+            }, cancel, true, selectParseRes.queryParameters().lazy());
         }
 
         return plan.iteratorForTransaction(connMgr, cur);
@@ -1938,15 +1945,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        assert nonNull(cctx);
+
         // No data in fresh in-memory cache.
         if (!cctx.group().persistenceEnabled())
             return null;
 
         IgnitePageStoreManager pageStore = cctx.shared().pageStore();
 
-        assert pageStore != null;
+        assert nonNull(pageStore);
 
         SchemaIndexCacheVisitorClosure clo;
+
+        String cacheName = cctx.name();
 
         if (!pageStore.hasIndexStore(cctx.groupId())) {
             // If there are no index store, rebuild all indexes.
@@ -1956,10 +1967,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // Otherwise iterate over tables looking for missing indexes.
             IndexRebuildPartialClosure clo0 = new IndexRebuildPartialClosure();
 
-            for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cctx.name())) {
-                assert tblDesc.table() != null;
+            for (H2TableDescriptor tblDesc : schemaMgr.tablesForCache(cacheName)) {
+                GridH2Table tbl = tblDesc.table();
 
-                tblDesc.table().collectIndexesForPartialRebuild(clo0);
+                assert nonNull(tbl);
+
+                tbl.collectIndexesForPartialRebuild(clo0);
             }
 
             if (clo0.hasIndexes())
@@ -1969,40 +1982,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // Closure prepared, do rebuild.
-        final GridWorkerFuture<?> fut = new GridWorkerFuture<>();
+        markIndexRebuild(cacheName, true);
 
-        markIndexRebuild(cctx.name(), true);
+        GridFutureAdapter<Void> rebuildCacheIdxFut = new GridFutureAdapter<>();
 
-        if (cctx.group().metrics() != null)
-            cctx.group().metrics().addIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+        rebuildCacheIdxFut.listen(fut -> {
+            Throwable err = fut.error();
 
-        GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
-            @Override protected void body() {
+            if (isNull(err)) {
                 try {
-                    rebuildIndexesFromHash0(cctx, clo);
-
-                    markIndexRebuild(cctx.name(), false);
-
-                    fut.onDone();
+                    markIndexRebuild(cacheName, false);
                 }
-                catch (Exception e) {
-                    fut.onDone(e);
-                }
-                catch (Throwable e) {
-                    U.error(log, "Failed to rebuild indexes for cache: " + cctx.name(), e);
+                catch (Throwable t) {
+                    err = t;
 
-                    fut.onDone(e);
-
-                    throw e;
+                    rebuildCacheIdxFut.onDone(t);
                 }
             }
-        };
 
-        fut.setWorker(worker);
+            if (nonNull(err))
+                U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
+        });
 
-        ctx.getExecutorService().execute(worker);
+        rebuildIndexesFromHash0(cctx, clo, rebuildCacheIdxFut);
 
-        return fut;
+        return rebuildCacheIdxFut;
     }
 
     /**
@@ -2010,13 +2014,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param clo Closure.
-     * @throws IgniteCheckedException If failed.
+     * @param rebuildIdxFut Future for rebuild indexes.
      */
-    protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException {
-        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
-
-        visitor.visit(clo);
+    protected void rebuildIndexesFromHash0(
+        GridCacheContext cctx,
+        SchemaIndexCacheVisitorClosure clo,
+        GridFutureAdapter<Void> rebuildIdxFut
+    ) {
+        new SchemaIndexCacheVisitorImpl(cctx, null, null, rebuildIdxFut).visit(clo);
     }
 
     /**
@@ -2647,7 +2652,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 res.throwIfError();
 
                 QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
-                    (singletonList(res.counter())), cancel, false);
+                    (singletonList(res.counter())), cancel, false, false);
 
                 resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2669,7 +2674,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             res.throwIfError();
 
             QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(singletonList
-                (singletonList(res.counter())), cancel, false);
+                (singletonList(res.counter())), cancel, false, false);
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -2861,7 +2866,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         throw new IgniteException(e);
                     }
                 }
-            }, cancel);
+            }, cancel, true, qryParams.lazy());
         }
 
         int pageSize = qryParams.updateBatchSize();

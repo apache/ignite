@@ -332,7 +332,7 @@ public interface GridQueryIndexing {
      * @param cctx Cache context.
      * @return Future completed when index rebuild finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
+    IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Mark as rebuild needed for the given cache.

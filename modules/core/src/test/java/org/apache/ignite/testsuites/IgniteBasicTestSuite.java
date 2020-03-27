@@ -100,6 +100,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWrit
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
@@ -197,6 +198,7 @@ import org.junit.runners.Suite;
     IgniteLocalNodeMapBeforeStartTest.class,
     OdbcConfigurationValidationSelfTest.class,
     OdbcEscapeSequenceSelfTest.class,
+    SqlListenerUtilsTest.class,
 
     DynamicProxySerializationMultiJvmSelfTest.class,
 
