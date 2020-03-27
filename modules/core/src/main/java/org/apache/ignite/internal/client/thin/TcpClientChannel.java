@@ -319,6 +319,8 @@ class TcpClientChannel implements ClientChannel {
                 }
             }, RECEIVER_THREAD_PREFIX + sockInfo);
 
+            receiverThread.setDaemon(true);
+
             receiverThread.start();
         }
     }

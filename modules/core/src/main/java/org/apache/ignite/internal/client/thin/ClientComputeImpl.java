@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientFeature;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ClientOperation.COMPUTE_TASK_EXECUTE;
@@ -205,7 +207,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
             Object res = payload == null ? null : utils.readObject(new BinaryHeapInputStream(payload), false);
 
-            ClientComputeTask<Object> task = addTask(ch, rsrcId);
+            ClientComputeTask<Object> task = removeTask(ch, rsrcId);
 
             if (task != null) // If channel is closed concurrently, task is already done with "channel closed" reason.
                 task.fut.onDone(res);
@@ -215,7 +217,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /** {@inheritDoc} */
     @Override public void acceptError(ClientChannel ch, ClientOperation op, long rsrcId, Throwable err) {
         if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
-            ClientComputeTask<Object> task = addTask(ch, rsrcId);
+            ClientComputeTask<Object> task = removeTask(ch, rsrcId);
 
             if (task != null) // If channel is closed concurrently, task is already done with "channel closed" reason.
                 task.fut.onDone(err);
@@ -253,11 +255,29 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
      * @param ch Client channel.
      * @param taskId Task id.
      */
-    private void removeTask(ClientChannel ch, long taskId) {
+    private ClientComputeTask<Object> removeTask(ClientChannel ch, long taskId) {
         Map<Long, ClientComputeTask<Object>> chTasks = activeTasks.get(ch);
 
         if (!F.isEmpty(chTasks))
-            chTasks.remove(taskId);
+            return chTasks.remove(taskId);
+
+        return null;
+    }
+
+    /**
+     * Gets tasks future for active tasks started by client.
+     *
+     * @return Map of active tasks keyed by their unique per client task ID.
+     */
+    Map<IgniteUuid, IgniteInternalFuture<?>> activeTaskFutures() {
+        Map<IgniteUuid, IgniteInternalFuture<?>> res = new HashMap<>();
+
+        for (Map.Entry<ClientChannel, Map<Long, ClientComputeTask<Object>>> chTasks : activeTasks.entrySet()) {
+            for (Map.Entry<Long, ClientComputeTask<Object>> task : chTasks.getValue().entrySet())
+                res.put(new IgniteUuid(chTasks.getKey().serverNodeId(), task.getKey()), task.getValue().fut);
+        }
+
+        return res;
     }
 
     /**
