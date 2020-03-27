@@ -925,7 +925,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
      * @param node Node.
      * @param sql Statement.
      */
-    public static List<List<?>> execute(Ignite node, String sql, Object... args) {
+    private List<List<?>> execute(Ignite node, String sql, Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql)
             .setArgs(args)
             .setSchema("PUBLIC");

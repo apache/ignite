@@ -56,6 +56,16 @@ public class SqlKillQueryCommand implements SqlCommand {
         return this;
     }
 
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
+    }
+
     /**
      * Parse global query id.
      *
