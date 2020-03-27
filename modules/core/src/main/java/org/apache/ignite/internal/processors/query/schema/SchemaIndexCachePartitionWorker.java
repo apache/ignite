@@ -38,6 +38,8 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -67,13 +69,16 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final GridDhtLocalPartition locPart;
 
     /** Worker future. */
-    private final GridFutureAdapter<Void> fut;
+    private final GridFutureAdapter<SchemaIndexCacheStat> fut;
 
     /** Row filter. */
     private final SchemaIndexCacheFilter rowFilter;
 
     /** Count of partitions to be processed. */
     private final AtomicInteger partsCnt;
+
+    /** Object for collecting statistics about index update. */
+    @Nullable private final SchemaIndexCacheStat indexCacheStat;
 
     /**
      * Constructor.
@@ -93,7 +98,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         AtomicBoolean stop,
         SchemaIndexOperationCancellationToken cancel,
         SchemaIndexCacheVisitorClosure clo,
-        GridFutureAdapter<Void> fut,
+        GridFutureAdapter<SchemaIndexCacheStat> fut,
         @Nullable SchemaIndexCacheFilter rowFilter,
         AtomicInteger partsCnt
     ) {
@@ -118,6 +123,8 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         this.partsCnt = partsCnt;
 
         this.rowFilter = rowFilter;
+
+        indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
     }
 
     /** {@inheritDoc} */
@@ -197,6 +204,9 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                     if (locPart.state() == RENTING)
                         break;
                 }
+
+                if (nonNull(indexCacheStat))
+                    indexCacheStat.scanned += cntr;
             }
             finally {
                 if (locked)
@@ -227,7 +237,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(rowFilter, clo);
+                    entry.updateIndex(rowFilter, clo, indexCacheStat);
                 }
                 finally {
                     entry.touch();

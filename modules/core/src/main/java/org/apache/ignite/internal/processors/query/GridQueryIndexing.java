@@ -465,7 +465,7 @@ public interface GridQueryIndexing {
     Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
 
     /**
-     * Return index size by schema name and index name.
+     * Return index size by schema name and index name.\
      *
      * @param schemaName Schema name.
      * @param idxName Index name.
