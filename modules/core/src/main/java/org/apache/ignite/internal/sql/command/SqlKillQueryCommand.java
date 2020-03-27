@@ -56,16 +56,6 @@ public class SqlKillQueryCommand implements SqlCommand {
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String schemaName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void schemaName(String schemaName) {
-        // No-op.
-    }
-
     /**
      * Parse global query id.
      *
@@ -94,6 +84,16 @@ public class SqlKillQueryCommand implements SqlCommand {
         else
             throw SqlParserUtils.error(lex, "Expected ASYNC token or global query id. "
                 + EXPECTED_GLOBAL_QRY_ID_FORMAT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
     }
 
     /**
