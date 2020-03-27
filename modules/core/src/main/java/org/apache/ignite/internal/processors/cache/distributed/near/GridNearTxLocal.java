@@ -3166,7 +3166,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     key,
                     readThrough,
                     /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
-                        || (optimistic() && serializable()),
+                        || (optimistic() && serializable() && readThrough),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -3200,7 +3200,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     keys,
                     readThrough,
                     /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
-                        || (optimistic() && serializable()),
+                        || (optimistic() && serializable() && readThrough),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
