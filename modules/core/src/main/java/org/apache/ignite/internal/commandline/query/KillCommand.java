@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.commandline.query;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -30,13 +28,19 @@ import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
+import org.apache.ignite.internal.visor.tx.VisorTxTask;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.TRANSACTION;
 
 /**
  * control.sh kill command.
@@ -44,6 +48,7 @@ import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUT
  * @see KillSubcommand
  * @see ServiceMXBean
  * @see ComputeMXBean
+ * @see TransactionsMXBean
  */
 public class KillCommand implements Command<Object> {
     /** Command argument. */
@@ -103,6 +108,16 @@ public class KillCommand implements Command<Object> {
 
                 break;
 
+            case TRANSACTION:
+                String xid = argIter.nextArg("Expected transaction id.");
+
+                taskArgs = new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, xid, null,
+                    null, null);
+
+                taskName = VisorTxTask.class.getName();
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
@@ -110,17 +125,14 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Map<String, String> params = new HashMap<>();
+        Command.usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
+            COMPUTE.toString(), "session_id");
 
-        params.put("session_id", "Session identifier.");
+        Command.usage(log, "Kill service by name:", KILL, singletonMap("name", "Service name."),
+            SERVICE.toString(), "name");
 
-        Command.usage(log, "Kill compute task by session id:", KILL, params, COMPUTE.toString(),
-            "session_id");
-
-        params.clear();
-        params.put("name", "Service name.");
-
-        Command.usage(log, "Kill service by name:", KILL, params, SERVICE.toString(), "name");
+        Command.usage(log, "Kill transaction by xid:", KILL, singletonMap("xid", "Transaction identifier."),
+            TRANSACTION.toString(), "xid");
     }
 
     /** {@inheritDoc} */

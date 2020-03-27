@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
+import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
@@ -415,6 +417,8 @@ public class CommandProcessor {
                 processKillQueryCommand((SqlKillQueryCommand) cmdNative);
             else if (cmdNative instanceof SqlKillComputeTaskCommand)
                 processKillComputeTaskCommand((SqlKillComputeTaskCommand) cmdNative);
+            else if (cmdNative instanceof SqlKillTransactionCommand)
+                processKillTxCommand((SqlKillTransactionCommand) cmdNative);
             else if (cmdNative instanceof SqlKillServiceCommand)
                 processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
             else
@@ -502,6 +506,15 @@ public class CommandProcessor {
      */
     private void processKillComputeTaskCommand(SqlKillComputeTaskCommand cmd) {
         new ComputeMXBeanImpl(ctx).cancel(cmd.getSessionId());
+    }
+
+    /**
+     * Process kill transaction command.
+     *
+     * @param command Command.
+     */
+    private void processKillTxCommand(SqlKillTransactionCommand command) {
+        new TransactionsMXBeanImpl(ctx).cancel(command.getXid());
     }
 
     /**

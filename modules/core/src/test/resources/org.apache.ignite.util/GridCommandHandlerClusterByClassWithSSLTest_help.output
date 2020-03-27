@@ -80,6 +80,12 @@ This utility can do the following commands:
     Parameters:
       name  - Service name.
 
+  Kill transaction by xid:
+    control.(sh|bat) --kill TRANSACTION xid
+
+    Parameters:
+      xid  - Transaction identifier.
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
