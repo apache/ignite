@@ -180,8 +180,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             }
             else {
                 proc.initFut.listen(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>>>() {
-                    @Override
-                    public void apply(IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
+                    @Override public void apply(
+                        IgniteInternalFuture<IgniteBiTuple<Process, HadoopProcessDescriptor>> f) {
                         try {
                             f.get();
 

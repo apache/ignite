@@ -591,8 +591,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
                 UserGroupInformation ugi = HadoopUtils.createUGI(job.info().user(), job.info().credentials());
 
                 return ugi.doAs(new PrivilegedExceptionAction<T>() {
-                    @Override
-                    public T run() throws Exception {
+                    @Override public T run() throws Exception {
                         return c.call();
                     }
                 });
