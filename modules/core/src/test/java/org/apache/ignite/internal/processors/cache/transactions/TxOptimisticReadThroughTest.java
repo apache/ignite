@@ -45,7 +45,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
     /** Shared read/write-through store. */
-    private static Map<Object, Object> storeMap = new ConcurrentHashMap<>();
+    private static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -72,34 +72,30 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
 
         int key = primaryKey(grid(0).cache("tx"));
 
-        {
-            IgniteCache<Object, Object> cache = grid(0).cache("tx");
+        IgniteCache<Object, Object> cache = grid(0).cache("tx");
 
-            cache.put(key, 1);
+        cache.put(key, 1);
 
-            cache.localClear(key);
+        cache.localClear(key);
 
-            assertEquals(1, cache.get(key));
+        assertEquals(1, cache.get(key));
+
+        cache = grid(1).cache("tx");
+
+        try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+            cache.get(key);
+
+            cache.put(key, 2);
+
+            tx.commit();
         }
 
-        {
-            IgniteCache<Object, Object> cache = grid(1).cache("tx");
+        assertEquals(2, grid(1).cache("tx").get(key));
 
-            try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                cache.get(key);
-
-                cache.put(key, 2);
-
-                tx.commit();
-            }
-
-            assertEquals(2, grid(1).cache("tx").get(key));
-
-            assertEquals(2, grid(0).cache("tx").get(key));
-        }
+        assertEquals(2, grid(0).cache("tx").get(key));
     }
 
-    /** Shared cache read/write-through store factory. */
+    /** Shared read/write-through store factory. */
     private static class TestStoreFactory implements Factory<CacheStore<Object, Object>> {
         /** {@inheritDoc} */
         @Override public CacheStore<Object, Object> create() {
