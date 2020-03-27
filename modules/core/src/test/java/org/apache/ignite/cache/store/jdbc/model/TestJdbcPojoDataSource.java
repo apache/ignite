@@ -104,8 +104,7 @@ public class TestJdbcPojoDataSource implements DataSource {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Connection getConnection() throws SQLException {
+    @Override public Connection getConnection() throws SQLException {
         if (perThreadMode) {
             ConnectionHolder holder = this.holder.get();
 
@@ -118,50 +117,42 @@ public class TestJdbcPojoDataSource implements DataSource {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Connection getConnection(String username, String password) throws SQLException {
+    @Override public Connection getConnection(String username, String password) throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void setLoginTimeout(int seconds) throws SQLException {
+    @Override public void setLoginTimeout(int seconds) throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int getLoginTimeout() throws SQLException {
+    @Override public int getLoginTimeout() throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <T> T unwrap(Class<T> iface) throws SQLException {
+    @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+    @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public PrintWriter getLogWriter() throws SQLException {
+    @Override public PrintWriter getLogWriter() throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void setLogWriter(PrintWriter out) throws SQLException {
+    @Override public void setLogWriter(PrintWriter out) throws SQLException {
         throw new SQLFeatureNotSupportedException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+    @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         throw new SQLFeatureNotSupportedException();
     }
 
@@ -200,14 +191,12 @@ public class TestJdbcPojoDataSource implements DataSource {
         // --- Delegation. ---
 
         /** {@inheritDoc} */
-        @Override
-        public boolean isClosed() throws SQLException {
+        @Override public boolean isClosed() throws SQLException {
             return conn.isClosed();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Statement createStatement() throws SQLException {
+        @Override public Statement createStatement() throws SQLException {
             return conn.createStatement();
         }
 
@@ -218,86 +207,72 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public CallableStatement prepareCall(String sql) throws SQLException {
+        @Override public CallableStatement prepareCall(String sql) throws SQLException {
             return conn.prepareCall(sql);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String nativeSQL(String sql) throws SQLException {
+        @Override public String nativeSQL(String sql) throws SQLException {
             return conn.nativeSQL(sql);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setAutoCommit(boolean autoCommit) throws SQLException {
+        @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
             conn.setAutoCommit(autoCommit);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public boolean getAutoCommit() throws SQLException {
+        @Override public boolean getAutoCommit() throws SQLException {
             return conn.getAutoCommit();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void commit() throws SQLException {
+        @Override public void commit() throws SQLException {
             conn.commit();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void rollback() throws SQLException {
+        @Override public void rollback() throws SQLException {
             conn.rollback();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public DatabaseMetaData getMetaData() throws SQLException {
+        @Override public DatabaseMetaData getMetaData() throws SQLException {
             return conn.getMetaData();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setReadOnly(boolean readOnly) throws SQLException {
+        @Override public void setReadOnly(boolean readOnly) throws SQLException {
             conn.setReadOnly(readOnly);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public boolean isReadOnly() throws SQLException {
+        @Override public boolean isReadOnly() throws SQLException {
             return conn.isReadOnly();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setCatalog(String catalog) throws SQLException {
+        @Override public void setCatalog(String catalog) throws SQLException {
             conn.setCatalog(catalog);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String getCatalog() throws SQLException {
+        @Override public String getCatalog() throws SQLException {
             return conn.getCatalog();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setTransactionIsolation(int level) throws SQLException {
+        @Override public void setTransactionIsolation(int level) throws SQLException {
             conn.setTransactionIsolation(level);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public int getTransactionIsolation() throws SQLException {
+        @Override public int getTransactionIsolation() throws SQLException {
             return conn.getTransactionIsolation();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public SQLWarning getWarnings() throws SQLException {
+        @Override public SQLWarning getWarnings() throws SQLException {
             return conn.getWarnings();
         }
 
@@ -308,14 +283,13 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+        @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
             return conn.createStatement(resultSetType, resultSetConcurrency);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+        @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
+            throws SQLException {
             return conn.prepareStatement(sql, resultSetType, resultSetConcurrency);
         }
 
@@ -326,20 +300,17 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Map<String, Class<?>> getTypeMap() throws SQLException {
+        @Override public Map<String, Class<?>> getTypeMap() throws SQLException {
             return conn.getTypeMap();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
+        @Override public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
             conn.setTypeMap(map);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setHoldability(int holdability) throws SQLException {
+        @Override public void setHoldability(int holdability) throws SQLException {
             conn.setHoldability(holdability);
         }
 
@@ -350,14 +321,12 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Savepoint setSavepoint() throws SQLException {
+        @Override public Savepoint setSavepoint() throws SQLException {
             return conn.setSavepoint();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Savepoint setSavepoint(String name) throws SQLException {
+        @Override public Savepoint setSavepoint(String name) throws SQLException {
             return conn.setSavepoint(name);
         }
 
@@ -368,155 +337,132 @@ public class TestJdbcPojoDataSource implements DataSource {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void releaseSavepoint(Savepoint savepoint) throws SQLException {
+        @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException {
             conn.releaseSavepoint(savepoint);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+        @Override public Statement createStatement(int resultSetType, int resultSetConcurrency,
+            int resultSetHoldability) throws SQLException {
             return conn.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+        @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
+            int resultSetHoldability) throws SQLException {
             return conn.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+        @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
+            int resultSetHoldability) throws SQLException {
             return conn.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
+        @Override public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
             return conn.prepareStatement(sql, autoGeneratedKeys);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+        @Override public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
             return conn.prepareStatement(sql, columnIndexes);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+        @Override public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
             return conn.prepareStatement(sql, columnNames);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Clob createClob() throws SQLException {
+        @Override public Clob createClob() throws SQLException {
             return conn.createClob();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Blob createBlob() throws SQLException {
+        @Override public Blob createBlob() throws SQLException {
             return conn.createBlob();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public NClob createNClob() throws SQLException {
+        @Override public NClob createNClob() throws SQLException {
             return conn.createNClob();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public SQLXML createSQLXML() throws SQLException {
+        @Override public SQLXML createSQLXML() throws SQLException {
             return conn.createSQLXML();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public boolean isValid(int timeout) throws SQLException {
+        @Override public boolean isValid(int timeout) throws SQLException {
             return conn.isValid(timeout);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setClientInfo(String name, String value) throws SQLClientInfoException {
+        @Override public void setClientInfo(String name, String value) throws SQLClientInfoException {
             conn.setClientInfo(name, value);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setClientInfo(Properties properties) throws SQLClientInfoException {
+        @Override public void setClientInfo(Properties properties) throws SQLClientInfoException {
             conn.setClientInfo(properties);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String getClientInfo(String name) throws SQLException {
+        @Override public String getClientInfo(String name) throws SQLException {
             return conn.getClientInfo(name);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Properties getClientInfo() throws SQLException {
+        @Override public Properties getClientInfo() throws SQLException {
             return conn.getClientInfo();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
+        @Override public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
             return conn.createArrayOf(typeName, elements);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
+        @Override public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
             return conn.createStruct(typeName, attributes);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setSchema(String schema) throws SQLException {
+        @Override public void setSchema(String schema) throws SQLException {
             conn.setSchema(schema);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String getSchema() throws SQLException {
+        @Override public String getSchema() throws SQLException {
             return conn.getSchema();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void abort(Executor executor) throws SQLException {
+        @Override public void abort(Executor executor) throws SQLException {
             conn.abort(executor);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
+        @Override public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
             conn.setNetworkTimeout(executor, milliseconds);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public int getNetworkTimeout() throws SQLException {
+        @Override public int getNetworkTimeout() throws SQLException {
             return conn.getNetworkTimeout();
         }
 
         /** {@inheritDoc} */
-        @Override
-        public <T> T unwrap(Class<T> iface) throws SQLException {
+        @Override public <T> T unwrap(Class<T> iface) throws SQLException {
             return conn.unwrap(iface);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
             return conn.isWrapperFor(iface);
         }
     }
 }
-
 

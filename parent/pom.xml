@@ -761,7 +761,7 @@
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
-                                <phase>validate</phase>
+                                <phase>compile</phase>
                                 <configuration>
                                     <consoleOutput>true</consoleOutput>
                                     <logViolationsToConsole>true</logViolationsToConsole>

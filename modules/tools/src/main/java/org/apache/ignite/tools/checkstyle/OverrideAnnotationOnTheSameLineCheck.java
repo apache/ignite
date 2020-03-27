@@ -24,12 +24,17 @@ import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
 
 /**
  * <p>
- * Checks that {@code @Override} annotations are located on the same line with method declarartions.
+ * Checks that {@code @Override} annotations are located on the same line with target method declarartions.
  * </p>
  */
 public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
-    /** Error message. */
-    public static final String ERR_MSG = "@Override annotation on different line than method declaration.";
+    /** Different line error message. */
+    public static final String DIFF_LINE_ERR_MSG =
+        "@Override annotation on different line than target method declaration.";
+
+    /** No method declaration error message. */
+    public static final String NO_METHOD_ERR_MSG =
+        "No method declaration atfer @Override annotation!";
 
     /** */
     public static final String OVERRIDE = "Override";
@@ -81,8 +86,8 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
                  annotationNode = annotationNode.getNextSibling()) {
                 if (annotationNode.getType() == TokenTypes.ANNOTATION
                     && OVERRIDE.equals(getAnnotationName(annotationNode))
-                    && annotationNode.getLineNo() != getNextNode(annotationNode).getLineNo()) {
-                    log(annotationNode.getLineNo(), ERR_MSG, getAnnotationName(annotationNode));
+                    && onDifferentLines(annotationNode)) {
+                    log(annotationNode.getLineNo(), DIFF_LINE_ERR_MSG, getAnnotationName(annotationNode));
                 }
             }
         }
@@ -118,5 +123,14 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
         }
 
         return identNode.getText();
+    }
+
+    private boolean onDifferentLines(DetailAST annotationNode){
+        DetailAST nextNode = getNextNode(annotationNode);
+
+        if(nextNode == null)
+            log(annotationNode.getLineNo(), NO_METHOD_ERR_MSG, getAnnotationName(annotationNode));
+
+        return annotationNode.getLineNo() != nextNode.getLineNo();
     }
 }

@@ -1554,8 +1554,7 @@ public final class GridTestUtils {
         Field modifiersField = Field.class.getDeclaredField("modifiers");
 
         AccessController.doPrivileged(new PrivilegedAction() {
-            @Override
-            public Object run() {
+            @Override public Object run() {
                 modifiersField.setAccessible(true);
                 return null;
             }

@@ -105,19 +105,13 @@ public class GridClientCacheBean implements Serializable {
         this.sqlSchema = sqlSchema;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
         return name != null ? name.hashCode() : 0;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(Object obj) {
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
 
@@ -129,11 +123,8 @@ public class GridClientCacheBean implements Serializable {
         return name == null ? other.name == null : name.equals(other.name);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return "GridClientCacheBean [name=" + name + ", mode=" + mode + ']';
     }
 }
