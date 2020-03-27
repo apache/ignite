@@ -25,19 +25,18 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.Ignition.allGrids;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests {@link GridMetricManager#REBALANCED} metric.
@@ -53,14 +52,10 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(persistenceEnabled)
-                .setMaxSize(10L * 1024 * 1024)
-            ));
+                .setPersistenceEnabled(persistenceEnabled)));
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
-            .setBackups(1)
-            .setCacheMode(PARTITIONED)
-            .setAtomicityMode(TRANSACTIONAL));
+            .setBackups(1));
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
         cfg.setClusterStateOnStart(INACTIVE);
@@ -112,18 +107,18 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         ignite.cluster().state(ACTIVE);
 
-        awaitPmeAndAssertMetric(true);
+        assertMetric(true);
 
         ignite.cache(DEFAULT_CACHE_NAME).put("key", "val");
 
         startClientGrid(1);
 
-        awaitPmeAndAssertMetric(true);
+        assertMetric(true);
 
         TestRecordingCommunicationSpi spi = startGridWithRebalanceBlocked(2);
 
         if (persistenceEnabled) {
-            awaitPmeAndAssertMetric(true);
+            assertMetric(true);
 
             ignite.cluster().setBaselineTopology(ignite.cluster().forServers().nodes());
         }
@@ -134,37 +129,26 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         spi.stopBlock();
 
-        awaitPmeAndAssertMetric(true);
+        assertMetric(true);
 
         ignite.cluster().state(INACTIVE);
 
-        awaitPmeAndAssertMetric(false);
+        assertMetric(false);
 
         ignite.cluster().state(ACTIVE);
 
-        awaitPmeAndAssertMetric(true);
+        assertMetric(true);
 
         stopGrid(2);
 
-        awaitPmeAndAssertMetric(true);
-    }
-
-    /**
-     * Awaits PME process completion and checks value of {@link GridMetricManager#REBALANCED} metric.
-     *
-     * @param exp Expected value of the metric.
-     */
-    private void awaitPmeAndAssertMetric(boolean exp) throws Exception {
-        awaitPartitionMapExchange(true, true, null);
-
-        assertMetric(exp);
+        assertMetric(true);
     }
 
     /**
      * Checks that {@link GridMetricManager#REBALANCED} metric is set to {@code exp} on all cluster nodes.
      */
-    private void assertMetric(boolean exp) {
-        assertTrue(G.allGrids().stream().allMatch(ignite -> {
+    private void assertMetric(boolean exp) throws Exception {
+        assertTrue(waitForCondition(() -> allGrids().stream().allMatch(ignite -> {
             BooleanMetric rebalancedMetric = ((IgniteEx) ignite)
                 .context()
                 .metric()
@@ -172,7 +156,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
                 .findMetric(REBALANCED);
 
             return exp == rebalancedMetric.value();
-        }));
+        }), getTestTimeout()));
     }
 
     /**
