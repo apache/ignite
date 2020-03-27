@@ -1047,7 +1047,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             comp.printMemoryStats();
     }
 
-    private static final boolean IS_IGNITE_DAEMON_SYSPROP_SET = IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
+    private final boolean IS_IGNITE_DAEMON_SYSPROP_SET = IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
