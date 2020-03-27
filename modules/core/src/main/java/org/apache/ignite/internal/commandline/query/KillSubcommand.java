@@ -42,5 +42,5 @@ public enum KillSubcommand {
     SERVICE,
 
     /** Kill sql query. */
-    SQL_QUERY
+    SQL
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,6 +37,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
@@ -81,9 +83,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
         srvs.get(0).cluster().state(ACTIVE);
 
-        startCli.getOrCreateCache(
+        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
     }
 
     /** @throws Exception If failed. */
