@@ -268,9 +268,10 @@ public enum GridRestCommand {
         this(key, r -> null, perm);
     }
 
+
     /**
      * @param key Key.
-     * @param nameExtractor Name suplier.
+     * @param nameExtractor Name extractor.
      * @param perms Perms.
      */
     GridRestCommand(String key, Function<GridRestRequest, String> nameExtractor, SecurityPermission... perms) {
