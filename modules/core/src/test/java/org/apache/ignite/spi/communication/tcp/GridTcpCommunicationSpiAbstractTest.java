@@ -41,7 +41,7 @@ import org.junit.Test;
 /**
  * Test for {@link TcpCommunicationSpi}
  */
-abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi> {
+abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunicationSelfTest<CommunicationSpi<Message>> {
     /** */
     private static final int SPI_COUNT = 3;
 
@@ -59,7 +59,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override protected CommunicationSpi getSpi(int idx) {
+    @Override protected CommunicationSpi<Message> getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         if (!useShmem)
@@ -88,7 +88,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         super.testSendToManyNodes();
 
         // Test idle clients remove.
-        for (CommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
             assertEquals(getSpiCount() - 1, clients.size());
@@ -129,13 +129,13 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
 
         final CyclicBarrier b = new CyclicBarrier(THREADS);
 
-        List<IgniteInternalFuture> futs = new ArrayList<>();
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
             final TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
 
-            futs.add(GridTestUtils.runAsync(new Callable() {
-                @Override public Object call() throws Exception {
+            futs.add(GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
                     List<ClusterNode> checkNodes = new ArrayList<>(nodes);
 
                     assert checkNodes.size() > 1;
@@ -156,7 +156,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
             }));
         }
 
-        for (IgniteInternalFuture f : futs)
+        for (IgniteInternalFuture<?> f : futs)
             f.get();
     }
 
@@ -164,7 +164,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (CommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : spis.values()) {
             ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 20; i++) {

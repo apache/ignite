@@ -38,6 +38,14 @@ public class ConnectionKey {
     private final boolean dummy;
 
     /**
+     * @param nodeId Node ID. Should be not null.
+     * @param idx Connection index.
+     */
+    public ConnectionKey(@NotNull UUID nodeId, int idx) {
+        this(nodeId, idx, -1, false);
+    }
+
+    /**
      * Creates ConnectionKey with false value of dummy flag.
      *
      * @param nodeId Node ID. Should be not null.

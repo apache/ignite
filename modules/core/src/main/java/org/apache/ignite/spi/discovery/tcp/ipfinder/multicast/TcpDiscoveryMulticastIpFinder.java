@@ -605,10 +605,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                         continue;
                     }
 
-                    long rcvEnd = U.currentTimeMillis() + resWaitTime;
+                    long rcvStartNanos = System.nanoTime();
 
                     try {
-                        while (U.currentTimeMillis() < rcvEnd) { // Try to receive multiple responses.
+                        while (U.millisSinceNanos(rcvStartNanos) < resWaitTime) { // Try to receive multiple responses.
                             sock.receive(resPckt);
 
                             byte[] data = resPckt.getData();

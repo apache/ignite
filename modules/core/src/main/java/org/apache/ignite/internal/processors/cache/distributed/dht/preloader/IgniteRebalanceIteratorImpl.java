@@ -60,7 +60,6 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     private boolean closed;
 
     /**
-     *
      * @param fullIterators
      * @param historicalIterator
      * @throws IgniteCheckedException

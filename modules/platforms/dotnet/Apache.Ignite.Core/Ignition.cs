@@ -390,14 +390,14 @@ namespace Apache.Ignite.Core
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
 
-            LoadAssemblies(cfg.Assemblies);
+            LoadAllAssemblies(cfg.Assemblies);
 
             ICollection<string> cfgAssembllies;
             BinaryConfiguration binaryCfg;
 
             BinaryUtils.ReadConfiguration(reader, out cfgAssembllies, out binaryCfg);
 
-            LoadAssemblies(cfgAssembllies);
+            LoadAllAssemblies(cfgAssembllies);
 
             // 2. Create marshaller only after assemblies are loaded.
             if (cfg.BinaryConfiguration == null)
@@ -518,73 +518,78 @@ namespace Apache.Ignite.Core
         /// Load assemblies.
         /// </summary>
         /// <param name="assemblies">Assemblies.</param>
-        private static void LoadAssemblies(IEnumerable<string> assemblies)
+        private static void LoadAllAssemblies(IEnumerable<string> assemblies)
         {
             if (assemblies != null)
             {
-                foreach (string s in assemblies)
+                foreach (var s in assemblies)
                 {
-                    // 1. Try loading as directory.
-                    if (Directory.Exists(s))
-                    {
-                        string[] files = Directory.GetFiles(s, "*.dll");
-
-#pragma warning disable 0168
-
-                        foreach (string dllPath in files)
-                        {
-                            if (!SelfAssembly(dllPath))
-                            {
-                                try
-                                {
-                                    Assembly.LoadFile(dllPath);
-                                }
-
-                                catch (BadImageFormatException)
-                                {
-                                    // No-op.
-                                }
-                            }
-                        }
-
-#pragma warning restore 0168
-
-                        continue;
-                    }
-
-                    // 2. Try loading using full-name.
-                    try
-                    {
-                        Assembly assembly = Assembly.Load(s);
-
-                        if (assembly != null)
-                            continue;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!(e is FileNotFoundException || e is FileLoadException))
-                            throw new IgniteException("Failed to load assembly: " + s, e);
-                    }
-
-                    // 3. Try loading using file path.
-                    try
-                    {
-                        Assembly assembly = Assembly.LoadFrom(s);
-
-                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                        if (assembly != null)
-                            continue;
-                    }
-                    catch (Exception e)
-                    {
-                        if (!(e is FileNotFoundException || e is FileLoadException))
-                            throw new IgniteException("Failed to load assembly: " + s, e);
-                    }
-
-                    // 4. Not found, exception.
-                    throw new IgniteException("Failed to load assembly: " + s);
+                    LoadAssembly(s);
                 }
             }
+        }
+
+        /// <summary>
+        /// Load assembly from file, directory, or full name.
+        /// </summary>
+        /// <param name="asm">Assembly file, directory, or full name.</param>
+        internal static void LoadAssembly(string asm)
+        {
+            // 1. Try loading as directory.
+            if (Directory.Exists(asm))
+            {
+                string[] files = Directory.GetFiles(asm, "*.dll");
+
+                foreach (string dllPath in files)
+                {
+                    if (!SelfAssembly(dllPath))
+                    {
+                        try
+                        {
+                            Assembly.LoadFile(dllPath);
+                        }
+
+                        catch (BadImageFormatException)
+                        {
+                            // No-op.
+                        }
+                    }
+                }
+
+                return;
+            }
+
+            // 2. Try loading using full-name.
+            try
+            {
+                Assembly assembly = Assembly.Load(asm);
+
+                if (assembly != null)
+                    return;
+            }
+            catch (Exception e)
+            {
+                if (!(e is FileNotFoundException || e is FileLoadException))
+                    throw new IgniteException("Failed to load assembly: " + asm, e);
+            }
+
+            // 3. Try loading using file path.
+            try
+            {
+                Assembly assembly = Assembly.LoadFrom(asm);
+
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                if (assembly != null)
+                    return;
+            }
+            catch (Exception e)
+            {
+                if (!(e is FileNotFoundException || e is FileLoadException))
+                    throw new IgniteException("Failed to load assembly: " + asm, e);
+            }
+
+            // 4. Not found, exception.
+            throw new IgniteException("Failed to load assembly: " + asm);
         }
 
         /// <summary>

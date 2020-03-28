@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Decision trees examples.
+ * <!-- Package description. --> Decision trees examples.
  */
 package org.apache.ignite.examples.ml.tree;

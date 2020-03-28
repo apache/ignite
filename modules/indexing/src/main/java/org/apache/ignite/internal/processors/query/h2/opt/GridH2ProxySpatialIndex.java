@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;

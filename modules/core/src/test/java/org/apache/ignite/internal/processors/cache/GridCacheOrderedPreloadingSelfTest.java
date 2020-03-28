@@ -92,6 +92,8 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalEventListeners(listeners);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

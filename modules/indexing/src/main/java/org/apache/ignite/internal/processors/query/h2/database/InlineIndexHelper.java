@@ -250,7 +250,7 @@ public class InlineIndexHelper {
         if (size > 0)
             return size + 1;
         else
-            return PageUtils.getShort(pageAddr, off + 1) + 3;
+            return (PageUtils.getShort(pageAddr, off + 1) & 0x7FFF) + 3;
     }
 
     /**

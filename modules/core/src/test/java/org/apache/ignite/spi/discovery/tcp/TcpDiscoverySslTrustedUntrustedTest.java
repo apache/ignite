@@ -31,6 +31,7 @@ import org.junit.Test;
 public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest {
     /** */
     private volatile String keyStore;
+
     /** */
     private volatile String trustStore;
 
@@ -70,6 +71,22 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     @Test
     public void testBothTrusts() throws Exception {
         checkDiscoverySuccess("node01", "trustboth", "node02", "trustboth", "node03", "trustboth");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTrustOneMultiCert() throws Exception {
+        checkDiscoverySuccess("node01", "trustone", "node0102", "trustone");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTrustBothMultiCert() throws Exception {
+        checkDiscoverySuccess("node03", "trustboth", "node0102", "trusttwo");
     }
 
     /**
@@ -119,7 +136,6 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
     public void testExpiredMismatchingCa() throws Exception {
         checkDiscoveryFailure("node01", "trustboth", "node02old", "trusttwo");
     }
-
 
     /**
      * @param keysTrusts Pairs of key store, trust store.

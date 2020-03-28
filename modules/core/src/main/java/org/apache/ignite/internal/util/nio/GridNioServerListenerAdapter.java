@@ -38,6 +38,7 @@ public abstract class GridNioServerListenerAdapter<T> implements GridNioServerLi
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void onFailure(FailureType failureType, Throwable failure) {
         // No-op.
     }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -37,11 +36,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
  *
@@ -60,12 +60,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(
-                    new DataStorageConfiguration()
-                            .setWalMode(WALMode.LOG_ONLY)
-                            .setDefaultDataRegionConfiguration(
-                                    new DataRegionConfiguration()
-                                            .setPersistenceEnabled(true)
-                                            .setMaxSize(100L * 1024 * 1024))
+            new DataStorageConfiguration()
+                .setWalMode(WALMode.LOG_ONLY)
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(300L * 1024 * 1024))
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)
@@ -82,22 +82,16 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -105,8 +99,6 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -125,9 +117,8 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "1")
     public void testPartitionClearingNotBlockExchange() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "1");
-
         IgniteEx ig = (IgniteEx) startGrids(3);
         ig.cluster().active(true);
 
@@ -223,7 +214,9 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
      */
     @Test
     public void testCorrectRebalancingCurrentlyRentingPartitions() throws Exception {
-        IgniteEx ignite = (IgniteEx) startGrids(3);
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
         ignite.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
@@ -232,11 +225,10 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         try (IgniteDataStreamer<Integer, Integer> ds = ignite.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
 
-            ds.allowOverwrite(true);
             for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
-                if (k % 10_000 == 0)
+                if (k % 50_000 == 0)
                     log.info("Written " + k + " entities.");
             }
 
@@ -259,14 +251,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         // Started node should have partition in RENTING or EVICTED state.
         startGrid(1);
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null, true);
 
         // Check no data loss.
         for (int k = 1; k <= keysCnt; k++) {
             Integer val = (Integer) ignite.cache(CACHE_NAME).get(k);
-
             Assert.assertNotNull("Value for " + k + " is null", val);
-
             Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
     }

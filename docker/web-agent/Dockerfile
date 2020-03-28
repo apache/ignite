@@ -39,7 +39,7 @@ RUN apk --no-cache \
     add bash
 
 # Copy main binary archive
-COPY ignite-web-agent*/* ./
+COPY ignite-web-agent* ./
 
 # Entrypoint
 CMD ./ignite-web-agent.sh -d ${DRIVER_FOLDER} -n ${NODE_URI} -s ${SERVER_URI} -t ${TOKENS}

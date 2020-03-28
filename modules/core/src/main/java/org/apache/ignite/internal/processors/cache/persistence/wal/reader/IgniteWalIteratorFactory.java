@@ -173,7 +173,8 @@ public class IgniteWalIteratorFactory {
     ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        return new StandaloneWalRecordsIterator(log,
+        return new StandaloneWalRecordsIterator(
+            iteratorParametersBuilder.log == null ? log : iteratorParametersBuilder.log,
             iteratorParametersBuilder.sharedCtx == null ? prepareSharedCtx(iteratorParametersBuilder) :
                 iteratorParametersBuilder.sharedCtx,
             iteratorParametersBuilder.ioFactory,
@@ -224,9 +225,18 @@ public class IgniteWalIteratorFactory {
     ) throws IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        List<T2<Long, Long>> gaps = new ArrayList<>();
+        return hasGaps(resolveWalFiles(iteratorParametersBuilder));
+    }
 
-        List<FileDescriptor> descriptors = resolveWalFiles(iteratorParametersBuilder);
+    /**
+     * @param descriptors File descriptors.
+     * @return List of tuples, low and high index segments with gap.
+     */
+    public List<T2<Long, Long>> hasGaps(
+         @NotNull  List<FileDescriptor> descriptors
+    ) throws IllegalArgumentException {
+
+        List<T2<Long, Long>> gaps = new ArrayList<>();
 
         Iterator<FileDescriptor> it = descriptors.iterator();
 
@@ -369,7 +379,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
             null, null, null, null, null,
-            null,null, null, null, null
+            null, null, null, null, null, null
         );
     }
 
@@ -377,6 +387,9 @@ public class IgniteWalIteratorFactory {
      * Wal iterator parameter builder.
      */
     public static class IteratorParametersBuilder {
+        /** Logger. */
+        private IgniteLogger log;
+
         /** */
         public static final FileWALPointer DFLT_LOW_BOUND = new FileWALPointer(Long.MIN_VALUE, 0, 0);
 
@@ -430,6 +443,25 @@ public class IgniteWalIteratorFactory {
 
         /** Use strict bounds check for WAL segments. */
         private boolean strictBoundsCheck;
+
+        /**
+         * Factory method for {@link IgniteWalIteratorFactory.IteratorParametersBuilder}.
+         *
+         * @return Instance of {@link IgniteWalIteratorFactory.IteratorParametersBuilder}.
+         */
+        public static IteratorParametersBuilder withIteratorParameters() {
+            return new IteratorParametersBuilder();
+        }
+
+        /**
+         * @param log Logger.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder log(IgniteLogger log){
+            this.log = log;
+
+            return this;
+        }
 
         /**
          * @param filesOrDirs Paths to files or directories.
@@ -533,6 +565,16 @@ public class IgniteWalIteratorFactory {
          */
         public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, WALPointer> filter) {
             this.filter = filter;
+
+            return this;
+        }
+
+        /**
+         * @param filter Record filter for skip records during iteration.
+         * @return IteratorParametersBuilder Self reference.
+         */
+        public IteratorParametersBuilder addFilter(IgniteBiPredicate<RecordType, WALPointer> filter) {
+            this.filter = this.filter == null ? filter : this.filter.and(filter);
 
             return this;
         }

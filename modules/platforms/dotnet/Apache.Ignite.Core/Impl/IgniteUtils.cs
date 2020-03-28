@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -36,9 +35,6 @@ namespace Apache.Ignite.Core.Impl
     /// </summary>
     internal static class IgniteUtils
     {
-        /** Prefix for temp directory names. */
-        private const string DirIgniteTmp = "Ignite_";
-        
         /** Thread-local random. */
         [ThreadStatic]
         private static Random _rnd;
@@ -128,33 +124,6 @@ namespace Apache.Ignite.Core.Impl
                         ", property=" + prop.Key + ']');
 
                 prop0.SetValue(target, prop.Value, null);
-            }
-        }
-
-
-
-        /// <summary>
-        /// Creates a uniquely named, empty temporary directory on disk and returns the full path of that directory.
-        /// </summary>
-        /// <returns>The full path of the temporary directory.</returns>
-        internal static string GetTempDirectoryName()
-        {
-            var baseDir = Path.Combine(Path.GetTempPath(), DirIgniteTmp);
-
-            while (true)
-            {
-                try
-                {
-                    return Directory.CreateDirectory(baseDir + Path.GetRandomFileName()).FullName;
-                }
-                catch (IOException)
-                {
-                    // Expected
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // Expected
-                }
             }
         }
 

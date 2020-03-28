@@ -25,6 +25,4 @@ import java.io.Serializable;
 class JdkMarshallerDummySerializable implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    // No-op.
 }

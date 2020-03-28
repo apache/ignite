@@ -76,19 +76,16 @@ public class H2PkHashIndex extends GridH2IndexBase {
         List<IndexColumn> colsList,
         int segments
     ) {
-        super(tbl);
+        super(
+            tbl,
+            name,
+            GridH2IndexBase.columnsArray(tbl, colsList),
+            IndexType.createPrimaryKey(false, true));
 
         assert segments > 0: segments;
 
-        this.segments = segments;
-
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
-
-        IndexColumn.mapColumns(cols, tbl);
-
-        initBaseIndex(tbl, 0, name, cols, IndexType.createPrimaryKey(false, true));
-
         this.cctx = cctx;
+        this.segments = segments;
     }
 
     /** {@inheritDoc} */
@@ -189,11 +186,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return false;
     }
@@ -201,6 +193,37 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean b) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        CacheDataRowStore.setSkipVersion(true);
+
+        try {
+            Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
+
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
+
+                if (partsFilter == null || partsFilter.applyPartition(part))
+                    cursors.add(store.cursor(cctx.cacheId()));
+            }
+
+            Cursor pkHashCursor = new H2PkHashIndexCursor(cursors.iterator());
+
+            long res = 0;
+
+            while (pkHashCursor.next())
+                res++;
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            CacheDataRowStore.setSkipVersion(false);
+        }
     }
 
     /**

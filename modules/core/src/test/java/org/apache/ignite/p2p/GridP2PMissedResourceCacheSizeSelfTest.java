@@ -250,6 +250,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     public void testSize0SharedMode() throws Exception {
         processSize0Test(DeploymentMode.SHARED);
     }
+
     /**
      * Test GridDeploymentMode.PRIVATE mode.
      *

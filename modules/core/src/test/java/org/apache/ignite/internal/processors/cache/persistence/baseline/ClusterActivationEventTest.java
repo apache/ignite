@@ -18,39 +18,127 @@
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static java.util.Comparator.comparingLong;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_ACTIVATED;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_DEACTIVATED;
 
 /**
  * Tests cluster activation events.
  */
 public class ClusterActivationEventTest extends GridCommonAbstractTest {
+    /** Nodes count. */
+    private static final int NODES_CNT = 2;
+
+    /** Listener delay. */
+    private static final long DELAY = 1000L;
+
+    /** Logger message format. */
+    private static final String LOG_MESSAGE_FORMAT = "Received event [id=%s, type=%s], msg=%s";
+
+    /** */
+    private final IgnitePredicate<? extends Event> lsnr = (evt) -> {
+        log.info(String.format(LOG_MESSAGE_FORMAT, evt.id(), evt.type(), evt.message()));
+
+        return true;
+    };
+
+    /** */
+    private final IgnitePredicate<? extends Event> delayLsnr = (evt) -> {
+        log.info(String.format(LOG_MESSAGE_FORMAT, evt.id(), evt.type(), evt.message()));
+
+        try {
+            U.sleep(DELAY);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            log.error("Sleep interrupted", e);
+        }
+
+        return true;
+    };
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setIncludeEventTypes(EventType.EVTS_ALL)
+            .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME))
+            .setFailureHandler(new StopNodeOrHaltFailureHandler());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrids(NODES_CNT);
+
+        startClientGrid(NODES_CNT);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        for (Ignite ignite : G.allGrids()) {
+            ignite.events().stopLocalListen(lsnr);
+            ignite.events().stopLocalListen(delayLsnr);
+        }
+
+        grid(0).cluster().state(ACTIVE);
+
+        grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
+
+        Map<Integer, Integer> vals = IntStream.range(0, 100).boxed().collect(Collectors.toMap(i -> i, i -> i));
+
+        grid(0).cachex(DEFAULT_CACHE_NAME).putAll(vals);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (Ignite ignite : G.allGrids()) {
+            ignite.events().stopLocalListen(lsnr);
+            ignite.events().stopLocalListen(delayLsnr);
+        }
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testClusterActivation() throws Exception {
-        ClusterActivationTestTask task = new ClusterActivationTestTask() {
-            @Override public void execute(IgniteCluster cluster) throws Exception {
-                deactivateCluster(cluster);
-
-                activateCluster(cluster);
-            }
-        };
-
-        IgnitePredicate<? extends Event> lsnr = (evt) -> {
-            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
-            return true;
-        };
-
-        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_ACTIVATED, 1);
+        clusterChangeState(INACTIVE, ACTIVE, EVT_CLUSTER_ACTIVATED);
     }
 
     /**
@@ -58,18 +146,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterDeactivation() throws Exception {
-        ClusterActivationTestTask task = new ClusterActivationTestTask() {
-            @Override public void execute(IgniteCluster cluster) throws Exception {
-                deactivateCluster(cluster);
-            }
-        };
-
-        IgnitePredicate<? extends Event> lsnr = (evt) -> {
-            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
-            return true;
-        };
-
-        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_DEACTIVATED, 1);
+        clusterChangeState(ACTIVE, INACTIVE, EVT_CLUSTER_DEACTIVATED);
     }
 
     /**
@@ -77,22 +154,15 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterDoubleActivation() throws Exception {
-        ClusterActivationTestTask task = new ClusterActivationTestTask() {
-            @Override public void execute(IgniteCluster cluster) throws Exception {
-                deactivateCluster(cluster);
+        clusterChangeStateTwice(INACTIVE, ACTIVE, EVT_CLUSTER_ACTIVATED);
+    }
 
-                activateCluster(cluster);
-
-                activateCluster(cluster);
-            }
-        };
-
-        IgnitePredicate<? extends Event> lsnr = (evt) -> {
-            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
-            return true;
-        };
-
-        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_ACTIVATED, 1);
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterDoubleDeactivation() throws Exception {
+        clusterChangeStateTwice(ACTIVE, INACTIVE, EVT_CLUSTER_DEACTIVATED);
     }
 
     /**
@@ -100,98 +170,115 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClusterActivationListenerSleep() throws Exception {
+        clusterChangeStateWithDelay(INACTIVE, ACTIVE, EVT_CLUSTER_ACTIVATED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterDeactivationListenerSleep() throws Exception {
+        clusterChangeStateWithDelay(ACTIVE, INACTIVE, EVT_CLUSTER_DEACTIVATED);
+    }
+
+    /**
+     * Checks that change cluster state from {@code initState} to {@code state} generates correct number of events on
+     * each node with {@code evtType} type.
+     *
+     * @param initState Initial cluster state.
+     * @param state Target cluster state.
+     * @param evtType Event type.
+     * @throws Exception If failed.
+     */
+    private void clusterChangeState(ClusterState initState, ClusterState state, int evtType) throws Exception {
+        assertNotSame(initState, state);
+
+        checkClusterEvents(cluster -> cluster.state(state), lsnr, initState, evtType, 1);
+    }
+
+    /**
+     * Checks that change cluster state from {@code initState} to {@code state} generates correct number of events on
+     * each node with {@code evtType} type and delay on event listener doesn't breaks cluster.
+     *
+     * @param initState Initial cluster state.
+     * @param state Target cluster state.
+     * @param evtType Event type.
+     * @throws Exception If failed.
+     */
+    private void clusterChangeStateWithDelay(ClusterState initState, ClusterState state, int evtType) throws Exception {
+        assertNotSame(initState, state);
+
+        checkClusterEvents(cluster -> cluster.state(state), delayLsnr, initState, evtType, 1);
+    }
+
+    /**
+     * Checks that change cluster state from {@code initState} to {@code state} generates correct number of events on
+     * each node with {@code evtType} type.
+     *
+     * @param initState Initial cluster state.
+     * @param state Target cluster state.
+     * @param evtType Event type.
+     * @throws Exception If failed.
+     */
+    private void clusterChangeStateTwice(ClusterState initState, ClusterState state, int evtType) throws Exception {
+        assertNotSame(initState, state);
+
         ClusterActivationTestTask task = new ClusterActivationTestTask() {
-            @Override public void execute(IgniteCluster cluster) throws Exception {
-                deactivateCluster(cluster);
-
-                activateCluster(cluster);
+            @Override public void execute(IgniteCluster cluster) {
+                cluster.state(state);
+                cluster.state(state);
             }
         };
 
-        IgnitePredicate<? extends Event> lsnr = (evt) -> {
-            try {
-                Thread.sleep(10000);
-            }
-            catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
-            }
-
-            System.out.println("Received event [id=" + evt.id().toString() + ", type=" + evt.type() + ']' + ", msg=" + evt.message() + ']');
-
-            return true;
-        };
-
-        checkClusterActivation(task, lsnr, EventType.EVT_CLUSTER_ACTIVATED, 1);
+        checkClusterEvents(task, lsnr, initState, evtType, 1);
     }
 
     /**
      * @param task Test.
      * @param lsnr Listener.
-     * @param evt Event type.
+     * @param evtType Event type.
      * @param evtCnt Events count.
-     * @throws Exception If failed.
      */
-    private void checkClusterActivation(
+    private void checkClusterEvents(
         ClusterActivationTestTask task,
         IgnitePredicate<? extends Event> lsnr,
-        int evt,
+        ClusterState initState,
+        int evtType,
         int evtCnt
     ) throws Exception {
-        try {
-            Ignite ignite1 = startGrid(1);
-            Ignite ignite2 = startGrid(2);
+        IgniteEx crd = grid(0);
 
-            ignite1.events().localListen(lsnr, evt);
-            ignite2.events().localListen(lsnr, evt);
+        if (crd.cluster().state() != initState)
+            crd.cluster().state(initState);
 
-            IgniteCluster cluster = ignite1.cluster();
+        for (Ignite ignite : G.allGrids())
+            assertEquals(ignite.name(), initState, ignite.cluster().state());
 
-            assert cluster.active();
+        Map<Ignite, Long> maxLocEvtId = new HashMap<>();
+        Map<Ignite, IgniteFuture<Event>> evtFuts = new HashMap<>();
 
-            task.execute(cluster);
+        for (Ignite ignite : G.allGrids()) {
+            Collection<Event> evts = ignite.events().localQuery(F.alwaysTrue(), evtType);
 
-            assertEventsCount(ignite1, evt, evtCnt);
+            long id = evts.isEmpty() ? 0 : Collections.max(evts, comparingLong(Event::localOrder)).localOrder();
 
-            assertEventsCount(ignite2, evt, evtCnt);
+            ignite.events().localListen(lsnr, evtType);
+
+            maxLocEvtId.put(ignite, id);
+
+            evtFuts.put(ignite, waitForLocalEvent(ignite.events(), e -> e.localOrder() > id, evtType));
         }
-        finally {
-            stopGrid(1);
-            stopGrid(2);
+
+        task.execute(crd.cluster());
+
+        for (Ignite ignite : maxLocEvtId.keySet()) {
+            // We should wait received event on local node.
+            evtFuts.get(ignite).get(2 * DELAY);
+
+            Collection<Event> evts = ignite.events().localQuery(e -> e.localOrder() > maxLocEvtId.get(ignite), evtType);
+
+            assertEquals(ignite.name() + " events: " + evts, evtCnt, evts.size());
         }
-    }
-
-    /**
-     * @param ignite Ignite instance
-     * @param evt Event
-     * @param cnt Count
-     */
-    private void assertEventsCount(Ignite ignite, int evt, int cnt) {
-        Collection<Event> evts = ignite.events().localQuery(F.alwaysTrue(), evt);
-
-        assert evts != null;
-        assert evts.size() == cnt;
-    }
-
-    /**
-     * @param cluster Cluster
-     */
-    private void activateCluster(IgniteCluster cluster) throws InterruptedException {
-        cluster.active(true);
-
-        Thread.sleep(200);
-
-        assert cluster.active();
-    }
-
-    /**
-     * @param cluster Cluster
-     */
-    private void deactivateCluster(IgniteCluster cluster) throws InterruptedException {
-        cluster.active(false);
-
-        Thread.sleep(200);
-
-        assert !cluster.active();
     }
 
     /**
@@ -200,8 +287,7 @@ public class ClusterActivationEventTest extends GridCommonAbstractTest {
     private interface ClusterActivationTestTask {
         /**
          * @param cluster Cluster
-         * @throws Exception If failed.
          */
-        void execute(IgniteCluster cluster) throws Exception;
+        void execute(IgniteCluster cluster) ;
     }
 }

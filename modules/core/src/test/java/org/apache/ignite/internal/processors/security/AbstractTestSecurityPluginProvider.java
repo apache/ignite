@@ -17,48 +17,19 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.io.Serializable;
-import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.plugin.CachePluginContext;
-import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.PluginValidationException;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Security processor provider for tests.
  */
-public abstract class AbstractTestSecurityPluginProvider implements PluginProvider {
+public abstract class AbstractTestSecurityPluginProvider extends AbstractTestPluginProvider {
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String version() {
-        return "1.0";
-    }
-
-    /** {@inheritDoc} */
-    @Override public String copyright() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePlugin plugin() {
-        return new IgnitePlugin() {
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -75,44 +46,4 @@ public abstract class AbstractTestSecurityPluginProvider implements PluginProvid
      * @return {@link GridSecurityProcessor} istance.
      */
     protected abstract GridSecurityProcessor securityProcessor(GridKernalContext ctx);
-
-    /** {@inheritDoc} */
-    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStart() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable Serializable provideDiscoveryData(UUID nodeId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
-        // No-op.
-    }
 }

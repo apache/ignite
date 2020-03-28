@@ -30,7 +30,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class CancellationTest : SpringTestBase
     {
-        public CancellationTest() 
+        /** */
+        private const int MillisecondsTimeout = 50;
+
+        public CancellationTest()
             : base("config\\compute\\compute-grid1.xml", "config\\compute\\compute-grid2.xml")
         {
             // No-op.
@@ -92,16 +95,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Job.CancelCount = 0;
 
-            TestClosure(runner);
+            TestClosure(runner, MillisecondsTimeout * 2);
 
             Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
         }
 
-        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
+        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner, int delay = 0)
         {
             using (var cts = new CancellationTokenSource())
             {
                 var task = runner(Compute, cts.Token);
+
+                Thread.Sleep(delay);
 
                 Assert.IsFalse(task.IsCanceled);
 
@@ -148,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public int Execute()
             {
-                Thread.Sleep(50);
+                Thread.Sleep(MillisecondsTimeout);
                 return 1;
             }
 
@@ -163,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public int Invoke(int arg)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(MillisecondsTimeout);
                 return arg;
             }
         }

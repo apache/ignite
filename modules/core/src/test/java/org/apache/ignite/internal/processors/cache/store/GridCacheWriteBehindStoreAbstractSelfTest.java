@@ -202,9 +202,8 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
         Set<Integer> total = new HashSet<>();
 
-        for (Set<Integer> threadVals : perThread.values()) {
+        for (Set<Integer> threadVals : perThread.values())
             total.addAll(threadVals);
-        }
 
         return total;
     }

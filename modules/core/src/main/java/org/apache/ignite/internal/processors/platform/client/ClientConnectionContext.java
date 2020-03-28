@@ -17,8 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -27,11 +35,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnecti
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * Thin Client connection context.
@@ -49,14 +54,26 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.3.0. */
     public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
 
-    /** Version 1.4.0. Added: Affinity Awareness, IEP-23. */
+    /** Version 1.4.0. Added: Partition awareness, IEP-23. */
     public static final ClientListenerProtocolVersion VER_1_4_0 = ClientListenerProtocolVersion.create(1, 4, 0);
 
+    /** Version 1.5.0. Added: Transactions support, IEP-34. */
+    public static final ClientListenerProtocolVersion VER_1_5_0 = ClientListenerProtocolVersion.create(1, 5, 0);
+
+    /** Version 1.6.0. Added: Expiration Policy configuration. */
+    public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
+
+    /** Version 1.7.0. Added: User attributes support. */
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_4_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_7_0,
+        VER_1_6_0,
+        VER_1_5_0,
         VER_1_4_0,
         VER_1_3_0,
         VER_1_2_0,
@@ -85,17 +102,31 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
 
+    /** Active tx count limit. */
+    private final int maxActiveTxCnt;
+
+    /** Tx id. */
+    private final AtomicInteger txIdSeq = new AtomicInteger();
+
+    /** Transactions by transaction id. */
+    private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
+
+    /** Active transactions count. */
+    private final AtomicInteger txsCnt = new AtomicInteger();
+
     /**
      * Ctor.
      *
      * @param ctx Kernal context.
      * @param connId Connection ID.
      * @param maxCursors Max active cursors.
+     * @param thinCfg Thin-client configuration.
      */
-    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors) {
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors, ThinClientConfiguration thinCfg) {
         super(ctx, connId);
 
         this.maxCursors = maxCursors;
+        maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();
     }
 
     /**
@@ -125,12 +156,16 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
         boolean hasMore;
 
         String user = null;
         String pwd = null;
+
+        if (ver.compareTo(VER_1_7_0) >= 0)
+            userAttrs = reader.readMap();
 
         if (ver.compareTo(VER_1_1_0) >= 0) {
             try {
@@ -146,7 +181,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(user, pwd);
+        AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
 
         currentVer = ver;
 
@@ -168,6 +203,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         resReg.clean();
+
+        cleanupTxs();
 
         super.onDisconnected();
     }
@@ -215,5 +252,62 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
             return new ClientAffinityTopologyVersion(newVer, changed);
         }
+    }
+
+    /**
+     * Next transaction id for this connection.
+     */
+    public int nextTxId() {
+        int txId = txIdSeq.incrementAndGet();
+
+        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
+    }
+
+    /**
+     * Transaction context by transaction id.
+     *
+     * @param txId Tx ID.
+     */
+    public ClientTxContext txContext(int txId) {
+        return txs.get(txId);
+    }
+
+    /**
+     * Add new transaction context to connection.
+     *
+     * @param txCtx Tx context.
+     */
+    public void addTxContext(ClientTxContext txCtx) {
+        if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
+            txsCnt.decrementAndGet();
+
+            throw new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
+                "(" + maxActiveTxCnt + ") exceeded. To start a new transaction you need to wait for some of currently " +
+                "active transactions complete. To change the limit set up " +
+                "ThinClientConfiguration.MaxActiveTxPerConnection property.");
+        }
+
+        txs.put(txCtx.txId(), txCtx);
+    }
+
+    /**
+     * Remove transaction context from connection.
+     *
+     * @param txId Tx ID.
+     */
+    public void removeTxContext(int txId) {
+        txs.remove(txId);
+
+        txsCnt.decrementAndGet();
+    }
+
+    /**
+     *
+     */
+    private void cleanupTxs() {
+        for (ClientTxContext txCtx : txs.values())
+            txCtx.close();
+
+        txs.clear();
     }
 }

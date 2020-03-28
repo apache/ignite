@@ -17,7 +17,9 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +27,7 @@ import java.util.Map;
  * Represents the cross validation procedure result,
  * wraps score and values of hyper parameters associated with these values.
  */
-public class CrossValidationResult {
+public class CrossValidationResult implements Serializable {
     /** Best hyper params. */
     private Map<String, Double> bestHyperParams;
 
@@ -40,18 +42,12 @@ public class CrossValidationResult {
     private Map<Map<String, Double>, double[]> scoringBoard = new HashMap<>();
 
     /**
-     * Default constructor.
-     */
-    CrossValidationResult() {
-    }
-
-    /**
      * Gets the best value for the specific hyper parameter.
      *
      * @param hyperParamName Hyper parameter name.
      * @return The value.
      */
-    public double getBest(String hyperParamName) {
+    public synchronized double getBest(String hyperParamName) {
         return bestHyperParams.get(hyperParamName);
     }
 
@@ -60,7 +56,7 @@ public class CrossValidationResult {
      *
      * @return The value.
      */
-    public double[] getBestScore() {
+    public synchronized double[] getBestScore() {
         return bestScore;
     }
 
@@ -70,16 +66,18 @@ public class CrossValidationResult {
      * @param locScores The scores.
      * @param paramMap  The parameter set associated with the given scores.
      */
-    void addScores(double[] locScores, Map<String, Double> paramMap) {
+    synchronized void addScores(double[] locScores, Map<String, Double> paramMap) {
         scoringBoard.put(paramMap, locScores);
     }
 
     /**
      * Gets the the average value of best score array.
      *
+     * Default value is Double.MIN_VALUE.
+     *
      * @return The value.
      */
-    public double getBestAvgScore() {
+    public synchronized double getBestAvgScore() {
         if (bestScore == null)
             return Double.MIN_VALUE;
         return Arrays.stream(bestScore).average().orElse(Double.MIN_VALUE);
@@ -90,7 +88,7 @@ public class CrossValidationResult {
      *
      * @param bestScore The best score.
      */
-    void setBestScore(double[] bestScore) {
+    synchronized void setBestScore(double[] bestScore) {
         this.bestScore = bestScore;
     }
 
@@ -99,7 +97,7 @@ public class CrossValidationResult {
      *
      * @param bestHyperParams The best hyper parameters.
      */
-    void setBestHyperParams(Map<String, Double> bestHyperParams) {
+    public synchronized void setBestHyperParams(Map<String, Double> bestHyperParams) {
         this.bestHyperParams = bestHyperParams;
     }
 
@@ -111,8 +109,8 @@ public class CrossValidationResult {
      *
      * @return The Scoring Board.
      */
-    public Map<Map<String, Double>, double[]> getScoringBoard() {
-        return scoringBoard;
+    public synchronized Map<Map<String, Double>, double[]> getScoringBoard() {
+        return Collections.unmodifiableMap(scoringBoard);
     }
 
     /**
@@ -120,12 +118,12 @@ public class CrossValidationResult {
      *
      * @return The value.
      */
-    public Map<String, Double> getBestHyperParams() {
-        return bestHyperParams;
+    public synchronized Map<String, Double> getBestHyperParams() {
+        return Collections.unmodifiableMap(bestHyperParams);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override public synchronized String toString() {
         return "CrossValidationResult{" +
             "bestHyperParams=" + bestHyperParams +
             ", bestScore=" + Arrays.toString(bestScore) +

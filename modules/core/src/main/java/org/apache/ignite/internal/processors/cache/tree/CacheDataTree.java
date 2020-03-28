@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -36,16 +37,17 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccDataPageClosure;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.TestOnly;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -60,7 +62,7 @@ import static org.apache.ignite.internal.util.GridArrays.clearTail;
  */
 public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** */
-    private static CacheDataRow[] EMPTY_ROWS = {};
+    private static final CacheDataRow[] EMPTY_ROWS = {};
 
     /** */
     private static Boolean lastFindWithDataPageScan;
@@ -90,10 +92,13 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         ReuseList reuseList,
         CacheDataRowStore rowStore,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        PageLockListener lockLsnr
     ) throws IgniteCheckedException {
-        super(name,
+        super(
+            name,
             grp.groupId(),
+            grp.name(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),
@@ -101,7 +106,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             innerIO(grp),
             leafIO(grp),
-            grp.shared().kernalContext().failure());
+            grp.shared().kernalContext().failure(),
+            lockLsnr
+        );
 
         assert rowStore != null;
 
@@ -131,6 +138,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /**
      * @return {@code true} If the last observed call to the method {@code find(...)} used data page scan.
      */
+    @TestOnly
     public static Boolean isLastFindWithDataPageScan() {
         Boolean res = lastFindWithDataPageScan;
         lastFindWithDataPageScan = null;
@@ -209,6 +217,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
              * @throws IgniteCheckedException If failed.
              */
             private boolean readNextDataPage() throws IgniteCheckedException {
+                checkDestroyed();
+
                 for (;;) {
                     if (++curPage >= pagesCnt) {
                         // Reread number of pages when we reach it (it may grow).
@@ -231,6 +241,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                         long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
 
                         try {
+                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998.
+                            // Here we should also exclude fragmented pages that don't contain the head of the entry.
                             if (PageIO.getType(pageAddr) != T_DATA)
                                 continue; // Not a data page.
 

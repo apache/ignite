@@ -17,7 +17,6 @@
 
 package org.apache.ignite.tests.utils;
 
-
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.tests.load.Generator;

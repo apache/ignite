@@ -71,14 +71,9 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /** Cache entry operations' counts. */
     private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap<>();
 
-    /** Client. */
-    private static boolean client = false;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        client = false;
 
         super.afterTest();
     }
@@ -200,9 +195,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
             log.info("CQ started on node: " + ignite.cluster().localNode().id());
         }
 
-        client = true;
-
-        startGrid(nodesCnt);
+        startClientGrid(nodesCnt);
 
         awaitPartitionMapExchange();
 
@@ -295,15 +288,6 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         replCache.query(qry);
 
         return node;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
     }
 
     /**

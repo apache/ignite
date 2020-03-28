@@ -17,6 +17,17 @@
 
 package org.apache.ignite.ml.sparkmodelparser;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Scanner;
+import java.util.TreeMap;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -27,6 +38,9 @@ import org.apache.ignite.ml.composition.boosting.GDBTrainer;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregator;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.inference.Model;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -52,11 +66,6 @@ import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.*;
-
 /** Parser of Spark models. */
 public class SparkModelParser {
     /**
@@ -64,38 +73,83 @@ public class SparkModelParser {
      *
      * @param pathToMdl Path to directory with saved model.
      * @param parsedSparkMdl Parsed spark model.
+     * @param learningEnvironment Learning environment.
+     */
+    public static Model parse(String pathToMdl, SupportedSparkModels parsedSparkMdl,
+        LearningEnvironment learningEnvironment) throws IllegalArgumentException {
+        return extractModel(pathToMdl, parsedSparkMdl, learningEnvironment);
+    }
+
+    /**
+     * Load model from parquet (presented as a directory).
+     *
+     * @param pathToMdl Path to directory with saved model.
+     * @param parsedSparkMdl Parsed spark model.
      */
     public static Model parse(String pathToMdl, SupportedSparkModels parsedSparkMdl) throws IllegalArgumentException {
+        LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
+        LearningEnvironment environment = envBuilder.buildForTrainer();
+        return extractModel(pathToMdl, parsedSparkMdl, environment);
+    }
+
+    /**
+     * @param pathToMdl Path to model.
+     * @param parsedSparkMdl Parsed spark model.
+     * @param learningEnvironment Learning environment.
+     */
+    private static Model extractModel(String pathToMdl, SupportedSparkModels parsedSparkMdl,
+        LearningEnvironment learningEnvironment) {
         File mdlDir = IgniteUtils.resolveIgnitePath(pathToMdl);
 
-        if (mdlDir == null)
-            throw new IllegalArgumentException("Directory not found or empty [directory_path=" + pathToMdl + "]");
+        if (mdlDir == null) {
+            String msg = "Directory not found or empty [directory_path=" + pathToMdl + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
-        if (!mdlDir.isDirectory())
-            throw new IllegalArgumentException("Spark Model Parser supports loading from directory only. " +
-                "The specified path " + pathToMdl + " is not the path to directory.");
+        if (!mdlDir.isDirectory()) {
+            String msg = "Spark Model Parser supports loading from directory only. " +
+                "The specified path " + pathToMdl + " is not the path to directory.";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         String[] files = mdlDir.list();
-        if (files.length == 0)
-            throw new IllegalArgumentException("Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]");
+        if (files.length == 0) {
+            String msg = "Directory contain 0 files and sub-directories [directory_path=" + pathToMdl + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
-        if (Arrays.stream(files).noneMatch("data"::equals))
-            throw new IllegalArgumentException("Directory should contain data sub-directory [directory_path=" + pathToMdl + "]");
+        if (Arrays.stream(files).noneMatch("data"::equals)) {
+            String msg = "Directory should contain data sub-directory [directory_path=" + pathToMdl + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
-        if (Arrays.stream(files).noneMatch("metadata"::equals))
-            throw new IllegalArgumentException("Directory should contain metadata sub-directory [directory_path=" + pathToMdl + "]");
+        if (Arrays.stream(files).noneMatch("metadata"::equals)) {
+            String msg = "Directory should contain metadata sub-directory [directory_path=" + pathToMdl + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         String pathToData = pathToMdl + File.separator + "data";
         File dataDir = IgniteUtils.resolveIgnitePath(pathToData);
 
         File[] dataParquetFiles = dataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
-        if (dataParquetFiles.length == 0)
-            throw new IllegalArgumentException("Directory should contain parquet file " +
-                "with model [directory_path=" + pathToData + "]");
+        if (dataParquetFiles.length == 0) {
+            String msg = "Directory should contain parquet file " +
+                "with model [directory_path=" + pathToData + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
-        if (dataParquetFiles.length > 1)
-            throw new IllegalArgumentException("Directory should contain only one parquet file " +
-                "with model [directory_path=" + pathToData + "]");
+        if (dataParquetFiles.length > 1) {
+            String msg = "Directory should contain only one parquet file " +
+                "with model [directory_path=" + pathToData + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         String pathToMdlFile = dataParquetFiles[0].getPath();
 
@@ -103,40 +157,54 @@ public class SparkModelParser {
         File metadataDir = IgniteUtils.resolveIgnitePath(pathToMetadata);
         String[] metadataFiles = metadataDir.list();
 
-        if (Arrays.stream(metadataFiles).noneMatch("part-00000"::equals))
-            throw new IllegalArgumentException("Directory should contain json file with model metadata " +
-                "with name part-00000 [directory_path=" + pathToMetadata + "]");
+        if (Arrays.stream(metadataFiles).noneMatch("part-00000"::equals)) {
+            String msg = "Directory should contain json file with model metadata " +
+                "with name part-00000 [directory_path=" + pathToMetadata + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         try {
-            validateMetadata(pathToMetadata, parsedSparkMdl);
+            validateMetadata(pathToMetadata, parsedSparkMdl, learningEnvironment);
         }
         catch (FileNotFoundException e) {
-            throw new IllegalArgumentException("Directory should contain json file with model metadata " +
-                "with name part-00000 [directory_path=" + pathToMetadata + "]");
+            String msg = "Directory should contain json file with model metadata " +
+                "with name part-00000 [directory_path=" + pathToMetadata + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
         }
 
         if (shouldContainTreeMetadataSubDirectory(parsedSparkMdl)) {
-            if (Arrays.stream(files).noneMatch("treesMetadata"::equals))
-                throw new IllegalArgumentException("Directory should contain treeMetadata sub-directory [directory_path=" + pathToMdl + "]");
+            if (Arrays.stream(files).noneMatch("treesMetadata"::equals)) {
+                String msg = "Directory should contain treeMetadata sub-directory [directory_path=" + pathToMdl + "]";
+                learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+                throw new IllegalArgumentException(msg);
+            }
 
             String pathToTreesMetadata = pathToMdl + File.separator + "treesMetadata";
             File treesMetadataDir = IgniteUtils.resolveIgnitePath(pathToTreesMetadata);
 
             File[] treesMetadataParquetFiles = treesMetadataDir.listFiles((dir, name) -> name.matches("^part-.*\\.snappy\\.parquet$"));
-            if (treesMetadataParquetFiles.length == 0)
-                throw new IllegalArgumentException("Directory should contain parquet file " +
-                    "with model treesMetadata [directory_path=" + pathToTreesMetadata + "]");
+            if (treesMetadataParquetFiles.length == 0) {
+                String msg = "Directory should contain parquet file " +
+                    "with model treesMetadata [directory_path=" + pathToTreesMetadata + "]";
+                learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+                throw new IllegalArgumentException(msg);
+            }
 
-            if (treesMetadataParquetFiles.length > 1)
-                throw new IllegalArgumentException("Directory should contain only one parquet file " +
-                    "with model [directory_path=" + pathToTreesMetadata + "]");
+            if (treesMetadataParquetFiles.length > 1) {
+                String msg = "Directory should contain only one parquet file " +
+                    "with model [directory_path=" + pathToTreesMetadata + "]";
+                learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+                throw new IllegalArgumentException(msg);
+            }
 
             String pathToTreesMetadataFile = treesMetadataParquetFiles[0].getPath();
 
-            return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl);
+            return parseDataWithMetadata(pathToMdlFile, pathToTreesMetadataFile, parsedSparkMdl, learningEnvironment);
         }
         else
-            return parseData(pathToMdlFile, parsedSparkMdl);
+            return parseData(pathToMdlFile, parsedSparkMdl, learningEnvironment);
     }
 
     /**
@@ -146,9 +214,10 @@ public class SparkModelParser {
      *
      * @param pathToMetadata Path to metadata.
      * @param parsedSparkMdl Parsed spark model.
+     * @param learningEnvironment Learning environment.
      */
     private static void validateMetadata(String pathToMetadata,
-        SupportedSparkModels parsedSparkMdl) throws FileNotFoundException {
+        SupportedSparkModels parsedSparkMdl, LearningEnvironment learningEnvironment) throws FileNotFoundException {
         File metadataFile = IgniteUtils.resolveIgnitePath(pathToMetadata + File.separator + "part-00000");
         if (metadataFile != null) {
             Scanner sc = new Scanner(metadataFile);
@@ -159,9 +228,12 @@ public class SparkModelParser {
                     isInvalid = false;
             }
 
-            if (isInvalid)
-                throw new IllegalArgumentException("The metadata file contains incorrect model metadata. " +
-                    "It should contain " + parsedSparkMdl.getMdlClsNameInSpark() + " model metadata.");
+            if (isInvalid) {
+                String msg = "The metadata file contains incorrect model metadata. " +
+                    "It should contain " + parsedSparkMdl.getMdlClsNameInSpark() + " model metadata.";
+                learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+                throw new IllegalArgumentException(msg);
+            }
         }
     }
 
@@ -178,32 +250,38 @@ public class SparkModelParser {
      *
      * @param pathToMdl Hadoop path to model saved from Spark.
      * @param parsedSparkMdl One of supported Spark models to parse it.
+     * @param learningEnvironment Learning environment.
      * @return Instance of parsedSparkMdl model.
      */
-    private static Model parseData(String pathToMdl, SupportedSparkModels parsedSparkMdl) {
+    private static Model parseData(String pathToMdl, SupportedSparkModels parsedSparkMdl,
+        LearningEnvironment learningEnvironment) {
         File mdlRsrc = IgniteUtils.resolveIgnitePath(pathToMdl);
-        if (mdlRsrc == null)
-            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
+        if (mdlRsrc == null) {
+            String msg = "Resource not found [resource_path=" + pathToMdl + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         String ignitePathToMdl = mdlRsrc.getPath();
+        learningEnvironment.logger().log(MLLogger.VerboseLevel.LOW, "Starting loading model by the path: " + ignitePathToMdl);
 
         switch (parsedSparkMdl) {
             case LOG_REGRESSION:
-                return loadLogRegModel(ignitePathToMdl);
+                return loadLogRegModel(ignitePathToMdl, learningEnvironment);
             case LINEAR_REGRESSION:
-                return loadLinRegModel(ignitePathToMdl);
+                return loadLinRegModel(ignitePathToMdl, learningEnvironment);
             case LINEAR_SVM:
-                return loadLinearSVMModel(ignitePathToMdl);
+                return loadLinearSVMModel(ignitePathToMdl, learningEnvironment);
             case DECISION_TREE:
-                return loadDecisionTreeModel(ignitePathToMdl);
+                return loadDecisionTreeModel(ignitePathToMdl, learningEnvironment);
             case RANDOM_FOREST:
-                return loadRandomForestModel(ignitePathToMdl);
+                return loadRandomForestModel(ignitePathToMdl, learningEnvironment);
             case KMEANS:
-                return loadKMeansModel(ignitePathToMdl);
+                return loadKMeansModel(ignitePathToMdl, learningEnvironment);
             case DECISION_TREE_REGRESSION:
-                return loadDecisionTreeRegressionModel(ignitePathToMdl);
+                return loadDecisionTreeRegressionModel(ignitePathToMdl, learningEnvironment);
             case RANDOM_FOREST_REGRESSION:
-                return loadRandomForestRegressionModel(ignitePathToMdl);
+                return loadRandomForestRegressionModel(ignitePathToMdl, learningEnvironment);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
@@ -215,27 +293,36 @@ public class SparkModelParser {
      * @param pathToMdl Hadoop path to model saved from Spark.
      * @param pathToMetaData Hadoop path to metadata saved from Spark.
      * @param parsedSparkMdl One of supported Spark models to parse it.
+     * @param learningEnvironment Learning environment.
      * @return Instance of parsedSparkMdl model.
      */
     private static Model parseDataWithMetadata(String pathToMdl, String pathToMetaData,
-        SupportedSparkModels parsedSparkMdl) {
+        SupportedSparkModels parsedSparkMdl, LearningEnvironment learningEnvironment) {
         File mdlRsrc1 = IgniteUtils.resolveIgnitePath(pathToMdl);
-        if (mdlRsrc1 == null)
-            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMdl + "]");
+        if (mdlRsrc1 == null) {
+            String msg = "Resource not found [resource_path=" + pathToMdl + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         String ignitePathToMdl = mdlRsrc1.getPath();
+        learningEnvironment.logger().log(MLLogger.VerboseLevel.LOW, "Starting loading model by the path: " + ignitePathToMdl);
 
         File mdlRsrc2 = IgniteUtils.resolveIgnitePath(pathToMetaData);
-        if (mdlRsrc2 == null)
-            throw new IllegalArgumentException("Resource not found [resource_path=" + pathToMetaData + "]");
+        if (mdlRsrc2 == null) {
+            String msg = "Resource not found [resource_path=" + pathToMetaData + "]";
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
+            throw new IllegalArgumentException(msg);
+        }
 
         String ignitePathToMdlMetaData = mdlRsrc2.getPath();
+        learningEnvironment.logger().log(MLLogger.VerboseLevel.LOW, "Starting loading model metadata by the path: " + ignitePathToMdlMetaData);
 
         switch (parsedSparkMdl) {
             case GRADIENT_BOOSTED_TREES:
-                return loadGBTClassifierModel(ignitePathToMdl, ignitePathToMdlMetaData);
+                return loadGBTClassifierModel(ignitePathToMdl, ignitePathToMdlMetaData, learningEnvironment);
             case GRADIENT_BOOSTED_TREES_REGRESSION:
-                return loadGBTRegressionModel(ignitePathToMdl, ignitePathToMdlMetaData);
+                return loadGBTRegressionModel(ignitePathToMdl, ignitePathToMdlMetaData, learningEnvironment);
             default:
                 throw new UnsupportedSparkModelException(ignitePathToMdl);
         }
@@ -245,9 +332,11 @@ public class SparkModelParser {
      * Load Random Forest Regression model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static Model loadRandomForestRegressionModel(String pathToMdl) {
-        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl);
+    private static Model loadRandomForestRegressionModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
+        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl, learningEnvironment);
         if (models == null)
             return null;
         return new ModelsComposition(models, new MeanValuePredictionsAggregator());
@@ -257,17 +346,21 @@ public class SparkModelParser {
      * Load Decision Tree Regression model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment learningEnvironment
      */
-    private static Model loadDecisionTreeRegressionModel(String pathToMdl) {
-        return loadDecisionTreeModel(pathToMdl);
+    private static Model loadDecisionTreeRegressionModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
+        return loadDecisionTreeModel(pathToMdl, learningEnvironment);
     }
 
     /**
      * Load K-Means model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment learningEnvironment
      */
-    private static Model loadKMeansModel(String pathToMdl) {
+    private static Model loadKMeansModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
         Vector[] centers = null;
 
         try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
@@ -299,7 +392,8 @@ public class SparkModelParser {
 
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
 
@@ -311,11 +405,13 @@ public class SparkModelParser {
      *
      * @param pathToMdl Path to model.
      * @param pathToMdlMetaData Path to model meta data.
+     * @param learningEnvironment learningEnvironment
      */
-    private static Model loadGBTRegressionModel(String pathToMdl, String pathToMdlMetaData) {
+    private static Model loadGBTRegressionModel(String pathToMdl, String pathToMdlMetaData,
+        LearningEnvironment learningEnvironment) {
         IgniteFunction<Double, Double> lbMapper = lb -> lb;
 
-        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper);
+        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper, learningEnvironment);
     }
 
     /**
@@ -323,11 +419,13 @@ public class SparkModelParser {
      *
      * @param pathToMdl Path to model.
      * @param pathToMdlMetaData Path to model meta data.
+     * @param learningEnvironment learningEnvironment
      */
-    private static Model loadGBTClassifierModel(String pathToMdl, String pathToMdlMetaData) {
+    private static Model loadGBTClassifierModel(String pathToMdl, String pathToMdlMetaData,
+        LearningEnvironment learningEnvironment) {
         IgniteFunction<Double, Double> lbMapper = lb -> lb > 0.5 ? 1.0 : 0.0;
 
-        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper);
+        return parseAndBuildGDBModel(pathToMdl, pathToMdlMetaData, lbMapper, learningEnvironment);
     }
 
     /**
@@ -336,9 +434,10 @@ public class SparkModelParser {
      * @param pathToMdl Path to model.
      * @param pathToMdlMetaData Path to model meta data.
      * @param lbMapper Label mapper.
+     * @param learningEnvironment learningEnvironment
      */
     @Nullable private static Model parseAndBuildGDBModel(String pathToMdl, String pathToMdlMetaData,
-        IgniteFunction<Double, Double> lbMapper) {
+        IgniteFunction<Double, Double> lbMapper, LearningEnvironment learningEnvironment) {
         double[] treeWeights = null;
         final Map<Integer, Double> treeWeightsByTreeID = new HashMap<>();
 
@@ -359,7 +458,8 @@ public class SparkModelParser {
             }
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file with MetaData by the path: " + pathToMdlMetaData);
+            String msg = "Error reading parquet file with MetaData by the path: " + pathToMdlMetaData;
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
 
@@ -378,6 +478,7 @@ public class SparkModelParser {
                 for (int i = 0; i < rows; i++) {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
+
                     final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
                     NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
 
@@ -399,7 +500,8 @@ public class SparkModelParser {
             return new GDBTrainer.GDBModel(models, new WeightedPredictionsAggregator(treeWeights), lbMapper);
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
         return null;
@@ -409,9 +511,11 @@ public class SparkModelParser {
      * Load RF model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static Model loadRandomForestModel(String pathToMdl) {
-        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl);
+    private static Model loadRandomForestModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
+        final List<IgniteModel<Vector, Double>> models = parseTreesForRandomForestAlgorithm(pathToMdl, learningEnvironment);
         if (models == null)
             return null;
         return new ModelsComposition(models, new OnMajorityPredictionsAggregator());
@@ -421,8 +525,10 @@ public class SparkModelParser {
      * Parse trees from file for common Random Forest ensemble.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static List<IgniteModel<Vector, Double>> parseTreesForRandomForestAlgorithm(String pathToMdl) {
+    private static List<IgniteModel<Vector, Double>> parseTreesForRandomForestAlgorithm(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
         try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
             PageReadStore pages;
 
@@ -457,7 +563,8 @@ public class SparkModelParser {
             return models;
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
         return null;
@@ -467,8 +574,9 @@ public class SparkModelParser {
      * Load Decision Tree model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static Model loadDecisionTreeModel(String pathToMdl) {
+    private static Model loadDecisionTreeModel(String pathToMdl, LearningEnvironment learningEnvironment) {
         try (ParquetFileReader r = ParquetFileReader.open(HadoopInputFile.fromPath(new Path(pathToMdl), new Configuration()))) {
             PageReadStore pages;
 
@@ -489,7 +597,8 @@ public class SparkModelParser {
             return buildDecisionTreeModel(nodes);
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
         return null;
@@ -578,8 +687,10 @@ public class SparkModelParser {
      * Load SVM model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static Model loadLinearSVMModel(String pathToMdl) {
+    private static Model loadLinearSVMModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
         Vector coefficients = null;
         double interceptor = 0;
 
@@ -600,7 +711,8 @@ public class SparkModelParser {
             }
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
 
@@ -611,8 +723,10 @@ public class SparkModelParser {
      * Load linear regression model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static Model loadLinRegModel(String pathToMdl) {
+    private static Model loadLinRegModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
         Vector coefficients = null;
         double interceptor = 0;
 
@@ -634,7 +748,8 @@ public class SparkModelParser {
 
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
 
@@ -645,8 +760,10 @@ public class SparkModelParser {
      * Load logistic regression model.
      *
      * @param pathToMdl Path to model.
+     * @param learningEnvironment Learning environment.
      */
-    private static Model loadLogRegModel(String pathToMdl) {
+    private static Model loadLogRegModel(String pathToMdl,
+        LearningEnvironment learningEnvironment) {
         Vector coefficients = null;
         double interceptor = 0;
 
@@ -668,9 +785,11 @@ public class SparkModelParser {
 
         }
         catch (IOException e) {
-            System.out.println("Error reading parquet file.");
+            String msg = "Error reading parquet file: " + e.getMessage();
+            learningEnvironment.logger().log(MLLogger.VerboseLevel.HIGH, msg);
             e.printStackTrace();
         }
+
         return new LogisticRegressionModel(coefficients, interceptor);
     }
 

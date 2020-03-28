@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -29,22 +28,13 @@ import org.junit.Test;
  *
  */
 public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(1)))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testSystemCacheOnClientNode() throws Exception {
-        startGrids(2);
+        startGrid(0);
+        startClientGrid(1);
 
         final IgniteKernal ignite = (IgniteKernal)ignite(1);
 

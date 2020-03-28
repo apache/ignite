@@ -44,6 +44,7 @@ public class LossFunctions {
                 }).sum() / (vector.size());
             }
         };
+
     /**
      * Log loss function.
      */

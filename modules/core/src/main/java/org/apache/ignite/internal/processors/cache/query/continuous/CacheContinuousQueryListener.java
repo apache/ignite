@@ -30,11 +30,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CacheContinuousQueryListener<K, V> {
     /**
-     * Query execution callback.
-     */
-    public void onExecution();
-
-    /**
      * Entry update callback.
      *
      * @param evt Event

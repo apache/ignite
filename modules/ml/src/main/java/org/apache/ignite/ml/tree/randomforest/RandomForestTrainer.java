@@ -43,7 +43,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
@@ -68,7 +68,7 @@ import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistribution
  * @param <T> Type of child of RandomForestTrainer using in with-methods.
  */
 public abstract class RandomForestTrainer<L, S extends ImpurityComputer<BootstrappedVector, S>,
-    T extends RandomForestTrainer<L, S, T>> extends DatasetTrainer<ModelsComposition, Double> {
+    T extends RandomForestTrainer<L, S, T>> extends SingleLabelDatasetTrainer<ModelsComposition> {
     /** Bucket size factor. */
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 
@@ -82,7 +82,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     private int maxDepth = 5;
 
     /** Min impurity delta. */
-    private double minImpurityDelta = 0.0;
+    private double minImpurityDelta;
 
     /** Features Meta. */
     private List<FeatureMeta> meta;
@@ -110,13 +110,14 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsComposition fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                   Preprocessor<K, V> preprocessor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(preprocessor, amountOfTrees, subSampleSize))) {
+            new BootstrappedDatasetBuilder<>(preprocessor, amountOfTrees, subSampleSize),
+            learningEnvironment())) {
 
             if (!init(dataset))
                 return buildComposition(Collections.emptyList());

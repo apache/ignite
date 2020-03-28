@@ -105,7 +105,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      */
     @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
-        super(tbl);
+        super(tbl, idxName, cols, IndexType.createNonUnique(false, false, true));
 
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
@@ -118,8 +118,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         if ((cols[0].sortType & SortOrder.NULLS_LAST) != 0)
             throw DbException.getUnsupportedException("cannot do nulls last");
-
-        initBaseIndex(tbl, 0, idxName, cols, IndexType.createNonUnique(false, false, true));
 
         table = tbl;
 
@@ -412,6 +410,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
+        return rowCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
         return rowCnt;
     }
 

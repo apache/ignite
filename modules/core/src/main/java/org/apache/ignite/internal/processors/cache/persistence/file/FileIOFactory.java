@@ -39,7 +39,7 @@ public interface FileIOFactory extends Serializable {
      */
     default FileIO create(File file) throws IOException{
         return create(file, CREATE, READ, WRITE);
-    };
+    }
 
     /**
      * Creates I/O interface for file with specified mode.

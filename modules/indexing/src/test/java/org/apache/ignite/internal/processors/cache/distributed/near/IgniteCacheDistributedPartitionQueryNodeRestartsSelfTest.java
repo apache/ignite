@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -98,7 +99,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
         }, RESTART_THREADS_CNT);
 
         // Test duration.
-        U.sleep(60_000);
+        U.sleep(GridTestUtils.SF.applyLB(60_000, 20_000));
 
         stop.set(true);
 

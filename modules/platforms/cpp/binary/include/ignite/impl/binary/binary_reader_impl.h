@@ -30,10 +30,12 @@
 #include "ignite/common/utils.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
+#include "ignite/binary/binary_enum_entry.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
 #include "ignite/time.h"
+#include "ignite/binary/binary_enum.h"
 
 namespace ignite
 {
@@ -65,6 +67,7 @@ namespace ignite
                  * @param rawOff Raw data offset.
                  * @param footerBegin Footer beginning absolute position in stream.
                  * @param footerEnd Footer ending absolute position in stream.
+                 * @param schemaType Schema Type.
                  */
                 BinaryReaderImpl(interop::InteropInputStream* stream, BinaryIdResolver* idRslvr,
                     int32_t pos, bool usrType, int32_t typeId, int32_t hashCode, int32_t len, int32_t rawOff,
@@ -559,10 +562,25 @@ namespace ignite
                 int32_t ReadTimeArray(const char* fieldName, Time* res, const int32_t len);
 
                 /**
+                 * Read enum entry.
+                 *
+                 * @return Enum entry.
+                 */
+                ignite::binary::BinaryEnumEntry ReadBinaryEnum();
+
+                /**
+                 * Read enum entry.
+                 *
+                 * @param fieldName Field name.
+                 * @return Enum entry.
+                 */
+                ignite::binary::BinaryEnumEntry ReadBinaryEnum(const char* fieldName);
+
+                /**
                  * Read string.
                  *
                  * @param len Expected length of string.
-                 * @param res Array to store data to (should be able to acocmodate null-terminator).
+                 * @param res Array to store data to (should be able to accomodate null-terminator).
                  * @return Actual amount of elements read. If "len" argument is less than actual
                  *     array size or resulting array is set to null, nothing will be written
                  *     to resulting array and returned value will contain required array length.
@@ -862,6 +880,33 @@ namespace ignite
                 }
 
                 /**
+                 * Read enum value.
+                 *
+                 * @return Enum value.
+                 */
+                template<typename T>
+                T ReadEnum()
+                {
+                    ignite::binary::BinaryEnumEntry entry = ReadBinaryEnum();
+
+                    return DeserializeEnumEntry<T>(entry);
+                }
+
+                /**
+                 * Read enum value.
+                 *
+                 * @param fieldName Field name.
+                 * @return Enum value.
+                 */
+                template<typename T>
+                T ReadEnum(const char* fieldName)
+                {
+                    ignite::binary::BinaryEnumEntry entry = ReadBinaryEnum(fieldName);
+
+                    return DeserializeEnumEntry<T>(entry);
+                }
+
+                /**
                  * Try read object.
                  * Reads value, stores it to res and returns true if the value is
                  * not null. Otherwise just returns false.
@@ -1105,6 +1150,36 @@ namespace ignite
                 BinaryOffsetType::Type schemaType;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryReaderImpl)
+
+                /**
+                 * Deserialize EnumEntry into user type.
+                 *
+                 * @param entry Entry to deserialize.
+                 * @return User type value.
+                 */
+                template<typename T>
+                T DeserializeEnumEntry(ignite::binary::BinaryEnumEntry entry)
+                {
+                    typedef ignite::binary::BinaryEnum<T> TypeMeta;
+
+                    if (entry.IsNull())
+                    {
+                        T res;
+
+                        TypeMeta::GetNull(res);
+
+                        return res;
+                    }
+
+                    if (entry.GetTypeId() != TypeMeta::GetTypeId())
+                    {
+                        IGNITE_ERROR_FORMATTED_2(ignite::IgniteError::IGNITE_ERR_BINARY,
+                            "Unexpected type ID during deserialization of the enum: ",
+                            "expected", TypeMeta::GetTypeId(), "actual", entry.GetTypeId());
+                    }
+
+                    return TypeMeta::FromOrdinal(entry.GetOrdinal());
+                }
                     
                 /**
                  * Internal routine to read Guid array.
@@ -1407,6 +1482,13 @@ namespace ignite
                  * @param hdr Actual header.
                  */
                 void ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr) const;
+
+                /**
+                 * Read enum entry.
+                 *
+                 * @return Enum entry.
+                 */
+                ignite::binary::BinaryEnumEntry ReadBinaryEnumInternal();
 
                 /**
                  * Internal string read routine.

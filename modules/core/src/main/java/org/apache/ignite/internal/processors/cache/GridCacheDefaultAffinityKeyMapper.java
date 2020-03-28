@@ -27,6 +27,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.GridReflectionCache;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -76,6 +77,9 @@ public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
      */
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
+
+        if(key.getClass().isArray())
+            return IgniteUtils.hashCode(key);
 
         try {
             Object o = reflectCache.firstFieldValue(key);

@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstrac
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -206,7 +207,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                         }
                     }
                 });
-
 
                 for (final Object key : keys) {
                     runInAllTxModes(new TestRunnable() {
@@ -752,6 +752,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11884")
     @Test
     public void testInvokeAll() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -936,6 +937,7 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11884")
     @Test
     public void testInvokeAllAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {

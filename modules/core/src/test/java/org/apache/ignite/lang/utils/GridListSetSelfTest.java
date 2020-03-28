@@ -78,7 +78,6 @@ public class GridListSetSelfTest extends GridCommonAbstractTest {
         assertEquals(7, old.value());
         assertEquals(7, old.other());
 
-
         // Size should not have changed.
         assertEquals(8, set.size());
 

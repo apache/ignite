@@ -29,8 +29,12 @@
         <property name="eachLine" value="true"/>
     </module>
 
+    <!-- Misc Checks. See: http://checkstyle.sourceforge.net/config_misc.html -->
+    <module name="NewlineAtEndOfFile"/>
+
     <module name="TreeWalker">
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
+        <module name="RedundantImport"/>
         <module name="UnusedImports"/>
 
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->
@@ -38,5 +42,15 @@
 
         <!--Annotation checks. See: http://checkstyle.sourceforge.net/config_annotation.html-->
         <module name="MissingOverride"/>
+
+        <!-- Empty line checks. See: http://checkstyle.sourceforge.net/config_whitespace.html#EmptyLineSeparator -->
+        <module name="EmptyLineSeparator">
+            <!-- PACKAGE_DEF excluded according to Ignite code style. -->
+            <property name="tokens" value="IMPORT, STATIC_IMPORT, CLASS_DEF, INTERFACE_DEF, ENUM_DEF, STATIC_INIT,
+                INSTANCE_INIT, METHOD_DEF, CTOR_DEF, VARIABLE_DEF" />
+
+            <property name="allowMultipleEmptyLines" value="false" />
+            <property name="allowMultipleEmptyLinesInsideClassMembers" value="false" />
+        </module>
     </module>
 </module>

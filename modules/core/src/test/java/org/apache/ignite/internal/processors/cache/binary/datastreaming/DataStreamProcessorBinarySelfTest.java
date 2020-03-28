@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.stream.StreamReceiver;
@@ -37,6 +38,8 @@ public class DataStreamProcessorBinarySelfTest extends DataStreamProcessorSelfTe
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         cfg.setMarshaller(marsh);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

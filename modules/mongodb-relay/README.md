@@ -1,8 +1,4 @@
-[![Build Status](https://travis-ci.org/bwaldvogel/mongo-java-server.png?branch=master)](https://travis-ci.org/bwaldvogel/mongo-java-server)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.bwaldvogel/mongo-java-server/badge.svg)](http://maven-badges.herokuapp.com/maven-central/de.bwaldvogel/mongo-java-server)
-[![Coverage Status](https://coveralls.io/repos/github/bwaldvogel/mongo-java-server/badge.svg?branch=master)](https://coveralls.io/github/bwaldvogel/mongo-java-server?branch=master)
-[![BSD 3-Clause License](https://img.shields.io/github/license/bwaldvogel/mongo-java-server.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/BenediktWaldvogel)
+
 
 # MongoDB Java Server #
 

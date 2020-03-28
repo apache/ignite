@@ -41,7 +41,7 @@ import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
  */
 public abstract class Vectorizer<K, V, C extends Serializable, L> implements FeatureLabelExtractor<K, V, L> {
     /** Label coordinate shortcut. */
-    private LabelCoordinate lbCoordinateShortcut = null;
+    private LabelCoordinate lbCoordinateShortcut;
 
     /** Serial version uid. */
     private static final long serialVersionUID = 4301406952131379459L;
@@ -238,7 +238,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param <C> Type of coordinate.
      * @param <L> Type od label.
      */
-    public static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
+    public abstract static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
         /** {@inheritDoc} */
         @Override protected Double feature(C coord, K key, V value) {
             throw new IllegalStateException();

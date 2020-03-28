@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for mappers used in dataset splitters.
  */
+
 package org.apache.ignite.ml.selection.split.mapper;

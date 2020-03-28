@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -92,7 +93,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     @ComputeTaskName(TASK_NAME)
     private static class TestTask implements ComputeTask<Void, String> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) {
             return F.asMap(new ComputeJobAdapter() {
                 @TaskSessionResource

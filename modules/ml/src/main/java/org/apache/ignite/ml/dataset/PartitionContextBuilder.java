@@ -51,7 +51,6 @@ public interface PartitionContextBuilder<K, V, C extends Serializable> extends S
      */
     public C build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
 
-
     /**
      * Builds a new partition {@code context} from an {@code upstream} data.
      * Important: there is no guarantee that there will be no more than one UpstreamEntry with given key,

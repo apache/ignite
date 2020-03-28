@@ -40,6 +40,7 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -76,6 +77,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         return cfg;
     }
+
     /**
      * Tests that failover don't pick local node if it has been excluded from topology.
      *
@@ -136,7 +138,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             assert ignite != null;
 
             UUID locNodeId = ignite.configuration().getNodeId();

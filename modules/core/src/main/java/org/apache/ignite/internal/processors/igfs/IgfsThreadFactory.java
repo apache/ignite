@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;

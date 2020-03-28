@@ -63,7 +63,7 @@ public class MaxAbsScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     }
                 }
                 return new MaxAbsScalerPartitionData(maxAbs);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
             double[] maxAbs = dataset.compute(MaxAbsScalerPartitionData::getMaxAbs,
                 (a, b) -> {

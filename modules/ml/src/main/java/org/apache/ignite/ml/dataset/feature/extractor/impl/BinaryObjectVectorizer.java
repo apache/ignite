@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
@@ -32,14 +34,16 @@ import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
  *
  * @param <K> Type of key.
  */
-public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVectorizer<K, BinaryObject> {
+public final class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVectorizer<K, BinaryObject>
+    implements DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 2152161240934492838L;
 
     /** Object for denoting default value of feature mapping. */
     public static final String DEFAULT_VALUE = "DEFAULT";
+
     /** Mapping for feature with non-number values. */
-    private HashMap<String, HashMap<Object, Double>> featureValueMappings = new HashMap<>();
+    private HashMap<String, HashMap<Object, Double>> featureValMappings = new HashMap<>();
 
     /**
      * Creates an instance of Vectorizer.
@@ -58,13 +62,13 @@ public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVector
      * @return this.
      */
     public BinaryObjectVectorizer withFeature(String coord, Mapping valuesMapping) {
-        featureValueMappings.put(coord, valuesMapping.toMap());
+        featureValMappings.put(coord, valuesMapping.toMap());
         return this;
     }
 
     /** {@inheritDoc} */
     @Override protected Double feature(String coord, K key, BinaryObject value) {
-        HashMap<Object, Double> mapping = featureValueMappings.get(coord);
+        HashMap<Object, Double> mapping = featureValMappings.get(coord);
         if (mapping != null)
             return mapping.get(coord);
 
@@ -137,5 +141,10 @@ public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVector
 
             return value;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
     }
 }

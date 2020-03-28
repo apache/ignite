@@ -283,6 +283,13 @@ namespace ignite
             BinaryStringArrayWriter WriteStringArray();
 
             /**
+             * Write enum entry.
+             *
+             * @param entry Binary enum entry.
+             */
+            void WriteBinaryEnum(BinaryEnumEntry entry);
+
+            /**
              * Write NULL value.
              */
             void WriteNull();
@@ -415,6 +422,20 @@ namespace ignite
             {
                 impl->WriteObject<T>(val);
             }
+
+            /**
+             * Write binary enum entry.
+             *
+             * @param val Binary enum entry.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            void WriteEnum(T val)
+            {
+                impl->WriteEnum(val);
+            }
+
         private:
             /** Implementation delegate. */
             ignite::impl::binary::BinaryWriterImpl* impl; 

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains Gini impurity measure and calculator.
  */
+
 package org.apache.ignite.ml.tree.impurity.gini;

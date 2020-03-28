@@ -2207,8 +2207,6 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else
             throw new IllegalStateException("Failed to synchronize file because Grid is stopping: " + path);
-
-
     }
 
     /**

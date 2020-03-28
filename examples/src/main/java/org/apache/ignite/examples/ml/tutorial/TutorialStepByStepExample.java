@@ -17,12 +17,20 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_13_RandomSearch;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_14_Parallel_Brute_Force_Search;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_15_Parallel_Random_Search;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_16_Genetic_Programming_Search;
+import org.apache.ignite.examples.ml.tutorial.hyperparametertuning.Step_17_Parallel_Genetic_Programming_Search;
+
 /**
- * Run all the tutorial examples step by step with primary purpose to provide
- * automatic execution from {@code IgniteExamplesMLTestSuite}.
+ * Run all the tutorial examples step by step with primary purpose to provide automatic execution from {@code
+ * IgniteExamplesMLTestSuite}.
  */
 public class TutorialStepByStepExample {
-    /** Run examples with default settings. */
+    /**
+     * Run examples with default settings.
+     */
     public static void main(String[] args) {
         Step_1_Read_and_Learn.main(args);
         Step_2_Imputing.main(args);
@@ -34,5 +42,15 @@ public class TutorialStepByStepExample {
         Step_7_Split_train_test.main(args);
         Step_8_CV.main(args);
         Step_8_CV_with_Param_Grid.main(args);
+        Step_8_CV_with_Param_Grid_and_pipeline.main(args);
+        Step_9_Scaling_With_Stacking.main(args);
+        Step_10_Bagging.main(args);
+        Step_11_Boosting.main(args);
+        Step_12_Model_Update.main(args);
+        Step_13_RandomSearch.main(args);
+        Step_14_Parallel_Brute_Force_Search.main(args);
+        Step_15_Parallel_Random_Search.main(args);
+        Step_16_Genetic_Programming_Search.main(args);
+        Step_17_Parallel_Genetic_Programming_Search.main(args);
     }
 }

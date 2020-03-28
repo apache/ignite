@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Long running query manager.
@@ -32,8 +33,8 @@ public final class LongRunningQueryManager {
     /** Check period in ms. */
     private static final long CHECK_PERIOD = 1_000;
 
-    /** Connection manager. */
-    private final ConnectionManager connMgr;
+    /** Message about the long execution of the query. */
+    public static final String LONG_QUERY_EXEC_MSG = "Query execution is too long";
 
     /** Queries collection. Sorted collection isn't used to reduce 'put' time. */
     private final ConcurrentHashMap<H2QueryInfo, TimeoutChecker> qrys = new ConcurrentHashMap<>();
@@ -62,8 +63,6 @@ public final class LongRunningQueryManager {
      * @param ctx Kernal context.
      */
     public LongRunningQueryManager(GridKernalContext ctx) {
-        connMgr = ((IgniteH2Indexing)ctx.query().getIndexing()).connections();
-
         log = ctx.log(LongRunningQueryManager.class);
 
         checkWorker = new GridWorker(ctx.igniteInstanceName(), "long-qry", log) {
@@ -78,7 +77,7 @@ public final class LongRunningQueryManager {
 
         timeout = ctx.config().getLongQueryWarningTimeout();
 
-        Thread thread = new Thread(checkWorker);
+        IgniteThread thread = new IgniteThread(checkWorker);
 
         thread.setDaemon(true);
         thread.start();
@@ -122,7 +121,7 @@ public final class LongRunningQueryManager {
             H2QueryInfo qinfo = e.getKey();
 
             if (e.getValue().checkTimeout(qinfo.time())) {
-                qinfo.printLogMessage(log, connMgr, "Query execution is too long");
+                qinfo.printLogMessage(log, LONG_QUERY_EXEC_MSG);
 
                 if (e.getValue().timeoutMult <= 1)
                     qrys.remove(qinfo);

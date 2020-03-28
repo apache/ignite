@@ -620,7 +620,12 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
                 while (!stopped.get()) {
                     Ignite node = grid(ThreadLocalRandom.current().nextInt(1, 5));
 
-                    assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
+                    try {
+                        assertSqlSimpleData(node, SQL_SIMPLE_FIELD_1, KEY_AFTER - SQL_ARG_1);
+                    }
+                    catch (Exception e) {
+                        awaitConcDestroyException(e);
+                    }
                 }
 
                 return null;

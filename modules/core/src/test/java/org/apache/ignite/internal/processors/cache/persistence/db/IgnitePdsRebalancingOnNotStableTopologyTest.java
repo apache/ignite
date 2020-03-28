@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
@@ -48,7 +49,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     private static final long CHECKPOINT_FREQUENCY = 2_000_000;
 
     /** Cluster size. */
-    private static final int CLUSTER_SIZE = 5;
+    private static final int CLUSTER_SIZE = SF.applyLB(5,3 );
 
     /**
      * @throws Exception When fails.
@@ -110,14 +111,14 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
         for (int i = 2; i < CLUSTER_SIZE; i++) {
             startGrid(i);
 
-            U.sleep(5000);
+            U.sleep(SF.apply(3000));
         }
 
-        U.sleep(10000);
+        U.sleep(SF.apply(5000));
 
         IgniteProcessProxy.kill("db.RebalancingOnNotStableTopologyTest2");
 
-        Thread.sleep(5000);
+        Thread.sleep(SF.apply(3000));
 
         IgniteProcessProxy.kill("db.RebalancingOnNotStableTopologyTest1");
 

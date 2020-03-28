@@ -31,6 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridH2SelectForUpdateTxDetails implements Message {
     /** */
     private static final long serialVersionUID = 8166491041528984454L;
+
     /** */
     private long threadId;
 

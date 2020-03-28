@@ -33,6 +33,7 @@ import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.selection.cv.CrossValidation;
 import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
@@ -40,15 +41,15 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
 /**
- * To choose the best hyperparameters the cross-validation will be used in this example.
+ * To choose the best hyper-parameters the cross-validation will be used in this example.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data (based on Titanic passengers data).</p>
  * <p>
- * After that it defines how to split the data to train and test sets and configures preprocessors that extract
- * features from an upstream data and perform other desired changes over the extracted data.</p>
+ * After that it defines how to split the data to train and test sets and configures preprocessors that extract features
+ * from an upstream data and perform other desired changes over the extracted data.</p>
  * <p>
- * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on
- * the processed data using decision tree classification and the obtained hyperparams.</p>
+ * Then, it tunes hyperparams with K-fold Cross-Validation on the split training set and trains the model based on the
+ * processed data using decision tree classification and the obtained hyper-parameters.</p>
  * <p>
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  * <p>
@@ -58,13 +59,15 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * They differ in that {@code 1/(k-1)}th of the training data is exchanged against other cases.</p>
  * <p>
- * These models are sometimes called surrogate models because the (average) performance measured for these models
- * is taken as a surrogate of the performance of the model trained on all cases.</p>
+ * These models are sometimes called surrogate models because the (average) performance measured for these models is
+ * taken as a surrogate of the performance of the model trained on all cases.</p>
  * <p>
  * All scenarios are described there: https://sebastianraschka.com/faq/docs/evaluate-a-model.html</p>
  */
 public class Step_8_CV {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 8 (cross-validation) example started.");
@@ -102,16 +105,15 @@ public class Step_8_CV {
                         imputingPreprocessor
                     );
 
-
-                // Tune hyperparams with K-fold Cross-Validation on the split training set.
-                int[] pSet = new int[]{1, 2};
-                int[] maxDeepSet = new int[]{1, 2, 3, 4, 5, 10, 20};
+                // Tune hyper-parameters with K-fold Cross-Validation on the split training set.
+                int[] pSet = new int[] {1, 2};
+                int[] maxDeepSet = new int[] {1, 2, 3, 4, 5, 10, 20};
                 int bestP = 1;
                 int bestMaxDeep = 1;
                 double avg = Double.MIN_VALUE;
 
-                for(int p: pSet){
-                    for(int maxDeep: maxDeepSet){
+                for (int p : pSet) {
+                    for (int maxDeep : maxDeepSet) {
 
                         Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
                             .withP(p)
@@ -124,24 +126,25 @@ public class Step_8_CV {
                         DecisionTreeClassificationTrainer trainer
                             = new DecisionTreeClassificationTrainer(maxDeep, 0);
 
-                        CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
+                        CrossValidation<DecisionTreeNode, Integer, Vector> scoreCalculator
                             = new CrossValidation<>();
 
-                        double[] scores = scoreCalculator.score(
-                            trainer,
-                            new Accuracy<>(),
-                            ignite,
-                            dataCache,
-                            split.getTrainFilter(),
-                            normalizationPreprocessor,
-                            3
-                        );
+                        double[] scores = scoreCalculator
+                            .withIgnite(ignite)
+                            .withUpstreamCache(dataCache)
+                            .withTrainer(trainer)
+                            .withMetric(MetricName.ACCURACY)
+                            .withFilter(split.getTrainFilter())
+                            .withPreprocessor(normalizationPreprocessor)
+                            .withAmountOfFolds(3)
+                            .isRunningOnPipeline(false)
+                            .scoreByFolds();
 
                         System.out.println("Scores are: " + Arrays.toString(scores));
 
                         final double currAvg = Arrays.stream(scores).average().orElse(Double.MIN_VALUE);
 
-                        if(currAvg > avg) {
+                        if (currAvg > avg) {
                             avg = currAvg;
                             bestP = p;
                             bestMaxDeep = maxDeep;
@@ -161,7 +164,6 @@ public class Step_8_CV {
                         minMaxScalerPreprocessor
                     );
 
-
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(bestMaxDeep, 0);
 
                 // Train decision tree model.
@@ -175,8 +177,7 @@ public class Step_8_CV {
                 System.out.println("\n>>> Trained model: " + bestMdl);
 
                 double accuracy = Evaluator.evaluate(
-                    dataCache,
-                    split.getTestFilter(),
+                    dataCache, split.getTestFilter(),
                     bestMdl,
                     normalizationPreprocessor,
                     new Accuracy<>()
@@ -190,6 +191,9 @@ public class Step_8_CV {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

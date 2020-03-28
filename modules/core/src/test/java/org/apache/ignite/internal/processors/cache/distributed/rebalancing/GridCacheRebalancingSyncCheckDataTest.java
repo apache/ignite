@@ -63,7 +63,6 @@ public class GridCacheRebalancingSyncCheckDataTest extends GridCommonAbstractTes
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-
         for (int i = 0; i < 3; i++) {
             log.info("Iteration: " + i);
 

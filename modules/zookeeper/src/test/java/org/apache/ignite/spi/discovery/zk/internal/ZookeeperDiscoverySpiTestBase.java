@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
+import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,6 +52,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -74,7 +76,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -90,7 +91,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
-import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
+import static org.apache.zookeeper.client.ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_SOCKET;
 
 /**
  * Base class for Zookeeper SPI discovery tests in this package. It is intended to provide common overrides for
@@ -119,8 +120,11 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected Map<String, Object> userAttrs;
 
     /**
-     * Map for checking discovery events per test. The {@link EVT_NODE_JOINED}, {@link EVT_NODE_FAILED}, {@link
-     * EVT_NODE_LEFT} events should be handled only once per topology version.
+     * Map for checking discovery events per test. The
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_JOINED EVT_NODE_JOINED},
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_FAILED EVT_NODE_FAILED},
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_LEFT EVT_NODE_LEFT}
+     * events should be handled only once per topology version.
      *
      * Need to be cleaned in case of cluster restart.
      */
@@ -193,7 +197,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(ZK_SRVS, clusterCustomProperties());
 
             zkCluster.start();
 
@@ -201,6 +205,13 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         }
 
         reset();
+    }
+
+    /**
+     * @return Cluster configuration custom properties.
+     */
+    protected Map<String, Object>[] clusterCustomProperties() {
+        return new Map[ZK_SRVS];
     }
 
     /** {@inheritDoc} */
@@ -307,8 +318,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
         }
-
-        helper.clientModeThreadLocalReset();
     }
 
     /**
@@ -400,24 +409,17 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (USE_TEST_CLUSTER) {
             assert zkCluster != null;
 
-            zkSpi.setZkConnectionString(zkCluster.getConnectString());
+            zkSpi.setZkConnectionString(getTestClusterZkConnectionString());
 
             if (zkRootPath != null)
                 zkSpi.setZkRootPath(zkRootPath);
         }
         else
-            zkSpi.setZkConnectionString("localhost:2181");
+            zkSpi.setZkConnectionString(getRealClusterZkConnectionString());
 
         cfg.setDiscoverySpi(zkSpi);
 
         cfg.setCacheConfiguration(getCacheConfiguration());
-
-        Boolean clientMode = helper.clientModeThreadLocal();
-
-        if (clientMode != null)
-            cfg.setClientMode(clientMode);
-        else
-            cfg.setClientMode(helper.clientMode());
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);
@@ -494,7 +496,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             }
         }, new int[]{EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT});
 
-        cfg.setLocalEventListeners(lsnrs);
+        if (!isMultiJvm())
+            cfg.setLocalEventListeners(lsnrs);
 
         if (persistence) {
             DataStorageConfiguration memCfg = new DataStorageConfiguration()
@@ -522,7 +525,23 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (commFailureRslvr != null)
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
+    }
+
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    protected String getTestClusterZkConnectionString() {
+        return zkCluster.getConnectString();
+    }
+
+    /**
+     * @return Zookeeper cluster connection string
+     */
+    protected String getRealClusterZkConnectionString() {
+        return "localhost:2181";
     }
 
     /**

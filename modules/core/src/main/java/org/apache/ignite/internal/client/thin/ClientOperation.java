@@ -44,6 +44,7 @@ enum ClientOperation {
     /** Cache get and replace. */CACHE_GET_AND_REPLACE(1006),
     /** Cache put if absent. */CACHE_PUT_IF_ABSENT(1002),
     /** Cache clear. */CACHE_CLEAR(1013),
+    /** Cache partitions. */CACHE_PARTITIONS(1101),
     /** Query scan. */QUERY_SCAN(2000),
     /** Query scan cursor get page. */QUERY_SCAN_CURSOR_GET_PAGE(2001),
     /** Query sql. */QUERY_SQL(2002),
@@ -53,7 +54,9 @@ enum ClientOperation {
     /** Get binary type. */GET_BINARY_TYPE(3002),
     /** Register binary type name. */REGISTER_BINARY_TYPE_NAME(3001),
     /** Put binary type. */PUT_BINARY_TYPE(3003),
-    /** Get binary type name. */GET_BINARY_TYPE_NAME(3000);
+    /** Get binary type name. */GET_BINARY_TYPE_NAME(3000),
+    /** Start new transaction. */TX_START(4000),
+    /** End the transaction (commit or rollback). */TX_END(4001);
 
     /** Code. */
     private final int code;

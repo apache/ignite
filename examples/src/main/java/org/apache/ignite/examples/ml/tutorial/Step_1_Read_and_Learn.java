@@ -41,7 +41,9 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_1_Read_and_Learn {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) {
         System.out.println();
         System.out.println(">>> Tutorial step 1 (read and learn) example started.");
@@ -77,6 +79,9 @@ public class Step_1_Read_and_Learn {
             catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

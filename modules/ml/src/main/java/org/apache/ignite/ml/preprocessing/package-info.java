@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for machine learning preprocessing classes.
  */
+
 package org.apache.ignite.ml.preprocessing;

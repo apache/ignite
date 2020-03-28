@@ -399,7 +399,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         int nodeIdx = 10;
 
-        for (int i = 0; i < GridTestUtils.SF.applyLB(10, 2); i++) {
+        for (int i = 0; i < GridTestUtils.SF.applyLB(4, 2); i++) {
             info("Iteration: " + i);
 
             for (Ignite node : G.allGrids())
@@ -441,9 +441,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         startGridsMultiThreaded(10);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(10, 5);
+        startClientGridsMultiThreaded(10, 5);
 
         int nodesCnt = 15;
 
@@ -471,11 +469,10 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
                 // No-op.
             }
 
-            boolean clientMode = ThreadLocalRandom.current().nextBoolean();
-
-            helper.clientMode(clientMode);
-
-            startGrid(nodeIdx++);
+            if (ThreadLocalRandom.current().nextBoolean())
+                startClientGrid(nodeIdx++);
+            else
+                startGrid(nodeIdx++);
 
             nodesCnt = nodesCnt - KillRandomCommunicationFailureResolver.LAST_KILLED_NODES.size() + 1;
 
@@ -520,9 +517,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         startGrids(3);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(3, 2);
+        startClientGridsMultiThreaded(3, 2);
 
         ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(5, 0, 1);
         ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(5, 0, 1);
@@ -912,9 +907,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
 
         startGridsMultiThreaded(5);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(5, 5);
+        startClientGridsMultiThreaded(5, 5);
 
         final int NODES = 10;
 

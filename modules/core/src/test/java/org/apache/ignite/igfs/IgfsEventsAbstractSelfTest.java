@@ -128,7 +128,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setHadoopConfiguration(null);
+        //cfg.setHadoopConfiguration(null);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

@@ -131,7 +131,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /** */
     protected Map<AffinityTopologyVersion, Map<Integer, Set<ClusterNode>>> invalidNodes = Collections.emptyMap();
 
-
     /**
      * @param cctx Context.
      * @param keys Keys.

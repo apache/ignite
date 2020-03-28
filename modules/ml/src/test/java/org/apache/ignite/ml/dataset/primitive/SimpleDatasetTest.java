@@ -67,7 +67,6 @@ public class SimpleDatasetTest {
                 assertArrayEquals("Covariance matrix row " + rowCov,
                     covExp[rowCov++], row, 0);
 
-
             double[][] corrExp = new double[][] {
                 new double[] {1.0000000000000002, 0.31990250167874007},
                 new double[] {0.31990250167874007, 1.0}

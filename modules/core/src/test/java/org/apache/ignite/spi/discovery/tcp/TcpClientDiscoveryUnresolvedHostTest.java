@@ -49,8 +49,6 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration();
 
-        cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -62,7 +60,7 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
     @Test
     public void test() throws Exception {
         try {
-            startGrid(0);
+            startClientGrid(0);
         } catch (IgniteCheckedException e) {
             //Ignore.
         }

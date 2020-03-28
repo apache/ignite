@@ -85,7 +85,7 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                     }
                 }
                 return new StandardScalerData(sum, squaredSum, cnt);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
 
             return dataset.compute(data -> data,

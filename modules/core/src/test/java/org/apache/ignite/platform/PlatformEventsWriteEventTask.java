@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.events.*;
 
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -45,7 +46,7 @@ import java.util.UUID;
  */
 public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         Long ptr) {
         return Collections.singletonMap(new Job(ptr, F.first(subgrid)), F.first(subgrid));
     }

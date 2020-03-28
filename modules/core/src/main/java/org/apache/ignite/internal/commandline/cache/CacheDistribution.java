@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -47,7 +48,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.Distribution
  */
 public class CacheDistribution implements Command<CacheDistribution.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Prints the information about partition distribution.";
 
@@ -108,7 +109,7 @@ public class CacheDistribution implements Command<CacheDistribution.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(args.caches(), args.getUserAttributes());
 
         UUID nodeId = args.nodeId() == null ? BROADCAST_UUID : args.nodeId();
@@ -119,7 +120,7 @@ public class CacheDistribution implements Command<CacheDistribution.Arguments> {
             res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
-        logger.printErrors(res.exceptions(), "Cache distrubution task failed on nodes:");
+        CommandLogger.printErrors(res.exceptions(), "Cache distrubution task failed on nodes:", logger);
 
         res.print(System.out);
 
@@ -159,5 +160,10 @@ public class CacheDistribution implements Command<CacheDistribution.Arguments> {
         }
 
         args = new Arguments(caches, nodeId, userAttributes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return DISTRIBUTION.text().toUpperCase();
     }
 }

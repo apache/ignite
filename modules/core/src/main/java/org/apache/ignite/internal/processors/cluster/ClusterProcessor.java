@@ -68,6 +68,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -536,6 +537,18 @@ public class ClusterProcessor extends GridProcessorAdapter {
      */
     public String latestVersion() {
         return verChecker != null ? verChecker.latestVersion() : null;
+    }
+
+    /**
+     * Get cluster name.
+     *
+     * @return Cluster name.
+     * */
+    public String clusterName() {
+        return IgniteSystemProperties.getString(
+            IGNITE_CLUSTER_NAME,
+            ctx.cache().utilityCache().context().dynamicDeploymentId().toString()
+        );
     }
 
     /**

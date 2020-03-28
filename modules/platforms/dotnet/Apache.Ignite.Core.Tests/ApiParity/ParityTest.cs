@@ -32,6 +32,9 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public static class ParityTest
     {
+        /** Test ignore reason: we should not fail builds due to new APIs being added in Java. */
+        public const string IgnoreReason = "API parity tests are supposed to be run manually.";
+
         /** Property regex. */
         private static readonly Regex JavaPropertyRegex = 
             new Regex("(@Deprecated)?\\s+public [^=^\r^\n]+ (\\w+)\\(\\) {", RegexOptions.Compiled);
@@ -121,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             javaFilePath = javaFilePath.Replace('\\', Path.DirectorySeparatorChar);
 
-            var path = Path.Combine(IgniteHome.Resolve(null), javaFilePath);
+            var path = Path.Combine(IgniteHome.Resolve(), javaFilePath);
             Assert.IsTrue(File.Exists(path), path);
 
             return path;
@@ -148,7 +151,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             {
                 if (!knownMissing.ContainsKey(javaMissingProp.Key))
                 {
-                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n", type.Name, javaMissingProp.Key);
+                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n" +
+                                    "For new functionality please file a .NET ticket and update MissingProperties " +
+                                    "array accordingly with a link to that ticket.\n", type.Name, javaMissingProp.Key);
+
                     codeSb.AppendFormat("\"{0}\", ", javaMissingProp.Key);
                 }
             }

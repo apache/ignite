@@ -26,4 +26,9 @@ public class GridCacheRebalancingWithAsyncClearingMvccTest extends GridCacheReba
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return super.getTestTimeout() * 2; // Parent test generates a lot of data and is inherently slow in mvcc mode.
+    }
 }

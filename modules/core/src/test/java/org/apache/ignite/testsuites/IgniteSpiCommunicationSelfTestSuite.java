@@ -28,6 +28,7 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryNo
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoverySslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiShmemSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiSslSmallBuffersSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiStartStopSelfTest;
@@ -45,6 +46,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClient
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
+import org.apache.ignite.spi.communication.tcp.TooManyOpenFilesTcpCommunicationSpiTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -88,12 +90,15 @@ import org.junit.runners.Suite;
 
     TcpCommunicationSpiDropNodesTest.class,
     TcpCommunicationSpiHalfOpenedConnectionTest.class,
+    GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest.class,
 
     TcpCommunicationStatisticsTest.class,
 
     IgniteTcpCommunicationHandshakeWaitTest.class,
     IgniteTcpCommunicationHandshakeWaitSslTest.class,
     IgniteTcpCommunicationConnectOnInitTest.class,
+
+    TooManyOpenFilesTcpCommunicationSpiTest.class
 
     //GridCacheDhtLockBackupSelfTest.class,
 })

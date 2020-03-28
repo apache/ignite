@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -290,7 +289,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(3);
 
-
         for (int i = 0; i < cnt; i++)
             startGrid(i);
 
@@ -333,7 +331,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         metastorage(5).write("key5", "value5");
 
         stopGrid(5);
-
 
         startGrid(1);
 
@@ -379,7 +376,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         metastorage(4).write("key4", "value4");
 
         stopGrid(4);
-
 
         startGrid(1);
 
@@ -430,7 +426,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(5);
 
-
         startGrid(2);
 
         startGrid(0);
@@ -449,30 +444,49 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     /**
      * @throws Exception If failed.
      */
-    @Test @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testInactiveClusterWrite() throws Exception {
         startGrid(0);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-            metastorage(0).write("key", "value");
+        metastorage(0).write("key", "value");
 
-            return null;
-        }, IllegalStateException.class, "Ignite cluster is not active");
+        assertEquals("value", metastorage(0).read("key"));
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-            metastorage(0).remove("key");
+        metastorage(0).remove("key");
 
-            return null;
-        }, IllegalStateException.class, "Ignite cluster is not active");
+        assertNull(metastorage(0).read("key"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateActivateRestart() throws Exception {
+        startGrid(0);
+
+        grid(0).cluster().active(true);
+
+        grid(0).cluster().active(false);
+
+        metastorage(0).write("key", "value");
+
+        grid(0).cluster().active(true);
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        assertEquals("value", metastorage(0).read("key"));
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test @SuppressWarnings("ThrowableNotThrown")
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testConflictingData() throws Exception {
-        startGrid(0);
+        IgniteEx igniteEx = startGrid(0);
+
+        igniteEx.cluster().baselineAutoAdjustEnabled(false);
 
         startGrid(1);
 
@@ -496,134 +510,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
             IgniteSpiException.class,
             "Joining node has conflicting distributed metastorage data"
         );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
-    public void testFailover1() throws Exception {
-        startGrid(0);
-
-        startGrid(1);
-
-        grid(0).cluster().active(true);
-
-        stopGrid(1);
-
-        metastorage(0).write("key1", "val1");
-
-        metastorage(0).write("key9", "val9");
-
-        IgniteCacheDatabaseSharedManager dbSharedMgr = grid(0).context().cache().context().database();
-
-        dbSharedMgr.checkpointReadLock();
-
-        try {
-            dbSharedMgr.metaStorage().remove("\u0000key-key9");
-        }
-        finally {
-            dbSharedMgr.checkpointReadUnlock();
-        }
-
-        stopGrid(0);
-
-        startGrid(0);
-
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        assertEquals("val9", metastorage(1).read("key9"));
-
-        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
-    public void testFailover2() throws Exception {
-        startGrid(0);
-
-        startGrid(1);
-
-        grid(0).cluster().active(true);
-
-        stopGrid(1);
-
-        metastorage(0).write("key9", "val9");
-
-        metastorage(0).write("key1", "val1");
-
-        IgniteCacheDatabaseSharedManager dbSharedMgr = grid(0).context().cache().context().database();
-
-        dbSharedMgr.checkpointReadLock();
-
-        try {
-            dbSharedMgr.metaStorage().remove("\u0000key-key1");
-        }
-        finally {
-            dbSharedMgr.checkpointReadUnlock();
-        }
-
-        stopGrid(0);
-
-        startGrid(0);
-
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        assertEquals("val1", metastorage(1).read("key1"));
-
-        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
-    public void testFailover3() throws Exception {
-        startGrid(0);
-
-        startGrid(1);
-
-        grid(0).cluster().active(true);
-
-        stopGrid(1);
-
-        metastorage(0).write("key1", "val1");
-
-        metastorage(0).write("key9", "val9");
-
-        metastorage(0).write("key5", "val5");
-
-        IgniteCacheDatabaseSharedManager dbSharedMgr = grid(0).context().cache().context().database();
-
-        dbSharedMgr.checkpointReadLock();
-
-        try {
-            dbSharedMgr.metaStorage().write("\u0000key-key5", "wrong-value");
-        }
-        finally {
-            dbSharedMgr.checkpointReadUnlock();
-        }
-
-        stopGrid(0);
-
-        startGrid(0);
-
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-
-        assertEquals("val5", metastorage(1).read("key5"));
-
-        assertDistributedMetastoragesAreEqual(grid(0), grid(1));
     }
 
     /** */

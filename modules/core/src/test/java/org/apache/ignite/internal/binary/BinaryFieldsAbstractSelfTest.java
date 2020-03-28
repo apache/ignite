@@ -598,34 +598,56 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     public static class TestObject {
         /** Primitive fields. */
         public byte fByte;
+
         public boolean fBool;
+
         public short fShort;
+
         public char fChar;
+
         public int fInt;
+
         public long fLong;
+
         public float fFloat;
+
         public double fDouble;
 
         public byte[] fByteArr;
+
         public boolean[] fBoolArr;
+
         public short[] fShortArr;
+
         public char[] fCharArr;
+
         public int[] fIntArr;
+
         public long[] fLongArr;
+
         public float[] fFloatArr;
+
         public double[] fDoubleArr;
 
         /** Special fields. */
         public String fString;
+
         public Date fDate;
+
         public Timestamp fTimestamp;
+
         public UUID fUuid;
+
         public BigDecimal fDecimal;
 
         public String[] fStringArr;
+
         public Date[] fDateArr;
+
         public Timestamp[] fTimestampArr;
+
         public UUID[] fUuidArr;
+
         public BigDecimal[] fDecimalArr;
 
         /** Nested object. */

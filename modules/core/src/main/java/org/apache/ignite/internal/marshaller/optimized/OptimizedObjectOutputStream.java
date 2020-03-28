@@ -818,6 +818,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         /** Fields info. */
         private final OptimizedClassDescriptor.ClassFields curFields;
+
         /** Values. */
         private final IgniteBiTuple<OptimizedFieldType, Object>[] objs;
 

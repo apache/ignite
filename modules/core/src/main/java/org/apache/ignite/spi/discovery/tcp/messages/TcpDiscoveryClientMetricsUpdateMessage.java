@@ -56,11 +56,6 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     }
 
     /** {@inheritDoc} */
-    @Override public boolean highPriority() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
         return true;
     }

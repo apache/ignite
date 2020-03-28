@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.tree;
 
+import java.util.Random;
 import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,8 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.util.Random;
 
 /**
  * Example of using distributed {@link DecisionTreeClassificationTrainer}.
@@ -101,9 +100,13 @@ public class DecisionTreeClassificationTrainerExample {
 
                 System.out.println(">>> Accuracy: " + correctPredictions / 10.0 + "%");
                 System.out.println(">>> Decision tree classification trainer example completed.");
-            } finally {
+            }
+            finally {
                 trainingSet.destroy();
             }
+        }
+        finally {
+            System.out.flush();
         }
     }
 
@@ -119,6 +122,6 @@ public class DecisionTreeClassificationTrainerExample {
         double x = rnd.nextDouble() - 0.5;
         double y = rnd.nextDouble() - 0.5;
 
-        return new LabeledVector<>(VectorUtils.of(x,y), x * y > 0 ? 1. : 0.);
+        return new LabeledVector<>(VectorUtils.of(x, y), x * y > 0 ? 1. : 0.);
     }
 }

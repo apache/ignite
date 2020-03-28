@@ -158,7 +158,6 @@ public class IgniteNativeIoLib {
         return false;
     }
 
-
     /**
      * Calculate Lowest Common Multiplier.
      * @param a first value.

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Base package for XGBoost model parser implementation.
  */
+
 package org.apache.ignite.ml.xgboost.parser;

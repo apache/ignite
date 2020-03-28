@@ -290,7 +290,7 @@ public class SBLimitedLength extends GridStringBuilder {
             return super.toString();
         else {
             int tailLen = tail.length();
-            StringBuilder res = new StringBuilder(impl().capacity() + tailLen + 100);
+            StringBuilder res = new StringBuilder(impl().length() + tailLen + 100);
 
             res.append(impl());
 

@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
@@ -38,7 +39,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  */
 public class CommonArgParser {
     /** */
-    private final CommandLogger logger;
+    private final Logger logger;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -121,7 +122,7 @@ public class CommonArgParser {
     /**
      * @param logger Logger.
      */
-    public CommonArgParser(CommandLogger logger) {
+    public CommonArgParser(Logger logger) {
         this.logger = logger;
     }
 
@@ -251,7 +252,7 @@ public class CommonArgParser {
                     case CMD_PASSWORD:
                         pwd = argIter.nextArg("Expected password");
 
-                        logger.log(securityWarningMessage(CMD_PASSWORD));
+                        logger.info(securityWarningMessage(CMD_PASSWORD));
 
                         break;
 
@@ -278,7 +279,7 @@ public class CommonArgParser {
                     case CMD_KEYSTORE_PASSWORD:
                         sslKeyStorePassword = argIter.nextArg("Expected SSL key store password").toCharArray();
 
-                        logger.log(securityWarningMessage(CMD_KEYSTORE_PASSWORD));
+                        logger.info(securityWarningMessage(CMD_KEYSTORE_PASSWORD));
 
                         break;
 
@@ -295,7 +296,7 @@ public class CommonArgParser {
                     case CMD_TRUSTSTORE_PASSWORD:
                         sslTrustStorePassword = argIter.nextArg("Expected SSL trust store password").toCharArray();
 
-                        logger.log(securityWarningMessage(CMD_TRUSTSTORE_PASSWORD));
+                        logger.info(securityWarningMessage(CMD_TRUSTSTORE_PASSWORD));
 
                         break;
 

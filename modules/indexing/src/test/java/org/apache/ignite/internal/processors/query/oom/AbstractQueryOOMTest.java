@@ -105,8 +105,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
                     .addQueryField("VAL", Long.class.getName(), null)
                     .addQueryField("STR", String.class.getName(), null)
                     .setIndexes(Collections.singleton(new QueryIndex("INDEXED"))))))
-            .setUserAttributes(igniteInstanceName.startsWith("remote") ? F.asMap(HAS_CACHE, true) : null)
-            .setClientMode(igniteInstanceName.startsWith("client"));
+            .setUserAttributes(igniteInstanceName.startsWith("remote") ? F.asMap(HAS_CACHE, true) : null);
     }
 
     /**
@@ -283,7 +282,6 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     public void testHeavyGroupByPkNotLazy() throws Exception {
         checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);
     }
-
 
     /**
      * @param sql Query.

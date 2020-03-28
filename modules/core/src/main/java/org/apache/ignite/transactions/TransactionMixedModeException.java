@@ -23,6 +23,7 @@ package org.apache.ignite.transactions;
 public class TransactionMixedModeException extends TransactionException {
     /** */
     private static final long serialVersionUID = 0L;
+
     /**
      * Creates new exception with given error message.
      *

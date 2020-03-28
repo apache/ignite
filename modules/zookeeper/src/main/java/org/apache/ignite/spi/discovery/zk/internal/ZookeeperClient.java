@@ -42,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT;
+import static org.apache.zookeeper.client.ZKClientConfig.SECURE_CLIENT;
 
 /**
  * Zookeeper Client.
@@ -854,7 +855,11 @@ public class ZookeeperClient implements Watcher {
             if (state == ConnectionState.Lost) {
                 U.error(log, "Operation failed with unexpected error, connection lost: " + e, e);
 
-                throw new ZookeeperClientFailedException(e);
+                Boolean sslEnabled = Boolean.valueOf(zk().getClientConfig().getProperty(SECURE_CLIENT));
+
+                String msg = "Connection lost, check" + (sslEnabled ? " SSL " : ' ') + "connection configuration.";
+
+                throw new ZookeeperClientFailedException(msg, e);
             }
 
             boolean retry = (e instanceof KeeperException) && needRetry(((KeeperException)e).code().intValue());

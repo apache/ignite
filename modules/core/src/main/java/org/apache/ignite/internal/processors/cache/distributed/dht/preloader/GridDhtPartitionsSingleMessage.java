@@ -41,13 +41,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Information about partitions of a single node.
+ * Information about partitions of a single node. <br>
+ *
+ * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Local partitions. */
+    /** Local partitions. Serialized as {@link #partsBytes}, may be compressed. */
     @GridToStringInclude
     @GridDirectTransient
     private Map<Integer, GridDhtPartitionMap> parts;
@@ -56,7 +58,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @GridDirectMap(keyType = Integer.class, valueType = Integer.class)
     private Map<Integer, Integer> dupPartsData;
 
-    /** Serialized partitions. */
+    /** Serialized local partitions. Unmarshalled to {@link #parts}. */
     private byte[] partsBytes;
 
     /** Partitions update counters. */
@@ -102,8 +104,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     private long exchangeStartTime;
 
     /**
-     * Exchange finish message, sent to new coordinator when it tries to
-     * restore state after previous coordinator failed during exchange.
+     * Exchange finish message, sent to new coordinator when it tries to restore state after previous coordinator failed
+     * during exchange.
      */
     private GridDhtPartitionsFullMessage finishMsg;
 
@@ -330,8 +332,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.exchangeStartTime = exchangeStartTime;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

@@ -241,6 +241,9 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
                 false,
                 prj.predicate()));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }

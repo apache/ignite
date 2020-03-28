@@ -78,6 +78,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -90,6 +91,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -1980,7 +1982,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         int typeId = ctx.typeId(Value.class.getName());
 
-        BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, false);
+        BinaryClassDescriptor descriptor = ctx.descriptorForTypeId(true, typeId, null, true);
 
         assertEquals(Value.class, descriptor.describedClass());
         assertEquals(true, descriptor.registered());
@@ -3001,7 +3003,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             if (id == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
-            BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, false);
+            BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, true);
 
             assertEquals(desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
         }
@@ -3423,7 +3425,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject binObj = builder.build();
 
-
         Collection<String> fieldsBin =  binObj.type().fieldNames();
 
         assertEquals(fieldNames.length, fieldsBin.size());
@@ -3831,6 +3832,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 //No-op.
             }
         });
+        iCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
 
@@ -3839,6 +3841,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         MarshallerContextTestImpl marshCtx = new MarshallerContextTestImpl(null, excludedClasses);
 
         GridTestKernalContext kernCtx = new GridTestKernalContext(log, iCfg);
+
+        kernCtx.add(new GridSystemViewManager(kernCtx));
         kernCtx.add(new GridDiscoveryManager(kernCtx));
 
         marshCtx.onMarshallerProcessorStarted(kernCtx, null);
@@ -4864,12 +4868,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     private static class CustomCollections {
         public List list = new ArrayList();
+
         public List customList = new CustomArrayList();
     }
 
     @SuppressWarnings("unchecked")
     private static class CustomCollectionsWithFactory implements Binarylizable {
         public List list = new CustomArrayList();
+
         public Map map = new CustomHashMap();
 
         /** {@inheritDoc} */

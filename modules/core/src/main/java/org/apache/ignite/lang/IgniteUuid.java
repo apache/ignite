@@ -131,7 +131,6 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
         );
     }
 
-
     /**
      * Gets a short string version of this ID. Use it only for UI where full version is
      * available to the application.

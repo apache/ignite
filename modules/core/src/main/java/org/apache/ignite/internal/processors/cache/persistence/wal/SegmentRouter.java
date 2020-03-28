@@ -30,6 +30,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDe
 public class SegmentRouter {
     /** */
     public static final String ZIP_SUFFIX = ".zip";
+
     /** */
     private File walWorkDir;
 
@@ -86,6 +87,27 @@ public class SegmentRouter {
         }
 
         return fd;
+    }
+
+    /**
+     * @return {@code true} If archive folder exists.
+     */
+    public boolean hasArchive() {
+        return !walWorkDir.getAbsolutePath().equals(walArchiveDir.getAbsolutePath());
+    }
+
+    /**
+     * @return WAL working directory.
+     */
+    public File getWalWorkDir() {
+        return walWorkDir;
+    }
+
+    /**
+     * @return WAL archive directory.
+     */
+    public File getWalArchiveDir() {
+        return walArchiveDir;
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -40,7 +41,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONT
  */
 public class CacheContention implements Command<CacheContention.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage(Logger logger) {
         String description = "Show the keys that are point of contention for multiple transactions.";
 
         usageCache(logger, CONTENTION, description, null, "minQueueSize",
@@ -82,6 +83,7 @@ public class CacheContention implements Command<CacheContention.Arguments> {
         public int minQueueSize() {
             return minQueueSize;
         }
+
         /**
          * @return Max print.
          */
@@ -101,7 +103,7 @@ public class CacheContention implements Command<CacheContention.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         VisorContentionTaskArg taskArg = new VisorContentionTaskArg(args.minQueueSize(), args.maxPrint());
 
         UUID nodeId = args.nodeId() == null ? BROADCAST_UUID : args.nodeId();
@@ -112,7 +114,7 @@ public class CacheContention implements Command<CacheContention.Arguments> {
             res = executeTaskByNameOnNode(client, VisorContentionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
-        logger.printErrors(res.exceptions(), "Contention check failed on nodes:");
+        CommandLogger.printErrors(res.exceptions(), "Contention check failed on nodes:", logger);
 
         for (ContentionInfo info : res.getInfos())
             info.print();
@@ -135,5 +137,10 @@ public class CacheContention implements Command<CacheContention.Arguments> {
             maxPrint = Integer.parseInt(argIter.nextArg(""));
 
         args = new Arguments(nodeId, minQueueSize, maxPrint);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return CONTENTION.text().toUpperCase();
     }
 }

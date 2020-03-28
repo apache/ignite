@@ -286,6 +286,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         info("Average random operation performance: " + (totalOpCnt.get() * 1000) / (end - start) + " ops/sec");
     }
+
     /**
      * @throws Exception If failed.
      */

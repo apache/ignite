@@ -82,7 +82,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         startGrid(getConfiguration("srv2"));
         startGrid(getConfiguration("srv3"));
 
-        startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+        startClientGrid(getConfiguration(CLI_NAME));
 
         client().cluster().active(true);
     }

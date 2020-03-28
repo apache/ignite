@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Model inference examples for Spark ML via Spark Model Parser.
+ * <!-- Package description. --> Model inference examples for Spark ML via Spark Model Parser.
  */
 package org.apache.ignite.examples.ml.inference.spark.modelparser;

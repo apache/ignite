@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -79,7 +80,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
+
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
@@ -149,7 +150,6 @@ public class IgniteProcessProxy implements IgniteEx {
         throws Exception {
         this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
     }
-
 
     /**
      * @param cfg Configuration.
@@ -505,10 +505,6 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
-    /** {@inheritDoc} */
-    @Override public Hadoop hadoop() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
 
     /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
@@ -819,6 +815,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public DataStorageMetrics dataStorageMetrics() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

@@ -132,7 +132,6 @@ public class GridLogThrottle {
         log(log, e, msg, LogLevel.WARN, quite, byMsg);
     }
 
-
     /**
      * Logs warning if needed.
      *
@@ -261,9 +260,9 @@ public class GridLogThrottle {
         WARN {
             @Override public void doLog(IgniteLogger log, String msg, Throwable e, boolean quiet) {
                 if (quiet)
-                    U.quietAndWarn(log, msg);
+                    U.quietAndWarn(log, msg, e);
                 else
-                    U.warn(log, msg);
+                    U.warn(log, msg, e);
             }
         },
 

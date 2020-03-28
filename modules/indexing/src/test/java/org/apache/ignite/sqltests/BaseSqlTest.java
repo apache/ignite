@@ -47,7 +47,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -58,7 +57,9 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test base for test for sql features.
@@ -106,26 +107,17 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /** Node name of first server. */
     public final String SRV1_NAME = "server1";
 
+    /** */
     public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "DEPIDNOIDX", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     /** Flag that forces to do explain query in log before performing actual query. */
     public static boolean explain = false;
+
     /** Department table name. */
     protected String DEP_TAB = "Department";
 
     /** Random for generator. */
     private Random rnd = new Random();
-
-    /**
-     * Makes configuration for client node.
-     */
-    private IgniteConfiguration clientConfiguration() throws Exception {
-        IgniteConfiguration clCfg = getConfiguration(CLIENT_NODE_NAME);
-
-        clCfg.setClientMode(true);
-
-        return optimize(clCfg);
-    }
 
     /**
      * Fills tables with data.
@@ -264,7 +256,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
         startGrid(SRV1_NAME, getConfiguration(SRV1_NAME), null);
         startGrid(SRV2_NAME, getConfiguration(SRV2_NAME), null);
 
-        client = (IgniteEx)startGrid(CLIENT_NODE_NAME, clientConfiguration(), null);
+        client = startClientGrid(CLIENT_NODE_NAME);
 
         boolean locExp = explain;
         explain = false;
@@ -278,9 +270,9 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
      * Result of sql query. Contains metadata and all values in memory.
      */
     static class Result {
-
         /** Names of columns. */
         private List<String> colNames;
+
         /** Table */
         private List<List<?>> vals;
 
@@ -359,6 +351,13 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
      */
     protected Result executeFrom(String qry, Ignite node) {
         return executeFrom(new SqlFieldsQuery(qry), node);
+    }
+
+    /**
+     * Shortcut for {@link #executeFrom(String, Ignite, String)}, that has two String arguments.
+     */
+    protected Result executeFrom(String qry, Ignite node, String schema) {
+        return executeFrom(new SqlFieldsQuery(qry).setSchema(schema), node);
     }
 
     /**
@@ -1256,6 +1255,36 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrows(log,
                 () -> executeFrom(distributedJoinQry(false, qry), node),
                 IgniteSQLException.class, "Failed to parse query.");
+        });
+    }
+
+    /**
+     * Init rule for expected exception
+     */
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
+
+    /**
+     * Check schema for validation
+     */
+    @Test
+    public void testCheckEmptySchema() {
+        expectedEx.expect(IgniteSQLException.class);
+        expectedEx.expectMessage("Failed to set schema for DB connection. " +
+                "Schema name could not be an empty string"
+        );
+
+        String sqlQuery = "SELECT * FROM Employee limit 1";
+
+        testAllNodes(node -> {
+            executeFrom(sqlQuery, node, "");
+            executeFrom(sqlQuery, node, " ");
+            assertTrue("Check valid schema",
+                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
+            );
+            assertTrue("Check null schema",
+                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
+            );
         });
     }
 

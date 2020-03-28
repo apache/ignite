@@ -37,6 +37,7 @@ public class IgniteFileIOTest {
     private static class TestFileIO extends AbstractFileIO {
         /** Data. */
         private final byte[] data;
+
         /** Position. */
         private int position;
 

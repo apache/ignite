@@ -17,7 +17,23 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.nio.channels.Channel;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,10 +41,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,10 +67,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -59,7 +86,10 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
@@ -68,6 +98,11 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -78,9 +113,12 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -98,6 +136,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.CommunicationListenerEx;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,7 +146,10 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
+import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
+import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.CALLER_THREAD;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
@@ -120,13 +162,93 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SER
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
 /**
- * Grid communication manager.
+ * This class represents the internal grid communication (<em>input</em> and <em>output</em>) manager
+ * which is placed as a layer of indirection between the {@link IgniteKernal} and {@link CommunicationSpi}.
+ * The IO manager is responsible for controlling CommunicationSPI which in turn is responsible
+ * for exchanging data between Ignite nodes.
+ *
+ * <h2>Data exchanging</h2>
+ * <p>
+ * Communication manager provides a rich API for data exchanging between a pair of cluster nodes. Two types
+ * of communication <em>Message-based communication</em> and <em>File-based communication</em> are available.
+ * Each of them support sending data to an arbitrary topic on the remote node (see {@link GridTopic} for an
+ * additional information about Ignite topics).
+ *
+ * <h3>Message-based communication</h3>
+ * <p>
+ * {@link Message} and {@link GridTopic} are used to provide a topic-based messaging protocol
+ * between cluster nodes. All of messages used for data exchanging can be devided into two general types:
+ * <em>internal</em> and <em>user</em> messages.
+ * <p>
+ * <em>Internal message</em> communication is used by Ignite Kernal. Please, refer to appropriate methods below:
+ * <ul>
+ * <li>{@link #sendToGridTopic(ClusterNode, GridTopic, Message, byte)}</li>
+ * <li>{@link #sendOrderedMessage(ClusterNode, Object, Message, byte, long, boolean)}</li>
+ * <li>{@link #addMessageListener(Object, GridMessageListener)}</li>
+ * </ul>
+ * <p>
+ * <em>User message</em> communication is directly exposed to the {@link IgniteMessaging} API and provides
+ * for user functionality for topic-based message exchanging among nodes within the cluser defined
+ * by {@link ClusterGroup}. Please, refer to appropriate methods below:
+ * <ul>
+ * <li>{@link #sendToCustomTopic(ClusterNode, Object, Message, byte)}</li>
+ * <li>{@link #addUserMessageListener(Object, IgniteBiPredicate, UUID)}</li>
+ * </ul>
+ *
+ * <h3>File-based communication</h3>
+ * <p>
+ * Sending or receiving binary data (represented by a <em>File</em>) over a <em>SocketChannel</em> is only
+ * possible when the build-in {@link TcpCommunicationSpi} implementation of Communication SPI is used and
+ * both local and remote nodes are {@link IgniteFeatures#CHANNEL_COMMUNICATION CHANNEL_COMMUNICATION} feature
+ * support. To ensue that the remote node satisfies all conditions the {@link #fileTransmissionSupported(ClusterNode)}
+ * method must be called prior to data sending.
+ * <p>
+ * It is possible to receive a set of files on a particular topic (any of {@link GridTopic}) on the remote node.
+ * A transmission handler for desired topic must be registered prior to opening transmission sender to it.
+ * Methods below are used to register handlers and open new transmissions:
+ * <ul>
+ * <li>{@link #addTransmissionHandler(Object, TransmissionHandler)}</li>
+ * <li>{@link #removeTransmissionHandler(Object)}</li>
+ * <li>{@link #openTransmissionSender(UUID, Object)}</li>
+ * </ul>
+ * <p>
+ * Each transmission sender opens a new transmission session to remote node prior to sending files over it.
+ * (see description of {@link TransmissionSender} for details). The {@link TransmissionSender}
+ * will send all files within single session syncronously one by one.
+ * <p>
+ * <em>NOTE.</em> It is important to call <em>close()</em> method or use <em>try-with-resource</em>
+ * statement to release all resources once you've done with the transmission session. This ensures that all
+ * resources are released on remote node in a proper way (i.e. transmission handlers are closed).
+ * <p>
+ *
+ * @see TcpCommunicationSpi
+ * @see IgniteMessaging
+ * @see TransmissionHandler
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Io communication metrics registry name. */
+    public static final String COMM_METRICS = metricName("io", "communication");
+
+    /** Outbound message queue size metric name. */
+    public static final String OUTBOUND_MSG_QUEUE_CNT = "OutboundMessagesQueueSize";
+
+    /** Sent messages count metric name. */
+    public static final String SENT_MSG_CNT = "SentMessagesCount";
+
+    /** Sent bytes count metric name. */
+    public static final String SENT_BYTES_CNT = "SentBytesCount";
+
+    /** Received messages count metric name. */
+    public static final String RCVD_MSGS_CNT = "ReceivedMessagesCount";
+
+    /** Received bytes count metric name. */
+    public static final String RCVD_BYTES_CNT = "ReceivedBytesCount";
+
     /** Empty array of message factories. */
     public static final MessageFactory[] EMPTY = {};
 
@@ -141,6 +263,45 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
+
+    /**
+     * Default chunk size in bytes used for sending\receiving files over a {@link SocketChannel}.
+     * Setting the transfer chunk size more than <tt>1 MB</tt> is meaningless because there is
+     * no asymptotic benefit. What you're trying to achieve with larger transfer chunk sizes is
+     * fewer thread context switches, and every time we double the transfer size you have
+     * the context switch cost.
+     * <p>
+     * Default value is {@code 256Kb}.
+     */
+    private static final int DFLT_CHUNK_SIZE_BYTES = 256 * 1024;
+
+    /** Mutex to achieve consistency of transmission handlers and receiver contexts. */
+    private final Object rcvMux = new Object();
+
+    /** Map of registered handlers per each IO topic. */
+    private final ConcurrentMap<Object, TransmissionHandler> topicTransmissionHnds = new ConcurrentHashMap<>();
+
+    /** The map of already known channel read contexts by its registered topics. */
+    private final ConcurrentMap<Object, ReceiverContext> rcvCtxs = new ConcurrentHashMap<>();
+
+    /** The map of sessions which are currently writing files and their corresponding interruption flags. */
+    private final ConcurrentMap<T2<UUID, IgniteUuid>, AtomicBoolean> senderStopFlags = new ConcurrentHashMap<>();
+
+    /**
+     * Default factory to provide IO operation interface over files for further transmission them between nodes.
+     * Some implementations of file senders\receivers are using the zero-copy approach to transfer bytes
+     * from a file to the given {@link SocketChannel} and vice-versa. So, it is necessary to produce an {@link FileIO}
+     * implementation based on {@link FileChannel} which is reflected in Ignite project as {@link RandomAccessFileIO}.
+     *
+     * @see FileChannel#transferTo(long, long, WritableByteChannel)
+     */
+    private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
+
+    /** The maximum number of retry attempts (read or write attempts). */
+    private final int retryCnt;
+
+    /** Network timeout in milliseconds. */
+    private final int netTimeoutMs;
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
@@ -171,7 +332,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
-    private CommunicationListener<Serializable> commLsnr;
+    private CommunicationListenerEx<Serializable> commLsnr;
 
     /** Grid marshaller. */
     private final Marshaller marsh;
@@ -198,7 +359,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private MessageFormatter formatter;
 
     /** Stopping flag. */
-    private boolean stopping;
+    private volatile boolean stopping;
 
     /** */
     private final AtomicReference<ConcurrentHashMap<Long, IoTestFuture>> ioTestMap = new AtomicReference<>();
@@ -227,6 +388,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
         }
+
+        retryCnt = ctx.config().getNetworkSendRetryCount();
+        netTimeoutMs = (int)ctx.config().getNetworkTimeout();
     }
 
     /**
@@ -258,7 +422,23 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     @Override public void start() throws IgniteCheckedException {
         startSpi();
 
-        getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
+        MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
+
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
+
+        ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, (IntSupplier)spi::getOutboundMessagesQueueSize,
+                "Outbound messages queue size.");
+
+        ioMetric.register(SENT_MSG_CNT, (IntSupplier)spi::getSentMessagesCount, "Sent messages count.");
+
+        ioMetric.register(SENT_BYTES_CNT,(LongSupplier) spi::getSentBytesCount, "Sent bytes count.");
+
+        ioMetric.register(RCVD_MSGS_CNT, (IntSupplier)spi::getReceivedMessagesCount,
+                "Received messages count.");
+
+        ioMetric.register(RCVD_BYTES_CNT, (LongSupplier)spi::getReceivedBytesCount, "Received bytes count.");
+
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
                 try {
                     onMessage0(nodeId, (GridIoMessage)msg, msgC);
@@ -273,6 +453,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             @Override public void onDisconnected(UUID nodeId) {
                 for (GridDisconnectListener lsnr : disconnectLsnrs)
                     lsnr.onNodeDisconnected(nodeId);
+            }
+
+            @Override public void onChannelOpened(UUID rmtNodeId, Serializable initMsg, Channel channel) {
+                try {
+                    onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
+                }
+                catch (ClassCastException ignored) {
+                    U.error(log, "Communication manager received message of unknown type (will ignore): " +
+                        initMsg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
+                        "which is illegal - make sure to send messages only via GridProjection API.");
+                }
             }
         });
 
@@ -311,6 +502,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         List<MessageFactory> compMsgs = new ArrayList<>();
 
+        compMsgs.add(new GridIoMessageFactory());
+
         for (IgniteComponentType compType : IgniteComponentType.values()) {
             MessageFactory f = compType.messageFactory();
 
@@ -321,7 +514,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (!compMsgs.isEmpty())
             msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
 
-        msgFactory = new GridIoMessageFactory(msgs);
+        msgFactory = new IgniteMessageFactoryImpl(msgs);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -737,6 +930,36 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     case EVT_NODE_LEFT:
                     case EVT_NODE_FAILED:
+                        busyLock.readLock().lock();
+
+                        try {
+                            // Stop all writer sessions.
+                            for (Map.Entry<T2<UUID, IgniteUuid>, AtomicBoolean> writeSesEntry: senderStopFlags.entrySet()) {
+                                if (writeSesEntry.getKey().get1().equals(nodeId))
+                                    writeSesEntry.getValue().set(true);
+                            }
+
+                            synchronized (rcvMux) {
+                                // Clear the context on the uploader node left.
+                                Iterator<Map.Entry<Object, ReceiverContext>> it = rcvCtxs.entrySet().iterator();
+
+                                while (it.hasNext()) {
+                                    Map.Entry<Object, ReceiverContext> e = it.next();
+
+                                    if (nodeId.equals(e.getValue().rmtNodeId)) {
+                                        it.remove();
+
+                                        interruptRecevier(e.getValue(),
+                                            new ClusterTopologyCheckedException("Remote node left the grid. " +
+                                                "Receiver has been stopped : " + nodeId));
+                                    }
+                                }
+                            }
+                        }
+                        finally {
+                            busyLock.readLock().unlock();
+                        }
+
                         for (Map.Entry<Object, ConcurrentMap<UUID, GridCommunicationMessageSet>> e :
                             msgSetMap.entrySet()) {
                             ConcurrentMap<UUID, GridCommunicationMessageSet> map = e.getValue();
@@ -897,6 +1120,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 evtMgr.removeLocalEventListener(discoLsnr);
 
             stopping = true;
+
+            Set<ReceiverContext> rcvs;
+
+            synchronized (rcvMux) {
+                topicTransmissionHnds.clear();
+
+                rcvs = new HashSet<>(rcvCtxs.values());
+
+                rcvCtxs.clear();
+            }
+
+            for (ReceiverContext rctx : rcvs) {
+                interruptRecevier(rctx, new NodeStoppingException("Local node io manager requested to be stopped: "
+                    + ctx.localNodeId()));
+            }
         }
         finally {
             busyLock.writeLock().unlock();
@@ -909,6 +1147,51 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
+    }
+
+    /**
+     * @param rmtNodeId The remote node id.
+     * @param initMsg Message with additional channel params.
+     * @param channel The channel to notify listeners with.
+     */
+    private void onChannelOpened0(UUID rmtNodeId, GridIoMessage initMsg, Channel channel) {
+        Lock busyLock0 = busyLock.readLock();
+
+        busyLock0.lock();
+
+        try {
+            if (stopping) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Received communication channel create event while node stopping (will ignore) " +
+                        "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']');
+                }
+
+                return;
+            }
+
+            if (initMsg.topic() == null) {
+                int topicOrd = initMsg.topicOrdinal();
+
+                initMsg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
+                    U.unmarshal(marsh, initMsg.topicBytes(), U.resolveClassLoader(ctx.config())));
+            }
+
+            byte plc = initMsg.policy();
+
+            pools.poolForPolicy(plc).execute(new Runnable() {
+                @Override public void run() {
+                    processOpenedChannel(initMsg.topic(), rmtNodeId, (SessionChannelMessage)initMsg.message(),
+                        (SocketChannel)channel);
+                }
+            });
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to process channel creation event due to exception " +
+                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']' , e);
+        }
+        finally {
+            busyLock0.unlock();
+        }
     }
 
     /**
@@ -991,6 +1274,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case QUERY_POOL:
                 case SCHEMA_POOL:
                 case SERVICE_POOL:
+                case CALLER_THREAD:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -1121,14 +1405,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             return;
         }
 
-        if (plc == GridIoPolicy.SYSTEM_POOL && msg.partition() != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getStripedExecutorService().execute(msg.partition(), c);
+        final int part = msg.partition(); // Store partition to avoid possible recalculation.
+
+        if (plc == GridIoPolicy.SYSTEM_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
+            ctx.getStripedExecutorService().execute(part, c);
 
             return;
         }
 
-        if (plc == GridIoPolicy.DATA_STREAMER_POOL && msg.partition() != GridIoMessage.STRIPE_DISABLED_PART) {
-            ctx.getDataStreamerExecutorService().execute(msg.partition(), c);
+        if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
+            ctx.getDataStreamerExecutorService().execute(part, c);
 
             return;
         }
@@ -1594,6 +1880,107 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param remoteId The remote node to connect to.
+     * @param topic The remote topic to connect to.
+     * @return The channel instance to communicate with remote.
+     */
+    public TransmissionSender openTransmissionSender(UUID remoteId, Object topic) {
+        return new TransmissionSender(remoteId, topic);
+    }
+
+    /**
+     * @param topic The {@link GridTopic} to register handler to.
+     * @param hnd Handler which will handle file upload requests.
+     */
+    public void addTransmissionHandler(Object topic, TransmissionHandler hnd) {
+        TransmissionHandler hnd0 = topicTransmissionHnds.putIfAbsent(topic, hnd);
+
+        assert hnd0 == null : "The topic already have an appropriate session handler [topic=" + topic + ']';
+    }
+
+    /**
+     * @param topic The topic to erase handler from.
+     */
+    public void removeTransmissionHandler(Object topic) {
+        ReceiverContext rcvCtx0;
+
+        synchronized (rcvMux) {
+            topicTransmissionHnds.remove(topic);
+
+            rcvCtx0 = rcvCtxs.remove(topic);
+        }
+
+        interruptRecevier(rcvCtx0,
+            new IgniteCheckedException("Receiver has been closed due to removing corresponding transmission handler " +
+                "on local node [nodeId=" + ctx.localNodeId() + ']'));
+    }
+
+    /**
+     * This method must be used prior to opening a {@link TransmissionSender} by calling
+     * {@link #openTransmissionSender(UUID, Object)} to ensure that remote and local nodes
+     * are fully support direct {@link SocketChannel} connection to transfer data.
+     *
+     * @param node Remote node to check.
+     * @return {@code true} if a file can be sent over socket channel directly.
+     */
+    public boolean fileTransmissionSupported(ClusterNode node) {
+        return ((CommunicationSpi)getSpi() instanceof TcpCommunicationSpi) &&
+            nodeSupports(node, CHANNEL_COMMUNICATION);
+    }
+
+    /**
+     * @param nodeId Destination node to connect to.
+     * @param topic Topic to send the request to.
+     * @param initMsg Channel initialization message.
+     * @return Established {@link Channel} to use.
+     * @throws IgniteCheckedException If fails.
+     */
+    private IgniteInternalFuture<Channel> openChannel(
+        UUID nodeId,
+        Object topic,
+        Message initMsg
+    ) throws IgniteCheckedException {
+        assert nodeId != null;
+        assert topic != null;
+        assert !locNodeId.equals(nodeId) : "Channel cannot be opened to the local node itself: " + nodeId;
+        assert (CommunicationSpi)getSpi() instanceof TcpCommunicationSpi : "Only TcpCommunicationSpi supports direct " +
+            "connections between nodes: " + getSpi().getClass();
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new ClusterTopologyCheckedException("Failed to open a new channel to remote node (node left): " + nodeId);
+
+        int topicOrd = topic instanceof GridTopic ? ((Enum<GridTopic>)topic).ordinal() : -1;
+
+        GridIoMessage ioMsg = createGridIoMessage(topic,
+            topicOrd,
+            initMsg,
+            PUBLIC_POOL,
+            false,
+            0,
+            false);
+
+        try {
+            if (topicOrd < 0)
+                ioMsg.topicBytes(U.marshal(marsh, topic));
+
+            return ((TcpCommunicationSpi)(CommunicationSpi)getSpi()).openChannel(node, ioMsg);
+        }
+        catch (IgniteSpiException e) {
+            if (e.getCause() instanceof ClusterTopologyCheckedException)
+                throw (ClusterTopologyCheckedException)e.getCause();
+
+            if (!ctx.discovery().alive(node))
+                throw new ClusterTopologyCheckedException("Failed to create channel (node left): " + node.id(), e);
+
+            throw new IgniteCheckedException("Failed to create channel (node may have left the grid or " +
+                "TCP connection cannot be established due to unknown issues) " +
+                "[node=" + node + ", topic=" + topic + ']', e);
+        }
+    }
+
+    /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
      * @param topicOrd GridTopic enumeration ordinal.
@@ -1853,9 +2240,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         Message msg,
         byte plc
     ) throws IgniteCheckedException {
-        assert F.find(nodes, null, F.localNode(locNodeId)) == null :
-            "Internal Ignite code should never call the method with local node in a node list.";
-
         IgniteCheckedException err = null;
 
         for (ClusterNode node : nodes) {
@@ -1999,15 +2383,18 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     public void addUserMessageListener(final @Nullable Object topic, final @Nullable IgniteBiPredicate<UUID, ?> p) {
-        addUserMessageListener(topic, p, null);
+        addUserMessageListener(topic, p, ctx.localNodeId());
     }
 
     /**
      * @param topic Topic to subscribe to.
      * @param p Message predicate.
      */
-    public void addUserMessageListener(final @Nullable Object topic,
-        final @Nullable IgniteBiPredicate<UUID, ?> p, final @Nullable UUID nodeId) {
+    public void addUserMessageListener(
+        final @Nullable Object topic,
+        final @Nullable IgniteBiPredicate<UUID, ?> p,
+        final UUID nodeId
+    ) {
         if (p != null) {
             try {
                 if (p instanceof PlatformMessageFilter)
@@ -2313,6 +2700,292 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param rctx Receiver context to use.
+     * @param ex Exception to close receiver with.
+     */
+    private void interruptRecevier(ReceiverContext rctx, Exception ex) {
+        if (rctx == null)
+            return;
+
+        if (rctx.interrupted.compareAndSet(false, true)) {
+            if (rctx.timeoutObj != null)
+                ctx.timeout().removeTimeoutObject(rctx.timeoutObj);
+
+            U.closeQuiet(rctx.rcv);
+
+            rctx.lastState = rctx.lastState == null ?
+                new TransmissionMeta(ex) : rctx.lastState.error(ex);
+
+            rctx.hnd.onException(rctx.rmtNodeId, ex);
+
+            U.error(log, "Receiver has been interrupted due to an exception occurred [ctx=" + rctx + ']', ex);
+        }
+    }
+
+    /**
+     * @param topic Topic to which the channel is created.
+     * @param rmtNodeId Remote node id.
+     * @param initMsg Channel initialization message with additional params.
+     * @param ch Channel instance.
+     */
+    private void processOpenedChannel(Object topic, UUID rmtNodeId, SessionChannelMessage initMsg, SocketChannel ch) {
+        ReceiverContext rcvCtx = null;
+        ObjectInputStream in = null;
+        ObjectOutputStream out = null;
+
+        try {
+            if (stopping) {
+                throw new NodeStoppingException("Local node is stopping. Channel will be closed [topic=" + topic +
+                    ", channel=" + ch + ']');
+            }
+
+            if (initMsg == null || initMsg.sesId() == null) {
+                U.warn(log, "There is no initial message provied for given topic. Opened channel will be closed " +
+                    "[rmtNodeId=" + rmtNodeId + ", topic=" + topic + ", initMsg=" + initMsg + ']');
+
+                return;
+            }
+
+            configureChannel(ch, netTimeoutMs);
+
+            in = new ObjectInputStream(ch.socket().getInputStream());
+            out = new ObjectOutputStream(ch.socket().getOutputStream());
+
+            IgniteUuid newSesId = initMsg.sesId();
+
+            synchronized (rcvMux) {
+                TransmissionHandler hnd = topicTransmissionHnds.get(topic);
+
+                if (hnd == null) {
+                    U.warn(log, "There is no handler for a given topic. Channel will be closed [rmtNodeId=" + rmtNodeId +
+                        ", topic=" + topic + ']');
+
+                    return;
+                }
+
+                rcvCtx = rcvCtxs.computeIfAbsent(topic, t -> new ReceiverContext(rmtNodeId, hnd, newSesId));
+            }
+
+            // Do not allow multiple connections for the same session.
+            if (!newSesId.equals(rcvCtx.sesId)) {
+                IgniteCheckedException err = new IgniteCheckedException("Requested topic is busy by another transmission. " +
+                    "It's not allowed to process different sessions over the same topic simultaneously. " +
+                    "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + rmtNodeId + ']');
+
+                U.error(log, err);
+
+                out.writeObject(new TransmissionMeta(err));
+
+                return;
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug("Trasmission open a new channel [rmtNodeId=" + rmtNodeId + ", topic=" + topic +
+                    ", initMsg=" + initMsg + ']');
+            }
+
+            if (!rcvCtx.lock.tryLock(netTimeoutMs, TimeUnit.MILLISECONDS))
+                throw new IgniteException("Wait for the previous receiver finished its work timeouted: " + rcvCtx);
+
+            try {
+                if (rcvCtx.timeoutObj != null)
+                    ctx.timeout().removeTimeoutObject(rcvCtx.timeoutObj);
+
+                // Send previous context state to sync remote and local node.
+                out.writeObject(rcvCtx.lastState == null ? new TransmissionMeta() : rcvCtx.lastState);
+
+                if (rcvCtx.lastState == null || rcvCtx.lastState.error() == null)
+                    receiveFromChannel(topic, rcvCtx, in, out, ch);
+                else
+                    interruptRecevier(rcvCtxs.remove(topic), rcvCtx.lastState.error());
+            }
+            finally {
+                rcvCtx.lock.unlock();
+            }
+        }
+        catch (Throwable t) {
+            U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
+
+            // Do not remove receiver context here, since sender will recconect to get this error.
+            interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
+        }
+        finally {
+            U.closeQuiet(in);
+            U.closeQuiet(out);
+            U.closeQuiet(ch);
+        }
+    }
+
+    /**
+     * @param topic Topic handler related to.
+     * @param rcvCtx Receiver read context.
+     * @throws NodeStoppingException If processing fails.
+     * @throws InterruptedException If thread interrupted.
+     */
+    private void receiveFromChannel(
+        Object topic,
+        ReceiverContext rcvCtx,
+        ObjectInputStream in,
+        ObjectOutputStream out,
+        ReadableByteChannel ch
+    ) throws NodeStoppingException, InterruptedException {
+        try {
+            while (true) {
+                if (Thread.currentThread().isInterrupted())
+                    throw new InterruptedException("The thread has been interrupted. Stop downloading file.");
+
+                if (stopping)
+                    throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+                boolean exit = in.readBoolean();
+
+                if (exit) {
+                    ReceiverContext rcv = rcvCtxs.remove(topic);
+
+                    assert rcv != null;
+
+                    rcv.hnd.onEnd(rcv.rmtNodeId);
+
+                    break;
+                }
+
+                TransmissionMeta meta = (TransmissionMeta)in.readObject();
+
+                if (rcvCtx.rcv == null) {
+                    rcvCtx.rcv = createReceiver(rcvCtx.rmtNodeId,
+                        rcvCtx.hnd,
+                        meta,
+                        () -> stopping || rcvCtx.interrupted.get());
+
+                    rcvCtx.lastState = meta;
+                }
+
+                validate(rcvCtx.lastState, meta);
+
+                try {
+                    long startTime = U.currentTimeMillis();
+
+                    rcvCtx.rcv.receive(ch);
+
+                    // Write processing ack.
+                    out.writeBoolean(true);
+                    out.flush();
+
+                    rcvCtx.rcv.close();
+
+                    U.log(log, "File has been received " +
+                        "[name=" + rcvCtx.rcv.state().name() + ", transferred=" + rcvCtx.rcv.transferred() +
+                        ", time=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec" +
+                        ", rmtId=" + rcvCtx.rmtNodeId + ']');
+
+                    rcvCtx.rcv = null;
+                }
+                catch (Throwable e) {
+                    rcvCtx.lastState = rcvCtx.rcv.state();
+
+                    throw e;
+                }
+            }
+        }
+        catch (ClassNotFoundException e) {
+            throw new IgniteException(e);
+        }
+        catch (IOException e) {
+            // Waiting for re-establishing connection.
+            U.warn(log, "Сonnection from the remote node lost. Will wait for the new one to continue file " +
+                "receive [nodeId=" + rcvCtx.rmtNodeId + ", sesKey=" + rcvCtx.sesId + ']', e);
+
+            long startTs = U.currentTimeMillis();
+
+            boolean added = ctx.timeout().addTimeoutObject(rcvCtx.timeoutObj = new GridTimeoutObject() {
+                @Override public IgniteUuid timeoutId() {
+                    return rcvCtx.sesId;
+                }
+
+                @Override public long endTime() {
+                    return startTs + netTimeoutMs;
+                }
+
+                @Override public void onTimeout() {
+                    interruptRecevier(rcvCtxs.remove(topic), new IgniteCheckedException("Receiver is closed due to " +
+                        "waiting for the reconnect has been timeouted"));
+                }
+            });
+
+            assert added;
+        }
+    }
+
+    /**
+     * @param prev Previous available transmission meta.
+     * @param next Next transmission meta.
+     */
+    private void validate(TransmissionMeta prev, TransmissionMeta next) {
+        A.ensure(prev.name().equals(next.name()), "Attempt to load different file " +
+            "[prev=" + prev + ", next=" + next + ']');
+
+        A.ensure(prev.offset() == next.offset(),
+            "The next chunk offest is incorrect [prev=" + prev + ", meta=" + next + ']');
+
+        A.ensure(prev.count() == next.count(), " The count of bytes to transfer for " +
+            "the next chunk is incorrect [prev=" + prev + ", next=" + next + ']');
+
+        A.ensure(prev.policy() == next.policy(), "Attemt to continue file upload with" +
+            " different transmission policy [prev=" + prev + ", next=" + next + ']');
+    }
+
+    /**
+     * @param nodeId Remote node id.
+     * @param hnd Current handler instance which produces file handlers.
+     * @param meta Meta information about file pending to receive to create appropriate receiver.
+     * @param stopChecker Process interrupt checker.
+     * @return Chunk data recevier.
+     */
+    private TransmissionReceiver createReceiver(
+        UUID nodeId,
+        TransmissionHandler hnd,
+        TransmissionMeta meta,
+        BooleanSupplier stopChecker
+    ) {
+        switch (meta.policy()) {
+            case FILE:
+                return new FileReceiver(
+                    meta,
+                    DFLT_CHUNK_SIZE_BYTES,
+                    stopChecker,
+                    fileIoFactory,
+                    hnd.fileHandler(nodeId, meta),
+                    hnd.filePath(nodeId, meta),
+                    log);
+
+            case CHUNK:
+                return new ChunkReceiver(
+                    meta,
+                    ctx.config()
+                        .getDataStorageConfiguration()
+                        .getPageSize(),
+                    stopChecker,
+                    hnd.chunkHandler(nodeId, meta),
+                    log);
+
+            default:
+                throw new IllegalStateException("The type of transmission policy is unknown. An implementation " +
+                    "required: " + meta.policy());
+        }
+    }
+
+    /**
+     * @param channel Socket channel to configure blocking mode.
+     * @param timeout Ignite network configuration timeout.
+     * @throws IOException If fails.
+     */
+    private static void configureChannel(SocketChannel channel, int timeout) throws IOException {
+        // Timeout must be enabled prior to entering the blocking mode to have effect.
+        channel.socket().setSoTimeout(timeout);
+        channel.configureBlocking(true);
+    }
+
+    /**
      * Dumps SPI stats to diagnostic logs in case TcpCommunicationSpi is used, no-op otherwise.
      */
     public void dumpStats() {
@@ -2330,6 +3003,363 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         X.println(">>>  msgSetMapSize: " + msgSetMap.size());
         X.println(">>>  closedTopicsSize: " + closedTopics.sizex());
         X.println(">>>  discoWaitMapSize: " + waitMap.size());
+    }
+
+    /**
+     * Read context holds all the information about current transfer read from channel process.
+     */
+    private static class ReceiverContext {
+        /** The remote node input channel came from. */
+        private final UUID rmtNodeId;
+
+        /** Current sesssion handler. */
+        @GridToStringExclude
+        private final TransmissionHandler hnd;
+
+        /** Unique session request id. */
+        private final IgniteUuid sesId;
+
+        /** Flag indicates that current file handling process must be interrupted. */
+        private final AtomicBoolean interrupted = new AtomicBoolean();
+
+        /** Only one thread can handle receiver context. */
+        private final Lock lock = new ReentrantLock();
+
+        /** Last infinished downloading object. */
+        private TransmissionReceiver rcv;
+
+        /** Last saved state about file data processing. */
+        private TransmissionMeta lastState;
+
+        /** Close receiver timeout object. */
+        private GridTimeoutObject timeoutObj;
+
+        /**
+         * @param rmtNodeId Remote node id.
+         * @param hnd Channel handler of current topic.
+         * @param sesId Unique session request id.
+         */
+        public ReceiverContext(UUID rmtNodeId, TransmissionHandler hnd, IgniteUuid sesId) {
+            this.rmtNodeId = rmtNodeId;
+            this.hnd = hnd;
+            this.sesId = sesId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ReceiverContext.class, this);
+        }
+    }
+
+    /**
+     * Сlass represents an implementation of transmission file writer. Each new instance of transmission sender
+     * will establish a new connection with unique transmission session identifier to the remote node and given
+     * topic (an arbitraty {@link GridTopic} can be used).
+     *
+     * <h2>Zero-copy approach</h2>
+     * <p>
+     * Current implementation of transmission sender is based on file zero-copy approach (the {@link FileSender}
+     * is used under the hood). It is much more efficient than a simple loop that reads data from
+     * given file and writes it to the target socket channel. But if operating system does not support zero-copy
+     * file transfer, sending a file with {@link TransmissionSender} might fail or yield worse performance.
+     * <p>
+     * Please, refer to <a href="http://en.wikipedia.org/wiki/Zero-copy">http://en.wikipedia.org/wiki/Zero-copy</a>
+     * or {@link FileChannel#transferTo(long, long, WritableByteChannel)} for details of such approach.
+     *
+     * <h2>File and Chunk handlers</h2>
+     * <p>
+     * It is possible to choose a file handler prior to sendig the file to remote node  within opened transmission
+     * session. There are two types of handlers available:
+     * {@link TransmissionHandler#chunkHandler(UUID, TransmissionMeta)} and
+     * {@link TransmissionHandler#fileHandler(UUID, TransmissionMeta)}. You can use an appropriate
+     * {@link TransmissionPolicy} for {@link #send(File, long, long, Map, TransmissionPolicy)} method to switch
+     * between them.
+     *
+     * <h2>Exceptions handling</h2>
+     * <p>
+     * Each transmission can have two different high-level types of exception which are handled differently:
+     * <ul>
+     * <li><em>transport</em> exception(e.g. some network issues)</li>
+     * <li><em>application</em>\<em>handler</em> level exception</li>
+     * </ul>
+     *
+     * <h3><em>Application</em> exceptions</h3>
+     * <p>
+     * The transmission will be stopped immediately and wrapping <em>IgniteExcpetion</em> thrown in case of
+     * any <em>application</em> exception occured.
+     *
+     * <h3><em>Transport</em> exceptions</h3>
+     * <p>
+     * All transport level exceptions of transmission file sender will require transmission to be reconnected.
+     * For instance, when the local node closes the socket connection in orderly way, but the file is not fully
+     * handled by remote node, the read operation over the same socket endpoint will return <tt>-1</tt>. Such
+     * result will be consideread as an {@link IOException} by handler and it will wait for reestablishing connection
+     * to continue file loading.
+     * <p>
+     * Another example, the transmission sender gets the <em>Connection reset by peer</em> IOException message.
+     * This means that the remote node you are connected to has to reset the connection. This is usually caused by a
+     * high amount of traffic on the host, but may be caused by a server error or the remote node has exhausted
+     * system resources as well. Such {@link IOException} will be considered as <em>reconnection required</em>.
+     *
+     * <h3>Timeout exceptions</h3>
+     * <p>
+     * For read operations over the {@link InputStream} or write operation through the {@link OutputStream}
+     * the {@link Socket#setSoTimeout(int)} will be used and an {@link SocketTimeoutException} will be
+     * thrown when the timeout occured. The default value is taken from {@link IgniteConfiguration#getNetworkTimeout()}.
+     * <p>
+     * If reconnection is not occurred withing configured timeout interval the timeout object will be fired which
+     * clears corresponding to the used topic the {@link GridIoManager.ReceiverContext}.
+     *
+     * <h2>Release resources</h2>
+     * <p>
+     * It is important to call <em>close()</em> method or use <em>try-with-resource</em> statement to release
+     * all resources once you've done with sending files.
+     *
+     * @see FileChannel#transferTo(long, long, WritableByteChannel)
+     */
+    public class TransmissionSender implements Closeable {
+        /** Remote node id to connect to. */
+        private final UUID rmtId;
+
+        /** Remote topic to connect to. */
+        private final Object topic;
+
+        /** Current unique session identifier to transfer files to remote node. */
+        private T2<UUID, IgniteUuid> sesKey;
+
+        /** Instance of opened writable channel to work with. */
+        private WritableByteChannel channel;
+
+        /** Decorated with data operations socket of output channel. */
+        private ObjectOutput out;
+
+        /** Decorated with data operations socket of input channel. */
+        private ObjectInput in;
+
+        /**
+         * @param rmtId The remote node to connect to.
+         * @param topic The remote topic to connect to.
+         */
+        public TransmissionSender(
+            UUID rmtId,
+            Object topic
+        ) {
+            this.rmtId = rmtId;
+            this.topic = topic;
+            sesKey = new T2<>(rmtId, IgniteUuid.randomUuid());
+        }
+
+        /**
+         * @return The synchronization meta if case connection has been reset.
+         * @throws IgniteCheckedException If fails.
+         * @throws IOException If fails.
+         */
+        private TransmissionMeta connect() throws IgniteCheckedException, IOException {
+            SocketChannel channel = (SocketChannel)openChannel(rmtId,
+                topic,
+                new SessionChannelMessage(sesKey.get2()))
+                .get();
+
+            configureChannel(channel, netTimeoutMs);
+
+            this.channel = (WritableByteChannel)channel;
+            out = new ObjectOutputStream(channel.socket().getOutputStream());
+            in = new ObjectInputStream(channel.socket().getInputStream());
+
+            TransmissionMeta syncMeta;
+
+            try {
+                // Synchronize state between remote and local nodes.
+                syncMeta = (TransmissionMeta)in.readObject();
+            }
+            catch (ClassNotFoundException e) {
+                throw new IgniteException (e);
+            }
+
+            return syncMeta;
+        }
+
+        /**
+         * @param file Source file to send to remote.
+         * @param params Additional file params.
+         * @param plc The policy of handling data on remote.
+         * @throws IgniteCheckedException If fails.
+         */
+        public void send(
+            File file,
+            Map<String, Serializable> params,
+            TransmissionPolicy plc
+        ) throws IgniteCheckedException, InterruptedException, IOException {
+            send(file, 0, file.length(), params, plc);
+        }
+
+        /**
+         * @param file Source file to send to remote.
+         * @param plc The policy of handling data on remote.
+         * @throws IgniteCheckedException If fails.
+         */
+        public void send(
+            File file,
+            TransmissionPolicy plc
+        ) throws IgniteCheckedException, InterruptedException, IOException {
+            send(file, 0, file.length(), new HashMap<>(), plc);
+        }
+
+        /**
+         * @param file Source file to send to remote.
+         * @param offset Position to start trasfer at.
+         * @param cnt Number of bytes to transfer.
+         * @param params Additional file params.
+         * @param plc The policy of handling data on remote.
+         * @throws IgniteCheckedException If fails.
+         */
+        public void send(
+            File file,
+            long offset,
+            long cnt,
+            Map<String, Serializable> params,
+            TransmissionPolicy plc
+        ) throws IgniteCheckedException, InterruptedException, IOException {
+            long startTime = U.currentTimeMillis();
+            int retries = 0;
+
+            senderStopFlags.putIfAbsent(sesKey, new AtomicBoolean());
+
+            try (FileSender snd = new FileSender(file,
+                offset,
+                cnt,
+                params,
+                plc,
+                () -> stopping || senderStopFlags.get(sesKey).get(),
+                log,
+                fileIoFactory,
+                DFLT_CHUNK_SIZE_BYTES)
+            ) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Start writing file to remote node [file=" + file.getName() +
+                        ", rmtNodeId=" + rmtId + ", topic=" + topic + ']');
+                }
+
+                while (true) {
+                    if (Thread.currentThread().isInterrupted())
+                        throw new InterruptedException("The thread has been interrupted. Stop uploading file.");
+
+                    if (stopping)
+                        throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+                    try {
+                        TransmissionMeta rcvMeta = null;
+
+                        // In/out streams are not null if file has been sent successfully.
+                        if (out == null && in == null) {
+                            rcvMeta = connect();
+
+                            assert rcvMeta != null : "Remote receiver has not sent its meta";
+
+                            // Stop in case of any error occurred on remote node during file processing.
+                            if (rcvMeta.error() != null)
+                                throw rcvMeta.error();
+                        }
+
+                        snd.send(channel, out, rcvMeta);
+
+                        // Read file received acknowledge.
+                        boolean written = in.readBoolean();
+
+                        assert written : "File is not fully written: " + file.getAbsolutePath();
+
+                        break;
+                    }
+                    catch (IOException e) {
+                        closeChannelQuiet();
+
+                        retries++;
+
+                        if (retries >= retryCnt) {
+                            throw new IgniteException("The number of retry attempts to upload file exceeded " +
+                                "the limit: " + retryCnt, e);
+                        }
+
+                        // Re-establish the new connection to continue upload.
+                        U.warn(log, "Connection lost while writing a file to remote node and " +
+                            "will be reestablished [rmtId=" + rmtId + ", file=" + file.getName() +
+                            ", sesKey=" + sesKey + ", retries=" + retries +
+                            ", transferred=" + snd.transferred() +
+                            ", total=" + snd.state().count() + ']', e);
+                    }
+                }
+
+                U.log(log, "File has been sent to remote node [name=" + file.getName() +
+                    ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +']');
+
+            }
+            catch (InterruptedException e) {
+                closeChannelQuiet();
+
+                throw e;
+            }
+            catch (IgniteCheckedException e) {
+                closeChannelQuiet();
+
+                if (X.hasCause(e, TransmissionCancelledException.class)) {
+                    throw new TransmissionCancelledException("File transmission has been cancelled on the remote node " +
+                        "[rmtId=" + rmtId + ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries +
+                        ", cause='" + e.getCause(TransmissionCancelledException.class).getMessage() + "']");
+                }
+
+                throw new IgniteCheckedException("Exception while sending file [rmtId=" + rmtId +
+                    ", file=" + file.getName() + ", sesKey=" + sesKey + ", retries=" + retries + ']', e);
+            }
+            catch (Throwable e) {
+                closeChannelQuiet();
+
+                if (stopping)
+                    throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
+
+                if (senderStopFlags.get(sesKey).get())
+                    throw new ClusterTopologyCheckedException("Remote node left the cluster: " + rmtId, e);
+
+                throw new IgniteException("Unexpected exception while sending file to the remote node. The process stopped " +
+                    "[rmtId=" + rmtId + ", file=" + file.getName() + ", sesKey=" + sesKey + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            try {
+                senderStopFlags.remove(sesKey);
+
+                ObjectOutput out0 = out;
+
+                if (out0 == null)
+                    return;
+
+                U.log(log, "Close file writer session: " + sesKey);
+
+                // Send transmission close flag.
+                out0.writeBoolean(true);
+                out0.flush();
+            }
+            catch (IOException e) {
+                U.warn(log, "An exception while writing close session flag occured. " +
+                    " Session close operation has been ignored", e);
+            }
+            finally {
+                closeChannelQuiet();
+            }
+        }
+
+        /** Close channel and relese resources. */
+        private void closeChannelQuiet() {
+            U.closeQuiet(out);
+            U.closeQuiet(in);
+            U.closeQuiet(channel);
+
+            out = null;
+            in = null;
+            channel = null;
+        }
     }
 
     /**

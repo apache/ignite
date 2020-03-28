@@ -17,39 +17,58 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.classification;
 
-import org.apache.ignite.ml.selection.scoring.LabelPair;
+import java.io.Serializable;
+import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.ClassificationMetricsAggregator;
+import org.apache.ignite.ml.selection.scoring.evaluator.context.EmptyContext;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
-
-import java.util.Iterator;
+import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
 /**
- * Accuracy score calculator.
- *
- * @param <L> Type of a label (truth or prediction).
+ * Accuracy metric class.
  */
-public class Accuracy<L> implements Metric<L> {
-    /** {@inheritDoc} */
-    @Override public double score(Iterator<LabelPair<L>> iter) {
-        long totalCnt = 0;
-        long correctCnt = 0;
+public class Accuracy<L extends Serializable> implements Metric<L, EmptyContext<L>, ClassificationMetricsAggregator<L>> {
+    /**
+     * Serial version uid.
+     */
+    private static final long serialVersionUID = -7042505196665295151L;
 
-        while (iter.hasNext()) {
-            LabelPair<L> e = iter.next();
+    /**
+     * Value.
+     */
+    private Double accuracy = Double.NaN;
 
-            L prediction = e.getPrediction();
-            L truth = e.getTruth();
-
-            if (prediction.equals(truth))
-                correctCnt++;
-
-            totalCnt++;
-        }
-
-        return 1.0 * correctCnt / totalCnt;
+    /**
+     * Creates an instance of Accuracy metric.
+     */
+    public Accuracy() {
     }
 
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return "accuracy";
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Accuracy<L> initBy(ClassificationMetricsAggregator<L> aggr) {
+        accuracy = ((double)aggr.getValidAnswersCount()) / Math.max(aggr.getTotalNumberOfExamples(), 1);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public ClassificationMetricsAggregator<L> makeAggregator() {
+        return new ClassificationMetricsAggregator<>();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public double value() {
+        return accuracy;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public MetricName name() {
+        return MetricName.ACCURACY;
     }
 }

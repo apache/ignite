@@ -203,7 +203,6 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
 
         Collection<Long> res = new ArrayList<>();
 
-
         while (input.hasNext()) {
             Long val = input.next();
 

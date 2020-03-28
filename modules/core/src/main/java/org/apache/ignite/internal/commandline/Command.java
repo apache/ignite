@@ -17,11 +17,21 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Comparator;
+import java.util.Map;
+import java.util.logging.Logger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 
 /**
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
@@ -50,13 +60,80 @@ public interface Command<T> {
     /**
      * Print command usage.
      *
+     * @param logger Logger to use.
      * @param desc Command description.
+     * @param cmd Command.
      * @param args Arguments.
      */
-    public static void usage(CommandLogger logger, String desc, CommandList cmd, String... args) {
-        logger.logWithIndent(desc);
-        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)), 2);
-        logger.nl();
+    public static void usage(Logger logger, String desc, CommandList cmd, String... args) {
+        usage(logger, desc, cmd, null, args);
+    }
+
+    /**
+     * Print command usage.
+     *
+     * @param logger Logger to use.
+     * @param desc Command description.
+     * @param cmd Command.
+     * @param paramsDesc Description of parameters (optional).
+     * @param args Arguments.
+     */
+    public static void usage(
+        Logger logger,
+        String desc,
+        CommandList cmd,
+        @Nullable Map<String, String> paramsDesc,
+        String... args
+    ) {
+        logger.info("");
+        logger.info(INDENT + desc);
+        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));
+
+        if (!F.isEmpty(paramsDesc)) {
+            logger.info("");
+
+            logger.info(DOUBLE_INDENT + "Parameters:");
+
+            usageParams(paramsDesc, DOUBLE_INDENT + INDENT, logger);
+        }
+    }
+
+    /**
+     * Print cache command arguments usage.
+     *
+     * @param paramsDesc Cache command arguments description.
+     * @param indent Indent string.
+     * @param logger Logger to use.
+     */
+    public static void usageParams(Map<String, String> paramsDesc, String indent, Logger logger) {
+        int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
+
+        for (Map.Entry<String, String> param : paramsDesc.entrySet())
+            logger.info(indent + extendToLen(param.getKey(), maxParamLen) + "  " + "- " + param.getValue());
+    }
+
+    /**
+     * Appends spaces to end of input string for extending to needed length.
+     *
+     * @param s Input string.
+     * @param targetLen Needed length.
+     * @return String with appended spaces on the end.
+     */
+    public static String extendToLen(String s, int targetLen) {
+        assert targetLen >= 0;
+        assert s.length() <= targetLen;
+
+        if (s.length() == targetLen)
+            return s;
+
+        SB sb = new SB(targetLen);
+
+        sb.a(s);
+
+        for (int i = 0; i < targetLen - s.length(); i++)
+            sb.a(" ");
+
+        return sb.toString();
     }
 
     /**
@@ -67,7 +144,17 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+    public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
+
+    /**
+     * Prepares confirmation for the command.
+     *
+     * @param clientCfg Thin client configuration.
+     * @throws Exception If error occur.
+     */
+    default void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception{
+        //no-op
+    }
 
     /**
      * @return Message text to show user for. If null it means that confirmantion is not needed.
@@ -93,7 +180,30 @@ public interface Command<T> {
     /**
      * Print info for user about command (parameters, use cases and so on).
      *
-     * @param logger Would be used as output.
+     * @param logger Logger to use.
      */
-    public void printUsage(CommandLogger logger);
+    public void printUsage(Logger logger);
+
+    /**
+     * @return command name.
+     */
+    String name();
+
+    /**
+     * @return Value of {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND}
+     */
+    default boolean experimentalEnabled() {
+        return IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
+    }
+
+    /**
+     * Return {@code true} if the command is experimental or {@code false}
+     * otherwise.
+     *
+     * @return {@code true} if the command is experimental or {@code false}
+     *      otherwise.
+     */
+    default boolean experimental() {
+        return false;
+    }
 }

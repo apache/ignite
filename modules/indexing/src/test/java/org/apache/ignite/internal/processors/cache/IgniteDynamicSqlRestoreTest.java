@@ -31,7 +31,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -59,6 +58,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
 
     public static final String TEST_CACHE_NAME = "test";
+
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";
 
     /** {@inheritDoc} */
@@ -174,16 +174,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         // Start topology.
         startGrid(0);
         Ignite srv2 = startGrid(1);
-        Ignite cli;
-
-        Ignition.setClientMode(true);
-
-        try {
-            cli = startGrid(2);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        Ignite cli = startClientGrid(2);
 
         cli.cluster().active(true);
 
@@ -198,7 +189,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 " ADDRESS VARCHAR,\n" +
                 " LANG VARCHAR,\n" +
                 " BIRTH_DATE TIMESTAMP,\n" +
-                " CONSTRAINT PK_PESON PRIMARY KEY (FIRST_NAME,LAST_NAME,ADDRESS,LANG)\n" +
+                " CONSTRAINT PK_PERSON PRIMARY KEY (FIRST_NAME,LAST_NAME,ADDRESS,LANG)\n" +
                 " ) WITH \"key_type=PersonKeyType, CACHE_NAME=PersonCache, value_type=PersonValueType, AFFINITY_KEY=FIRST_NAME,template=PARTITIONED,backups=1\"");
 
             try (PreparedStatement stmt = conn.prepareStatement(

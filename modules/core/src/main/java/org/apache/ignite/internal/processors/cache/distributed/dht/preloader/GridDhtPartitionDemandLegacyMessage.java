@@ -114,7 +114,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
         workerId = cp.workerId();
         topVer = cp.topologyVersion();
 
-        if(!cp.partitions().isEmpty()) {
+        if (!cp.partitions().isEmpty()) {
             parts = new HashSet<>(cp.partitions().size());
 
             parts.addAll(cp.partitions().fullSet());
@@ -248,8 +248,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
         return topVer;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

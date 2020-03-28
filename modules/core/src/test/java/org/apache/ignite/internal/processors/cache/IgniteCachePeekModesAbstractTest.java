@@ -1187,7 +1187,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 cache0.put(backupKeys.get(i), val);
             }
 
-
             int totalKeys = 200;
 
             T2<Integer, Integer> offheapKeys = offheapKeysCount(nodeIdx, part);

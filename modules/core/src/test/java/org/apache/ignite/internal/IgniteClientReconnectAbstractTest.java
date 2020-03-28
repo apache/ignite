@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.G;
@@ -66,9 +67,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /** */
     private static final long RECONNECT_TIMEOUT = 10_000;
 
-    /** */
-    protected boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -87,9 +85,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
-
-        if (clientMode)
-            cfg.setClientMode(true);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -164,13 +160,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         int clients = clientCount();
 
-        if (clients > 0) {
-            clientMode = true;
-
-            startGridsMultiThreaded(srvs, clients);
-
-            clientMode = false;
-        }
+        if (clients > 0)
+            startClientGridsMultiThreaded(srvs, clients);
     }
 
     /** {@inheritDoc} */

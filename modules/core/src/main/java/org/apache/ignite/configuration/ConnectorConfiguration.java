@@ -345,18 +345,18 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Gets REST TCP server receive buffer size.
+     * Gets REST TCP server receive buffer size in bytes.
      *
-     * @return REST TCP server receive buffer size (0 for default).
+     * @return REST TCP server receive buffer size in bytes(0 for default).
      */
     public int getReceiveBufferSize() {
         return rcvBufSize;
     }
 
     /**
-     * Sets REST TCP server receive buffer size.
+     * Sets REST TCP server receive buffer size in bytes.
      *
-     * @param rcvBufSize Receive buffer size.
+     * @param rcvBufSize Receive buffer size in bytes.
      * @see #getReceiveBufferSize()
      * @return {@code this} for chaining.
      */

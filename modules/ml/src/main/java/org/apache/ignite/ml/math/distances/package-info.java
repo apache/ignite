@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains main APIs for distances.
  */
+
 package org.apache.ignite.ml.math.distances;

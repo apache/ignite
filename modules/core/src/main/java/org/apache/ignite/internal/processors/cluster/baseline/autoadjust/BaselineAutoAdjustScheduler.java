@@ -33,10 +33,13 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 class BaselineAutoAdjustScheduler {
     /** Timeout processor. */
     private final GridTimeoutProcessor timeoutProcessor;
+
     /** Executor of set baseline operation. */
     private final BaselineAutoAdjustExecutor baselineAutoAdjustExecutor;
+
     /** Last scheduled task for adjust new baseline. It needed for removing from queue. */
     private BaselineMultiplyUseTimeoutObject baselineTimeoutObj;
+
     /** */
     private final IgniteLogger log;
 
@@ -92,19 +95,25 @@ class BaselineAutoAdjustScheduler {
         /** Interval between logging of info about next baseline auto-adjust. */
         private static final long AUTO_ADJUST_LOG_INTERVAL =
             getLong(IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL, 60_000);
+
         /** Last data for set new baseline. */
         private final BaselineAutoAdjustData baselineAutoAdjustData;
+
         /** Executor of set baseline operation. */
         private final BaselineAutoAdjustExecutor baselineAutoAdjustExecutor;
+
         /** Timeout processor. */
         private final GridTimeoutProcessor timeoutProcessor;
+
         /** */
         private final IgniteLogger log;
 
         /** End time of whole life of this object. It represent time when auto-adjust will be executed. */
         private final long totalEndTime;
+
         /** Timeout ID. */
         private final IgniteUuid id = IgniteUuid.randomUuid();
+
         /** End time of one iteration of this timeout object. */
         private long endTime;
 

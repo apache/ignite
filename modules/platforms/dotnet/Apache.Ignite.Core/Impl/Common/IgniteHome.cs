@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.IO;
     using System.Reflection;
@@ -35,11 +36,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Calculate Ignite home.
         /// </summary>
-        /// <param name="cfg">Configuration.</param>
+        /// <param name="igniteHome">Optional known home.</param>
         /// <param name="log">The log.</param>
-        public static string Resolve(IgniteConfiguration cfg, ILogger log = null)
+        public static string Resolve(string igniteHome = null, ILogger log = null)
         {
-            var home = cfg == null ? null : cfg.IgniteHome;
+            var home = igniteHome;
 
             if (string.IsNullOrWhiteSpace(home))
             {
@@ -73,18 +74,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         private static string Resolve(ILogger log)
         {
-            var probeDirs = new[]
-            {
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                Directory.GetCurrentDirectory()
-            };
-
-            if (log != null)
-                log.Debug("Attempting to resolve IgniteHome in the assembly directory " +
-                          "'{0}' and current directory '{1}'...", probeDirs[0], probeDirs[1]);
-
-
-            foreach (var probeDir in probeDirs.Where(x => !string.IsNullOrEmpty(x)))
+            foreach (var probeDir in GetProbeDirectories().Where(x => !string.IsNullOrEmpty(x)))
             {
                 if (log != null)
                     log.Debug("Probing IgniteHome in '{0}'...", probeDir);
@@ -101,6 +91,30 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Gets directories to probe for Ignite Home.
+        /// </summary>
+        private static IEnumerable<string> GetProbeDirectories()
+        {
+            var entryAsm = Assembly.GetEntryAssembly();
+            if (entryAsm != null)
+            {
+                yield return Path.GetDirectoryName(entryAsm.Location);
+            }
+
+            var executingAsmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            if (!string.IsNullOrWhiteSpace(executingAsmPath))
+            {
+                yield return executingAsmPath;
+
+                // NuGet home - for LINQPad.
+                yield return Path.Combine(executingAsmPath, "..", "..", "build", "output");
+            }
+
+            yield return Directory.GetCurrentDirectory();
         }
 
         /// <summary>

@@ -17,20 +17,25 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandList.ACTIVATE;
+import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 
 /**
  * Activate cluster command.
+ * @deprecated Use {@link ClusterStateChangeCommand} instead.
  */
+@Deprecated
 public class ActivateCommand implements Command<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
-        Command.usage(logger, "Activate cluster:", ACTIVATE);
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Activate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", ACTIVATE);
     }
 
     /**
@@ -39,16 +44,18 @@ public class ActivateCommand implements Command<Void> {
      * @param cfg Client configuration.
      * @throws GridClientException If failed to activate.
      */
-    @Override public Object execute(GridClientConfiguration cfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration cfg, Logger logger) throws Exception {
+        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+
         try (GridClient client = Command.startClient(cfg)) {
             GridClientClusterState state = client.state();
 
-            state.active(true);
+            state.state(ACTIVE, false);
 
-            logger.log("Cluster activated");
+            logger.info("Cluster activated");
         }
         catch (Throwable e) {
-            logger.log("Failed to activate cluster.");
+            logger.severe("Failed to activate cluster.");
 
             throw e;
         }
@@ -59,5 +66,10 @@ public class ActivateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return ACTIVATE.toCommandName();
     }
 }

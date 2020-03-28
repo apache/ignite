@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -49,15 +50,17 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /** Number of transactions. */
     private static final int TX_CNT = 10_000;
 
-    /** Client flag. */
-    private boolean client;
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30_000;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if (!client) {
+        if (!c.isClientMode()) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
@@ -70,8 +73,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
 
             c.setCacheConfiguration(cc);
         }
-        else
-            c.setClientMode(true);
 
         return c;
     }
@@ -80,13 +81,11 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(GRID_CNT - 2);
 
-        client = true;
-
-        Ignite grid = startGrid(GRID_CNT - 2);
+        Ignite grid = startClientGrid(GRID_CNT - 2);
 
         grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
-        grid = startGrid(GRID_CNT - 1);
+        grid = startClientGrid(GRID_CNT - 1);
 
         grid.cache(DEFAULT_CACHE_NAME);
     }
@@ -101,6 +100,7 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11877")
     @Test
     public void testMultithreadedPutAll() throws Exception {
         final AtomicInteger idx = new AtomicInteger();

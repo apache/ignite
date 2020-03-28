@@ -26,22 +26,14 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  */
 public class FeaturesCountSelectionStrategies {
     /** */
-    public static IgniteFunction<List<FeatureMeta>, Integer> SQRT = (List<FeatureMeta> meta) -> {
-        return (int)Math.sqrt(meta.size());
-    };
+    public static IgniteFunction<List<FeatureMeta>, Integer> SQRT = (List<FeatureMeta> meta) -> (int)Math.sqrt(meta.size());
 
     /** */
-    public static IgniteFunction<List<FeatureMeta>, Integer> ALL = (List<FeatureMeta> meta) -> {
-        return meta.size();
-    };
+    public static IgniteFunction<List<FeatureMeta>, Integer> ALL = List::size;
 
     /** */
-    public static IgniteFunction<List<FeatureMeta>, Integer> LOG2 = (List<FeatureMeta> meta) -> {
-        return (int)(Math.log(meta.size()) / Math.log(2));
-    };
+    public static IgniteFunction<List<FeatureMeta>, Integer> LOG2 = (List<FeatureMeta> meta) -> (int)(Math.log(meta.size()) / Math.log(2));
 
     /** */
-    public static IgniteFunction<List<FeatureMeta>, Integer> ONE_THIRD = (List<FeatureMeta> meta) -> {
-        return (int)(meta.size() / 3);
-    };
+    public static IgniteFunction<List<FeatureMeta>, Integer> ONE_THIRD = (List<FeatureMeta> meta) -> (int)(meta.size() / 3);
 }

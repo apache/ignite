@@ -73,17 +73,8 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** add@byron */
     private IgniteBiPredicate<K, V> filter;
 
-   
-    /**
-     * Create scan query with filter.
-     *
-     * @param filter Filter. If {@code null} then all entries will be returned.
-     */
-    public TextQuery(Class<?> type, String txt,@Nullable IgniteBiPredicate<K, V> filter) {
-        this(type, txt);
-        setFitler(filter);
-    }
-
+    /** Limit */
+    private int limit;
 
     /**
      * Constructs query for the given search string.
@@ -94,6 +85,30 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public TextQuery(String type, String txt) {
         setType(type);
         setText(txt);
+    }
+
+
+    /**
+     * Create scan query with filter.
+     *
+     * @param filter Filter. If {@code null} then all entries will be returned.
+     */
+    public TextQuery(Class<?> type, String txt,@Nullable IgniteBiPredicate<K, V> filter) {
+        this(type, txt);
+        setFitler(filter);
+    }
+	
+    /**
+     * Constructs query for the given search string.
+     *
+     * @param type Type.
+     * @param txt Search string.
+     * @param limit Limits response records count. If 0 or less, considered to be no limit.
+     */
+    public TextQuery(String type, String txt, int limit) {
+        setType(type);
+        setText(txt);
+        setLimit(limit);
     }
 
     /**
@@ -108,22 +123,25 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /**
+     * Constructs query for the given search string.
+     *
+     * @param type Type.
+     * @param txt Search string.
+     * @param limit Limits response records count. If 0 or less, considered to be no limit.
+     */
+    public TextQuery(Class<?> type, String txt, int limit) {
+        setType(type);
+        setText(txt);
+        setLimit(limit);
+    }
+
+    /**
      * Gets type for query.
      *
      * @return Type.
      */
     public String getType() {
         return type;
-    }
-    
-
-    /**
-     * Gets filter for query.
-     *
-     * @return Type.
-     */
-    public IgniteBiPredicate<K, V> getFilter() {
-        return filter;
     }
 
     /**
@@ -171,6 +189,27 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return this;
     }
 
+    /**
+     * Gets limit to response records count.
+     *
+     * @return Limit value.
+     */
+    public int getLimit() {
+        return limit;
+    }
+
+    /**
+     * Sets limit to response records count.
+     *
+     * @param limit If 0 or less, considered to be no limit.
+     * @return {@code this} For chaining.
+     */
+    public TextQuery<K, V> setLimit(int limit) {
+        this.limit = limit;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public TextQuery<K, V> setPageSize(int pageSize) {
         return (TextQuery<K, V>)super.setPageSize(pageSize);
@@ -179,6 +218,16 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** {@inheritDoc} */
     @Override public TextQuery<K, V> setLocal(boolean loc) {
         return (TextQuery<K, V>)super.setLocal(loc);
+    }
+	
+	
+    /**
+     * Gets filter for query.
+     *
+     * @return Type.
+     */
+    public IgniteBiPredicate<K, V> getFilter() {
+        return filter;
     }
 
     /**

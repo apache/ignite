@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -63,19 +64,19 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 @SuppressWarnings({"unchecked"})
 public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCommonTest {
     /** */
-    private static int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 4;
 
     /** */
-    private static String NODE_CLIENT = "client";
+    private static final String NODE_CLIENT = "client";
 
     /** */
-    private static String CACHE_ORG = "org";
+    private static final String CACHE_ORG = "org";
 
     /** */
-    private static String CACHE_PERSON = "person";
+    private static final String CACHE_PERSON = "person";
 
     /** */
-    private static String CACHE_POSITION = "pos";
+    private static final String CACHE_POSITION = "pos";
 
     /** */
     private static Ignite client;
@@ -94,11 +95,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
         ccfgs.add(buildCacheConfiguration(CACHE_POSITION));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-
         c.setLongQueryWarningTimeout(10000);
-
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -163,7 +161,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
 
         startGrids(NODE_COUNT);
 
-        client = startGrid(NODE_CLIENT);
+        client = startClientGrid(NODE_CLIENT);
 
         awaitPartitionMapExchange();
     }
@@ -622,6 +620,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
         /** */
         @QuerySqlField
         int amount;
+
         /** */
         @QuerySqlField
         Date updated;

@@ -22,7 +22,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -33,14 +32,14 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -56,7 +55,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
  * Record V1 serializer.
  * Stores records in following format:
  * <ul>
- *     <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
+ *     <li>Record type from {@link RecordType#index()} incremented by 1</li>
  *     <li>WAL pointer to double check consistency</li>
  *     <li>Data</li>
  *     <li>CRC or zero padding</li>
@@ -264,7 +263,7 @@ public class RecordV1Serializer implements RecordSerializer {
             if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
                 throw new SegmentEofException("Reached logical end of the segment", null);
 
-            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
+            WALRecord.RecordType type = WALRecord.RecordType.fromIndex(recordType - 1);
 
             if (type != WALRecord.RecordType.HEADER_RECORD)
                 throw new IOException("Can't read serializer version", null);
@@ -329,7 +328,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param type WAL record type.
      */
     static void putRecordType(ByteBuffer buf, RecordType type) {
-        buf.put((byte)(type.ordinal() + 1));
+        buf.put((byte)(type.index() + 1));
     }
 
     /**
@@ -346,7 +345,7 @@ public class RecordV1Serializer implements RecordSerializer {
         if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
             throw new SegmentEofException("Reached logical end of the segment", null);
 
-        return RecordType.fromOrdinal(type - 1);
+        return RecordType.fromIndex(type - 1);
     }
 
     /**
@@ -387,10 +386,13 @@ public class RecordV1Serializer implements RecordSerializer {
                 size = in0.io().size();
             }
             catch (IOException ignore) {
-                // No-op. It just for information. Fail calculate file size.
+                // It just for information. Fail calculate file size.
+                e.addSuppressed(ignore);
             }
 
-            throw new IgniteCheckedException("Failed to read WAL record at position: " + startPos + " size: " + size, e);
+            throw new IgniteCheckedException(
+                "Failed to read WAL record at position: " + startPos + ", size: " + size + ", expectedPtr: " + expPtr, e
+            );
         }
     }
 

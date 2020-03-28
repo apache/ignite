@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     CertificatePassword = "123456",
                     SkipServerCertificateValidation = true,
                     CheckCertificateRevocation = true,
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1
+#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0
                     SslProtocols = SslProtocols.Tls
 #else
                     SslProtocols = SslProtocols.Tls12

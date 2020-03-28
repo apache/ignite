@@ -46,7 +46,7 @@ namespace ignite
              */
             IgniteClientConfiguration() :
                 sslMode(SslMode::DISABLE),
-                affinityAwareness(false)
+                partitionAwareness(false)
             {
                 // No-op.
             }
@@ -203,7 +203,7 @@ namespace ignite
             }
 
             /**
-             * Set Affinity Awareness.
+             * Set Partition Awareness.
              *
              * Enable or disable feature that enables thin client to consider data affinity when making requests
              * to the cluster. It means, thin client is going to connect to all available cluster servers listed by
@@ -211,23 +211,23 @@ namespace ignite
              *
              * Disabled by default.
              *
-             * @param enable Enable affinity awareness.
+             * @param enable Enable partition awareness.
              */
-            void SetAffinityAwareness(bool enable)
+            void SetPartitionAwareness(bool enable)
             {
-                affinityAwareness = enable;
+                partitionAwareness = enable;
             }
 
             /**
-             * Get Affinity Awareness flag.
+             * Get Partition Awareness flag.
              *
-             * @see SetAffinityAwareness() for details.
+             * @see SetPartitionAwareness() for details.
              *
-             * @return @c true if affinity awareness is enabled and @c false otherwise.
+             * @return @c true if partition awareness is enabled and @c false otherwise.
              */
-            bool IsAffinityAwareness() const
+            bool IsPartitionAwareness() const
             {
-                return affinityAwareness;
+                return partitionAwareness;
             }
 
         private:
@@ -252,8 +252,8 @@ namespace ignite
             /** SSL client certificate authority path */
             std::string sslCaFile;
 
-            /** Affinity Awareness. */
-            bool affinityAwareness;
+            /** Partition awareness. */
+            bool partitionAwareness;
         };
     }
 }

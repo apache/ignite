@@ -64,7 +64,7 @@ public class DynamicCacheDescriptor {
     private boolean updatesAllowed = true;
 
     /** */
-    private Integer cacheId;
+    private int cacheId;
 
     /** */
     private final UUID rcvdFrom;
@@ -176,7 +176,7 @@ public class DynamicCacheDescriptor {
     /**
      * @return Cache ID.
      */
-    public Integer cacheId() {
+    public int cacheId() {
         return cacheId;
     }
 

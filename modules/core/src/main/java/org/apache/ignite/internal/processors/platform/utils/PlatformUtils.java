@@ -63,6 +63,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.EventType;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.security.Timestamp;
@@ -612,6 +613,23 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+        writeEventType(writer, evt.getEventType());
+    }
+
+    /**
+     * Write event type to the writer.
+     * @param writer Writer.
+     * @param evtType Type of event.
+     */
+    private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
+        switch (evtType){
+            case CREATED: writer.writeByte((byte) 0); break;
+            case UPDATED: writer.writeByte((byte) 1); break;
+            case REMOVED: writer.writeByte((byte) 2); break;
+            case EXPIRED: writer.writeByte((byte) 3); break;
+            default:
+                throw new IllegalArgumentException("Unknown event type: " + evtType);
+        }
     }
 
     /**
@@ -979,6 +997,7 @@ public class PlatformUtils {
 
         return map0;
     }
+
     /**
      * Create Java object.
      *

@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +100,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventFilter getEventFilter() {
+    @Override protected CacheEntryEventFilter getEventFilter0() {
         if (filter == null) {
             assert rmtFilterFactory != null;
 
@@ -124,10 +125,16 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
 
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        super.p2pUnmarshal(nodeId, ctx);
-
         if (rmtFilterFactoryDep != null)
-            rmtFilterFactory = rmtFilterFactoryDep.unmarshal(nodeId, ctx);
+            rmtFilterFactory = p2pUnmarshal(rmtFilterFactoryDep, nodeId, ctx);
+
+        super.p2pUnmarshal(nodeId, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMarshalled() {
+        return super.isMarshalled() &&
+            (rmtFilterFactory == null || U.isGrid(rmtFilterFactory.getClass()) || rmtFilterFactoryDep != null);
     }
 
     /** {@inheritDoc} */
@@ -163,9 +170,12 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
 
         boolean b = in.readBoolean();
 
-        if (b)
+        if (b) {
             rmtFilterFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
-        else
+
+            if (p2pUnmarshalFut.isDone())
+                p2pUnmarshalFut = new GridFutureAdapter<>();
+        } else
             rmtFilterFactory = (Factory)in.readObject();
 
         types = in.readByte();

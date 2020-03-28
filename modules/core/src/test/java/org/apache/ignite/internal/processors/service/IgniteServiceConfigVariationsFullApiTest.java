@@ -35,6 +35,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -121,6 +122,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11883")
     @Test
     public void testKeyAffinityDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {

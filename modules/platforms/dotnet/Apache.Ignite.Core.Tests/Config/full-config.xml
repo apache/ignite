@@ -119,7 +119,9 @@
         </memoryPolicies>
     </memoryConfiguration>
     <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
-    <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' idleTimeout = "00:00:19" />
+    <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' idleTimeout = "00:00:19">
+        <thinClientConfiguration maxActiveTxPerConnection='20' />
+    </clientConnectorConfiguration>
     <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' 
                                   checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' 
                                   walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' 
@@ -166,4 +168,8 @@
                        keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
                        trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
     <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:1:0"/>
+    <executorConfiguration>
+        <executorConfiguration name='exec1' size='1' />
+        <executorConfiguration name='exec2' size='2' />
+    </executorConfiguration>
 </igniteConfiguration>

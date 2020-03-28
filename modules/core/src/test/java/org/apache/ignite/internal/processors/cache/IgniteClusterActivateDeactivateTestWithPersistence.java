@@ -31,22 +31,29 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  *
@@ -58,24 +65,10 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
         cleanPersistenceDir();
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
@@ -95,7 +88,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testActivateCachesRestore_SingleNode() throws Exception {
-        activateCachesRestore(1, false);
+        activateCachesRestore(1, false, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateReadOnlyCachesRestore_SingleNode() throws Exception {
+        activateCachesRestore(1, false, ACTIVE_READ_ONLY);
     }
 
     /**
@@ -103,7 +104,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testActivateCachesRestore_SingleNode_WithNewCaches() throws Exception {
-        activateCachesRestore(1, true);
+        activateCachesRestore(1, true, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateReadOnlyCachesRestore_SingleNode_WithNewCaches() throws Exception {
+        activateCachesRestore(1, true, ACTIVE_READ_ONLY);
     }
 
     /**
@@ -111,7 +120,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testActivateCachesRestore_5_Servers() throws Exception {
-        activateCachesRestore(5, false);
+        activateCachesRestore(5, false, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateReadOnlyCachesRestore_5_Servers() throws Exception {
+        activateCachesRestore(5, false, ACTIVE_READ_ONLY);
     }
 
     /**
@@ -119,7 +136,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testActivateCachesRestore_5_Servers_WithNewCaches() throws Exception {
-        activateCachesRestore(5, true);
+        activateCachesRestore(5, true, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateReadOnlyCachesRestore_5_Servers_WithNewCaches() throws Exception {
+        activateCachesRestore(5, true, ACTIVE_READ_ONLY);
     }
 
     /**
@@ -129,6 +154,23 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateInactiveCluster() throws Exception {
+        checkDeactivateInactiveCluster(ACTIVE);
+    }
+
+    /**
+     * Test deactivation on cluster that is not yet activated.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateInactiveClusterReadOnly() throws Exception {
+        checkDeactivateInactiveCluster(ACTIVE_READ_ONLY);
+    }
+
+    /** */
+    private void checkDeactivateInactiveCluster(ClusterState activationMode) throws Exception {
+        assertActive(activationMode);
+
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration<>("test_cache_1")
                 .setGroupName("test_cache")
@@ -140,43 +182,57 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite ignite = startGrids(3);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(activationMode);
 
-        ignite.cache("test_cache_1")
-            .put("key1", "val1");
-        ignite.cache("test_cache_2")
-            .put("key1", "val1");
+        if (activationMode == ACTIVE) {
+            ignite.cache("test_cache_1")
+                .put("key1", "val1");
+            ignite.cache("test_cache_2")
+                .put("key1", "val1");
+        }
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(INACTIVE);
 
-        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
 
         stopAllGrids();
 
         ignite = startGrids(2);
 
-        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(INACTIVE);
 
-        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
     }
 
     /** */
-    private Map<Integer, Integer> startGridsAndLoadData(int srvs) throws Exception {
+    private Map<Integer, Integer> startGridsAndLoadData(int srvs, ClusterState activationMode) throws Exception {
+        assertActive(activationMode);
+
         Ignite srv = startGrids(srvs);
 
-        srv.active(true);
+        srv.cluster().state(activationMode);
 
         srv.createCaches(Arrays.asList(cacheConfigurations1()));
 
         Map<Integer, Integer> cacheData = new LinkedHashMap<>();
 
-        for (int i = 1; i <= 100; i++) {
-            for (CacheConfiguration ccfg : cacheConfigurations1()) {
-                srv.cache(ccfg.getName()).put(-i, i);
+        for (CacheConfiguration ccfg : cacheConfigurations1()) {
+            for (int i = 1; i <= 100; i++) {
+                int key = -i;
+                int val = i;
 
-                cacheData.put(-i, i);
+                if (activationMode == ACTIVE) {
+                    srv.cache(ccfg.getName()).put(key, val);
+
+                    cacheData.put(key, val);
+                }
+                else {
+                    assertThrowsWithCause(() -> srv.cache(ccfg.getName()).put(key, val), IgniteClusterReadOnlyException.class);
+
+                    cacheData.put(key, null);
+                }
             }
         }
 
@@ -186,10 +242,13 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /**
      * @param srvs Number of server nodes.
      * @param withNewCaches If {@code true} then after restart has new caches in configuration.
+     * @param activationMode Cluster activation mode.
      * @throws Exception If failed.
      */
-    private void activateCachesRestore(int srvs, boolean withNewCaches) throws Exception {
-        Map<Integer, Integer> cacheData = startGridsAndLoadData(srvs);
+    private void activateCachesRestore(int srvs, boolean withNewCaches, ClusterState activationMode) throws Exception {
+        assertActive(activationMode);
+
+        Map<Integer, Integer> cacheData = startGridsAndLoadData(srvs, activationMode);
 
         stopAllGrids();
 
@@ -204,14 +263,12 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         checkNoCaches(srvs);
 
-        srv.cluster().active(true);
+        srv.cluster().state(activationMode);
 
         final int CACHES = withNewCaches ? 4 : 2;
 
-        for (int i = 0; i < srvs; i++) {
-            for (int c = 0; c < CACHES; c++)
-                checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
-        }
+        for (int i = 0; i < srvs; i++)
+            checkCachesOnNode(i, CACHES);
 
         DataStorageConfiguration dsCfg = srv.configuration().getDataStorageConfiguration();
 
@@ -221,46 +278,32 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         int nodes = srvs;
 
-        client = false;
+        startGrid(nodes++, false);
 
-        startGrid(nodes++);
-
-        for (int i = 0; i < nodes; i++) {
-            for (int c = 0; c < CACHES; c++)
-                checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
-        }
+        for (int i = 0; i < nodes; i++)
+            checkCachesOnNode(i, CACHES);
 
         checkCaches(nodes, CACHES);
 
-        client = true;
+        startGrid(nodes++, true);
 
-        startGrid(nodes++);
-
-        for (int c = 0; c < CACHES; c++)
-            checkCache(ignite(nodes - 1), CACHE_NAME_PREFIX + c, false);
+        checkCachesOnNode(nodes - 1, CACHES, false);
 
         checkCaches(nodes, CACHES);
 
-        for (int i = 0; i < nodes; i++) {
-            for (int c = 0; c < CACHES; c++)
-                checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
-        }
+        for (int i = 0; i < nodes; i++)
+            checkCachesOnNode(i, CACHES);
 
         checkCachesData(cacheData, dsCfg);
     }
 
-    /**
-     * Verifies correctness of BaselineTopology checks when working in persistent mode.
-     */
-    @Override protected void doFinalChecks() {
-        for (int i = 0; i < 4; i++) {
+
+    /** {@inheritDoc} */
+    @Override protected void doFinalChecks(int startNodes, int nodesCnt) {
+        for (int i = 0; i < startNodes; i++) {
             int j = i;
 
-            assertThrowsAnyCause(log, () -> {
-                startGrid(j);
-
-                return null;
-            }, IgniteSpiException.class, "not compatible");
+            assertThrowsAnyCause(log, () -> startGrid(j), IgniteSpiException.class, "not compatible");
         }
     }
 
@@ -269,7 +312,20 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testClientJoinsWhenActivationIsInProgress() throws Exception {
-        startGridsAndLoadData(5);
+        checkClientJoinsWhenActivationIsInProgress(ACTIVE);
+    }
+
+    /** */
+    @Test
+    public void testClientJoinsWhenActivationReanOnlyIsInProgress() throws Exception {
+        checkClientJoinsWhenActivationIsInProgress(ACTIVE_READ_ONLY);
+    }
+
+    /** */
+    private void checkClientJoinsWhenActivationIsInProgress(ClusterState state) throws Exception {
+        assertActive(state);
+
+        startGridsAndLoadData(5, state);
 
         stopAllGrids();
 
@@ -277,31 +333,32 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         final CountDownLatch clientStartLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture clStartFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
+        IgniteInternalFuture clStartFut = GridTestUtils.runAsync(
+            () -> {
                 try {
                     clientStartLatch.await();
 
                     Thread.sleep(10);
 
-                    client = true;
-
-                    Ignite cl = startGrid("client0");
+                    Ignite cl = startClientGrid("client0");
 
                     IgniteCache<Object, Object> atomicCache = cl.cache(CACHE_NAME_PREFIX + '0');
                     IgniteCache<Object, Object> txCache = cl.cache(CACHE_NAME_PREFIX + '1');
 
-                    assertEquals(100, atomicCache.size());
-                    assertEquals(100, txCache.size());
+                    assertEquals(state == ACTIVE ? 100 : 0, atomicCache.size());
+                    assertEquals(state == ACTIVE ? 100 : 0, txCache.size());
                 }
                 catch (Exception e) {
                     log.error("Error occurred", e);
+
+                    fail("Error occurred in client thread. Msg: " + e.getMessage());
                 }
-            }
-        }, "client-starter-thread");
+            },
+            "client-starter-thread"
+        );
 
         clientStartLatch.countDown();
-        srv.cluster().active(true);
+        srv.cluster().state(state);
 
         clStartFut.get();
     }
@@ -328,11 +385,26 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testActivateCacheRestoreConfigurationConflict() throws Exception {
+        checkActivateCacheRestoreConfigurationConflict(ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateReadOnlyCacheRestoreConfigurationConflict() throws Exception {
+        checkActivateCacheRestoreConfigurationConflict(ACTIVE_READ_ONLY);
+    }
+
+    /** */
+    private void checkActivateCacheRestoreConfigurationConflict(ClusterState state) throws Exception {
+        assertActive(state);
+
         final int SRVS = 3;
 
         Ignite srv = startGrids(SRVS);
 
-        srv.cluster().active(true);
+        srv.cluster().state(state);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -348,15 +420,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         ccfgs = new CacheConfiguration[] {ccfg};
 
-        try {
-            startGrids(SRVS);
-
-            fail();
-        }
-        catch (Exception e) {
-            assertTrue(
-                X.cause(e, IgniteCheckedException.class).getMessage().contains("Failed to start configured cache."));
-        }
+        assertThrowsAnyCause(log, () -> startGrids(SRVS), IgniteCheckedException.class, "Failed to start configured cache.");
     }
 
     /**
@@ -367,9 +431,11 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
      */
     @Test
     public void testDeactivateDuringEvictionAndRebalance() throws Exception {
-        IgniteEx srv = (IgniteEx) startGrids(3);
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-7384", MvccFeatureChecker.forcedMvcc());
 
-        srv.cluster().active(true);
+        IgniteEx srv = startGrids(3);
+
+        srv.cluster().state(ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setBackups(1)
@@ -402,19 +468,23 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Set<Integer> addedKeys = new GridConcurrentHashSet<>();
 
-        IgniteInternalFuture cacheLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
-            while (!stop.get()) {
-                int key = keyCounter.incrementAndGet();
-                try {
-                    cache.put(key, key);
+        IgniteInternalFuture cacheLoadFuture = GridTestUtils.runMultiThreadedAsync(
+            () -> {
+                while (!stop.get()) {
+                    int key = keyCounter.incrementAndGet();
+                    try {
+                        cache.put(key, key);
 
-                    addedKeys.add(key);
+                        addedKeys.add(key);
 
-                    Thread.sleep(10);
+                        Thread.sleep(10);
+                    }
+                    catch (Exception ignored) { }
                 }
-                catch (Exception ignored) { }
-            }
-        }, 2, "cache-load");
+            },
+            2,
+            "cache-load"
+        );
 
         stopGrid(2);
 
@@ -430,9 +500,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         cacheLoadFuture.get();
 
         // Deactivate and activate again.
-        srv.cluster().active(false);
+        srv.cluster().state(INACTIVE);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ACTIVE);
 
         awaitPartitionMapExchange();
 

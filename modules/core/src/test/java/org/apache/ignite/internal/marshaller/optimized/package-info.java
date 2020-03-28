@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Optimized marchalling test package.
  */
+
 package org.apache.ignite.internal.marshaller.optimized;

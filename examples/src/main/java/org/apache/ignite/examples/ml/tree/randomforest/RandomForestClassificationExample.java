@@ -17,12 +17,19 @@
 
 package org.apache.ignite.examples.ml.tree.randomforest;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.cache.Cache;
 import org.apache.commons.math3.util.Precision;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -30,25 +37,17 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Example represents a solution for the task of wine classification based on a
- *  <a href ="https://en.wikipedia.org/wiki/Random_forest">Random Forest</a> implementation for
+ * <a href ="https://en.wikipedia.org/wiki/Random_forest">Random Forest</a> implementation for
  * multi-classification.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with test data points (based on the
  * <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/wine/">Wine recognition dataset</a>).</p>
  * <p>
- * After that it initializes the  {@link RandomForestClassifierTrainer} with thread pool for multi-thread learning
- * and trains the model based on the specified data using random forest regression algorithm.</p>
+ * After that it initializes the  {@link RandomForestClassifierTrainer} with thread pool for multi-thread learning and
+ * trains the model based on the specified data using random forest regression algorithm.</p>
  * <p>
  * Finally, this example loops over the test set of data points, compares prediction of the trained model to the
  * expected outcome (ground truth), and evaluates accuracy of the model.</p>
@@ -59,7 +58,7 @@ public class RandomForestClassificationExample {
     /**
      * Run example.
      */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example started.");
         // Start ignite grid.
@@ -112,9 +111,14 @@ public class RandomForestClassificationExample {
                     System.out.println(">>> Random Forest multi-class classification algorithm over cached dataset usage example completed.");
                 }
 
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

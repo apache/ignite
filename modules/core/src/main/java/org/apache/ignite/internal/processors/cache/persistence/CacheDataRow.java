@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -55,4 +58,9 @@ public interface CacheDataRow extends MvccUpdateVersionAware, CacheSearchRow, St
      * @param key Key.
      */
     public void key(KeyCacheObject key);
+
+    /** {@inheritDoc} */
+    @Override public default IOVersions<? extends AbstractDataPageIO> ioVersions() {
+        return DataPageIO.VERSIONS;
+    }
 }

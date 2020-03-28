@@ -81,6 +81,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
@@ -115,7 +116,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- *
+ * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11820 https://issues.apache.org/jira/browse/IGNITE-11797
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
@@ -138,16 +139,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private static final int ASYNC_TIMEOUT = 5000;
 
     /** */
-    private boolean client;
-
-    /** */
     private CacheConfiguration[] ccfgs;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
@@ -177,9 +173,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testCloseCache1() throws Exception {
         startGrid(0);
 
-        client = true;
-
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         IgniteCache c1 = client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 0, false));
 
@@ -867,7 +861,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
-
         int p = ThreadLocalRandom.current().nextInt(32);
 
         ScanQuery<Integer, Integer> qry = new ScanQuery().setPartition(p);
@@ -966,7 +959,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             GridTestUtils.runMultiThreaded(cls, "loaders");
         }
 
-
         Set<Integer> keysSet = sequence(keys);
 
         for (Cache.Entry<Integer, Integer> entry : ignite(loc ? 0 : 3).<Integer, Integer>cache(CACHE1)) {
@@ -1007,7 +999,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             startGrid(0);
         else
             startGridsMultiThreaded(4);
-
 
         Ignite srv0 = ignite(0);
 
@@ -1199,7 +1190,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private Map<Integer, Integer> generateDataMap(int startKey, int cnt) {
         Random rnd = ThreadLocalRandom.current();
 
-        Map<Integer, Integer> data = U.newHashMap(cnt);
+        Map<Integer, Integer> data = new TreeMap<>();
 
         for (int i = 0; i < cnt; i++)
             data.put(startKey++, rnd.nextInt());
@@ -1468,9 +1459,13 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES; i++) {
             ccfgs = cacheConfigurations(CACHES, GROUP1, "testCache1-");
 
-            client = i == NODES - 1;
+            boolean client = i == NODES - 1;
 
-            startGrid(i);
+            if (client)
+                startClientGrid(i);
+            else
+                startGrid(i);
+
         }
 
         Ignite client = ignite(NODES - 1);
@@ -1569,7 +1564,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
             assertEquals(ITEMS * 2, cache6.size(CachePeekMode.ALL));
             assertEquals(ITEMS, cache6.localSize(CachePeekMode.ALL));
-
 
             for (int k = 0; k < ITEMS; k++) {
                 assertEquals(i, cache1.localPeek(new Key1(i)));
@@ -2088,9 +2082,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void cacheApiTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         int[] backups = cacheMode == REPLICATED ? new int[]{Integer.MAX_VALUE} : new int[]{0, 1, 2, 3};
 
@@ -2291,7 +2283,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (final int i : sequence(loaders)) {
             final IgniteDataStreamer ldr = clientNode.dataStreamer(cache.getName());
-
+            ldr.allowOverwrite(true); // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
             ldr.autoFlushFrequency(0);
 
             cls.add(new Callable<Void>() {
@@ -2581,7 +2573,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Integer key = rnd.nextInt();
         Integer val = rnd.nextInt();
 
-
         cache.put(key, val);
 
         Object val0 = cache.getAndRemove(key);
@@ -2603,7 +2594,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Integer key = rnd.nextInt();
         Integer val = rnd.nextInt();
-
 
         cache.put(key, val);
 
@@ -2627,7 +2617,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Integer key = rnd.nextInt();
         Integer val1 = rnd.nextInt();
         Integer val2 = rnd.nextInt();
-
 
         assertTrue(cache.putIfAbsent(key, val1));
 
@@ -2653,7 +2642,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Integer key = rnd.nextInt();
         Integer val1 = rnd.nextInt();
         Integer val2 = rnd.nextInt();
-
 
         assertTrue((Boolean)cache.putIfAbsentAsync(key, val1).get(ASYNC_TIMEOUT));
 
@@ -2959,7 +2947,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Factory<? extends CacheStore<Integer, Integer>> fctr2 =
             FactoryBuilder.factoryOf(new MapBasedStore<>(data2));
 
-
         CacheConfiguration ccfg1 = cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 1, false)
             .setCacheStoreFactory(fctr1);
 
@@ -2997,9 +2984,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         srv0.createCache(cacheConfiguration(GROUP1, "a0", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "a1", PARTITIONED, ATOMIC, 1, false));
@@ -3102,9 +3087,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         final int CACHES = 8;
 
@@ -3554,9 +3537,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testConfigurationConsistencyValidation() throws Exception {
         startGrids(2);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
 
         ignite(0).createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
 
@@ -3766,9 +3747,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < 4; i++)
             checkAffinityMappers(ignite(i));
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         checkAffinityMappers(ignite(4));
 
@@ -3838,9 +3817,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void continuousQueriesMultipleGroups(int srvs) throws Exception {
         Ignite srv0 = startGrids(srvs);
 
-        client = true;
-
-        Ignite client = startGrid(srvs);
+        Ignite client = startClientGrid(srvs);
 
         client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
         client.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
@@ -4015,11 +3992,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        client = true;
-
-        final Ignite clientNode = startGrid(SRVS);
-
-        client = false;
+        final Ignite clientNode = startClientGrid(SRVS);
 
         final int CACHES = SF.applyLB(10, 2);
 
@@ -4186,12 +4159,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     assertNotNull(grp);
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        Map<Integer, Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
+                        IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
 
                         assertTrue(cachesMap.size() <= cacheIds.size());
 
-                        for (Integer cacheId : cachesMap.keySet())
-                            assertTrue(cachesMap.containsKey(cacheId));
+                        cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
                     }
                 }
             }

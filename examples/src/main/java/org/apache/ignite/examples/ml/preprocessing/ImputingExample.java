@@ -47,7 +47,9 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
 public class ImputingExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Imputing example started.");
@@ -68,13 +70,19 @@ public class ImputingExample {
                 }
 
                 System.out.println(">>> Imputing example completed.");
-            } finally {
+            }
+            finally {
                 data.destroy();
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
@@ -83,13 +91,13 @@ public class ImputingExample {
 
         IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new DenseVector(new Serializable[]{"Mike", 10, 1}));
-        persons.put(1, new DenseVector(new Serializable[]{"John", 20, 2}));
-        persons.put(1, new DenseVector(new Serializable[]{"George", 15, 1}));
-        persons.put(1, new DenseVector(new Serializable[]{"Piter", 25, Double.NaN}));
-        persons.put(1, new DenseVector(new Serializable[]{"Karl", Double.NaN, 1}));
-        persons.put(1, new DenseVector(new Serializable[]{"Gustaw", 20, 2}));
-        persons.put(1, new DenseVector(new Serializable[]{"Alex", 20, 2}));
+        persons.put(1, new DenseVector(new Serializable[] {"Mike", 10, 1}));
+        persons.put(1, new DenseVector(new Serializable[] {"John", 20, 2}));
+        persons.put(1, new DenseVector(new Serializable[] {"George", 15, 1}));
+        persons.put(1, new DenseVector(new Serializable[] {"Piter", 25, Double.NaN}));
+        persons.put(1, new DenseVector(new Serializable[] {"Karl", Double.NaN, 1}));
+        persons.put(1, new DenseVector(new Serializable[] {"Gustaw", 20, 2}));
+        persons.put(1, new DenseVector(new Serializable[] {"Alex", 20, 2}));
 
         return persons;
     }

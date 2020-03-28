@@ -35,13 +35,15 @@ import org.apache.ignite.ml.preprocessing.maxabsscaling.MaxAbsScalerTrainer;
 
 /**
  * Example that shows how to use MaxAbsScaler preprocessor to scale the given data.
- *
+ * <p>
  * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
  * in this example. The second preprocessor here is a MinMaxScaler preprocessor which is built on top of the feature
  * extractor and represents a chain of itself and the underlying feature extractor.
  */
 public class MaxAbsScalerExample {
-    /** Run example. */
+    /**
+     * Run example.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Max abs example started.");
@@ -62,14 +64,20 @@ public class MaxAbsScalerExample {
                     new DatasetHelper(dataset).describe();
                 }
 
-                System.out.println(">>> Imputing example completed.");
-            } finally {
+                System.out.println(">>> Max abs example completed.");
+            }
+            finally {
                 data.destroy();
             }
         }
+        finally {
+            System.out.flush();
+        }
     }
 
-    /** */
+    /**
+     *
+     */
     private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
@@ -78,10 +86,10 @@ public class MaxAbsScalerExample {
 
         IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
-        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
-        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
-        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
+        persons.put(1, new DenseVector(new Serializable[] {"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[] {"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[] {"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[] {"Karl", 24, 70000}));
 
         return persons;
     }

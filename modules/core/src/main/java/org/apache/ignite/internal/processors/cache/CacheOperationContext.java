@@ -50,6 +50,9 @@ public class CacheOperationContext implements Serializable {
     /** */
     private final boolean recovery;
 
+    /** Read-repair flag. */
+    private final boolean readRepair;
+
     /** Client ID which operates over this projection. */
     private final UUID subjId;
 
@@ -70,19 +73,13 @@ public class CacheOperationContext implements Serializable {
      */
     public CacheOperationContext() {
         skipStore = false;
-
         subjId = null;
-
         keepBinary = false;
-
         expiryPlc = null;
-
         noRetries = false;
-
         recovery = false;
-
+        readRepair = false;
         dataCenterId = null;
-
         allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
     }
 
@@ -92,6 +89,7 @@ public class CacheOperationContext implements Serializable {
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
+     * @param readRepair Read-repair flag.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -101,22 +99,17 @@ public class CacheOperationContext implements Serializable {
         boolean noRetries,
         @Nullable Byte dataCenterId,
         boolean recovery,
+        boolean readRepair,
         boolean allowAtomicOpsInTx
     ) {
         this.skipStore = skipStore;
-
         this.subjId = subjId;
-
         this.keepBinary = keepBinary;
-
         this.expiryPlc = expiryPlc;
-
         this.noRetries = noRetries;
-
         this.dataCenterId = dataCenterId;
-
         this.recovery = recovery;
-
+        this.readRepair = readRepair;
         this.allowAtomicOpsInTx = allowAtomicOpsInTx;
     }
 
@@ -148,6 +141,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -184,6 +178,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -209,6 +204,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -234,6 +230,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -250,6 +247,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -266,6 +264,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -282,14 +281,39 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
     /**
-     * @return Recovery flag.
+     * @param readRepair Read Repair flag.
+     * @return New instance of CacheOperationContext with Read Repair flag.
+     */
+    public CacheOperationContext setReadRepair(boolean readRepair) {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
+    }
+
+    /**
+     * @return Partition recover flag.
      */
     public boolean recovery() {
         return recovery;
+    }
+
+    /**
+     * @return Read Repair flag.
+     */
+    public boolean readRepair() {
+        return readRepair;
     }
 
     /**
@@ -311,6 +335,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
+            readRepair,
             true);
     }
 

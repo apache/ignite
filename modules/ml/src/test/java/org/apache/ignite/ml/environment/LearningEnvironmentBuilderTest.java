@@ -31,7 +31,6 @@ import static org.apache.ignite.ml.environment.parallelism.ParallelismStrategy.T
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-
 /**
  * Tests for {@link LearningEnvironmentBuilder}.
  */

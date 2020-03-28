@@ -37,6 +37,7 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -118,6 +119,14 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheCheckpointSpiMbeanValidity() throws Exception {
+        validateMbeans(grid(1), "org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi$CacheCheckpointSpiMBeanImpl");
+    }
+
+    /**
      * Failover test task.
      */
     @ComputeTaskSessionFullSupport
@@ -131,7 +140,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) {
             assert ignite.cluster().nodes().size() == 2;
 
@@ -188,7 +197,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) {
             assert ignite.cluster().nodes().size() == 2;
 

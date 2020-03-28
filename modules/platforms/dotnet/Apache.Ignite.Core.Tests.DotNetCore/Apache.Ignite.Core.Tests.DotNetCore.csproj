@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsPackable>false</IsPackable>
 
     <StartupObject>Apache.Ignite.Core.Tests.DotNetCore.Common.TestRunner</StartupObject>
@@ -14,9 +14,12 @@
 
   <PropertyGroup>
     <NoWarn>1701;1702;1705;NU1701</NoWarn>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Core.Tests.DotNetCore.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -56,7 +59,19 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\AdvancedSerializationTest.cs" Link="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\CallbacksTest.cs" Link="Binary\Serializable\CallbacksTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\DynamicFieldSetSerializable.cs">
+      <Link>Binary\Serializable\DynamicFieldSetSerializable.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\DynamicFieldSetTest.cs">
+      <Link>Binary\Serializable\DynamicFieldSetTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\GenericCollectionsTest.cs" Link="Binary\Serializable\GenericCollectionsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\ObjectReferenceTests.cs">
+      <Link>Binary\Serializable\ObjectReferenceTests.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\PrimitivesTest.cs">
+      <Link>Binary\Serializable\PrimitivesTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\SqlDmlTest.cs" Link="Binary\Serializable\SqlDmlTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\AddArgCacheEntryProcessor.cs" Link="Cache\AddArgCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableAddArgCacheEntryProcessor.cs" Link="Cache\BinarizableAddArgCacheEntryProcessor.cs" />
@@ -93,32 +108,92 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSimpleName.cs" Link="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" Link="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\TestReferenceObject.cs" Link="Cache\TestReferenceObject.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\DynamicFieldSetTest.cs">
+      <Link>ThinClient\Cache\DynamicFieldSetTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\SerializableObjectsTest.cs">
+      <Link>ThinClient\Cache\SerializableObjectsTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\PartitionAwarenessTest.cs">
+      <Link>ThinClient\Cache\PartitionAwarenessTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\BinaryBuilderTest.cs" Link="ThinClient\Cache\BinaryBuilderTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTest.cs" Link="ThinClient\Cache\CacheTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestAsync.cs" Link="ThinClient\Cache\CacheTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheClientAsyncWrapper.cs" Link="ThinClient\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestKeepBinary.cs" Link="ThinClient\Cache\CacheTestKeepBinary.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestNoMeta.cs">
+      <Link>ThinClient\Cache\CacheTestNoMeta.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestSsl.cs" Link="ThinClient\Cache\CacheTestSsl.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ClientCacheConfigurationTest.cs">
+      <Link>ThinClient\Cache\ClientCacheConfigurationTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CreateCacheTest.cs" Link="ThinClient\Cache\CreateCacheTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\EmptyObject.cs" Link="ThinClient\Cache\EmptyObject.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ListLogger.cs">
+      <Link>ThinClient\Cache\ListLogger.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\Person.cs" Link="ThinClient\Cache\Person.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ScanQueryTest.cs" Link="ThinClient\Cache\ScanQueryTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\SqlQueryTestBase.cs" Link="ThinClient\Cache\SqlQueryTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\SqlQueryTest.cs" Link="ThinClient\Cache\SqlQueryTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\LinqTest.cs" Link="ThinClient\Cache\LinqTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\TestKey.cs">
+      <Link>ThinClient\Cache\TestKey.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\TestKeyWithAffinity.cs">
+      <Link>ThinClient\Cache\TestKeyWithAffinity.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolCompatibilityTest.cs">
+      <Link>ThinClient\ClientProtocolCompatibilityTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientOpExtensionsTest.cs">
+      <Link>ThinClient\ClientOpExtensionsTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientProtocolVersionTest.cs">
+      <Link>ThinClient\ClientProtocolVersionTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientServerCacheAdapter.cs">
+      <Link>ThinClient\ClientServerCacheAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientServerCacheAdapterExtensions.cs">
+      <Link>ThinClient\ClientServerCacheAdapterExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterTests.cs" Link="ThinClient\Cluster\ClientClusterTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\EndpointTest.cs" Link="ThinClient\EndpointTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSecureSocketTest.cs" Link="ThinClient\RawSecureSocketTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSocketTest.cs">
+      <Link>ThinClient\RawSocketTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Common\IgniteProductVersionTests.cs" Link="Common\IgniteProductVersionTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeWithExecutorTest.cs" Link="Compute\ComputeWithExecutorTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicLongTest.cs" Link="DataStructures\AtomicLongTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicReferenceTest.cs" Link="DataStructures\AtomicReferenceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\DisposeAction.cs">
+      <Link>Common\DisposeAction.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\IgniteConfigurationTest.cs" Link="Common\IgniteConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\ConsoleLoggerTest.cs">
+      <Link>Log\ConsoleLoggerTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Log\FixedDateTimeProvider.cs">
+      <Link>Log\FixedDateTimeProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\PathUtils.cs">
+      <Link>PathUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\ProjectFilesTest.cs">
+      <Link>Common\ProjectFilesTest.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\TestBase.cs" Link="Common\TestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\SpringTestBase.cs" Link="Common\SpringTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
@@ -135,7 +210,14 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\EnvVar.cs" Link="Common\EnvVar.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Ssl\SslConfigurationTest.cs" Link="Common\SslConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Unmanaged\JniThreadDetachTest.cs">
+      <Link>Unmanaged\JniThreadDetachTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Unmanaged\UnmanagedThreadTest.cs">
+      <Link>Unmanaged\UnmanagedThreadTest.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -163,6 +245,9 @@
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid3.xml" Link="Config\Compute\compute-grid3.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid-custom-executor.xml" Link="Config\Compute\compute-grid-custom-executor.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\native-client-test-cache.xml" Link="Config\native-client-test-cache.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -183,7 +268,7 @@
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
-    <PackageReference Include="NUnit" Version="3.8.1" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
 

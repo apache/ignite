@@ -78,7 +78,7 @@ public class MinMaxScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 }
 
                 return new MinMaxScalerPartitionData(min, max);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
             double[][] minMax = dataset.compute(
                 data -> data.getMin() != null ? new double[][]{ data.getMin(), data.getMax() } : null,

@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML bagged logistic regression examples.
+ * <!-- Package description. --> ML bagged logistic regression examples.
  */
 package org.apache.ignite.examples.ml.regression.logistic.bagged;

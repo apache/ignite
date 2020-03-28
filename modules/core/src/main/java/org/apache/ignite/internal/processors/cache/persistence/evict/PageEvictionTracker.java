@@ -33,6 +33,13 @@ public interface PageEvictionTracker extends LifecycleAware {
     public void touchPage(long pageId) throws IgniteCheckedException;
 
     /**
+     * Check if page eviction is required according to the configured policy.
+     *
+     * @return {@code True} if eviction required.
+     */
+    public boolean evictionRequired();
+
+    /**
      * Evicts one data page.
      * In most cases, all entries will be removed from the page.
      * Method guarantees removing at least one entry from "evicted" data page. Removing all entries may be

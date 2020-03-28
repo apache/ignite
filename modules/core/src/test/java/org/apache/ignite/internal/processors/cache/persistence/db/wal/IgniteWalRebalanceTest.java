@@ -36,6 +36,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -498,6 +500,71 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check that historical rebalance doesn't start on the cleared partition when some cluster node restarts.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalanceRestartWithNodeBlinking() throws Exception {
+        int entryCnt = PARTS_CNT * 200;
+
+        // Start 3 nodes cluster:
+        //  node0 - coordinator (main supplier for historical rebalance)
+        //  node1 - some node that will generate NODE_LEFT/NODE_JOINED events
+        //  node2 - historical rebalance demander
+        IgniteEx crd = (IgniteEx)startGridsMultiThreaded(3);
+
+        crd.cluster().state(ClusterState.ACTIVE);
+        crd.cluster().baselineAutoAdjustEnabled(false);
+
+        IgniteCache<Integer, String> cache0 = crd.cache(CACHE_NAME);
+
+        for (int i = 0; i < entryCnt / 2; i++)
+            cache0.put(i, String.valueOf(i));
+
+        forceCheckpoint();
+
+        stopGrid(2);
+
+        for (int i = entryCnt / 2; i < entryCnt; i++)
+            cache0.put(i, String.valueOf(i));
+
+        blockMessagePredicate = (node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
+
+                return msg0.groupId() == CU.cacheId(CACHE_NAME) && msg0.partitions().size() == PARTS_CNT;
+            }
+
+            return false;
+        };
+
+        startGrid(2);
+
+        TestRecordingCommunicationSpi spi2 = TestRecordingCommunicationSpi.spi(grid(2));
+
+        // Wait until node2 starts historical rebalancning.
+        spi2.waitForBlocked(1);
+
+        // Interruption of rebalancing by NODE_LEFT event, historical supplier should not be provided.
+        stopGrid(1);
+
+        // Wait until the full rebalance begins.
+        spi2.waitForBlocked(2);
+
+        // Interrupting it again by NODE_JOINED and get a historical supplier again.
+        startGrid(1);
+
+        spi2.stopBlock();
+
+        awaitPartitionMapExchange();
+
+        // Verify data on demander node.
+        for (int i = 0; i < entryCnt; i++)
+            assertEquals(String.valueOf(i), grid(2).cache(CACHE_NAME).get(i));
+    }
+
+    /**
      *
      */
     private static class IndexedObject {
@@ -622,7 +689,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             if (file.getName().endsWith(".wal") && failRead)
                 return new FileIODecorator(delegateIO) {
                     @Override public int read(ByteBuffer destBuf) throws IOException {
-                        throw new IgniteException("Test exception.");
+                        throw new IOException("Test exception."); // IO exception is required for correct cleanup.
                     }
                 };
 

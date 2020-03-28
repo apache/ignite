@@ -69,6 +69,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.CallVoidMethod _callVoidMethod;
 
         /** */
+        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly EnvDelegates.GetStringChars _getStringChars;
 
         /** */
@@ -81,6 +82,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.ReleaseStringUtfChars _releaseStringUtfChars;
 
         /** */
+        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly EnvDelegates.ReleaseStringChars _releaseStringChars;
 
         /** */
@@ -157,6 +159,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         public Jvm Jvm
         {
             get { return _jvm; }
+        }
+
+        /// <summary>
+        /// Gets the env ptr.
+        /// </summary>
+        public IntPtr EnvPtr
+        {
+            get { return _envPtr; }
         }
 
         /// <summary>

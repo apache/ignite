@@ -19,6 +19,7 @@ package org.apache.ignite.ml.selection.paramgrid;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public class ParameterSetGenerator {
         assert !map.isEmpty();
 
         this.map = map;
-        this.sizeOfParamVector = map.size();
+        sizeOfParamVector = map.size();
     }
 
     /**
@@ -61,7 +62,7 @@ public class ParameterSetGenerator {
 
         traverseTree(map, nextPnt, -1);
 
-        return params;
+        return Collections.unmodifiableList(params);
     }
 
     /**
@@ -76,7 +77,6 @@ public class ParameterSetGenerator {
 
         if (dimensionNum == sizeOfParamVector){
             Double[] paramSet = Arrays.copyOf(nextPnt, sizeOfParamVector);
-            System.out.println(Arrays.toString(paramSet));
             params.add(paramSet);
             return;
         }

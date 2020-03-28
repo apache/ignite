@@ -193,17 +193,6 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ignite configuration for client.
-     */
-    @NotNull private IgniteConfiguration getClientConfiguration(int nodesPrefix) throws Exception {
-        IgniteConfiguration clientConf = getConfiguration(getTestIgniteInstanceName(nodesPrefix));
-
-        clientConf.setClientMode(true);
-
-        return clientConf;
-    }
-
-    /**
      * Test transfer amount.
      *
      * @param failoverScenario Scenario.
@@ -215,7 +204,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         //given: started some nodes with client.
         startGrids(nodesCount());
 
-        IgniteEx igniteClient = startGrid(getClientConfiguration(nodesCount()));
+        IgniteEx igniteClient = startClientGrid(getConfiguration(getTestIgniteInstanceName(nodesCount())));
 
         igniteClient.cluster().active(true);
 
@@ -423,12 +412,22 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
         /**
          * Account states before transaction.
          */
-        AccountState before1, before2;
+        AccountState before1;
+
+        /**
+         * Account states before transaction.
+         */
+        AccountState before2;
 
         /**
          * Account states after transaction.
          */
-        AccountState after1, after2;
+        AccountState after1;
+
+        /**
+         * Account states after transaction.
+         */
+        AccountState after2;
 
         /**
          * Transferred coins between accounts during this transaction.

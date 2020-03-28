@@ -68,7 +68,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ANNClassificationModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                        Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
@@ -92,7 +92,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
             centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
 
-        final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
+        final LabeledVectorSet<LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
 
         return new ANNClassificationModel(dataset, centroidStat);
     }
@@ -110,7 +110,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
+    @NotNull private LabeledVectorSet<LabeledVector> buildLabelsForCandidates(List<Vector> centers,
         CentroidStat centroidStat) {
         // init
         final LabeledVector<ProbableLabel>[] arr = new LabeledVector[centers.size()];
@@ -170,12 +170,13 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                                                 Preprocessor<K, V> vectorizer,
                                                 List<Vector> centers) {
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
-            partDataBuilder
+            partDataBuilder,
+            learningEnvironment()
         )) {
             return dataset.compute(data -> {
                 CentroidStat res = new CentroidStat();

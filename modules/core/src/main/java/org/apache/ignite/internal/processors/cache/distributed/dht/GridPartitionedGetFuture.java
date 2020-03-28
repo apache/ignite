@@ -58,12 +58,14 @@ import org.jetbrains.annotations.Nullable;
  * Colocated get future.
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V> {
-
     /** Transaction label. */
     protected final String txLbl;
 
     /** */
     protected final MvccSnapshot mvccSnapshot;
+
+    /** Explicit predefined single mapping (backup or primary). */
+    protected final ClusterNode affNode;
 
     /**
      * @param cctx Context.
@@ -96,7 +98,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean needVer,
         boolean keepCacheObjects,
         @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot
+        @Nullable MvccSnapshot mvccSnapshot,
+        ClusterNode affNode
     ) {
         super(
             cctx,
@@ -116,8 +119,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         assert (mvccSnapshot == null) == !cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
-
         this.txLbl = txLbl;
+        this.affNode = affNode;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -323,25 +326,37 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
         Map<K, V> locVals
     ) {
+        ClusterNode node;
+
         int part = cctx.affinity().partition(key);
-
-        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
-
-        // Failed if none affinity node found.
-        if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(part, topVer));
-
-            return false;
-        }
-
-        // Try to read key localy if we can.
-        if (tryLocalGet(key, part, topVer, affNodes, locVals))
-            return false;
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
-        // Get remote node for request for this key.
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+
+        if (affNode != null) {
+            if (invalidNodeSet.contains(affNode) || !cctx.discovery().alive(affNode)) {
+                onDone(Collections.emptyMap());
+
+                return false;
+            }
+
+            node = affNodes.contains(affNode) ? affNode : null;
+        }
+        else {
+            // Failed if none affinity node found.
+            if (affNodes.isEmpty()) {
+                onDone(serverNotFoundError(part, topVer));
+
+                return false;
+            }
+
+            // Try to read key localy if we can.
+            if (tryLocalGet(key, part, topVer, affNodes, locVals))
+                return false;
+
+            node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        }
 
         // Failed if none remote node found.
         if (node == null) {
@@ -430,6 +445,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean evt = !skipVals;
 
         while (true) {
+            cctx.shared().database().checkpointReadLock();
+
             try {
                 boolean skipEntry = readNoEntry;
 
@@ -556,6 +573,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 onDone(e);
 
                 return true;
+            }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
             }
         }
     }

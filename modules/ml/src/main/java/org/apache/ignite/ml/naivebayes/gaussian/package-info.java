@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains Gaussian naive Bayes classifier.
  */
+
 package org.apache.ignite.ml.naivebayes.gaussian;

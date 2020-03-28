@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root ML package.
  */
+
 package org.apache.ignite.ml;

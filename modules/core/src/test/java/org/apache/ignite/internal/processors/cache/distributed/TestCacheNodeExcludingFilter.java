@@ -37,6 +37,7 @@ public class TestCacheNodeExcludingFilter implements IgnitePredicate<ClusterNode
     public TestCacheNodeExcludingFilter(Collection<String> excludeNodes) {
         this.excludeNodes = excludeNodes;
     }
+
     /**
      * @param excludeNodes Nodes names.
      */

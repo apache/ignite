@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < GridCount(); i++)
             {
                 var cache = Cache(i);
-                var entries = cache.Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key)).ToArray();
+                var entries = cache.Select(pair => pair + GetKeyAffinity(cache, pair.Key)).ToArray();
 
                 if (entries.Any())
                     Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i,

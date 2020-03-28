@@ -130,7 +130,6 @@ public class CacheWeakQueryIteratorsHolder<V> {
         refs.clear();
     }
 
-
     /**
      * Iterator based of {@link CacheQueryFuture}.
      *

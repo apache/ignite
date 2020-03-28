@@ -20,8 +20,10 @@ package org.apache.ignite.ml.preprocessing.standardscaling;
 public class StandardScalerData implements AutoCloseable {
     /** Sum values of every feature. */
     double[] sum;
+
     /** Sum of squared values of every feature. */
     double[] squaredSum;
+
     /** Rows count */
     long cnt;
 

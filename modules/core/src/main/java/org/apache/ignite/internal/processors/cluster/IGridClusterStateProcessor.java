@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -38,13 +39,34 @@ import org.jetbrains.annotations.Nullable;
 public interface IGridClusterStateProcessor extends GridProcessor {
     /**
      * @return Cluster state to be used on public API.
+     * @deprecated Use {@link #publicApiState(boolean)} instead.
      */
+    @Deprecated
     boolean publicApiActiveState(boolean waitForTransition);
 
     /**
      * @return Cluster state to be used on public API.
+     * @deprecated Use {@link #publicApiStateAsync(boolean)} instead.
      */
+    @Deprecated
     IgniteFuture<Boolean> publicApiActiveStateAsync(boolean waitForTransition);
+
+    /**
+     * @param waitForTransition Wait end of transition or not.
+     * @return Current cluster state to be used on public API.
+     */
+    ClusterState publicApiState(boolean waitForTransition);
+
+    /**
+     * @param waitForTransition Wait end of transition or not.
+     * @return Current cluster state to be used on public API.
+     */
+    IgniteFuture<ClusterState> publicApiStateAsync(boolean waitForTransition);
+
+    /**
+     * @return Time of last cluster state change to be used on public API.
+     */
+    long lastStateChangeTime();
 
     /**
      * @param discoCache Discovery data cache.
@@ -83,17 +105,20 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      */
     DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg);
 
-    /**
-     *
-     */
+    /** */
     void cacheProcessorStarted();
 
     /**
-     * @param activate New cluster state.
+     * @param state New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @param baselineNodes New baseline nodes.
+     * @param forceChangeBaselineTopology Force change baseline topology.
      * @return State change future.
+     * @see ClusterState#INACTIVE
      */
     IgniteInternalFuture<?> changeGlobalState(
-        boolean activate,
+        ClusterState state,
+        boolean forceDeactivation,
         Collection<? extends BaselineNode> baselineNodes,
         boolean forceChangeBaselineTopology
     );

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -63,14 +64,11 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /** */
     private static final String AFF4_FILTER_CACHE2 = "a4c2";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(client);
+        cfg.setUserAttributes(Collections.singletonMap("name", igniteInstanceName));
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -153,9 +151,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
             checkMessages(0, true);
         }
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
 
         awaitPartitionMapExchange();
 
@@ -368,7 +364,7 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             // Do not start cache on coordinator.
-            return node.order() > 1;
+            return !((String)node.attribute("name")).endsWith("0");
         }
     }
 }

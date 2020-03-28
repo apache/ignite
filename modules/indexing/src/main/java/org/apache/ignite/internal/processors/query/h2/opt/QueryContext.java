@@ -43,6 +43,9 @@ public class QueryContext {
     /** */
     private final PartitionReservation reservations;
 
+    /** {@code True} for local queries, {@code false} for distributed ones. */
+    private final boolean loc;
+
     /**
      * Constructor.
      *
@@ -50,6 +53,7 @@ public class QueryContext {
      * @param filter Filter.
      * @param distributedJoinCtx Distributed join context.
      * @param mvccSnapshot MVCC snapshot.
+     * @param loc {@code True} for local queries, {@code false} for distributed ones.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public QueryContext(
@@ -57,13 +61,15 @@ public class QueryContext {
         @Nullable IndexingQueryFilter filter,
         @Nullable DistributedJoinContext distributedJoinCtx,
         @Nullable MvccSnapshot mvccSnapshot,
-        @Nullable PartitionReservation reservations
+        @Nullable PartitionReservation reservations,
+        boolean loc
     ) {
         this.segment = segment;
         this.filter = filter;
         this.distributedJoinCtx = distributedJoinCtx;
         this.mvccSnapshot = mvccSnapshot;
         this.reservations = reservations;
+        this.loc = loc;
     }
 
     /**
@@ -104,6 +110,13 @@ public class QueryContext {
      */
     public IndexingQueryFilter filter() {
         return filter;
+    }
+
+    /**
+     * @return {@code True} for local queries, {@code false} for distributed ones.
+     */
+    public boolean local() {
+        return loc;
     }
 
     /** {@inheritDoc} */

@@ -34,7 +34,6 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -62,23 +61,13 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, String> cache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (gridName.contains("client"))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
         startGrid(1);
         startGrid(2);
 
-        client = startGrid("client");
+        client = startClientGrid("client");
 
         cache = client.getOrCreateCache(cacheConfiguration());
     }
@@ -139,7 +128,7 @@ public class CacheStoreTxPutAllMultiNodeTest extends GridCommonAbstractTest {
     private static Map<Integer, String> createMap() {
         Map<Integer, String> data = new TreeMap<>();
 
-        for (int i = 1; i < 500; i ++)
+        for (int i = 1; i < 10_000; i ++)
             data.put(i, "Eddy " + i);
 
         return data;

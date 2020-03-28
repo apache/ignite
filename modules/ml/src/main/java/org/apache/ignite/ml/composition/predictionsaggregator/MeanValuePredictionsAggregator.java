@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Predictions aggregator returning the mean value of predictions.
  */
-public class MeanValuePredictionsAggregator implements PredictionsAggregator {
+public final class MeanValuePredictionsAggregator implements PredictionsAggregator {
     /** {@inheritDoc} */
     @Override public Double apply(double[] estimations) {
         A.notEmpty(estimations, "estimations vector");

@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 
 /**
  *
@@ -73,6 +73,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
 
     /** */
     private AffinityTopologyVersion initTopVer;
+
+    /** */
+    private AffinityTopologyVersion resTopVer;
 
     /** */
     private Map<UUID, GridDhtPartitionExchangeId> joinedNodes;
@@ -223,6 +226,15 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
     }
 
     /**
+     * @return Result topology version from nodes that already finished this exchange.
+     */
+    AffinityTopologyVersion resultTopologyVersion() {
+        synchronized (this) {
+            return resTopVer;
+        }
+    }
+
+    /**
      * @param node Node.
      * @param msg Message.
      */
@@ -242,9 +254,16 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
                 if (fullMsg0 != null && fullMsg0.resultTopologyVersion() != null) {
-                    assert fullMsg == null || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
+                    if (node.isClient() || node.isDaemon()) {
+                        assert resTopVer == null || resTopVer.equals(fullMsg0.resultTopologyVersion());
 
-                    fullMsg  = fullMsg0;
+                        resTopVer = fullMsg0.resultTopologyVersion();
+                    }
+                    else {
+                        assert fullMsg == null || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
+
+                        fullMsg = fullMsg0;
+                    }
                 }
                 else
                     msgs.put(node, msg);
@@ -268,7 +287,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
             AffinityTopologyVersion resVer = fullMsg.resultTopologyVersion();
 
             for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator();
-                 it.hasNext();) {
+                it.hasNext(); ) {
                 Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e = it.next();
 
                 GridDhtPartitionExchangeId msgVer = joinedNodes.get(e.getKey().id());
@@ -298,7 +317,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
             }
         }
         else {
-            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator(); it.hasNext();) {
+            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e = it.next();
 
                 GridDhtPartitionExchangeId msgVer = joinedNodes.get(e.getKey().id());

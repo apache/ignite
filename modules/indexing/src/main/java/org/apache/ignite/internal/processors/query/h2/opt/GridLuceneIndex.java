@@ -384,7 +384,10 @@ public class GridLuceneIndex implements AutoCloseable {
 //            parser.setAllowLeadingWildcard(true);
             String [] items = qry.getText().split("\\s");
             //qty: hello type:blog user:xiaoming orderby:create
-            int limit =  qry.getPageSize()>0?qry.getPageSize():Integer.MAX_VALUE;
+            int limit =  qry.getLimit()>0? qry.getLimit(): qry.getPageSize();
+            if(limit<=0) {
+            	limit = Integer.MAX_VALUE;
+            }
             String uid = null;
             String sort = null;
             String tag = null;
@@ -557,7 +560,7 @@ public class GridLuceneIndex implements AutoCloseable {
                     
                 }               
                 else{
-                	v = (V)cache.get(k,false,false);
+                	v = (V)cache.repairableGet(k,false,false);
                 }
                 assert v != null;             
                 

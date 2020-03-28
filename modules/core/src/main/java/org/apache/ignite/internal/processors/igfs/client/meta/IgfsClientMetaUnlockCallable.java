@@ -53,6 +53,7 @@ public class IgfsClientMetaUnlockCallable extends IgfsClientAbstractCallable<Voi
 
     /** Aff range. */
     private IgfsFileAffinityRange affRange;
+
     /**
      * Default constructor.
      */

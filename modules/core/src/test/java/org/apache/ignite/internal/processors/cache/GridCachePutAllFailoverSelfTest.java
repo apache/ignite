@@ -231,7 +231,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        final Ignite master = startGrid(MASTER);
+        final Ignite master = startClientGrid(MASTER);
 
         List<Ignite> workers = new ArrayList<>(workerCnt);
 
@@ -430,7 +430,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> testKeys = generateTestKeys();
 
-        final Ignite master = startGrid(MASTER);
+        final Ignite master = startClientGrid(MASTER);
 
         List<Ignite> workers = new ArrayList<>(workerCnt);
 
@@ -672,8 +672,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoverySpi);
 
         if (igniteInstanceName.startsWith("master")) {
-            cfg.setClientMode(true);
-
             cfg.setUserAttributes(ImmutableMap.of("segment", "master"));
 
             // For sure.
@@ -694,7 +692,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
 
             cfg.setCacheConfiguration(cacheCfg);
         }

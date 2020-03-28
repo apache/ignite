@@ -35,7 +35,7 @@ public class BaselineAutoAdjustInMemoryTest extends BaselineAutoAdjustTest {
     public void testWithZeroTimeout() throws Exception {
         startGrids(3);
 
-        startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+        startClientGrid(getConfiguration(UUID.randomUUID().toString()));
 
         stopGrid(2);
 
@@ -53,12 +53,38 @@ public class BaselineAutoAdjustInMemoryTest extends BaselineAutoAdjustTest {
 
         assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
 
-        IgniteEx client = startGrid(getConfiguration(UUID.randomUUID().toString()).setClientMode(true));
+        IgniteEx client = startClientGrid(getConfiguration(UUID.randomUUID().toString()));
 
         assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
 
         stopGrid(client.name());
 
         assertEquals(3, grid(0).cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetBaselineManually() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().active(true);
+
+        assertEquals(1, ignite0.cluster().currentBaselineTopology().size());
+
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
+
+        IgniteEx ignite1 = startGrid(1);
+
+        assertEquals(1, ignite0.cluster().currentBaselineTopology().size());
+        assertEquals(1, ignite1.cluster().currentBaselineTopology().size());
+
+        assertFalse(ignite1.cluster().isBaselineAutoAdjustEnabled());
+
+        ignite0.cluster().setBaselineTopology(ignite0.context().discovery().aliveServerNodes());
+
+        assertEquals(2, ignite0.cluster().currentBaselineTopology().size());
+        assertEquals(2, ignite1.cluster().currentBaselineTopology().size());
     }
 }

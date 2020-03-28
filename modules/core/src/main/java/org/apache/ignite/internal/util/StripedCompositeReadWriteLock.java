@@ -129,7 +129,28 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         private static final long serialVersionUID = 0L;
 
         /** Padding. */
-        private long p0, p1, p2, p3, p4, p5, p6, p7;
+        private long p0;
+
+        /** */
+        private long p1;
+
+        /** */
+        private long p2;
+
+        /** */
+        private long p3;
+
+        /** */
+        private long p4;
+
+        /** */
+        private long p5;
+
+        /** */
+        private long p6;
+
+        /** */
+        private long p7;
     }
 
     /**

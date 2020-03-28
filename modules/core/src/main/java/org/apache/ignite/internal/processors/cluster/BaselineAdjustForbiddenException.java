@@ -25,9 +25,11 @@ import org.apache.ignite.IgniteException;
 public class BaselineAdjustForbiddenException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** */
     private static final String BASELINE_AUTO_ADJUST_ENABLED =
         "Baseline auto-adjust is enabled, please turn-off it before try to adjust baseline manually";
+
     /** */
     private static final String BASELINE_AUTO_ADJUST_DISABLED =
         "Baseline auto-adjust is disabled";

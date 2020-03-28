@@ -26,13 +26,18 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -43,11 +48,13 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
@@ -59,6 +66,9 @@ import static org.apache.ignite.internal.processors.query.h2.database.InlineInde
  * H2 tree index implementation.
  */
 public class H2Tree extends BPlusTree<H2Row, H2Row> {
+    /** */
+    public static final String IGNITE_THROTTLE_INLINE_SIZE_CALCULATION = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION";
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -73,9 +83,6 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
     /** */
     private final IndexColumn[] cols;
-
-    /** */
-    private final int[] columnIds;
 
     /** */
     private final boolean mvccEnabled;
@@ -105,7 +112,8 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     private final H2RowCache rowCache;
 
     /** How often real invocation of inline size calculation will be skipped. */
-    private static final int THROTTLE_INLINE_SIZE_CALCULATION = 1_000;
+    private final int inlineSizeThrottleThreshold =
+        IgniteSystemProperties.getInteger(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, 1_000);
 
     /** Counter of inline size calculation for throttling real invocations. */
     private final ThreadLocal<Long> inlineSizeCalculationCntr = ThreadLocal.withInitial(() -> 0L);
@@ -146,7 +154,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
      * @param stats Statistics holder.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2Tree(
+    public H2Tree(
         GridCacheContext cctx,
         GridH2Table table,
         String name,
@@ -155,6 +163,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         String tblName,
         ReuseList reuseList,
         int grpId,
+        String grpName,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
@@ -171,11 +180,31 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         IgniteLogger log,
         IoStatisticsHolder stats
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+        super(
+            name,
+            grpId,
+            grpName,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            failureProcessor,
+            null
+        );
 
         this.cctx = cctx;
         this.table = table;
         this.stats = stats;
+        this.log = log;
+        this.rowCache = rowCache;
+        this.idxName = idxName;
+        this.cacheName = cacheName;
+        this.tblName = tblName;
+        this.maxCalculatedInlineSize = maxCalculatedInlineSize;
+        this.pk = pk;
+        this.affinityKey = affinityKey;
+        this.mvccEnabled = mvccEnabled;
 
         if (!initNew) {
             // Page is ready - read meta information.
@@ -184,39 +213,38 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             inlineSize = metaInfo.inlineSize();
 
             unwrappedPk = metaInfo.useUnwrappedPk();
+
+            setIos(
+                H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
+                H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
+
+            List<InlineIndexHelper> inlineIdxs0 = unwrappedPk ? unwrappedColsInfo.inlineIdx()
+                : wrappedColsInfo.inlineIdx();
+
+            boolean inlineObjSupported = inlineSize > 0 && metaInfo.inlineObjectSupported();
+
+            inlineIdxs = inlineObjSupported ? inlineIdxs0 : inlineIdxs0.stream()
+                .filter(ih -> ih.type() != Value.JAVA_OBJECT)
+                .collect(Collectors.toList());
+
+            if (!metaInfo.flagsSupported())
+                upgradeMetaPage(inlineObjSupported);
         }
         else {
             unwrappedPk = true;
 
             inlineSize = unwrappedColsInfo.inlineSize();
+
+            inlineIdxs = unwrappedColsInfo.inlineIdx();
+
+            setIos(
+                H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
+                H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
+
+            initTree(initNew, inlineSize);
         }
 
-        this.idxName = idxName;
-        this.cacheName = cacheName;
-        this.tblName = tblName;
-
-        this.maxCalculatedInlineSize = maxCalculatedInlineSize;
-
-        this.pk = pk;
-        this.affinityKey = affinityKey;
-
-        this.mvccEnabled = mvccEnabled;
-
-        inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
         cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
-
-        columnIds = new int[cols.length];
-
-        for (int i = 0; i < cols.length; i++)
-            columnIds[i] = cols[i].column.getColumnId();
-
-        setIos(H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled), H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
-
-        this.rowCache = rowCache;
-
-        this.log = log;
-
-        initTree(initNew, inlineSize);
 
         created = initNew;
     }
@@ -344,10 +372,42 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-                return new MetaPageInfo(io.getInlineSize(pageAddr), io.unwrappedPk());
+                return new MetaPageInfo(io, pageAddr);
             }
             finally {
                 readUnlock(metaPageId, metaPage, pageAddr);
+            }
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * Update root meta page if need (previous version not supported features flags
+     * and created product version on root meta page).
+     *
+     * @param inlineObjSupported inline POJO by created tree flag.
+     * @throws IgniteCheckedException On error.
+     */
+    private void upgradeMetaPage(boolean inlineObjSupported) throws IgniteCheckedException {
+        final long metaPage = acquirePage(metaPageId);
+
+        try {
+            long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO.upgradePageVersion(pageAddr, inlineObjSupported, false, pageSize());
+
+                if (wal != null)
+                    wal.log(new PageSnapshot(new FullPageId(metaPageId, grpId),
+                        pageAddr, pageMem.pageSize(), pageMem.realPageSize(grpId)));
+            }
+            finally {
+                writeUnlock(metaPageId, metaPage, pageAddr, true);
             }
         }
         finally {
@@ -435,7 +495,9 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             return 0;
 
         for (int i = 0, len = cols.length; i < len; i++) {
-            int idx = columnIds[i];
+            IndexColumn idxCol = cols[i];
+
+            int idx = idxCol.column.getColumnId();
 
             Value v1 = r1.getValue(idx);
             Value v2 = r2.getValue(idx);
@@ -448,7 +510,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             int c = compareValues(v1, v2);
 
             if (c != 0)
-                return InlineIndexHelper.fixSort(c, cols[i].sortType);
+                return InlineIndexHelper.fixSort(c, idxCol.sortType);
         }
 
         return mvccCompare(r1, r2);
@@ -510,7 +572,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
         inlineSizeCalculationCntr.set(++invokeCnt);
 
-        boolean throttle = invokeCnt % THROTTLE_INLINE_SIZE_CALCULATION != 0;
+        boolean throttle = invokeCnt % inlineSizeThrottleThreshold != 0;
 
         if (throttle)
             return;
@@ -587,6 +649,29 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     }
 
     /**
+     * @return Inline indexes for the segment.
+     */
+    public List<InlineIndexHelper> inlineIndexes() {
+        return inlineIdxs;
+    }
+
+    /**
+     * @param idxs Full set of inline helpers.
+     */
+    public void refreshColumnIds(List<InlineIndexHelper> idxs) {
+        assert inlineIdxs.size() <= idxs.size();
+
+        for (int i = 0; i < inlineIdxs.size(); ++i) {
+            final int idx = i;
+
+            inlineIdxs.set(idx, F.find(idxs, null,
+                (IgnitePredicate<InlineIndexHelper>)ih -> ih.colName().equals(inlineIdxs.get(idx).colName())));
+
+            assert inlineIdxs.get(idx) != null;
+        }
+    }
+
+    /**
      *
      */
     private static class MetaPageInfo {
@@ -596,13 +681,28 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         /** */
         boolean useUnwrappedPk;
 
+        /** */
+        boolean flagsSupported;
+
+        /** */
+        Boolean inlineObjectSupported;
+
+        /** */
+        IgniteProductVersion createdVer;
+
         /**
-         * @param inlineSize Inline size.
-         * @param useUnwrappedPk {@code true} In case use unwrapped PK for indexes.
+         * @param io Metapage IO.
+         * @param pageAddr Page address.
          */
-        public MetaPageInfo(int inlineSize, boolean useUnwrappedPk) {
-            this.inlineSize = inlineSize;
-            this.useUnwrappedPk = useUnwrappedPk;
+        public MetaPageInfo(BPlusMetaIO io, long pageAddr) {
+            inlineSize = io.getInlineSize(pageAddr);
+            useUnwrappedPk = io.unwrappedPk(pageAddr);
+            flagsSupported = io.supportFlags();
+
+            if (io.getVersion() >= 3)
+                inlineObjectSupported = io.inlineObjectSupported(pageAddr);
+
+            createdVer = io.createdVersion(pageAddr);
         }
 
         /**
@@ -617,6 +717,20 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
          */
         public boolean useUnwrappedPk() {
             return useUnwrappedPk;
+        }
+
+        /**
+         * @return {@code true} In case metapage contains flags.
+         */
+        public boolean flagsSupported() {
+            return flagsSupported;
+        }
+
+        /**
+         * @return {@code true} In case inline object is supported.
+         */
+        public boolean inlineObjectSupported() {
+            return inlineObjectSupported;
         }
     }
 
@@ -640,5 +754,36 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(H2Tree.class, this, "super", super.toString());
+    }
+
+    /**
+     * Construct the exception and invoke failure processor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Pages ids.
+     * @return New CorruptedTreeException instance.
+     */
+    @Override protected CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, grpName, cacheName, idxName, pageIds);
+
+        processFailure(FailureType.CRITICAL_ERROR, e);
+
+        return e;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void temporaryReleaseLock() {
+        cctx.kernalContext().cache().context().database().checkpointReadUnlock();
+        cctx.kernalContext().cache().context().database().checkpointReadLock();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long maxLockHoldTime() {
+        long sysWorkerBlockedTimeout = cctx.kernalContext().workersRegistry().getSystemWorkerBlockedTimeout();
+
+        // Using timeout value reduced by 10 times to increase possibility of lock releasing before timeout.
+        return sysWorkerBlockedTimeout == 0 ? Long.MAX_VALUE : (sysWorkerBlockedTimeout / 10);
     }
 }

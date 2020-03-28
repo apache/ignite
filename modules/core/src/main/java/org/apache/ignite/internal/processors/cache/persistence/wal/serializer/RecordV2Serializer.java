@@ -28,10 +28,10 @@ import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentEofException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.io.RecordIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Record V2 serializer.
  * Stores records in following format:
  * <ul>
- * <li>Record type from {@link RecordType#ordinal()} incremented by 1</li>
+ * <li>Record type from {@link RecordType#index()} incremented by 1</li>
  * <li>WAL pointer to double check consistency</li>
  * <li>Record length</li>
  * <li>Data</li>
@@ -141,7 +141,7 @@ public class RecordV2Serializer implements RecordSerializer {
                 else
                     buf.clear();
 
-                buf.put((byte)(recType.ordinal() + 1));
+                buf.put((byte)(recType.index() + 1));
 
                 buf.putLong(ptr.index());
                 buf.putInt(ptr.fileOffset());

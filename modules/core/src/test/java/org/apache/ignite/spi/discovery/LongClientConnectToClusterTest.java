@@ -45,6 +45,7 @@ import org.junit.Test;
 public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     /** Client instance name. */
     public static final String CLIENT_INSTANCE_NAME = "client";
+
     /** Client metrics update count. */
     private static volatile int clientMetricsUpdateCnt;
 
@@ -57,7 +58,6 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
             : new TcpDiscoverySpi();
 
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(igniteInstanceName.startsWith(CLIENT_INSTANCE_NAME))
             .setClientFailureDetectionTimeout(1_000)
             .setMetricsUpdateFrequency(500)
             .setDiscoverySpi(discoSpi
@@ -88,7 +88,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     public void testClientConnectToCluster() throws Exception {
         clientMetricsUpdateCnt = 0;
 
-        IgniteEx client = startGrid(CLIENT_INSTANCE_NAME);
+        IgniteEx client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         assertTrue(clientMetricsUpdateCnt > 0);
 

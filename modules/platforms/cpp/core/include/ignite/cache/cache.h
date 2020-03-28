@@ -469,6 +469,9 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
+             * Keys are locked in the order of iteration. It is caller's responsibility to make sure keys always follow
+             * same order. If that is not observed, calling this method in parallel <b>will lead to deadlock</b>.
+             *
              * @param begin Iterator pointing to the beggining of the key-value pair sequence.
              * @param end Iterator pointing to the end of the key-value pair sequence.
              */
@@ -1214,6 +1217,9 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
+             * Keys are locked in the order of iteration. It is caller's responsibility to make sure keys always follow
+             * same order. If that is not observed, calling this method in parallel <b>will lead to deadlock</b>.
+             *
              * @param begin Iterator pointing to the beggining of the key sequence.
              * @param end Iterator pointing to the end of the key sequence.
              */
@@ -1624,7 +1630,7 @@ namespace ignite
                 R res;
                 ProcessorHolder procHolder(processor, arg);
 
-                impl::In2Operation<K, ProcessorHolder> inOp(key, procHolder);
+                impl::InCacheInvokeOperation<K, ProcessorHolder> inOp(key, procHolder);
                 impl::Out1Operation<R> outOp(res);
 
                 impl.Get()->Invoke(inOp, outOp, err);

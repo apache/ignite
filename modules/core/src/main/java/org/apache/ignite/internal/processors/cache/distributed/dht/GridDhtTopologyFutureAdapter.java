@@ -35,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter.OperationType.WRITE;
 
 /**
@@ -88,14 +89,18 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
+        if (cctx.cache() == null)
+            return new CacheInvalidStateException(
+                "Failed to perform cache operation (cache is stopped): " + cctx.name());
+
         OperationType opType = read ? OperationType.READ : WRITE;
 
         CacheGroupContext grp = cctx.group();
 
         PartitionLossPolicy lossPlc = grp.config().getPartitionLossPolicy();
 
-        if (cctx.shared().readOnlyMode() && opType == WRITE)
-            return new IgniteCheckedException("Failed to perform cache operation (cluster is in read only mode)");
+        if (cctx.shared().readOnlyMode() && opType == WRITE && !isSystemCache(cctx.name()))
+            return new IgniteClusterReadOnlyException("Failed to perform cache operation (cluster is in read-only mode)");
 
         if (grp.needsRecovery() && !recovery) {
             if (opType == WRITE && (lossPlc == READ_ONLY_SAFE || lossPlc == READ_ONLY_ALL))

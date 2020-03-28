@@ -22,7 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
@@ -39,18 +38,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  *
  */
 public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -73,9 +60,7 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
     public void testMultiNode() throws Exception {
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         for (Ignite node : G.allGrids())
             threadLocalTx(node);
@@ -159,7 +144,6 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
 
         if (write)
             cache.put(ThreadLocalRandom.current().nextInt(100_000), 1);
-
 
         try {
             txs.txStart(concurrency, isolation);

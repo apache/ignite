@@ -43,7 +43,6 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
     /** */
     private static final int GROUPS_COUNT = 50;
 
-
     /** */
     private static final String STATIC_CACHE_PREFIX = "static-cache-";
 

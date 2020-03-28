@@ -64,6 +64,11 @@ namespace Apache.Ignite.Core.Configuration
         public static readonly TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
 
         /// <summary>
+        /// Default handshake timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(10);
+
+        /// <summary>
         /// Default value for <see cref="ThinClientEnabled"/> property.
         /// </summary>
         public const bool DefaultThinClientEnabled = true;
@@ -91,6 +96,7 @@ namespace Apache.Ignite.Core.Configuration
             MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
             ThreadPoolSize = DefaultThreadPoolSize;
             IdleTimeout = DefaultIdleTimeout;
+            HandshakeTimeout = DefaultHandshakeTimeout;
 
             ThinClientEnabled = DefaultThinClientEnabled;
             OdbcEnabled = DefaultOdbcEnabled;
@@ -117,6 +123,17 @@ namespace Apache.Ignite.Core.Configuration
             ThinClientEnabled = reader.ReadBoolean();
             OdbcEnabled = reader.ReadBoolean();
             JdbcEnabled = reader.ReadBoolean();
+
+            HandshakeTimeout = reader.ReadLongAsTimespan();
+
+            // Thin client configuration.
+            if (reader.ReadBoolean())
+            {
+                ThinClientConfiguration = new ThinClientConfiguration
+                {
+                    MaxActiveTxPerConnection = reader.ReadInt()
+                };
+            }
         }
 
         /// <summary>
@@ -139,6 +156,19 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(ThinClientEnabled);
             writer.WriteBoolean(OdbcEnabled);
             writer.WriteBoolean(JdbcEnabled);
+
+            writer.WriteTimeSpanAsLong(HandshakeTimeout);
+
+            // Thin client configuration.
+            if (ThinClientConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                writer.WriteInt(ThinClientConfiguration.MaxActiveTxPerConnection);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
         }
 
         /// <summary>
@@ -201,6 +231,13 @@ namespace Apache.Ignite.Core.Configuration
         public TimeSpan IdleTimeout { get; set; }
 
         /// <summary>
+        /// Gets or sets handshake timeout for client connections on the server side.
+        /// If no successful handshake is performed within this timeout upon successful establishment of TCP connection
+        /// the connection is closed.
+        /// </summary>
+        public TimeSpan HandshakeTimeout { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether thin client connector is enabled.
         /// </summary>
         [DefaultValue(DefaultThinClientEnabled)]
@@ -217,5 +254,10 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultOdbcEnabled)]
         public bool OdbcEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets thin client specific configuration.
+        /// </summary>
+        public ThinClientConfiguration ThinClientConfiguration { get; set; }
     }
 }

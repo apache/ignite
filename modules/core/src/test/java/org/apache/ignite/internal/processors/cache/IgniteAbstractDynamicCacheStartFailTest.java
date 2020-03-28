@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.ObjectInputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -50,6 +40,16 @@ import javax.management.OperationsException;
 import javax.management.QueryExp;
 import javax.management.ReflectionException;
 import javax.management.loading.ClassLoaderRepository;
+import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -80,7 +80,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     private static final String CLIENT_GRID_NAME = "client";
 
     /** */
-    protected static final String EXISTING_CACHE_NAME = "existing-cache";;
+    protected static final String EXISTING_CACHE_NAME = "existing-cache";
 
     /** */
     private static final int PARTITION_COUNT = 16;
@@ -112,16 +112,11 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     public void testBrokenAffinityFunStartOnServerFailedOnClient() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnClient";
 
-        IgniteConfiguration clientCfg = getConfiguration(clientName);
-
-        clientCfg.setClientMode(true);
-
-        Ignite client = startGrid(clientName, clientCfg);
+        Ignite client = startClientGrid(clientName, getConfiguration(clientName));
 
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(DYNAMIC_CACHE_NAME + "-server-1");
-
         cfg.setAffinity(new BrokenAffinityFunction(false, clientName));
 
         try {
@@ -141,16 +136,11 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     public void testBrokenAffinityFunStartOnServerFailedOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnServerFailedOnServer";
 
-        IgniteConfiguration clientCfg = getConfiguration(clientName);
-
-        clientCfg.setClientMode(true);
-
-        Ignite client = startGrid(clientName, clientCfg);
+        Ignite client = startClientGrid(clientName, getConfiguration(clientName));
 
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(DYNAMIC_CACHE_NAME + "-server-2");
-
         cfg.setAffinity(new BrokenAffinityFunction(false, getTestIgniteInstanceName(0)));
 
         try {
@@ -171,16 +161,11 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     public void testBrokenAffinityFunStartOnClientFailOnServer() throws Exception {
         final String clientName = CLIENT_GRID_NAME + "testBrokenAffinityFunStartOnClientFailOnServer";
 
-        IgniteConfiguration clientCfg = getConfiguration(clientName);
-
-        clientCfg.setClientMode(true);
-
-        Ignite client = startGrid(clientName, clientCfg);
+        Ignite client = startClientGrid(clientName, getConfiguration(clientName));
 
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(DYNAMIC_CACHE_NAME + "-client-2");
-
         cfg.setAffinity(new BrokenAffinityFunction(false, getTestIgniteInstanceName(0)));
 
         try {
@@ -547,11 +532,9 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
             // Sometimes problem with caches configuration deserialization from test thread arises.
             final String clientName1 = "baseline-changer";
 
-            IgniteConfiguration clientCfg = getConfiguration(clientName1);
+            Ignite clientNode = startClientGrid(clientName1, getConfiguration(clientName1));
 
-            clientCfg.setClientMode(true);
-
-            Ignite clientNode = startGrid(clientName1, clientCfg);
+            clientNode.cluster().baselineAutoAdjustEnabled(false);
 
             List<BaselineNode> baseline = new ArrayList<>(grid(0).cluster().currentBaselineTopology());
 
@@ -565,11 +548,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         checkCacheOperations(serverNode.cache(EXISTING_CACHE_NAME));
 
         // Start a new client node and check cache operations.
-        IgniteConfiguration clientCfg = getConfiguration(clientName);
-
-        clientCfg.setClientMode(true);
-
-        Ignite clientNode = startGrid(clientName, clientCfg);
+        Ignite clientNode = startClientGrid(clientName, getConfiguration(clientName));
 
         checkCacheOperations(clientNode.cache(EXISTING_CACHE_NAME));
     }
@@ -592,11 +571,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
                     for (int i = 0; i < numberOfAttempts; ++i) {
                         int uniqueCnt = attemptCnt.getAndIncrement();
 
-                        IgniteConfiguration clientCfg = getConfiguration(clientName + uniqueCnt);
-
-                        clientCfg.setClientMode(true);
-
-                        final Ignite clientNode = startGrid(clientName, clientCfg);
+                        final Ignite clientNode = startClientGrid(clientName, getConfiguration(clientName + uniqueCnt));
 
                         CacheConfiguration cfg = new CacheConfiguration();
 

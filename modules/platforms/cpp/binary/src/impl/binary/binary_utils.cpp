@@ -24,6 +24,7 @@
 
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
+using namespace ignite::binary;
 
 namespace
 {
@@ -108,7 +109,7 @@ namespace ignite
                 return ReadPrimitive<int8_t>(mem, pos);
             }
 
-            int8_t BinaryUtils::UnsafeReadInt8(interop::InteropMemory& mem, int32_t pos)
+            int8_t BinaryUtils::UnsafeReadInt8(InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int8_t>(mem, pos);
             }
@@ -153,12 +154,12 @@ namespace ignite
                 return stream->ReadInt16();
             }
 
-            int16_t BinaryUtils::ReadInt16(interop::InteropMemory& mem, int32_t pos)
+            int16_t BinaryUtils::ReadInt16(InteropMemory& mem, int32_t pos)
             {
                 return ReadPrimitive<int16_t>(mem, pos);
             }
 
-            int16_t BinaryUtils::UnsafeReadInt16(interop::InteropMemory& mem, int32_t pos)
+            int16_t BinaryUtils::UnsafeReadInt16(InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int16_t>(mem, pos);
             }
@@ -203,12 +204,12 @@ namespace ignite
                 return stream->ReadInt32();
             }
 
-            int32_t BinaryUtils::ReadInt32(interop::InteropMemory& mem, int32_t pos)
+            int32_t BinaryUtils::ReadInt32(InteropMemory& mem, int32_t pos)
             {
                 return ReadPrimitive<int32_t>(mem, pos);
             }
 
-            int32_t BinaryUtils::UnsafeReadInt32(interop::InteropMemory& mem, int32_t pos)
+            int32_t BinaryUtils::UnsafeReadInt32(InteropMemory& mem, int32_t pos)
             {
                 return UnsafeReadPrimitive<int32_t>(mem, pos);
             }
@@ -288,7 +289,7 @@ namespace ignite
                 stream->WriteDoubleArray(val, len);
             }
 
-            Guid BinaryUtils::ReadGuid(interop::InteropInputStream* stream)
+            Guid BinaryUtils::ReadGuid(InteropInputStream* stream)
             {
                 int64_t most = stream->ReadInt64();
                 int64_t least = stream->ReadInt64();
@@ -296,25 +297,25 @@ namespace ignite
                 return Guid(most, least);
             }
 
-            void BinaryUtils::WriteGuid(interop::InteropOutputStream* stream, const Guid val)
+            void BinaryUtils::WriteGuid(InteropOutputStream* stream, const Guid val)
             {
                 stream->WriteInt64(val.GetMostSignificantBits());
                 stream->WriteInt64(val.GetLeastSignificantBits());
             }
 
-            Date BinaryUtils::ReadDate(interop::InteropInputStream * stream)
+            Date BinaryUtils::ReadDate(InteropInputStream * stream)
             {
                 int64_t milliseconds = stream->ReadInt64();
 
                 return Date(milliseconds);
             }
 
-            void BinaryUtils::WriteDate(interop::InteropOutputStream* stream, const Date val)
+            void BinaryUtils::WriteDate(InteropOutputStream* stream, const Date val)
             {
                 stream->WriteInt64(val.GetMilliseconds());
             }
 
-            Timestamp BinaryUtils::ReadTimestamp(interop::InteropInputStream* stream)
+            Timestamp BinaryUtils::ReadTimestamp(InteropInputStream* stream)
             {
                 int64_t milliseconds = stream->ReadInt64();
                 int32_t nanoseconds = stream->ReadInt32();
@@ -322,25 +323,39 @@ namespace ignite
                 return Timestamp(milliseconds / 1000, (milliseconds % 1000) * 1000000 + nanoseconds);
             }
 
-            void BinaryUtils::WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val)
+            void BinaryUtils::WriteTimestamp(InteropOutputStream* stream, const Timestamp val)
             {
                 stream->WriteInt64(val.GetSeconds() * 1000 + val.GetSecondFraction() / 1000000);
                 stream->WriteInt32(val.GetSecondFraction() % 1000000);
             }
 
-            Time BinaryUtils::ReadTime(interop::InteropInputStream* stream)
+            Time BinaryUtils::ReadTime(InteropInputStream* stream)
             {
                 int64_t ms = stream->ReadInt64();
 
                 return Time(ms);
             }
 
-            void BinaryUtils::WriteTime(interop::InteropOutputStream* stream, const Time val)
+            void BinaryUtils::WriteTime(InteropOutputStream* stream, const Time val)
             {
                 stream->WriteInt64(val.GetMilliseconds());
             }
 
-            void BinaryUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)
+            BinaryEnumEntry BinaryUtils::ReadBinaryEnumEntry(InteropInputStream* stream)
+            {
+                int32_t typeId = stream->ReadInt32();
+                int32_t ordinal = stream->ReadInt32();
+
+                return BinaryEnumEntry(typeId, ordinal);
+            }
+
+            void BinaryUtils::WriteBinaryEnumEntry(InteropOutputStream * stream, int32_t typeId, int32_t ordinal)
+            {
+                stream->WriteInt32(typeId);
+                stream->WriteInt32(ordinal);
+            }
+
+            void BinaryUtils::WriteString(InteropOutputStream* stream, const char* val, const int32_t len)
             {
                 stream->WriteInt32(len);
                 stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val), len);

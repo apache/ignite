@@ -24,22 +24,22 @@ public class ClientConnectionException extends ClientException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Message. */
-    private static final String MSG = "Ignite cluster is unavailable";
-
     /**
-     * Default constructor.
+     * Constructs a new exception with the specified detail message.
+     *
+     * @param msg the detail message.
      */
-    public ClientConnectionException() {
-        super(MSG);
+    public ClientConnectionException(String msg) {
+        super(msg);
     }
 
     /**
-     * Constructs a new exception with the specified cause.
+     * Constructs a new exception with the specified cause and detail message.
      *
+     * @param msg the detail message.
      * @param cause the cause.
      */
-    public ClientConnectionException(Throwable cause) {
-        super(MSG, cause);
+    public ClientConnectionException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

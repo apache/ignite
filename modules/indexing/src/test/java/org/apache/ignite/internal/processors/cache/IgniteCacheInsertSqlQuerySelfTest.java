@@ -232,7 +232,6 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
             // With random inner field
             rootVal.innerTypeCol = new AllTypes.InnerType(42L);
 
-
             p.query(new SqlFieldsQuery(
                 "INSERT INTO AllTypes(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
             ).getAll();

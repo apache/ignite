@@ -62,12 +62,14 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
+import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
@@ -289,7 +291,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Expiry policy factory.
      */
-    private static Factory<? extends ExpiryPolicy> readExpiryPolicyFactory(BinaryRawReader in) {
+    public static Factory<? extends ExpiryPolicy> readExpiryPolicyFactory(BinaryRawReader in) {
         if (!in.readBoolean())
             return null;
 
@@ -301,7 +303,7 @@ public class PlatformConfigurationUtils {
      *
      * @param out Writer.
      */
-    private static void writeExpiryPolicyFactory(BinaryRawWriter out, Factory<? extends ExpiryPolicy> factory) {
+    public static void writeExpiryPolicyFactory(BinaryRawWriter out, Factory<? extends ExpiryPolicy> factory) {
         if (!(factory instanceof PlatformExpiryPolicyFactory)) {
             out.writeBoolean(false);
 
@@ -668,9 +670,7 @@ public class PlatformConfigurationUtils {
 
         int sqlSchemasCnt = in.readInt();
 
-        if (sqlSchemasCnt == -1)
-            cfg.setSqlSchemas((String[])null);
-        else {
+        if (sqlSchemasCnt >= 0) {
             String[] sqlSchemas = new String[sqlSchemasCnt];
 
             for (int i = 0; i < sqlSchemasCnt; i++)
@@ -839,6 +839,20 @@ public class PlatformConfigurationUtils {
 
                     break;
             }
+        }
+
+        int execCfgCnt = in.readInt();
+
+        if (execCfgCnt > 0) {
+            ExecutorConfiguration[] execCfgs = new ExecutorConfiguration[execCfgCnt];
+
+            for (int i = 0; i < execCfgCnt; i++) {
+                execCfgs[i] = new ExecutorConfiguration()
+                        .setName(in.readString())
+                        .setSize(in.readInt());
+            }
+
+            cfg.setExecutorConfiguration(execCfgs);
         }
 
         readPluginConfiguration(cfg, in);
@@ -1259,7 +1273,7 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getSqlQueryHistorySize());
 
         if (cfg.getSqlSchemas() == null)
-            w.writeInt(-1);
+            w.writeInt(0);
         else {
             w.writeInt(cfg.getSqlSchemas().length);
 
@@ -1438,6 +1452,18 @@ public class PlatformConfigurationUtils {
             w.writeLong(((StopNodeOrHaltFailureHandler)failureHnd).timeout());
         } else
             w.writeBoolean(false);
+
+        ExecutorConfiguration[] execCfgs = cfg.getExecutorConfiguration();
+
+        if (execCfgs != null) {
+            w.writeInt(execCfgs.length);
+
+            for (ExecutorConfiguration execCfg : execCfgs) {
+                w.writeString(execCfg.getName());
+                w.writeInt(execCfg.getSize());
+            }
+        } else
+            w.writeInt(0);
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1807,7 +1833,7 @@ public class PlatformConfigurationUtils {
      * @return Config.
      */
     private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in) {
-        return new ClientConnectorConfiguration()
+        ClientConnectorConfiguration cfg = new ClientConnectorConfiguration()
                 .setHost(in.readString())
                 .setPort(in.readInt())
                 .setPortRange(in.readInt())
@@ -1820,6 +1846,15 @@ public class PlatformConfigurationUtils {
                 .setThinClientEnabled(in.readBoolean())
                 .setOdbcEnabled(in.readBoolean())
                 .setJdbcEnabled(in.readBoolean());
+
+        cfg.setHandshakeTimeout(in.readLong());
+
+        if (in.readBoolean()) {
+            cfg.setThinClientConfiguration(new ThinClientConfiguration()
+                .setMaxActiveTxPerConnection(in.readInt()));
+        }
+
+        return cfg;
     }
 
     /**
@@ -1846,9 +1881,19 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isThinClientEnabled());
             w.writeBoolean(cfg.isOdbcEnabled());
             w.writeBoolean(cfg.isJdbcEnabled());
-        } else {
+
+            w.writeLong(cfg.getIdleTimeout());
+
+            ThinClientConfiguration thinCfg = cfg.getThinClientConfiguration();
+
+            if (thinCfg != null) {
+                w.writeBoolean(true);
+                w.writeInt(thinCfg.getMaxActiveTxPerConnection());
+            }
+            else
+                w.writeBoolean(false);
+        } else
             w.writeBoolean(false);
-        }
     }
 
     /**
@@ -2206,8 +2251,6 @@ public class PlatformConfigurationUtils {
 
         cfg.setLocalEventListeners(lsnrs);
     }
-
-
 
     /**
      * Private constructor.

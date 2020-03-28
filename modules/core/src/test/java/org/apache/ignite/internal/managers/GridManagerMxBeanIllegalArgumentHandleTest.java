@@ -24,8 +24,8 @@ import java.lang.reflect.Modifier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -43,10 +43,10 @@ import static org.mockito.Mockito.when;
  * Test modifies static final field, used only for development
  */
 public class GridManagerMxBeanIllegalArgumentHandleTest {
-    /** Original value of {@link GridDiscoveryManager#mem} to be restored after test */
+    /** Original value of {@link GridMetricManager#mem} to be restored after test */
     private Object mxBeanToRestore;
 
-    /** Mem mx bean field in {@link GridDiscoveryManager#mem}, already set accessible */
+    /** Mem mx bean field in {@link GridMetricManager#mem}, already set accessible */
     private Field memMxBeanField;
 
     /** If we succeeded to set final field this flag is true, otherwise test assertions will not be performed */
@@ -82,9 +82,9 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
     }
 
 
-    /** Reflections {@link GridDiscoveryManager#mem} field which was made accessible and mutable */
+    /** Reflections {@link GridMetricManager#mem} field which was made accessible and mutable */
     @NotNull private Field createAccessibleMemField() throws NoSuchFieldException, IllegalAccessException {
-        final Field memField = GridDiscoveryManager.class.getDeclaredField("mem");
+        final Field memField = GridMetricManager.class.getDeclaredField("mem");
         memField.setAccessible(true);
 
         final Field modifiersField = Field.class.getDeclaredField("modifiers");
@@ -94,7 +94,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
     }
 
     /**
-     * Restores static field in {@link GridDiscoveryManager#mem}
+     * Restores static field in {@link GridMetricManager#mem}
      *
      * @throws Exception if field set failed
      */
@@ -108,7 +108,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
     @Test
     public void testIllegalStateIsCatch() {
         final IgniteConfiguration cfg = new IgniteConfiguration();
-        cfg.setDiscoverySpi(new TcpDiscoverySpi());
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         final IgniteLogger log = Mockito.mock(IgniteLogger.class);
 
@@ -117,12 +117,12 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
         when(ctx.log(Mockito.anyString())).thenReturn(log);
         when(ctx.log(Mockito.any(Class.class))).thenReturn(log);
 
-        final GridDiscoveryManager mgr = new GridDiscoveryManager(ctx);
-        final long nHeapMax = mgr.metrics().getNonHeapMemoryMaximum();
+        final GridMetricManager mgr = new GridMetricManager(ctx);
+        final long nHeapMax = mgr.nonHeapMemoryUsage().getMax();
         if (correctSetupOfTestPerformed)
             assertEquals(0, nHeapMax);
 
-        final long heapMax = mgr.metrics().getHeapMemoryMaximum();
+        final long heapMax = mgr.heapMemoryUsage().getMax();
         if (correctSetupOfTestPerformed)
             assertEquals(0, heapMax);
     }

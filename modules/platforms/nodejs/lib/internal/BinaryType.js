@@ -393,7 +393,7 @@ class BinaryTypeBuilder {
             result._fromComplexObjectType(complexObjectType, jsObject);
             BinaryTypeStorage.setByComplexObjectType(complexObjectType, result._type, result._schema);
         }
-        return result;        
+        return result;
     }
 
     getTypeId() {

@@ -17,12 +17,18 @@
 
 package org.apache.ignite.internal.util.future;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -32,12 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * Future composed of multiple inner futures.
@@ -111,7 +111,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             }
         }
         catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
-            ClusterTopologyCheckedException e) {
+            ClusterTopologyCheckedException | IgniteConsistencyViolationException e) {
             if (!processFailure(e, fut))
                 onDone(e);
         }
@@ -220,7 +220,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @param fut Future to add.
      */
-    public final void add(IgniteInternalFuture<T> fut) {
+    public final GridCompoundFuture<T, R> add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
         synchronized (this) {
@@ -248,6 +248,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(e);
             }
         }
+
+        return this;
     }
 
     /**
@@ -268,9 +270,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Mark this future as initialized.
      */
-    public final void markInitialized() {
+    public final GridCompoundFuture<T, R> markInitialized() {
         if (FLAGS_UPD.compareAndSet(this, 0, INIT_FLAG))
             checkComplete();
+
+        return this;
     }
 
     /**

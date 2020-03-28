@@ -388,8 +388,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             for (IgniteConfiguration cfg : cfgs) {
                 strPlanBuilder.append("node: ")
                     .append(cfg.getIgniteInstanceName())
-                    .append(" activeOnStart - ")
-                    .append(cfg.isActiveOnStart())
+                    .append(" stateOnStart - ")
+                    .append(cfg.getClusterStateOnStart())
                     .append("\n");
 
                 CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
@@ -415,8 +415,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             strPlanBuilder.append("Join node:\n")
                 .append(cfg.getIgniteInstanceName())
                 .append(cfg.isClientMode() != null && cfg.isClientMode() ? " (client)" : "")
-                .append(" activeOnStart - ")
-                .append(cfg.isActiveOnStart())
+                .append(" stateOnStart - ")
+                .append(cfg.getClusterStateOnStart())
                 .append("\n");
 
             CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();

@@ -52,7 +52,8 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
      * @param restoreExchId Initial exchange ID for current exchange.
      * @return Message.
      */
-    static GridDhtPartitionsSingleRequest restoreStateRequest(GridDhtPartitionExchangeId msgExchId, GridDhtPartitionExchangeId restoreExchId) {
+    static GridDhtPartitionsSingleRequest restoreStateRequest(GridDhtPartitionExchangeId msgExchId,
+        GridDhtPartitionExchangeId restoreExchId) {
         GridDhtPartitionsSingleRequest msg = new GridDhtPartitionsSingleRequest(msgExchId);
 
         msg.restoreState(true);

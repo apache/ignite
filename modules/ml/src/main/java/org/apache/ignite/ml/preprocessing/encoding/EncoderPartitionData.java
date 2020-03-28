@@ -26,6 +26,9 @@ public class EncoderPartitionData implements AutoCloseable {
     /** Frequencies of categories for each categorial feature presented as strings. */
     private Map<String, Integer>[] categoryFrequencies;
 
+    /** Frequencies of categories for label presented as strings. */
+    private Map<String, Integer> labelFrequencies;
+
     /**
      * Constructs a new instance of String Encoder partition data.
      */
@@ -42,6 +45,15 @@ public class EncoderPartitionData implements AutoCloseable {
     }
 
     /**
+     * Gets the map of frequencies by value in partition for label.
+     *
+     * @return The frequencies.
+     */
+    public Map<String, Integer> labelFrequencies() {
+        return labelFrequencies;
+    }
+
+    /**
      * Sets the array of maps of frequencies by value in partition for each feature in the dataset.
      *
      * @param categoryFrequencies The given value.
@@ -49,6 +61,17 @@ public class EncoderPartitionData implements AutoCloseable {
      */
     public EncoderPartitionData withCategoryFrequencies(Map<String, Integer>[] categoryFrequencies) {
         this.categoryFrequencies = categoryFrequencies;
+        return this;
+    }
+
+    /**
+     * Sets the map of frequencies by value in partition for label.
+     *
+     * @param labelFrequencies The given value.
+     * @return The partition data.
+     */
+    public EncoderPartitionData withLabelFrequencies(Map<String, Integer> labelFrequencies) {
+        this.labelFrequencies = labelFrequencies;
         return this;
     }
 

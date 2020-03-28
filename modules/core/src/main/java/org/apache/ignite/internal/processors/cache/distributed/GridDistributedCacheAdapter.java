@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -31,8 +32,8 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -351,7 +352,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -391,7 +392,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalRemoveAllJob<K, V> extends TopologyVersionAwareJob {
+    public static class GlobalRemoveAllJob<K, V> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -401,10 +402,14 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /** Keep binary flag. */
         private final boolean keepBinary;
 
+        /** Future that needed for applying exactly one {@link GlobalRemoveAllJob} */
+        private transient GridFutureAdapter<Boolean> locFut;
+
         /**
          * @param cacheName Cache name.
          * @param topVer Topology version.
          * @param skipStore Skip store flag.
+         * @param keepBinary Keep binary flag.
          */
         private GlobalRemoveAllJob(
             String cacheName,
@@ -420,18 +425,37 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
         /** {@inheritDoc} */
         @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache0) {
-            GridCacheAdapter cache = ((IgniteKernal) ignite).context().cache().internalCache(cacheName);
+            if (locFut == null)
+                locFut = new GridFutureAdapter<>();
+
+            if (locFut.isDone()) {
+                if (locFut.isFailed())
+                    throw U.convertException((IgniteCheckedException)locFut.error());
+
+                try {
+                    return locFut.get();
+                }
+                catch (IgniteCheckedException ignored) {
+                    // Should be never thrown.
+                }
+            }
+
+            GridCacheAdapter<K, V> cache = ((IgniteEx)ignite).context().cache().internalCache(cacheName);
 
             if (cache == null)
-                return true;
+                return completeWithResult(true);
 
             final GridCacheContext<K, V> ctx = cache.context();
 
             ctx.gate().enter();
 
+            final AtomicReference<IgniteInternalFuture<Boolean>> refToLastFut = ctx.lastRemoveAllJobFut();
+
+            refToLastFut.set(locFut);
+
             try {
                 if (!ctx.affinity().affinityTopologyVersion().equals(topVer))
-                    return false; // Ignore this remove request because remove request will be sent again.
+                    return completeWithResult(false); // Ignore this remove request because remove request will be sent again.
 
                 GridDhtCacheAdapter<K, V> dht;
                 GridNearCacheAdapter<K, V> near = null;
@@ -443,36 +467,60 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 else
                     dht = (GridDhtCacheAdapter<K, V>) cache;
 
-                try (DataStreamerImpl<KeyCacheObject, Object> dataLdr =
-                         (DataStreamerImpl) ignite.dataStreamer(cacheName)) {
-                    ((DataStreamerImpl) dataLdr).maxRemapCount(0);
+                try (DataStreamerImpl dataLdr = (DataStreamerImpl) ignite.dataStreamer(cacheName)) {
+                    dataLdr.maxRemapCount(0);
 
                     dataLdr.skipStore(skipStore);
                     dataLdr.keepBinary(keepBinary);
 
-                    dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
+                    dataLdr.receiver(DataStreamerCacheUpdaters.batched());
 
                     for (int part : ctx.affinity().primaryPartitions(ctx.localNodeId(), topVer)) {
-                        GridDhtLocalPartition locPart = dht.topology().localPartition(part, topVer, false);
+                        //Synchronization is needed for case when job hasn't completed removing for one partition yet
+                        // while concurrent job changed last job future and started removing
+                        synchronized (refToLastFut) {
+                            IgniteInternalFuture<Boolean> lastFut = ctx.lastRemoveAllJobFut().get();
 
-                        if (locPart == null || (ctx.rebalanceEnabled() && locPart.state() != OWNING) || !locPart.reserve())
-                            return false;
+                            if (lastFut != locFut) {
+                                lastFut.listen((IgniteInClosure<IgniteInternalFuture<Boolean>>)fut -> {
+                                    if (lastFut.error() != null)
+                                        locFut.onDone(lastFut.error());
+                                    else {
+                                        try {
+                                            completeWithResult(fut.get());
+                                        }
+                                        catch (IgniteCheckedException ignored) {
+                                            // Should be never thrown.
+                                        }
+                                    }
 
-                        try {
-                            GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().cacheKeysIterator(ctx.cacheId(), part);
+                                    jobCtx.callcc();
+                                });
 
-                            if (iter != null) {
-                                try {
-                                    while (iter.hasNext())
-                                        dataLdr.removeDataInternal(iter.next());
-                                }
-                                finally {
-                                    iter.close();
+                                return jobCtx.holdcc();
+                            }
+
+                            GridDhtLocalPartition locPart = dht.topology().localPartition(part, topVer, false);
+
+                            if (locPart == null || (ctx.rebalanceEnabled() && locPart.state() != OWNING) || !locPart.reserve())
+                                return completeWithResult(false);
+
+                            try {
+                                GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().cacheKeysIterator(ctx.cacheId(), part);
+
+                                if (iter != null) {
+                                    try {
+                                        while (iter.hasNext())
+                                            dataLdr.removeDataInternal(iter.next());
+                                    }
+                                    finally {
+                                        iter.close();
+                                    }
                                 }
                             }
-                        }
-                        finally {
-                            locPart.release();
+                            finally {
+                                locPart.release();
+                            }
                         }
                     }
                 }
@@ -485,15 +533,26 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             near.removeEntry(e);
                     }
                 }
+
+                return completeWithResult(true);
             }
             catch (IgniteCheckedException e) {
+                locFut.onDone(e);
+
                 throw U.convertException(e);
             }
             finally {
                 ctx.gate().leave();
             }
+        }
 
-            return true;
+        /**
+         * Completes future with provided result.
+         */
+        private boolean completeWithResult(boolean b) {
+            locFut.onDone(b);
+
+            return b;
         }
     }
 }

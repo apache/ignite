@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -119,9 +120,14 @@ public class CommandArgIterator {
      * @param argName Name of argument.
      */
     public Set<String> nextStringSet(String argName) {
-        String string = nextArg("Expected " + argName);
+        String nextArg = peekNextArg();
 
-        return parseStringSet(string);
+        if (isCommandOrOption(nextArg))
+            return Collections.emptySet();
+
+        nextArg = nextArg("Expected " + argName);
+
+        return parseStringSet(nextArg);
     }
 
     /**

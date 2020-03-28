@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
+
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -129,13 +129,7 @@ public interface IgniteEx extends Ignite {
      * @return IGFS.
      */
     @Nullable public IgniteFileSystem igfsx(String name);
-
-    /**
-     * Get Hadoop facade.
-     *
-     * @return Hadoop.
-     */
-    public Hadoop hadoop();
+    
 
     /** {@inheritDoc} */
     @Override IgniteClusterEx cluster();

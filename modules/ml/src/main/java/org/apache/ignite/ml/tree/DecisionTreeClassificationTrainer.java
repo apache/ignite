@@ -96,6 +96,24 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         return this;
     }
 
+    /**
+     * Returns a hyper-parameter value.
+     *
+     * @return The max deep of tree.
+     */
+    public double getMaxDeep() {
+        return maxDeep;
+    }
+
+    /**
+     * Returns a hyper-parameter value.
+     *
+     * @return The min impurity decrease.
+     */
+    public double getMinImpurityDecrease() {
+        return minImpurityDecrease;
+    }
+
     /** {@inheritDoc} */
     @Override protected ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {

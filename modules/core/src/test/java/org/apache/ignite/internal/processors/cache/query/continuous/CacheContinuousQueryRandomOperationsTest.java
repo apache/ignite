@@ -112,16 +112,11 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     /** */
     public static final int ITERATION_CNT = SF.applyLB(100, 5);
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -132,9 +127,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         startGridsMultiThreaded(getServerNodeCount());
 
-        client = true;
-
-        startGrid(getServerNodeCount());
+        startClientGrid(getServerNodeCount());
     }
 
     /**
@@ -826,7 +819,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             assertNull("Event for key not found.", keyVal);
         }
     }
-
 
     /**
      * @param event Event.

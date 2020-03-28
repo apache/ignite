@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>2.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -48,14 +48,18 @@
         <module>modules/compress</module>
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
-        <module>modules/hadoop</module>
+       
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/extdata/platform</module>
+         
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
-        <module>modules/spring-data-2.0</module>       
+        <module>modules/spring-data-2.0</module>
+        <module>modules/spring-data-2.2</module>
+        <module>modules/web</module>
+
         <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
@@ -73,7 +77,7 @@
       
         <module>modules/yarn</module>
         <module>modules/jms11</module>
-        <module>modules/twitter</module>
+       
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/hibernate-core</module>
@@ -82,18 +86,22 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
+
+
         
-        
-        <module>modules/zeromq</module>
-        <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
        
         <module>modules/ml/xgboost-model-parser</module>
+
         
         <module>modules/elasticsearch-relay</module>
         <module>modules/mongodb-relay</module>
+		<module>modules/presto-ignite</module>
         
+        <module>modules/opencensus</module>
+        <module>modules/calcite</module>
+
     </modules>
 
     <profiles>
@@ -107,20 +115,28 @@
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
                 <module>modules/hibernate-5.3</module>
-                <module>modules/schedule</module>
-                <module>modules/web-console/web-agent</module>
+                <module>modules/schedule</module>               
                 <module>modules/yardstick</module>
+                
             </modules>
         </profile>
 
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
+
                 <module>modules/ml/mleap-model-parser</module>
                 <module>modules/ml/spark-model-parser</module>
-               
+                <module>modules/ml/h2o-model-parser</module>
+                <module>modules/ml/tensorflow-model-parser</module>
+        		<module>modules/tensorflow</module>
+
+                <module>modules/scalar-2.10</module>
+                <module>modules/scalar</module>
+
                 <module>modules/spark</module>
-                <module>modules/visor-console-2.10</module>
+                <module>modules/spark-2.4</module>
+                
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
             </modules>
@@ -138,6 +154,10 @@
 		        <module>modules/kubernetes</module>
 		        <module>modules/cassandra</module>
 		        <module>modules/storm</module>
+		        
+		        <module>modules/twitter</module>
+		        <module>modules/zeromq</module>
+        		<module>modules/rocketmq</module>
             </modules>
         </profile>
 
@@ -145,8 +165,8 @@
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
                 <module>modules/web-console</module>
-                <module>modules/ml/tensorflow-model-parser</module>
-        		<module>modules/tensorflow</module>
+                <module>modules/web-console/web-agent</module>
+                
             </modules>
         </profile>
 
@@ -194,6 +214,24 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>timestamp-property</id>
+                                <goals>
+                                    <goal>timestamp-property</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <name>current.year</name>
+                                    <pattern>yyyy</pattern>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <executions>
@@ -206,7 +244,7 @@
                                 <configuration>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -544,7 +582,7 @@
             </modules>
         </profile>
 
-       
+
 
         <profile>
             <id>ignored-tests</id>

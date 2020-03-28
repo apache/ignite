@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -47,25 +46,38 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
     public void testIndexesView() throws Exception {
         IgniteEx srv = startGrid(getConfiguration());
 
-        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+        IgniteEx client = startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT"));
 
         execSql("CREATE TABLE PUBLIC.AFF_CACHE (ID1 INT, ID2 INT, GEOM GEOMETRY, PRIMARY KEY (ID1))");
 
         execSql("CREATE SPATIAL INDEX IDX_GEO_1 ON PUBLIC.AFF_CACHE(GEOM)");
 
-        String idxSql = "SELECT * FROM SYS.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
+        String idxSql = "SELECT " +
+            "  CACHE_ID," +
+            "  CACHE_NAME," +
+            "  SCHEMA_NAME," +
+            "  TABLE_NAME," +
+            "  INDEX_NAME," +
+            "  INDEX_TYPE," +
+            "  COLUMNS," +
+            "  IS_PK," +
+            "  IS_UNIQUE," +
+            "  INLINE_SIZE" +
+            " FROM SYS.INDEXES ORDER BY TABLE_NAME, INDEX_NAME";
 
         List<List<?>> srvNodeIndexes = execSql(srv, idxSql);
 
         List<List<?>> clientNodeNodeIndexes = execSql(client, idxSql);
 
-        Assert.assertEquals(srvNodeIndexes.toString(), clientNodeNodeIndexes.toString());
+        for (List<?> idx : clientNodeNodeIndexes)
+            assertTrue(srvNodeIndexes.contains(idx));
 
         String[][] expectedResults = {
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "IDX_GEO_1", "SPATIAL", "\"GEOM\" ASC", "false", "false", "null"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", "null", "false", "false", "null"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC", "true", "true", "5"},
-            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC", "false", "true", "null"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "IDX_GEO_1", "SPATIAL", "\"GEOM\" ASC", "false", "false", "0"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC", "true", "true", "5"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK__SCAN_", "SCAN", "null", "false", "false", "0"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH", "\"ID1\" ASC", "true", "true", "0"},
+            {"-825022849", "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_proxy", "BTREE", "\"ID1\" ASC", "false", "false", "0"}
         };
 
         for (int i = 0; i < srvNodeIndexes.size(); i++) {

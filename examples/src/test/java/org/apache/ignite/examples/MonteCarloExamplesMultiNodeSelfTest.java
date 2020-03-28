@@ -17,12 +17,9 @@
 
 package org.apache.ignite.examples;
 
-import org.junit.Ignore;
-
 /**
  * PrimeExample multi-node self test.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class MonteCarloExamplesMultiNodeSelfTest extends MonteCarloExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

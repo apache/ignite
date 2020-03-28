@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains clustering algorithms.
  */
+
 package org.apache.ignite.ml.clustering;

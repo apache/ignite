@@ -189,7 +189,6 @@ public class IgfsPathIds {
         return lastExistingIdx == ids.length - 1;
     }
 
-
     /**
      * Whether parent of the last entry exists.
      *

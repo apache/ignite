@@ -68,6 +68,14 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterIsActiveRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
+import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
 
 /**
  * Thin client message parser.
@@ -205,6 +213,31 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_BINARY_TYPE_PUT = 3003;
+
+    /** Start new transaction. */
+    private static final short OP_TX_START = 4000;
+
+    /** Commit transaction. */
+    private static final short OP_TX_END = 4001;
+
+    /* Cluster operations. */
+    /** */
+    private static final short OP_CLUSTER_IS_ACTIVE = 5000;
+
+    /** */
+    private static final short OP_CLUSTER_CHANGE_STATE = 5001;
+
+    /** */
+    private static final short OP_CLUSTER_CHANGE_WAL_STATE = 5002;
+
+    /** */
+    private static final short OP_CLUSTER_GET_WAL_STATE = 5003;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_IDS = 5100;
+
+    /** */
+    private static final short OP_CLUSTER_GROUP_GET_NODE_INFO = 5101;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -379,6 +412,30 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
+
+            case OP_TX_START:
+                return new ClientTxStartRequest(reader);
+
+            case OP_TX_END:
+                return new ClientTxEndRequest(reader);
+
+            case OP_CLUSTER_IS_ACTIVE:
+                return new ClientClusterIsActiveRequest(reader);
+
+            case OP_CLUSTER_CHANGE_STATE:
+                return new ClientClusterChangeStateRequest(reader);
+
+            case OP_CLUSTER_CHANGE_WAL_STATE:
+                return new ClientClusterWalChangeStateRequest(reader);
+
+            case OP_CLUSTER_GET_WAL_STATE:
+                return new ClientClusterWalGetStateRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_IDS:
+                return new ClientClusterGroupGetNodeIdsRequest(reader);
+
+            case OP_CLUSTER_GROUP_GET_NODE_INFO:
+                return new ClientClusterGroupGetNodesDetailsRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

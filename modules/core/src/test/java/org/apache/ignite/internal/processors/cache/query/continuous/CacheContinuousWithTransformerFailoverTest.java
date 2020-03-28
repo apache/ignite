@@ -47,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  */
 public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -61,7 +58,6 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -80,13 +76,9 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
     public void testServerNodeLeft() throws Exception {
         startGrids(3);
 
-        client = true;
-
         final int CLIENT_ID = 3;
 
-        Ignite clnNode = startGrid(CLIENT_ID);
-
-        client = false;
+        Ignite clnNode = startClientGrid(CLIENT_ID);
 
         IgniteOutClosure<IgniteCache<Integer, Integer>> cache =
             new IgniteOutClosure<IgniteCache<Integer, Integer>>() {

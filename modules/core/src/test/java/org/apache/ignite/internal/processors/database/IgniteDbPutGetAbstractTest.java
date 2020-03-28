@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -55,7 +57,7 @@ import org.junit.Test;
  */
 public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     /** */
-    private static final int KEYS_COUNT = 20_000;
+    private static final int KEYS_COUNT = SF.applyLB(10_000, 2_000);
 
     /**
      * @return Ignite instance for testing.
@@ -91,7 +93,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         Map<Integer, DbValue> map = new HashMap<>();
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < SF.applyLB(5, 3); i++) {
             info("Iteration: " + i);
 
             info("Grow...");
@@ -146,7 +148,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
     public void testRandomRemove() throws Exception {
         IgniteCache<Integer, DbValue> cache = cache(DEFAULT_CACHE_NAME);
 
-        final int cnt = 50_000;
+        final int cnt = SF.apply(30_000);
 
         long seed = System.nanoTime();
 
@@ -161,9 +163,6 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         for (int i : keys) {
             DbValue v0 = new DbValue(i, "test-value", i);
 
-//            if (i % 1000 == 0)
-//                X.println(" --> " + i);
-
             cache.put(i, v0);
 
             assertEquals(v0, cache.get(i));
@@ -173,11 +172,8 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         X.println("Rmv start");
 
-        for (int i : keys) {
-//            X.println(" --> " + i);
-
+        for (int i : keys)
             assertTrue(cache.remove(i));
-        }
     }
 
     /**
@@ -684,14 +680,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         for (int i = 0; i < cnt; i++)
             keys[i] = i;
 
-        for (int i = 0; i < cnt; i++) {
-            int a = rnd.nextInt(cnt);
-            int b = rnd.nextInt(cnt);
-
-            int k = keys[a];
-            keys[a] = keys[b];
-            keys[b] = k;
-        }
+        Collections.shuffle(Arrays.asList(keys));
 
         return keys;
     }
@@ -846,7 +835,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         long seed = System.currentTimeMillis();
 
-        int iterations = SF.apply(MvccFeatureChecker.forcedMvcc() ? 100_000 : 300_000);
+        int iterations = SF.apply(MvccFeatureChecker.forcedMvcc() ? 30_000 : 90_000);
 
         X.println("Seed: " + seed);
 
@@ -880,8 +869,8 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         assertEquals(map.size(), cache.size());
 
-        for (Integer key : map.keySet())
-            assertEquals(map.get(key), cache.get(key));
+        for (Cache.Entry<Integer, DbValue> entry : cache.query(new ScanQuery<Integer, DbValue>()))
+            assertEquals(map.get(entry.getKey()), entry.getValue());
     }
 
     @Test

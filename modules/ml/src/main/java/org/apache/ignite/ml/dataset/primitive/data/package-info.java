@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains implementation of partition {@code data}.
  */
+
 package org.apache.ignite.ml.dataset.primitive.data;

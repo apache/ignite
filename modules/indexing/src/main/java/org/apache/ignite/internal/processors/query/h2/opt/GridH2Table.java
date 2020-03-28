@@ -29,9 +29,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryRetryException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -41,12 +46,17 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -90,6 +100,12 @@ public class GridH2Table extends TableBase {
 
     /** True representation */
     private static final int TRUE = 1;
+
+    /**
+     * Row count statistics update threshold. Stats will be updated when the actual
+     * table size change exceeds this threshold. Should be the number in interval (0,1).
+     */
+    private static final double STATS_UPDATE_THRESHOLD = 0.1; // 10%.
 
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
@@ -149,6 +165,13 @@ public class GridH2Table extends TableBase {
     /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
     private final AtomicLong ver = new AtomicLong();
 
+    /** Table statistics. */
+    private volatile TableStatistics tblStats;
+
+    /** Logger. */
+    @GridToStringExclude
+    private IgniteLogger log;
+
     /**
      * Creates table.
      *
@@ -207,6 +230,22 @@ public class GridH2Table extends TableBase {
         sysIdxsCnt = idxs.size();
 
         lock = new ReentrantReadWriteLock();
+
+        if (cacheInfo.affinityNode()) {
+            long totalTblSize = rowCount(false);
+
+            size.add(totalTblSize);
+        }
+
+        // Init stats with the dummy values. This prevents us from scanning index with backup filter when
+        // topology may not be initialized yet.
+        tblStats = new TableStatistics(0, 0);
+
+        if (desc != null && desc.context() != null) {
+            GridKernalContext ctx = desc.context().kernalContext();
+
+            log = ctx.log(getClass());
+        }
     }
 
     /**
@@ -300,6 +339,17 @@ public class GridH2Table extends TableBase {
      * @return Affinity key column or {@code null} if not available.
      */
     @Nullable public IndexColumn getAffinityKeyColumn() {
+        return affKeyCol;
+    }
+
+    /**
+     * @return Explicit affinity key column or {@code null} if not available (skip _KEY column or it's alias).
+     */
+    @Nullable public IndexColumn getExplicitAffinityKeyColumn() {
+        // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
+        if (affKeyCol == null || affKeyColIsKey)
+            return null;
+
         return affKeyCol;
     }
 
@@ -441,7 +491,7 @@ public class GridH2Table extends TableBase {
         }
 
         // Acquire the lock.
-        lock(exclusive);
+        lock(exclusive, true);
 
         if (destroyed) {
             unlock(exclusive);
@@ -472,7 +522,7 @@ public class GridH2Table extends TableBase {
         SessionLock sesLock = sessions.get(ses);
 
         assert sesLock != null && !sesLock.isExclusive()
-            : "Invalid table lock [name=" + getName() + ", lock=" + sesLock.ver + ']';
+            : "Invalid table lock [name=" + getName() + ", lock=" + sesLock == null ? "null" : sesLock.ver + ']';
 
         if (!sesLock.locked) {
             lock(false);
@@ -490,7 +540,7 @@ public class GridH2Table extends TableBase {
         SessionLock sesLock = sessions.get(ses);
 
         assert sesLock != null && !sesLock.isExclusive()
-            : "Invalid table unlock [name=" + getName() + ", lock=" + sesLock.ver + ']';
+            : "Invalid table unlock [name=" + getName() + ", lock=" + sesLock == null ? "null" : sesLock.ver + ']';
 
         if (sesLock.locked) {
             sesLock.locked = false;
@@ -504,13 +554,27 @@ public class GridH2Table extends TableBase {
      *
      * @param exclusive Exclusive flag.
      */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
     private void lock(boolean exclusive) {
+        lock(exclusive, false);
+    }
+
+    /**
+     * Acquire table lock.
+     *
+     * @param exclusive Exclusive flag.
+     * @param interruptibly Acquires interruptibly lock or not interruplible lock flag.
+     */
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "CallToThreadYield"})
+    private void lock(boolean exclusive, boolean interruptibly) {
         Lock l = exclusive ? lock.writeLock() : lock.readLock();
 
         try {
-            if (!exclusive)
-                l.lockInterruptibly();
+            if (!exclusive) {
+                if (interruptibly)
+                    l.lockInterruptibly();
+                else
+                    l.lock();
+            }
             else {
                 for (;;) {
                     if (l.tryLock(200, TimeUnit.MILLISECONDS))
@@ -678,9 +742,8 @@ public class GridH2Table extends TableBase {
     public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         assert desc != null;
 
-        H2CacheRow row0 = (H2CacheRow)desc.createRow(row);
-        H2CacheRow prevRow0 = prevRow != null ? (H2CacheRow)desc.createRow(prevRow) :
-            null;
+        H2CacheRow row0 = desc.createRow(row);
+        H2CacheRow prevRow0 = prevRow != null ? desc.createRow(prevRow) : null;
 
         row0.prepareValuesCache();
 
@@ -834,6 +897,52 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * Checks index presence, return {@link Index} if index with same name or same fields and search direction already
+     * exist or {@code null} othervise.
+     *
+     * @param curIdx Index to check.
+     * @return Index if equal or subset index exist.
+     * @throws IgniteCheckedException If failed.
+     */
+    private @Nullable Index checkIndexPresence(Index curIdx) throws IgniteCheckedException {
+        IndexColumn[] curColumns = curIdx.getIndexColumns();
+
+        Index registredIdx = null;
+
+        for (Index idx : idxs) {
+            if (!(idx instanceof H2TreeIndex))
+                continue;
+
+            if (F.eq(curIdx.getName(), idx.getName()))
+                throw new IgniteCheckedException("Index already exists: " + idx.getName());
+
+            IndexColumn[] idxColumns = idx.getIndexColumns();
+
+            for (int i = 0; i < Math.min(idxColumns.length, curColumns.length); ++i) {
+                IndexColumn idxCol = idxColumns[i];
+                IndexColumn curCol = curColumns[i];
+
+                // pk attach at the end of listed fields.
+                if (curCol.column.getColumnId() == 0 && registredIdx != null)
+                    continue;
+
+                if (H2Utils.equals(idxCol, curCol) && idxCol.sortType == curCol.sortType)
+                    registredIdx = idx;
+                else {
+                    registredIdx = null;
+
+                    break;
+                }
+            }
+
+            if (registredIdx != null)
+                return registredIdx;
+        }
+
+        return null;
+    }
+
+    /**
      * Add index that is in an intermediate state and is still being built, thus is not used in queries until it is
      * promoted.
      *
@@ -848,9 +957,17 @@ public class GridH2Table extends TableBase {
         try {
             ensureNotDestroyed();
 
-            for (Index oldIdx : idxs) {
-                if (F.eq(oldIdx.getName(), idx.getName()))
-                    throw new IgniteCheckedException("Index already exists: " + idx.getName());
+            Index idxExist = checkIndexPresence(idx);
+
+            if (idxExist != null) {
+                String idxCols = Stream.of(idxExist.getIndexColumns())
+                    .map(k -> k.columnName).collect(Collectors.joining(", "));
+
+                U.warn(log, "Index with the given set or subset of columns already exists " +
+                    "(consider dropping either new or existing index) [cacheName=" + cacheInfo.name() + ", " +
+                    "schemaName=" + getSchema().getName() + ", tableName=" + getName() +
+                    ", newIndexName=" + idx.getName() + ", existingIndexName=" + idxExist.getName() +
+                    ", existingIndexColumns=[" + idxCols + "]]");
             }
 
             Index oldTmpIdx = tmpIdxs.put(idx.getName(), (GridH2IndexBase)idx);
@@ -958,6 +1075,8 @@ public class GridH2Table extends TableBase {
         lock(true);
 
         try {
+            ensureNotDestroyed();
+
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
 
             Index targetIdx = (h2Idx instanceof GridH2ProxyIndex) ?
@@ -974,6 +1093,19 @@ public class GridH2Table extends TableBase {
                     if (idx instanceof GridH2ProxyIndex &&
                         idx.getSchema().findIndex(session, idx.getName()) != null)
                         database.removeSchemaObject(session, idx);
+
+                    GridCacheContext cctx0 = cacheInfo.cacheContext();
+
+                    if (cctx0 != null && idx instanceof GridH2IndexBase) {
+                        cctx0.shared().database().checkpointReadLock();
+
+                        try {
+                            ((GridH2IndexBase)idx).asyncDestroy(rmIndex);
+                        }
+                        finally {
+                            cctx0.shared().database().checkpointReadUnlock();
+                        }
+                    }
 
                     continue;
                 }
@@ -1010,7 +1142,7 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public TableType getTableType() {
-        return TableType.EXTERNAL_TABLE_ENGINE;
+        return TableType.TABLE;
     }
 
     /** {@inheritDoc} */
@@ -1076,7 +1208,79 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return size.longValue();
+        if (!localQuery())
+            return 10_000; // Fallback to the previous behaviour.
+
+        refreshStatsIfNeeded();
+
+        return tblStats.primaryRowCount();
+    }
+
+    /**
+     * @return {@code True} if the current query is a local query.
+     */
+    private boolean localQuery() {
+        QueryContext qctx = rowDescriptor().indexing().queryContextRegistry().getThreadLocal();
+
+        assert qctx != null;
+
+        return qctx.local();
+    }
+
+    /**
+     * Refreshes table stats if they are outdated.
+     */
+    private void refreshStatsIfNeeded() {
+        TableStatistics stats = tblStats;
+
+        long statsTotalRowCnt = stats.totalRowCount();
+        long curTotalRowCnt = size.sum();
+
+        // Update stats if total table size changed significantly since the last stats update.
+        if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt)) {
+            long primaryRowCnt = rowCount(true);
+
+            tblStats = new TableStatistics(curTotalRowCnt, primaryRowCnt);
+        }
+    }
+
+    /**
+     * @param statsRowCnt Row count from statistics.
+     * @param actualRowCnt Actual row count.
+     * @return {@code True} if actual table size has changed more than the threshold since last stats update.
+     */
+    private static boolean needRefreshStats(long statsRowCnt, long actualRowCnt) {
+        double delta = U.safeAbs(statsRowCnt - actualRowCnt);
+
+        double relativeChange = delta / (statsRowCnt + 1); // Add 1 to avoid division by zero.
+
+        // Return true if an actual table size has changed more than the threshold since the last stats update.
+        return relativeChange > STATS_UPDATE_THRESHOLD;
+    }
+
+    /**
+     * Retrieves partitions rows count for all segments.
+     *
+     * @param primaryOnly If {@code true}, only primary rows will be counted.
+     * @return Rows count.
+     */
+    private long rowCount(boolean primaryOnly) {
+        IndexingQueryCacheFilter partsFilter = primaryOnly ? backupFilter() : null;
+
+        return ((GridH2IndexBase)getUniqueIndex()).totalRowCount(partsFilter);
+    }
+
+    /**
+     * @return Backup filter for the current topology.
+     */
+    @Nullable private IndexingQueryCacheFilter backupFilter() {
+        IgniteH2Indexing indexing = rowDescriptor().indexing();
+
+        AffinityTopologyVersion topVer = indexing.readyTopologyVersion();
+
+        IndexingQueryFilter filter = indexing.backupFilter(topVer, null);
+
+        return filter.forCache(cacheName());
     }
 
     /** {@inheritDoc} */

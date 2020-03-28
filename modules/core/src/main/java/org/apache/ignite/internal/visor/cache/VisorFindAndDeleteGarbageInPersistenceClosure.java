@@ -126,7 +126,6 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 }
             }));
 
-
         Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount = new HashMap<>();
 
         int curPart = 0;
@@ -175,7 +174,13 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             assert groupContext != null;
 
             for (Integer cacheId : e.getValue().keySet()) {
-                groupContext.offheap().stopCache(cacheId, true);
+                groupContext.shared().database().checkpointReadLock();
+                try {
+                    groupContext.offheap().stopCache(cacheId, true);
+                }
+                finally {
+                    groupContext.shared().database().checkpointReadUnlock();
+                }
 
                 ((GridCacheOffheapManager)
                     groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);

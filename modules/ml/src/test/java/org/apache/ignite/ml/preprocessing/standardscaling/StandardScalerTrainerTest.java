@@ -66,7 +66,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
 
         final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2, 3);
 
-        StandardScalerPreprocessor<Integer, Vector> preprocessor = (StandardScalerPreprocessor<Integer, Vector>)standardizationTrainer.fit(
+        StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
             vectorizer
@@ -82,7 +82,7 @@ public class StandardScalerTrainerTest extends TrainerTest {
 
         final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2, 3);
 
-        StandardScalerPreprocessor<Integer, Vector> preprocessor = (StandardScalerPreprocessor<Integer, Vector>)standardizationTrainer.fit(
+        StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
             vectorizer

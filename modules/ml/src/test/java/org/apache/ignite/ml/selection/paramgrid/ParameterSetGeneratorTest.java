@@ -40,6 +40,7 @@ public class ParameterSetGeneratorTest {
         List<Double[]> res = new ParameterSetGenerator(map).generate();
         assertEquals(res.size(), 16);
     }
+
     /** */
     @Test(expected = java.lang.AssertionError.class)
     public void testParamSetGeneratorWithEmptyMap() {

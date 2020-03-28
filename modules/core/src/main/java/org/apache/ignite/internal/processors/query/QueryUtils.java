@@ -45,6 +45,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.query.property.QueryPropertyAccesso
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
@@ -184,7 +186,6 @@ public class QueryUtils {
     public static String indexName(QueryEntity entity, QueryIndex idx) {
         return indexName(tableName(entity), idx);
     }
-
 
     /**
      * Get index name.
@@ -1200,7 +1201,7 @@ public class QueryUtils {
      * @param e Original exception.
      * @return Schema exception.
      */
-    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Exception e) {
+    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Throwable e) {
         if (e == null)
             return null;
 
@@ -1482,6 +1483,16 @@ public class QueryUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Returns true if the exception is triggered by query cancel.
+     *
+     * @param e Exception.
+     * @return {@code true} if exception is caused by cancel.
+     */
+    public static boolean wasCancelled(Throwable e) {
+        return X.cause(e, QueryCancelledException.class) != null;
     }
 
     /**

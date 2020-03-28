@@ -51,7 +51,7 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
     private volatile CyclicBarrier barrier;
 
     /** */
-    protected static final long TEST_TIME = 90_000;
+    protected static final long TEST_TIME = GridTestUtils.SF.applyLB(90_000, 30_000);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

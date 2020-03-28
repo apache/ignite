@@ -38,7 +38,9 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -47,6 +49,7 @@ import org.apache.ignite.ml.dataset.UpstreamTransformer;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.environment.deploy.DeployingContext;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.util.Utils;
 
@@ -71,11 +74,12 @@ public class ComputeUtils {
      * @param fun Function to be applied on all partitions.
      * @param retries Number of retries for the case when one of partitions not found on the node.
      * @param interval Interval of retries for the case when one of partitions not found on the node.
+     * @param deployingCtx Deploy context of user-defined classes for peer class loading.
      * @param <R> Type of a result.
      * @return Collection of results.
      */
     public static <R> Collection<R> affinityCallWithRetries(Ignite ignite, Collection<String> cacheNames,
-        IgniteFunction<Integer, R> fun, int retries, int interval) {
+        IgniteFunction<Integer, R> fun, int retries, int interval, DeployingContext deployingCtx) {
         assert !cacheNames.isEmpty();
         assert interval >= 0;
 
@@ -98,7 +102,10 @@ public class ComputeUtils {
 
                     futures.put(
                         currPart,
-                        ignite.compute(clusterGrp).affinityCallAsync(cacheNames, currPart, () -> fun.apply(currPart))
+                        ignite.compute(clusterGrp).affinityCallAsync(
+                            cacheNames, currPart,
+                            new DeployableCallable<>(deployingCtx, part, fun)
+                        )
                     );
                 }
 
@@ -131,12 +138,13 @@ public class ComputeUtils {
      * @param cacheNames Collection of cache names.
      * @param fun Function to be applied on all partitions.
      * @param retries Number of retries for the case when one of partitions not found on the node.
+     * @param deployingContext Deploy context.
      * @param <R> Type of a result.
      * @return Collection of results.
      */
     public static <R> Collection<R> affinityCallWithRetries(Ignite ignite, Collection<String> cacheNames,
-        IgniteFunction<Integer, R> fun, int retries) {
-        return affinityCallWithRetries(ignite, cacheNames, fun, retries, 0);
+        IgniteFunction<Integer, R> fun, int retries, DeployingContext deployingContext) {
+        return affinityCallWithRetries(ignite, cacheNames, fun, retries, 0, deployingContext);
     }
 
     /**
@@ -249,7 +257,7 @@ public class ComputeUtils {
     /**
      * Remove learning environment from local cache by Dataset ID.
      *
-     * @param ignite Ingnite instance.
+     * @param ignite Ignite instance.
      * @param datasetId Dataset ID.
      */
     public static void removeLearningEnv(Ignite ignite, UUID datasetId) {
@@ -265,6 +273,7 @@ public class ComputeUtils {
      * @param ctxBuilder Partition {@code context} builder.
      * @param envBuilder Environment builder.
      * @param isKeepBinary Support of binary objects.
+     * @param deployingCtx Deploy context.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -279,7 +288,9 @@ public class ComputeUtils {
         LearningEnvironmentBuilder envBuilder,
         int retries,
         int interval,
-        boolean isKeepBinary) {
+        boolean isKeepBinary,
+        DeployingContext deployingCtx) {
+
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
             LearningEnvironment env = envBuilder.buildForWorker(part);
@@ -320,7 +331,7 @@ public class ComputeUtils {
             datasetCache.put(part, ctx);
 
             return part;
-        }, retries, interval);
+        }, retries, interval, deployingCtx);
     }
 
     /**
@@ -387,5 +398,48 @@ public class ComputeUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Callable that contains deploy context and can pass missing classes
+     * during learning session by p2p deployment.
+     * @param <C> Type of callable result.
+     */
+    private static class DeployableCallable<C> implements GridPeerDeployAware, IgniteCallable<C> {
+        /** Fun. */
+        private final IgniteFunction<Integer, C> fun;
+
+        /** Partition. */
+        private final int part;
+
+        /** Deploy context. */
+        private transient DeployingContext deployingContext;
+
+        /**
+         * Creates an instance of DeployableCallable.
+         * @param deployingCtx Deploy context.
+         * @param part Partition.
+         * @param fun Callable function.
+         */
+        public DeployableCallable(DeployingContext deployingCtx, int part, IgniteFunction<Integer, C> fun) {
+            this.fun = fun;
+            this.deployingContext = deployingCtx;
+            this.part = part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public C call() throws Exception {
+            return fun.apply(part);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> deployClass() {
+            return deployingContext.userClass();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClassLoader classLoader() {
+            return deployingContext.clientClassLoader();
+        }
     }
 }

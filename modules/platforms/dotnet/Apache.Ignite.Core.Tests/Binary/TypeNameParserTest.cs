@@ -268,6 +268,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual(type.FullName, res.GetNameWithNamespace() + res.GetArray());
             }
 
+            Assert.IsNotNull(type.FullName);
             Assert.AreEqual(type.FullName.Length + 2, res.AssemblyStart);
             Assert.AreEqual(type.FullName, res.GetFullName());
         }

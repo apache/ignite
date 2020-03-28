@@ -111,6 +111,7 @@ public class H2TableDescriptor {
     public boolean sql(){
         return isSql;
     }
+
     /**
      * @return Indexing.
      */

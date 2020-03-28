@@ -265,6 +265,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
             Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
+            Assert.AreEqual(20, client.ThinClientConfiguration.MaxActiveTxPerConnection);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -359,6 +360,12 @@ namespace Apache.Ignite.Core.Tests
             
             Assert.IsTrue(failureHandler.TryStop);  
             Assert.AreEqual(TimeSpan.Parse("0:1:0"), failureHandler.Timeout);
+
+            var ec = cfg.ExecutorConfiguration;
+            Assert.NotNull(ec);
+            Assert.AreEqual(2, ec.Count);
+            Assert.AreEqual(new[] {"exec1", "exec2"}, ec.Select(e => e.Name));
+            Assert.AreEqual(new[] {1, 2}, ec.Select(e => e.Size));
         }
 
         /// <summary>
@@ -925,7 +932,10 @@ namespace Apache.Ignite.Core.Tests
                     OdbcEnabled = false,
                     JdbcEnabled = false,
                     ThreadPoolSize = 7,
-                    IdleTimeout = TimeSpan.FromMinutes(5)
+                    IdleTimeout = TimeSpan.FromMinutes(5),
+                    ThinClientConfiguration = new ThinClientConfiguration {
+                        MaxActiveTxPerConnection = 8
+                    }
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
@@ -1029,7 +1039,15 @@ namespace Apache.Ignite.Core.Tests
                     TryStop = false,
                     Timeout = TimeSpan.FromSeconds(10)
                 },
-                SqlQueryHistorySize = 345
+                SqlQueryHistorySize = 345,
+                ExecutorConfiguration = new[]
+                {
+                    new ExecutorConfiguration
+                    {
+                        Name = "exec-1",
+                        Size = 11
+                    }
+                }
             };
         }
 

@@ -151,7 +151,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
 
         if (sslMeta == null) {
-            engine = sslCtx.createSSLEngine();
+            try {
+                engine = sslCtx.createSSLEngine();
+            } catch (IllegalArgumentException e) {
+                throw new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
+            }
 
             boolean clientMode = !ses.accepted();
 
@@ -170,6 +174,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 engine.setEnabledProtocols(enabledProtos);
 
             sslMeta = new GridSslMeta();
+
+            sslMeta.sslEngine(engine);
 
             ses.addMeta(SSL_META.ordinal(), sslMeta);
 
@@ -211,13 +217,16 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
-        GridNioSslHandler hnd = sslHandler(ses);
-
         try {
             GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
             if (fut != null)
                 fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed)."));
+
+            if (ses.meta(SSL_META.ordinal()) == null)
+                return;
+
+            GridNioSslHandler hnd = sslHandler(ses);
 
             hnd.shutdown();
         }

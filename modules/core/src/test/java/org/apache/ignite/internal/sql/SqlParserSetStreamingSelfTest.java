@@ -49,7 +49,6 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
         parseValidate("set streaming on per_node_buffer_size 50 flush_frequency 500 " +
             "per_node_parallel_operations 4 allow_overwrite on batch_size 100 ordered", true, true, 100, 4, 50, 500, true);
 
-
         assertParseError(QueryUtils.DFLT_SCHEMA, "set",
             "Failed to parse SQL statement \"set[*]\": Unexpected end of command (expected: \"STREAMING\")");
 

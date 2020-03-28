@@ -35,11 +35,7 @@ import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationTrainer;
 import org.apache.ignite.ml.knn.ann.ANNModelFormat;
-import org.apache.ignite.ml.knn.ann.ProbableLabel;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
-import org.apache.ignite.ml.knn.classification.KNNModelFormat;
-import org.apache.ignite.ml.knn.classification.NNStrategy;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.knn.ann.KNNModelFormat;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
@@ -162,41 +158,14 @@ public class LocalModelsTest {
 
     /** */
     @Test
-    public void importExportKNNModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            NNClassificationModel mdl = new KNNClassificationModel(null)
-                .withK(3)
-                .withDistanceMeasure(new EuclideanDistance())
-                .withStrategy(NNStrategy.SIMPLE);
-
-            Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            KNNModelFormat load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-
-            NNClassificationModel importedMdl = new KNNClassificationModel(null)
-                .withK(load.getK())
-                .withDistanceMeasure(load.getDistanceMeasure())
-                .withStrategy(load.getStgy());
-
-            Assert.assertEquals("", mdl, importedMdl);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
     public void importExportANNModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            final LabeledVectorSet<ProbableLabel, LabeledVector> centers = new LabeledVectorSet<>();
+            final LabeledVectorSet<LabeledVector> centers = new LabeledVectorSet<>();
 
             NNClassificationModel mdl = new ANNClassificationModel(centers, new ANNClassificationTrainer.CentroidStat())
                 .withK(4)
                 .withDistanceMeasure(new ManhattanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                .withWeighted(true);
 
             Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
@@ -205,11 +174,10 @@ public class LocalModelsTest {
 
             Assert.assertNotNull(load);
 
-
             NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
                 .withK(load.getK())
                 .withDistanceMeasure(load.getDistanceMeasure())
-                .withStrategy(load.getStgy());
+                .withWeighted(true);
 
             Assert.assertEquals("", mdl, importedMdl);
 

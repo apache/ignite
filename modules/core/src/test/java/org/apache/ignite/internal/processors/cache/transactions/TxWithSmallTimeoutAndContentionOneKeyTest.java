@@ -60,9 +60,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
     /** */
     private static final int TIME_TO_EXECUTE = 30 * 1000;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -84,12 +81,6 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setBackups(3)
         );
-
-        if (client){
-            cfg.setConsistentId("Client");
-
-            cfg.setClientMode(client);
-        }
 
         return cfg;
     }
@@ -156,9 +147,7 @@ public class TxWithSmallTimeoutAndContentionOneKeyTest extends GridCommonAbstrac
 
         startGrids(4);
 
-        client = true;
-
-        IgniteEx igClient = startGrid(4);
+        IgniteEx igClient = startClientGrid(getConfiguration("client").setConsistentId("Client"));
 
         igClient.cluster().active(true);
 

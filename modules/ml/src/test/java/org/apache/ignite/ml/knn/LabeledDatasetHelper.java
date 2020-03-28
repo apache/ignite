@@ -42,7 +42,7 @@ public class LabeledDatasetHelper {
         try {
             Path path = Paths.get(LabeledDatasetHelper.class.getClassLoader().getResource(rsrcPath).toURI());
             try {
-                return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
+                return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, isFallOnBadData);
             }
             catch (IOException e) {
                 e.printStackTrace();

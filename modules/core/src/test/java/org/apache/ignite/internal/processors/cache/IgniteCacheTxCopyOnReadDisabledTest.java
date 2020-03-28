@@ -32,6 +32,7 @@ public class IgniteCacheTxCopyOnReadDisabledTest extends IgniteCacheCopyOnReadDi
     public void beforeIgniteCacheTxCopyOnReadDisabledTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
+
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;

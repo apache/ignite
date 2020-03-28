@@ -24,7 +24,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryRetryException;
@@ -53,7 +52,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private static final int PAGE_SIZE_SMALL = 12;
 
     /** Test duration. */
-    private static final long TEST_DUR = 10_000L;
+    private static final long TEST_DUR = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -143,16 +142,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         Ignite srv1 = startGrid(1);
         startGrid(2);
 
-        Ignite cli;
-
-        try {
-            Ignition.setClientMode(true);
-
-            cli = startGrid(3);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        Ignite cli = startClientGrid(3);
 
         populateBaseQueryData(srv0, 1);
 
@@ -177,16 +167,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         Ignite srv1 = startGrid(1);
         startGrid(2);
 
-        Ignite cli;
-
-        try {
-            Ignition.setClientMode(true);
-
-            cli = startGrid(3);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        Ignite cli = startClientGrid(3);
 
         populateBaseQueryData(srv0, 4);
 
@@ -352,7 +333,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             }
         }, qryThreads, "usr-qry");
 
-
         long tEnd = U.currentTimeMillis() + TEST_DUR;
 
         while (U.currentTimeMillis() < tEnd) {
@@ -410,17 +390,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     public void checkMultipleNodes(int parallelism) throws Exception {
         Ignite srv1 = startGrid(1);
         Ignite srv2 = startGrid(2);
-
-        Ignite cli;
-
-        try {
-            Ignition.setClientMode(true);
-
-            cli = startGrid(3);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        Ignite cli = startClientGrid(3);
 
         populateBaseQueryData(cli, parallelism);
 
@@ -507,7 +477,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             assertBaseQueryResults(rows);
         }
 
-
         // Test full iteration.
         {
             List<List<?>> rows = new ArrayList<>();
@@ -529,7 +498,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             for (int i = 0; i < 30; i++)
                 iter.next();
         }
-
 
         // Test execution of multiple queries at a time.
         List<Iterator<List<?>>> iters = new ArrayList<>();
@@ -757,7 +725,6 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private FieldsQueryCursor<List<?>> execute(Ignite node, SqlFieldsQuery qry) {
         return ((IgniteEx)node).context().query().querySqlFields(qry.setLazy(lazy()), false);
     }
-
 
     /**
      * @return Lazy mode.

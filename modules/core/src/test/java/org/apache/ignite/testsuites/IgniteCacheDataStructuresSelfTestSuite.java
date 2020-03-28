@@ -18,6 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
+import org.apache.ignite.internal.processors.cache.consistency.AtomicReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReplicatedExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReplicatedImplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.SingleBackupImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -84,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.datastructures.replicated.Ign
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedLockSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.IgniteReplicatedSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
+import org.apache.ignite.internal.processors.datastructures.GridCacheReplicatedQueueRemoveSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -117,6 +125,7 @@ import org.junit.runners.Suite;
     IgniteReplicatedSemaphoreSelfTest.class,
     IgniteReplicatedLockSelfTest.class,
     IgniteCacheAtomicReplicatedNodeRestartSelfTest.class,
+    GridCacheReplicatedQueueRemoveSelfTest.class,
 
     GridCachePartitionedSequenceApiSelfTest.class,
     GridCachePartitionedSequenceMultiNodeSelfTest.class,
@@ -184,7 +193,17 @@ import org.junit.runners.Suite;
 
     AtomicCacheAffinityConfigurationTest.class,
 
-    IgniteCacheDataStructuresBinarySelfTestSuite.class
+    IgniteCacheDataStructuresBinarySelfTestSuite.class,
+
+    ImplicitTransactionalReadRepairTest.class,
+    SingleBackupImplicitTransactionalReadRepairTest.class,
+    ReplicatedImplicitTransactionalReadRepairTest.class,
+
+    AtomicReadRepairTest.class,
+
+    ExplicitTransactionalReadRepairTest.class,
+    SingleBackupExplicitTransactionalReadRepairTest.class,
+    ReplicatedExplicitTransactionalReadRepairTest.class,
 })
 public class IgniteCacheDataStructuresSelfTestSuite {
 }

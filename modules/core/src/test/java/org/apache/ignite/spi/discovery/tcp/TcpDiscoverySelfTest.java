@@ -132,9 +132,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private CacheConfiguration[] ccfgs;
 
     /** */
-    private boolean client;
-
-    /** */
     private SegmentationPolicy segPlc;
 
     /**
@@ -239,8 +236,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             strLog.logLength(300_000);
         }
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -1518,11 +1513,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             Ignite ignite1 = startGrid("testNoRingMessageWorkerAbnormalFailureNormalNode");
 
-
             nodeSpi.set(new TcpDiscoverySpi());
 
             final Ignite ignite2 = startGrid("testNoRingMessageWorkerAbnormalFailureSegmentedNode");
-
 
             final AtomicBoolean disconnected = new AtomicBoolean();
 
@@ -1561,13 +1554,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, EventType.EVT_NODE_SEGMENTED);
 
-
             spi1.stop = true;
 
             disLatch.await(15, TimeUnit.SECONDS);
 
             assertTrue(disconnected.get());
-
 
             spi1.stop = false;
 
@@ -1575,9 +1566,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertTrue(segmented.get());
 
-
             Thread.sleep(10_000);
-
 
             String result = strLog.toString();
 
@@ -1622,7 +1611,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
-
 
     /**
      * @param twoNodes If {@code true} starts two nodes, otherwise three.
@@ -2184,9 +2172,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 startGrid(i + 1);
             }
 
-            client = true;
-
-            Ignite clientNode = startGrid(6);
+            Ignite clientNode = startClientGrid(6);
 
             assertTrue(clientNode.configuration().isClientMode());
 
@@ -2194,8 +2180,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             ccfg.setName("c1");
 
             clientNode.createCache(ccfg);
-
-            client = false;
 
             nodeSpi.set(new TestDiscoveryDataDuplicateSpi());
 
@@ -2487,7 +2471,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             }
         }
     }
-
 
     /**
      *

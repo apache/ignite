@@ -22,7 +22,9 @@ import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
+import org.apache.ignite.internal.util.GridCountDownCallbackTest;
 import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
+import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -38,7 +40,9 @@ import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
+import org.apache.ignite.internal.util.tostring.TransactionSensitiveDataTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
+import org.apache.ignite.spi.discovery.ClusterMetricsSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
@@ -97,14 +101,17 @@ import org.junit.runners.Suite;
     GridTopologyHeapSizeSelfTest.class,
     GridTransientTest.class,
     IgniteDevOnlyLogTest.class,
+    GridConcurrentMultiPairQueueTest.class,
 
     // Sensitive toString.
     IncludeSensitiveAtomicTest.class,
     IncludeSensitiveTransactionalTest.class,
+    TransactionSensitiveDataTest.class,
 
     // Metrics.
     ClusterMetricsSnapshotSerializeSelfTest.class,
     ClusterMetricsSnapshotSerializeCompatibilityTest.class,
+    ClusterMetricsSelfTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,
@@ -126,6 +133,8 @@ import org.junit.runners.Suite;
 
     // control.sh
     CommandHandlerParsingTest.class,
+
+    GridCountDownCallbackTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }

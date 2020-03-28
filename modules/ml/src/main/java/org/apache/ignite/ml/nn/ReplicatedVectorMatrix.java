@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Spliterator;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -84,11 +84,6 @@ class ReplicatedVectorMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return vector.isArrayBased();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return vector.isDistributed();
     }
 
     /** {@inheritDoc} */

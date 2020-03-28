@@ -65,8 +65,12 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_PORT;
  */
 @Deprecated
 public class JdbcConnection implements Connection {
-    /** Validation task name. */
-    private static final String VALID_TASK_NAME =
+    /** Connection validation task name. */
+    private static final String CONNECTION_VALID_TASK_NAME =
+        "org.apache.ignite.internal.jdbc.JdbcConnectionValidationTask";
+
+    /** Cache validation task name. */
+    private static final String CACHE_VALID_TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
 
     /** Ignite client. */
@@ -86,6 +90,9 @@ public class JdbcConnection implements Connection {
 
     /** Timeout. */
     private int timeout;
+
+    /** Whether using security. */
+    private boolean usingSecurity;
 
     /**
      * Creates new connection.
@@ -115,10 +122,14 @@ public class JdbcConnection implements Connection {
             String passwd = props.getProperty("password");
 
             if (!F.isEmpty(user)) {
+                usingSecurity = true;
+
                 SecurityCredentials creds = new SecurityCredentials(user, passwd);
 
                 cfg.setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(creds));
             }
+            else
+                usingSecurity = false;
 
             // Disable all fetching and caching for metadata.
             cfg.setEnableMetricsCache(false);
@@ -453,7 +464,9 @@ public class JdbcConnection implements Connection {
             throw new SQLException("Invalid timeout: " + timeout);
 
         try {
-            return client.compute().<Boolean>executeAsync(VALID_TASK_NAME, cacheName).get(timeout, SECONDS);
+            return client.compute()
+                .<Boolean>executeAsync(usingSecurity ? CONNECTION_VALID_TASK_NAME : CACHE_VALID_TASK_NAME, cacheName)
+                .get(timeout, SECONDS);
         }
         catch (GridClientDisconnectedException | GridClientFutureTimeoutException e) {
             throw new SQLException("Failed to establish connection.", e);

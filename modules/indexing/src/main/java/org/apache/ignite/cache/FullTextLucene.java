@@ -922,7 +922,7 @@ public class FullTextLucene {
                 
                 if (data && cache!=null && access.type()!=null) {
                 	
-                	Object v = cache.get(k,false,false);
+                	Object v = cache.get(k);
                 	Object[] row = new Object[5+access.type().fields().size()];
                 	row[0] = k;
                 	row[1] = ver;

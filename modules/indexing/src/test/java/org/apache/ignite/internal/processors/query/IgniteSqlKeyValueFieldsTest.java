@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
@@ -37,6 +40,11 @@ import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static java.util.Arrays.asList;
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Test hidden _key, _val, _ver columns
@@ -63,6 +71,9 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     /** */
     private static String CACHE_JOB = "Job";
 
+    /**  */
+    private static String CACHE_SQL = "Sql";
+
     /** */
     private boolean oldAllowKeyValCol;
 
@@ -81,10 +92,9 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         ccfgs.add(buildCacheConfiguration(CACHE_INT_NO_KV_TYPE));
         ccfgs.add(buildCacheConfiguration(CACHE_PERSON));
         ccfgs.add(buildCacheConfiguration(CACHE_JOB));
+        ccfgs.add(buildCacheConfiguration(CACHE_SQL));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
 
         return c;
     }
@@ -99,7 +109,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
         startGrid(0);
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */
@@ -142,7 +152,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
 
             entity.setFields(fields);
 
-            ccfg.setQueryEntities(Arrays.asList(entity));
+            ccfg.setQueryEntities(asList(entity));
             return ccfg;
         }
         else if (name.equals(CACHE_INT_NO_KV_TYPE)) {
@@ -161,7 +171,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
 
             entity.setFields(fields);
 
-            ccfg.setQueryEntities(Arrays.asList(entity));
+            ccfg.setQueryEntities(asList(entity));
             return ccfg;
         }
         else if (name.equals(CACHE_PERSON)) {
@@ -184,7 +194,7 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
 
             entity.setFields(fields);
 
-            ccfg.setQueryEntities(Arrays.asList(entity));
+            ccfg.setQueryEntities(asList(entity));
             return ccfg;
         }
         else if (name.equals(CACHE_JOB)) {
@@ -192,6 +202,9 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
             ccfg.setIndexedTypes(Integer.class, Integer.class);
             return ccfg;
         }
+        else if (name.equals(CACHE_SQL))
+            return new CacheConfiguration<>(name).setSqlSchema(DFLT_SCHEMA);
+
         return null;
     }
 
@@ -319,6 +332,177 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
         results = cursor.getAll();
         assertEquals(1, results.size());
         assertTrue(((String)results.get(0).get(0)).contains("\"_key_PK\""));
+    }
+
+    /**
+     * Test to verify that there will be an error when changing the column type
+     * through sql "alter table" drop and then add column, and also when trying
+     * to create an index, there will be an error.
+     */
+    @Test
+    public void testChangeColumnTypeByAlterTableDropAddColumn() {
+        // test1
+        changeSqlColumnType(
+            "int",
+            1,
+            asList("varchar", "date", "tinyint", "long", "datetime"),
+            new LinkedList<>(asList("a", "b,a", "a", "a,b", "a"))
+        );
+
+        // test2
+        changeSqlColumnType(
+            "varchar",
+            "1",
+            asList("int", "date", "tinyint", "long", "datetime"),
+            new LinkedList<>(asList("a", "b,a", "a", "a,b", "a"))
+        );
+
+        // test3
+        changeSqlColumnType(
+            "date",
+            new Timestamp(0),
+            asList("int", "long", "tinyint", "datetime", "varchar"),
+            new LinkedList<>(asList("a", "b,a", "a,b", "a", "a"))
+        );
+
+        // test4
+        changeSqlColumnType(
+            "datetime",
+            new Timestamp(0),
+            asList("int", "long", "tinyint", "date", "varchar"),
+            new LinkedList<>(asList("a", "b,a", "a,b", "a", "a"))
+        );
+    }
+
+    /**
+     * Test to verify that when changing column type, there will be no error
+     * without changing type through sql "alter table" drop and then add column
+     * and also when trying to create an index there will be no error.
+     */
+    @Test
+    public void testReturnColumnTypeByAlterTableDropAddColumn() {
+        checkRecreateSqlColumn("int", 1, asList("int"), new LinkedList<>(asList("a")));
+
+        checkRecreateSqlColumn("varchar", 1, asList("varchar"), new LinkedList<>(asList("b,a")));
+
+        checkRecreateSqlColumn("date", new java.sql.Date(0), asList("date"), new LinkedList<>(asList("b")));
+
+        checkRecreateSqlColumn("tinyint", 1, asList("tinyint"), new LinkedList<>(asList("a,b")));
+
+        checkRecreateSqlColumn("long", 1L, asList("long"), new LinkedList<>(asList("a")));
+
+        checkRecreateSqlColumn("datetime", new Timestamp(0), asList("datetime"), new LinkedList<>(asList("a")));
+    }
+
+    /**
+     * Verifies that when changing a sql column type by sql "alter table"
+     * drop column and then add column, an exception will be thrown and also
+     * after that when trying to create an index on this column
+     * will lead to an error. Here used table
+     * "create table TEST (id int primary key, a x, b int)", where all logic
+     * is focused on column "a".
+     *
+     * @param aColType The initial type of column is "a".
+     * @param aInsertVal The value for insert into "a" column.
+     * @param aColTypes Column types for changing "a" column.
+     * @param idxCols Columns (single or comma-separated) to create indexes.
+     */
+    private void changeSqlColumnType(
+        String aColType,
+        Object aInsertVal,
+        List<String> aColTypes,
+        Queue<String> idxCols
+    ) {
+        assert nonNull(aInsertVal);
+        assert nonNull(aColType);
+        assert nonNull(aColTypes);
+        assert nonNull(idxCols);
+
+        IgniteCache<Object, Object> cache = grid(0).cache(CACHE_SQL);
+
+        cache.query(
+            new SqlFieldsQuery("create table TEST (id int primary key, a " + aColType + ", b int)")
+        ).getAll();
+
+        cache.query(new SqlFieldsQuery("insert into TEST (id, a, b) VALUES (?,?,?)").setArgs(1, aInsertVal, 1))
+            .getAll();
+
+        for (String columnType : aColTypes) {
+            cache.query(new SqlFieldsQuery("alter table TEST drop column a")).getAll();
+
+            assertThrows(
+                log,
+                () -> cache.query(new SqlFieldsQuery("alter table TEST add column a " + columnType)).getAll(),
+                CacheException.class,
+                "Column already exists: with a different type."
+            );
+
+            assertThrows(
+                log,
+                () -> cache.query(new SqlFieldsQuery("create index tidx on TEST (" + idxCols.poll() + ")")).getAll(),
+                CacheException.class,
+                "Column doesn't exist: A"
+            );
+
+            cache.query(new SqlFieldsQuery("alter table TEST add column a " + aColType)).getAll();
+        }
+
+        cache.query(new SqlFieldsQuery("DROP TABLE TEST")).getAll();
+    }
+
+    /**
+     * Checking that when using sql "alter table" drop column and then add
+     * column without changing the column type will not throw an exception
+     * and you can also create indexes without errors. Here used table
+     * "create table TEST (id int primary key, a x, b int)", where all logic
+     * is focused on column "a".
+     *
+     * @param aColType The initial type of column is "a".
+     * @param aInsertVal The value for insert into "a" column.
+     * @param aColTypes Column types for changing "a" column.
+     * @param idxCols Columns (single or comma-separated) to create indexes.
+     */
+    private void checkRecreateSqlColumn(
+        String aColType,
+        Object aInsertVal,
+        List<String> aColTypes,
+        Queue<String> idxCols
+    ) {
+        assert nonNull(aInsertVal);
+        assert nonNull(aColType);
+        assert nonNull(aColTypes);
+        assert nonNull(idxCols);
+
+        IgniteCache<Object, Object> cache = grid(0).cache(CACHE_SQL);
+
+        cache.query(
+            new SqlFieldsQuery("create table TEST (id int primary key, a " + aColType + ", b int)")
+        ).getAll();
+
+        cache.query(new SqlFieldsQuery("insert into TEST (id, a, b) VALUES (?,?,?)").setArgs(1, aInsertVal, 1)).getAll();
+
+        SqlFieldsQuery selectQry = new SqlFieldsQuery("select id,a,b from TEST");
+
+        for (String columnType : aColTypes) {
+            List<List<?>> rowsBeforeColManipulation = cache.query(selectQry).getAll();
+
+            assertEquals(1, rowsBeforeColManipulation.size());
+            assertEquals(3, rowsBeforeColManipulation.get(0).size());
+
+            cache.query(new SqlFieldsQuery("alter table TEST drop column a")).getAll();
+            cache.query(new SqlFieldsQuery("alter table TEST add column a " + columnType)).getAll();
+
+            List<List<?>> rowsAfterColManipulation = cache.query(selectQry).getAll();
+
+            assertEquals(1, rowsAfterColManipulation.size());
+            assertEquals(rowsBeforeColManipulation.get(0), rowsAfterColManipulation.get(0));
+
+            cache.query(new SqlFieldsQuery("create index tidx on TEST (" + idxCols.poll() + ")")).getAll();
+        }
+
+        cache.query(
+            new SqlFieldsQuery("DROP TABLE TEST")
+        ).getAll();
     }
 
     /** */

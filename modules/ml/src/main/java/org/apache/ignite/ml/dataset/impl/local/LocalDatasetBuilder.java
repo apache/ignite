@@ -101,7 +101,9 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** {@inheritDoc} */
     @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
         LearningEnvironmentBuilder envBuilder,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment learningEnvironment) {
+
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 

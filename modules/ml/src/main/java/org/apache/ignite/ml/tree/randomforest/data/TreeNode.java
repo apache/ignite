@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-
 import java.util.Arrays;
 import java.util.List;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Decision tree node class.
@@ -166,6 +165,11 @@ public class TreeNode implements IgniteModel<Vector, Double> {
     }
 
     /** */
+    public double getVal() {
+        return val;
+    }
+
+    /** */
     public void setImpurity(double impurity) {
         this.impurity = impurity;
     }
@@ -182,6 +186,13 @@ public class TreeNode implements IgniteModel<Vector, Double> {
      */
     public int getDepth() {
         return depth;
+    }
+
+    /**
+     * @return Feature id.
+     */
+    public int getFeatureId() {
+        return featureId;
     }
 
     /**

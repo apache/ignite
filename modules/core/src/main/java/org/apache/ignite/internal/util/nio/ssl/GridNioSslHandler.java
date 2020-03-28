@@ -604,7 +604,7 @@ class GridNioSslHandler extends ReentrantLock {
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
         }
         while ((res.getStatus() == Status.OK || res.getStatus() == Status.BUFFER_OVERFLOW) &&
-            (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING || res.getHandshakeStatus() == NEED_UNWRAP));
+            (handshakeFinished || res.getHandshakeStatus() == NEED_UNWRAP));
 
         return res;
     }

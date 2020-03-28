@@ -49,9 +49,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private PartitionLossPolicy partLossPlc;
 
     /** */
@@ -68,8 +65,6 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientMode(client);
-
         CacheConfiguration ccfg1 = new CacheConfiguration(CACHE_1)
             .setGroupName(GROUP_NAME)
             .setCacheMode(PARTITIONED)
@@ -82,6 +77,8 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
             .setName(CACHE_2);
 
         cfg.setCacheConfiguration(ccfg1, ccfg2);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -290,11 +287,7 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
             ignite(0).cache(CACHE_2).put(i, i);
         }
 
-        client = true;
-
-        startGrid(4);
-
-        client = false;
+        startClientGrid(4);
 
         for (int i = 0; i < 5; i++)
             info(">>> Node [idx=" + i + ", nodeId=" + ignite(i).cluster().localNode().id() + ']');

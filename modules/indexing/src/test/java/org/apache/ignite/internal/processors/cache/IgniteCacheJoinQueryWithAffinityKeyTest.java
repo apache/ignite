@@ -54,9 +54,6 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     private static final int NODES = 5;
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean escape;
 
     /** {@inheritDoc} */
@@ -70,8 +67,6 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         cfg.setCacheKeyConfiguration(keyCfg);
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -81,9 +76,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     /**
@@ -295,7 +288,6 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         }
 
         SqlFieldsQuery[] qrys = new SqlFieldsQuery[2];
-
 
         if (escape) {
             qrys[0] = new SqlFieldsQuery("select count(*) " +

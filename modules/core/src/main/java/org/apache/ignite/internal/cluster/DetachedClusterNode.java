@@ -30,7 +30,9 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Representation of cluster node that isn't currently present in cluster.
+ * Representation of cluster node that either isn't currently present in cluster, or semantically detached.
+ * For example nodes returned from {@code BaselineTopology.currentBaseline()} are always considered as
+ * semantically detached, even if they are currently present in cluster.
  */
 public class DetachedClusterNode implements ClusterNode {
     /** */

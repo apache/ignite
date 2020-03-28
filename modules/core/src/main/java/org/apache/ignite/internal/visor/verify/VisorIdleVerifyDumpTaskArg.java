@@ -31,12 +31,6 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private boolean skipZeros;
-
-    /** Cache kind. */
-    private CacheFilterEnum cacheFilterEnum;
-
     /**
      * Default constructor.
      */
@@ -57,30 +51,14 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
         CacheFilterEnum cacheFilterEnum,
         boolean checkCrc
     ) {
-        super(caches, excludeCaches, checkCrc);
-        this.skipZeros = skipZeros;
-        this.cacheFilterEnum = cacheFilterEnum;
-    }
-
-    /**
-     * @return Skip zeros partitions.
-     */
-    public boolean isSkipZeros() {
-        return skipZeros;
-    }
-
-    /**
-     * @return Kind fo cache.
-     */
-    public CacheFilterEnum getCacheFilterEnum() {
-        return cacheFilterEnum;
+        super(caches, excludeCaches, skipZeros, cacheFilterEnum, checkCrc);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         super.writeExternalData(out);
 
-        out.writeBoolean(skipZeros);
+        out.writeBoolean(skipZeros());
 
         /**
          * Since protocol version 2 we must save class instance new fields to end of output object. It's needs for
@@ -89,11 +67,11 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
          * TODO: https://issues.apache.org/jira/browse/IGNITE-10932 Will remove in 3.0
          */
         if (instanceOfCurrentClass()) {
-            U.writeEnum(out, cacheFilterEnum);
+            U.writeEnum(out, cacheFilterEnum());
 
-            U.writeCollection(out, getExcludeCaches());
+            U.writeCollection(out, excludeCaches());
 
-            out.writeBoolean(isCheckCrc());
+            out.writeBoolean(checkCrc());
         }
     }
 
@@ -104,7 +82,7 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
     ) throws IOException, ClassNotFoundException {
         super.readExternalData(protoVer, in);
 
-        skipZeros = in.readBoolean();
+        skipZeros(in.readBoolean());
 
         /**
          * Since protocol version 2 we must read class instance new fields from end of input object. It's needs for
@@ -114,9 +92,9 @@ public class VisorIdleVerifyDumpTaskArg extends VisorIdleVerifyTaskArg {
          */
         if (instanceOfCurrentClass()) {
             if (protoVer >= V2)
-                cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
+                cacheFilterEnum(CacheFilterEnum.fromOrdinal(in.readByte()));
             else
-                cacheFilterEnum = CacheFilterEnum.DEFAULT;
+                cacheFilterEnum(CacheFilterEnum.DEFAULT);
 
             if (protoVer >= V2)
                 excludeCaches(U.readSet(in));

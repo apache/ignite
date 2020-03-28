@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.X;
@@ -41,6 +42,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 public class DiscoveryDataPacket implements Serializable {
     /** Local file header signature(read as a little-endian number). */
     private static int ZIP_HEADER_SIGNATURE = 0x04034b50;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -133,11 +135,11 @@ public class DiscoveryDataPacket implements Serializable {
         ClassLoader clsLdr,
         boolean clientNode,
         IgniteLogger log
-    ) {
+    ) throws IgniteCheckedException {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (commonData != null && !commonData.isEmpty())
-            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log));
+            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log, true));
 
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
@@ -150,7 +152,7 @@ public class DiscoveryDataPacket implements Serializable {
 
                 unmarshNodeSpecData.put(
                     nodeBinEntry.getKey(),
-                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log)
+                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log, true)
                 );
             }
 
@@ -165,17 +167,60 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clsLdr Class loader.
      * @param clientNode Client node.
      * @param log Logger.
+     * @throws IgniteCheckedException If unmarshalling failed.
      */
     public DiscoveryDataBag unmarshalJoiningNodeData(
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,
         IgniteLogger log
+    ) throws IgniteCheckedException {
+        return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, true);
+    }
+
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     */
+    public DiscoveryDataBag unmarshalJoiningNodeDataSilently(
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
+        try {
+            return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, false);
+        }
+        catch (IgniteCheckedException impossible) {
+            assert false : impossible;
+
+            log.error("Failed to unmarshal joining node data", impossible);
+
+            throw new IgniteException(impossible);
+        }
+    }
+
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     * @param panic Throw unmarshalling if {@code true}.
+     * @throws IgniteCheckedException If {@code panic} is {@code true} and unmarshalling failed.
+     */
+    private DiscoveryDataBag unmarshalJoiningNodeData(
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log,
+        boolean panic
+    ) throws IgniteCheckedException {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log);
+            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log, panic);
 
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
@@ -274,15 +319,19 @@ public class DiscoveryDataPacket implements Serializable {
      * @param src Source.
      * @param marsh Marsh.
      * @param clsLdr Class loader.
+     * @param clientNode Client node.
      * @param log Logger.
+     * @param panic Throw unmarshalling if {@code true}.
+     * @throws IgniteCheckedException If {@code panic} is {@true} and unmarshalling failed.
      */
     private Map<Integer, Serializable> unmarshalData(
         Map<Integer, byte[]> src,
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,
-        IgniteLogger log
-    ) {
+        IgniteLogger log,
+        boolean panic
+    ) throws IgniteCheckedException {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
@@ -294,14 +343,26 @@ public class DiscoveryDataPacket implements Serializable {
             }
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
-                    X.hasCause(e, ClassNotFoundException.class) && clientNode)
+                    X.hasCause(e, ClassNotFoundException.class) && clientNode
+                ) {
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
-                else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length)
-                    U.error(log, "Failed to unmarshal discovery data for component: " + binEntry.getKey(), e);
+
+                    continue;
+                }
+                else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
+                    U.error(log,
+                        "Failed to unmarshal discovery data for component: " +
+                            GridComponent.DiscoveryDataExchangeType.VALUES[binEntry.getKey()],
+                        e
+                    );
+                }
                 else {
                     U.warn(log, "Failed to unmarshal discovery data." +
                         " Component " + binEntry.getKey() + " is not found.");
                 }
+
+                if (panic)
+                    throw e;
             }
         }
 
@@ -415,5 +476,12 @@ public class DiscoveryDataPacket implements Serializable {
      */
     public void joiningNodeClient(boolean joiningNodeClient) {
         this.joiningNodeClient = joiningNodeClient;
+    }
+
+    /**
+     * Clears {@link #unmarshalledJoiningNodeData}
+     */
+    public void clearUnmarshalledJoiningNodeData() {
+        unmarshalledJoiningNodeData = null;
     }
 }

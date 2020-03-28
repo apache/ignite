@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class MetaPageUpdateLastSuccessfulSnapshotId extends PageDeltaRecord {
     /** */
     private final long lastSuccessfulSnapshotId;
+
     /** Last successful snapshot tag. */
     private final long lastSuccessfulSnapshotTag;
 

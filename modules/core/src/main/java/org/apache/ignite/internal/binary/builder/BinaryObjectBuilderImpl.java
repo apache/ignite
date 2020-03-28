@@ -17,28 +17,6 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinarySchema;
-import org.apache.ignite.internal.binary.BinarySchemaRegistry;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +24,27 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryFieldMetadata;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -158,7 +157,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsNameToWrite, e);
             }
 
-            this.typeId = ctx.descriptorForClass(cls, false, false).typeId();
+            this.typeId = ctx.registerClass(cls, true, false).typeId();
 
             registeredType = false;
 
@@ -361,7 +360,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 if (affFieldName0 == null)
                     affFieldName0 = ctx.affinityKeyFieldName(typeId);
 
-                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered());
+                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false);
 
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
                     Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
@@ -403,12 +402,13 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         // Detect Enum and Enum array type.
         else if (newVal instanceof BinaryEnumObjectImpl)
             newFldTypeId = GridBinaryMarshaller.ENUM;
-        else if (newVal.getClass().isArray() && newVal.getClass().getComponentType() == BinaryObject.class) {
-            BinaryObject[] arr = (BinaryObject[])newVal;
 
-            newFldTypeId = arr.length > 0 && arr[0] instanceof BinaryEnumObjectImpl ?
-                GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
-        }
+        else if (newVal.getClass().isArray() && BinaryEnumObjectImpl.class.isAssignableFrom(newVal.getClass().getComponentType()))
+            newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
+
+        else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))
+            newFldTypeId = GridBinaryMarshaller.OBJ_ARR;
+
         else
             newFldTypeId = BinaryUtils.typeByClass(newVal.getClass());
 
@@ -516,8 +516,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
     }
 
     /**
-     * If value of {@link #assignedVals} is null, set it according to
-     * {@link BinaryUtils#FIELDS_SORTED_ORDER}.
+     * If value of {@link #assignedVals} is null, set it according to {@link BinaryUtils#FIELDS_SORTED_ORDER}.
      */
     private Map<String, Object> assignedValues() {
         if (assignedVals == null) {
@@ -586,7 +585,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectBuilder setField(String name, @Nullable BinaryObjectBuilder builder) {
-            return setField(name, (Object)builder);
+        return setField(name, (Object)builder);
     }
 
     /**

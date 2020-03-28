@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
@@ -400,7 +400,6 @@ public class Ignition {
         }
     }
 
-
     /**
      * Gets or starts new grid instance if it hasn't been started yet.
      *
@@ -475,8 +474,6 @@ public class Ignition {
      * Gets an instance of default no-name grid. Note that
      * caller of this method should not assume that it will return the same
      * instance every time.
-     * <p>
-     * This method is identical to {@code G.grid(null)} apply.
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
@@ -572,11 +569,9 @@ public class Ignition {
 
     /**
      * Initializes new instance of {@link IgniteClient}.
-     * <p>
-     * Server connection will be lazily initialized when first required.
      *
      * @param cfg Thin client configuration.
-     * @return Successfully opened thin client connection.
+     * @return Client with successfully opened thin client connection.
      */
     public static IgniteClient startClient(ClientConfiguration cfg) throws ClientException {
         Objects.requireNonNull(cfg, "cfg");

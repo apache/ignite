@@ -50,7 +50,8 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
-            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer))) {
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer),
+            envBuilder.buildForTrainer())) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(1.55, onDSError, 0.01);
@@ -69,7 +70,8 @@ public class MeanAbsValueConvergenceCheckerTest extends ConvergenceCheckerTest {
 
         try(LocalDataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             TestUtils.testEnvBuilder(),
-            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer))) {
+            new EmptyContextBuilder<>(), new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer),
+            TestUtils.testEnvBuilder().buildForTrainer())) {
 
             double onDSError = checker.computeMeanErrorOnDataset(dataset, notConvergedMdl);
             Assert.assertEquals(9090.41, onDSError, 0.01);

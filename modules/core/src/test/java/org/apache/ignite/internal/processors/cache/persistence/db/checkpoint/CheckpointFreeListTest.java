@@ -32,13 +32,16 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -47,8 +50,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -57,6 +63,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -72,10 +80,12 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache name. */
     private static final String CACHE_NAME = "cacheOne";
+
     /** Cache size */
-    public static final int CACHE_SIZE = 30000;
+    public static final int CACHE_SIZE = SF.apply(30000);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -126,7 +136,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
             .setAtomicityMode(mode)
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAffinity(new RendezvousAffinityFunction(false, 1024))
+            .setAffinity(new RendezvousAffinityFunction(false, SF.apply(1024)))
             .setIndexedTypes(String.class, String.class);
     }
 
@@ -135,7 +145,6 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(true);
-        cfg.setClientMode(true);
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         return cfg;
@@ -150,14 +159,14 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         ignite0.cluster().active(true);
 
-        IgniteEx igniteClient = startGrid(getClientConfiguration("client"));
+        IgniteEx igniteClient = startClientGrid(getClientConfiguration("client"));
 
         Random random = new Random();
 
         IgniteCache<Integer, Object> cache = igniteClient.cache(CACHE_NAME);
 
         for (int j = 0; j < CACHE_SIZE; j++) {
-            cache.put(j, new byte[random.nextInt(3072)]);
+            cache.put(j, new byte[random.nextInt(SF.apply(3072))]);
 
             if (random.nextBoolean())
                 cache.remove(j);
@@ -210,9 +219,15 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Note: Test assumes that PDS size didn't change between the first checkpoint and after several node stops.
+     * It's not true anymore with free-list caching since the only final free-list state is persisted on checkpoint.
+     * Some changed, but currently empty buckets are not persisted and PDS size is smaller after the first checkpoint.
+     * Test makes sense only with disabled caching.
+     *
      * @throws Exception if fail.
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, value = "true")
     public void testRestoreFreeListCorrectlyAfterRandomStop() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         ignite0.cluster().active(true);
@@ -224,7 +239,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Object> cache = ignite0.cache(CACHE_NAME);
 
         for (int j = 0; j < CACHE_SIZE; j++) {
-            byte[] val = new byte[random.nextInt(3072)];
+            byte[] val = new byte[random.nextInt(SF.apply(3072))];
 
             cache.put(j, val);
 
@@ -234,7 +249,9 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         Collections.shuffle(cachedEntry);
 
         //Remove half of entries.
-        Collection<T2<Integer, byte[]>> entriesToRemove = cachedEntry.stream().limit(cachedEntry.size() / 2).collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
+        Collection<T2<Integer, byte[]>> entriesToRemove = cachedEntry.stream()
+            .limit(cachedEntry.size() / 2)
+            .collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
 
         entriesToRemove.forEach(t2 -> cache.remove(t2.get1()));
 
@@ -255,7 +272,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         CyclicBarrier nodeStartBarrier = new CyclicBarrier(2);
 
-        int approximateIterationCount = 10;
+        int approximateIterationCount = SF.applyLB(10, 6);
 
         //Approximate count of entries to put per one iteration.
         int iterationDataCount = entriesToRemove.size() / approximateIterationCount;
@@ -274,7 +291,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
                 break;
 
             //Notify put thread that node successfully started.
-            nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
+            nodeStartBarrier.await();
             nodeStartBarrier.reset();
 
             int awaitSize = entriesToRemove.size() - iterationDataCount;
@@ -295,6 +312,100 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test checks that free-list works and pages cache flushes correctly under the high concurrent load.
+     */
+    @Test
+    public void testFreeListUnderLoadMultipleCheckpoints() throws Throwable {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        int minValSize = 64;
+        int maxValSize = 128;
+        int valsCnt = maxValSize - minValSize;
+        int keysCnt = 1_000;
+
+        byte[][] vals = new byte[valsCnt][];
+
+        for (int i = 0; i < valsCnt; i++)
+            vals[i] = new byte[minValSize + i];
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(2)) // Maximize contention per partition.
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        AtomicBoolean done = new AtomicBoolean();
+        AtomicReference<Throwable> error = new AtomicReference<>();
+
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
+
+        AtomicLong pageListCacheLimitHolder = db.pageListCacheLimitHolder(ignite.context().cache()
+            .cache(DEFAULT_CACHE_NAME).context().dataRegion());
+
+        long initPageListCacheLimit = pageListCacheLimitHolder.get();
+
+        // Add listener after cache is started, so this listener will be triggered after listener for cache.
+        db.addCheckpointListener(new DbCheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                // Check under checkpoint write lock that page list cache limit is correctly restored.
+                // Need to wait for condition here, since checkpointer can store free-list metadata asynchronously.
+                if (!waitForCondition(() -> initPageListCacheLimit == pageListCacheLimitHolder.get(), 1_000L)) {
+                    IgniteCheckedException e = new IgniteCheckedException("Page list cache limit doesn't restored " +
+                        "correctly [init=" + initPageListCacheLimit + ", cur=" + pageListCacheLimitHolder.get() + ']');
+
+                    error.set(e);
+
+                    throw e;
+                }
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                // No-op.
+            }
+        });
+
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            Random rnd = new Random();
+
+            try {
+                while (!done.get()) {
+                    int key = rnd.nextInt(keysCnt);
+                    byte[] val = vals[rnd.nextInt(valsCnt)];
+
+                    // Put with changed value size - worst case for free list, since row will be removed first and
+                    // then inserted again.
+                    cache.put(key, val);
+                }
+            }
+            catch (Throwable t) {
+                error.set(t);
+            }
+        }, 20, "cache-put");
+
+        for (int i = 0; i < SF.applyLB(10, 2); i++) {
+            if (error.get() != null)
+                break;
+
+            forceCheckpoint(ignite);
+
+            doSleep(1_000L);
+        }
+
+        done.set(true);
+
+        fut.get();
+
+        stopAllGrids();
+
+        if (error.get() != null)
+            throw error.get();
+    }
+
+    /**
      * @param entriesToPut Entiries to put.
      * @param nodeStartBarrier Marker of node was started.
      */
@@ -302,7 +413,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         GridTestUtils.runAsync(() -> {
             while (true) {
                 try {
-                    nodeStartBarrier.await(10000, TimeUnit.MILLISECONDS);
+                    nodeStartBarrier.await();
 
                     Ignite ignite = ignite(0);
 
@@ -318,7 +429,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
                         iter.remove();
                     }
                 }
-                catch (TimeoutException | InterruptedException | BrokenBarrierException e) {
+                catch (InterruptedException | BrokenBarrierException e) {
                     return;
                 }
                 catch (Exception e) {

@@ -641,8 +641,12 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
     /**
      * Rechecks if lock should be reassigned.
+     *
+     * @param ver Thread chain version.
+     *
+     * @return {@code True} if thread chain processing must be stopped.
      */
-    public void recheck() {
+    public boolean recheck(GridCacheVersion ver) {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
@@ -674,8 +678,13 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
+        boolean lockedByThreadChainVer = owner != null && owner.hasCandidate(ver);
+
+        // If locked by the thread chain version no need to do recursive thread chain scans for the same chain.
         // This call must be made outside of synchronization.
-        checkOwnerChanged(prev, owner, val);
+        checkOwnerChanged(prev, owner, val, lockedByThreadChainVer);
+
+        return !lockedByThreadChainVer;
     }
 
     /** {@inheritDoc} */
@@ -748,15 +757,17 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 // Allow next lock in the thread to proceed.
                 if (!cand.used()) {
+                    if (cand.owner())
+                        break;
+
                     GridCacheContext cctx0 = cand.parent().context();
 
                     GridDistributedCacheEntry e =
                         (GridDistributedCacheEntry)cctx0.cache().peekEx(cand.parent().key());
 
-                    if (e != null)
-                        e.recheck();
-
-                    break;
+                    // At this point candidate may have been removed and entry destroyed, so we check for null.
+                    if (e == null || e.recheck(owner.version()))
+                        break;
                 }
             }
         }

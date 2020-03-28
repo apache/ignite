@@ -216,6 +216,18 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="logger" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>The logger. Default is ConsoleLogger. Set to null to disable logging.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="host" type="xs:string" use="required">
                 <xs:annotation>
@@ -250,6 +262,11 @@
             <xs:attribute name="reconnectDisabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Disables automatic reconnect on network or server failure.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="enablePartitionAwareness" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Enables affinity-aware connection: client will establish connection to every known server and route requests to primary nodes for cache operations.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="userName" type="xs:string">

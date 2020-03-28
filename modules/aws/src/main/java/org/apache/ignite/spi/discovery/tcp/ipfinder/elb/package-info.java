@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains AWS ELB-based IP finder.
  */
+
 package org.apache.ignite.spi.discovery.tcp.ipfinder.elb;

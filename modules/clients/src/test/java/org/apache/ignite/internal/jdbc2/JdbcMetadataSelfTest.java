@@ -46,6 +46,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -98,7 +99,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         cfg.setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
-
 
         return cfg;
     }
@@ -290,6 +290,82 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assert meta.getColumnType(2) == DATE;
             assert "DATE".equals(meta.getColumnTypeName(2));
             assert "java.sql.Date".equals(meta.getColumnClassName(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetTableTypes() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTableTypes();
+
+            assertTrue(rs.next());
+
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+
+            assertTrue(rs.next());
+
+            assertEquals("VIEW", rs.getString("TABLE_TYPE"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetAllView() throws Exception {
+        Set<String> expViews = new HashSet<>(Arrays.asList(
+            "BASELINE_NODES",
+            "CACHES",
+            "CACHE_GROUPS",
+            "INDEXES",
+            "LOCAL_CACHE_GROUPS_IO",
+            "SQL_QUERIES_HISTORY",
+            "SQL_QUERIES",
+            "SCAN_QUERIES",
+            "NODES",
+            "NODE_ATTRIBUTES",
+            "NODE_METRICS",
+            "SCHEMAS",
+            "TABLES",
+            "TASKS",
+            "JOBS",
+            "SERVICES",
+            "CLIENT_CONNECTIONS",
+            "TRANSACTIONS",
+            "VIEWS",
+            "TABLE_COLUMNS",
+            "VIEW_COLUMNS",
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "CACHE_GROUP_PAGE_LISTS"
+        ));
+
+        Set<String> actViews = new HashSet<>();
+
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTables(null, null, "%", new String[]{"VIEW"});
+
+            while (rs.next()) {
+                assertEquals("VIEW", rs.getString("TABLE_TYPE"));
+
+                assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+
+                assertEquals(QueryUtils.SCHEMA_SYS, rs.getString("TABLE_SCHEM"));
+
+                actViews.add(rs.getString("TABLE_NAME"));
+            }
+
+            assertFalse(rs.next());
+
+            assertEquals(expViews, actViews);
         }
     }
 
@@ -576,7 +652,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             // No parameters statement.
             try(Connection conn = DriverManager.getConnection(BASE_URL)) {
                 conn.setSchema("\"pers\"");
-                
+
                 PreparedStatement noParams = conn.prepareStatement("select * from Person;");
                 ParameterMetaData params = noParams.getParameterMetaData();
 

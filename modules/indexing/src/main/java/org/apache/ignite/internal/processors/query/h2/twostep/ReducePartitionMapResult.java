@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.h2.util.IntArray;
-
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.h2.util.IntArray;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Result of nodes to partitions mapping for a query or update.
@@ -43,8 +43,9 @@ public class ReducePartitionMapResult {
      * @param partsMap Partitions map.
      * @param qryMap Nodes map.
      */
-    public ReducePartitionMapResult(Collection<ClusterNode> nodes, Map<ClusterNode, IntArray> partsMap,
-        Map<ClusterNode, IntArray> qryMap) {
+    public ReducePartitionMapResult(Collection<ClusterNode> nodes,
+        @Nullable Map<ClusterNode, IntArray> partsMap,
+        @Nullable Map<ClusterNode, IntArray> qryMap) {
         this.nodes = nodes;
         this.partsMap = partsMap;
         this.qryMap = qryMap;
@@ -60,14 +61,14 @@ public class ReducePartitionMapResult {
     /**
      * @return Maps a node to partition array.
      */
-    public Map<ClusterNode, IntArray> partitionsMap() {
+    public @Nullable Map<ClusterNode, IntArray> partitionsMap() {
         return partsMap;
     }
 
     /**
      * @return Maps a node to partition array.
      */
-    public Map<ClusterNode, IntArray> queryPartitionsMap() {
+    public @Nullable Map<ClusterNode, IntArray> queryPartitionsMap() {
         return qryMap;
     }
 }

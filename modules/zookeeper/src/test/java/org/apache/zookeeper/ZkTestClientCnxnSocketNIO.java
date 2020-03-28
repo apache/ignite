@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.zookeeper.client.ZKClientConfig;
 
 /**
  *
@@ -73,8 +74,8 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
     /**
      * @throws IOException If failed.
      */
-    public ZkTestClientCnxnSocketNIO() throws IOException {
-        super();
+    public ZkTestClientCnxnSocketNIO(ZKClientConfig clientCfg) throws IOException {
+        super(clientCfg);
 
         String threadName = Thread.currentThread().getName();
 

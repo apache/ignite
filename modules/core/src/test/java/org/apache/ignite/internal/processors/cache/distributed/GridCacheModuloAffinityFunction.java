@@ -159,7 +159,6 @@ public class GridCacheModuloAffinityFunction implements AffinityFunction {
             if (n == null)
                 n = (it = sorted.iterator()).next();
 
-
             ret.add(n);
         }
 

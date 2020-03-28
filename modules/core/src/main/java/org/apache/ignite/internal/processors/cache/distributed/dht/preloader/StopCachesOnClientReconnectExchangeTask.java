@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  *
  */
-public class StopCachesOnClientReconnectExchangeTask  extends GridFutureAdapter<Void>
+public class StopCachesOnClientReconnectExchangeTask extends GridFutureAdapter<Void>
     implements CachePartitionExchangeWorkerTask {
     /** */
     @GridToStringInclude

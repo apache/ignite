@@ -56,7 +56,6 @@ public class TimeBag {
     /** Thread-local stopwatch. */
     private final ThreadLocal<IgniteStopwatch> tlStopwatch = ThreadLocal.withInitial(IgniteStopwatch::createUnstarted);
 
-
     /**
      * Default constructor.
      */

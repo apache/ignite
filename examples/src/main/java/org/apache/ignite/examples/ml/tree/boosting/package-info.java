@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Gradient Boosting On Trees examples.
+ * <!-- Package description. --> Gradient Boosting On Trees examples.
  */
 package org.apache.ignite.examples.ml.tree.boosting;

@@ -18,15 +18,17 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
@@ -35,11 +37,18 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.testframework.junits.SystemPropertiesRule;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.jetbrains.annotations.Nullable;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
@@ -49,9 +58,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -59,7 +68,14 @@ import static org.junit.Assert.fail;
 /**
  * Tests Command Handler parsing arguments.
  */
+@WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class CommandHandlerParsingTest {
+    /** */
+    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+
+    /** */
+    @Rule public final TestRule methodRule = new SystemPropertiesRule();
+
     /**
      * validate_indexes command arguments parsing and validation
      */
@@ -71,7 +87,7 @@ public class CommandHandlerParsingTest {
             int expectedCheckThrough = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
                 VALIDATE_INDEXES.text(),
                 "cache1, cache2",
@@ -100,7 +116,7 @@ public class CommandHandlerParsingTest {
             int expectedParam = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                     CACHE.text(),
                     VALIDATE_INDEXES.text(),
                     nodeId.toString(),
@@ -123,35 +139,11 @@ public class CommandHandlerParsingTest {
             e.printStackTrace();
         }
 
-        try {
-            parseArgs(
-                Arrays.asList(
-                    CACHE.text(),
-                    VALIDATE_INDEXES.text(),
-                    CHECK_FIRST.toString(),
-                    "0"
-                )
-            );
-
-            fail("Expected exception hasn't been thrown");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            parseArgs(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
-
-            fail("Expected exception hasn't been thrown");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        assertParseArgsThrows("Value for '--check-first' property should be positive.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_FIRST.toString(), "0");
+        assertParseArgsThrows("Numeric value for '--check-through' parameter expected.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString());
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
@@ -174,26 +166,23 @@ public class CommandHandlerParsingTest {
 
             FindAndDeleteGarbage.Arguments arg = (FindAndDeleteGarbage.Arguments)subcommand.subcommand().arg();
 
-            if (list.contains(nodeId)) {
+            if (list.contains(nodeId))
                 assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeId().toString());
-            }
-            else {
+            else
                 assertNull(arg.nodeId());
-            }
 
             assertEquals(list.contains(delete), arg.delete());
 
-            if (list.contains(groups)) {
+            if (list.contains(groups))
                 assertEquals(3, arg.groups().size());
-            }
-            else {
+            else
                 assertNull(arg.groups());
-            }
         }
     }
 
+    /** */
     private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
-        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(asList(optional), (x) -> x.get2());
 
         ArrayList<List<String>> res = new ArrayList<>();
 
@@ -215,6 +204,7 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
+    /** */
     private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
         List<List<T>> res = new ArrayList<>();
 
@@ -229,13 +219,12 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-
+    /** */
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
-        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1))) {
+        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1)))
             return;
-        }
 
         if (source.size() == 1) {
             ArrayList<T> list = new ArrayList<>(res);
@@ -261,48 +250,15 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * Test that experimental command (i.e. WAL command) is disabled by default.
-     */
-    @Test
-    public void testExperimentalCommandIsDisabled() {
-        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
-        }
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_DELETE));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
-        }
-    }
-
-    /**
      * Tests parsing and validation for the SSL arguments.
      */
     @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (skipCommand(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
-            try {
-                parseArgs(asList("--truststore"));
-
-                fail("expected exception: Expected truststore");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
             ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
                 "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
@@ -321,6 +277,16 @@ public class CommandHandlerParsingTest {
         }
     }
 
+    /**
+     * @param cmd Command.
+     * @return {@code True} if the command requires its own specific arguments.
+     */
+    private boolean skipCommand(CommandList cmd) {
+        return cmd == CommandList.CACHE ||
+            cmd == CommandList.WAL ||
+            cmd == CommandList.SET_STATE ||
+            cmd == CommandList.ENCRYPTION;
+    }
 
     /**
      * Tests parsing and validation for user and password arguments.
@@ -328,26 +294,11 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (skipCommand(cmd))
+                continue; // --cache, --wal and --set-state commands requires its own specific arguments.
 
-            try {
-                parseArgs(asList("--user"));
-
-                fail("expected exception: Expected user name");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--password"));
-
-                fail("expected exception: Expected password");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Expected user name", "--user");
+            assertParseArgsThrows("Expected password", "--password");
 
             ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
@@ -362,7 +313,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateWalActions() {
-        ConnectionAndSslParameters args = parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
+        ConnectionAndSslParameters args = parseArgs(asList(WAL.text(), WAL_PRINT));
 
         assertEquals(WAL.command(), args.command());
 
@@ -372,7 +323,7 @@ public class CommandHandlerParsingTest {
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = parseArgs(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
+        args = parseArgs(asList(WAL.text(), WAL_DELETE, nodes));
 
         arg = ((WalCommands)args.command()).arg();
 
@@ -380,23 +331,11 @@ public class CommandHandlerParsingTest {
 
         assertEquals(nodes, arg.get2());
 
-        try {
-            parseArgs(Collections.singletonList(WAL.text()));
+        assertParseArgsThrows("Expected arguments for " + WAL.text(), WAL.text());
 
-            fail("expected exception: invalid arguments for --wal command");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        String rnd = UUID.randomUUID().toString();
 
-        try {
-            parseArgs(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
-
-            fail("expected exception: invalid arguments for --wal command");
-        }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+        assertParseArgsThrows("Unexpected action "  + rnd + " for " + WAL.text(), WAL.text(), rnd);
     }
 
     /**
@@ -404,55 +343,76 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAutoConfirmationFlag() {
-        for (CommandList cmd : CommandList.values()) {
-            if (cmd != CommandList.DEACTIVATE
-                && cmd != CommandList.BASELINE
-                && cmd != CommandList.TX)
+        for (CommandList cmdL : CommandList.values()) {
+            // SET_STATE command have mandatory argument, which used in confirmation message.
+            Command cmd = cmdL != SET_STATE ? cmdL.command() : parseArgs(asList(cmdL.text(), "ACTIVE")).command();
+
+            if (cmd.confirmationPrompt() == null)
                 continue;
 
-            ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
+            ConnectionAndSslParameters args;
 
-            assertEquals(cmd.command(), args.command());
-            assertEquals(DFLT_HOST, args.host());
-            assertEquals(DFLT_PORT, args.port());
-            assertFalse(args.autoConfirmation());
+            if (cmdL == SET_STATE)
+                args = parseArgs(asList(cmdL.text(), "ACTIVE"));
+            else
+                args = parseArgs(asList(cmdL.text()));
 
-            switch (cmd) {
+            checkCommonParametersCorrectlyParsed(cmdL, args, false);
+
+            switch (cmdL) {
                 case DEACTIVATE: {
-                    args = parseArgs(asList(cmd.text(), "--yes"));
+                    args = parseArgs(asList(cmdL.text(), "--yes"));
 
-                    assertEquals(cmd.command(), args.command());
-                    assertEquals(DFLT_HOST, args.host());
-                    assertEquals(DFLT_PORT, args.port());
-                    assertTrue(args.autoConfirmation());
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    args = parseArgs(asList(cmdL.text(), "--force", "--yes"));
+
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                    break;
+                }
+                case SET_STATE: {
+                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                        args = parseArgs(asList(cmdL.text(), newState, "--yes"));
+
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+
+                        assertEquals(newState, argState.toString());
+                    }
+
+                    for (String newState : asList("ACTIVE_READ_ONLY", "ACTIVE", "INACTIVE")) {
+                        args = parseArgs(asList(cmdL.text(), newState, "--force", "--yes"));
+
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
+
+                        ClusterState argState = ((ClusterStateChangeCommand)args.command()).arg();
+
+                        assertEquals(newState, argState.toString());
+                    }
 
                     break;
                 }
                 case BASELINE: {
                     for (String baselineAct : asList("add", "remove", "set")) {
-                        args = parseArgs(asList(cmd.text(), baselineAct, "c_id1,c_id2", "--yes"));
+                        args = parseArgs(asList(cmdL.text(), baselineAct, "c_id1,c_id2", "--yes"));
 
-                        assertEquals(cmd.command(), args.command());
-                        assertEquals(DFLT_HOST, args.host());
-                        assertEquals(DFLT_PORT, args.port());
-                        assertTrue(args.autoConfirmation());
+                        checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(Arrays.asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
                 }
 
                 case TX: {
-                    args = parseArgs(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
+                    args = parseArgs(asList(cmdL.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
-                    assertEquals(cmd.command(), args.command());
-                    assertEquals(DFLT_HOST, args.host());
-                    assertEquals(DFLT_PORT, args.port());
-                    assertTrue(args.autoConfirmation());
+                    checkCommonParametersCorrectlyParsed(cmdL, args, true);
 
                     VisorTxTaskArg txTaskArg = ((TxCommands)args.command()).arg();
 
@@ -460,8 +420,23 @@ public class CommandHandlerParsingTest {
                     assertEquals(10_000, txTaskArg.getMinDuration().longValue());
                     assertEquals(VisorTxOperation.KILL, txTaskArg.getOperation());
                 }
+
+                default:
+                    fail("Unknown command: " + cmd);
             }
         }
+    }
+
+    /** */
+    private void checkCommonParametersCorrectlyParsed(
+        CommandList cmd,
+        ConnectionAndSslParameters args,
+        boolean autoConfirm
+    ) {
+        assertEquals(cmd.command(), args.command());
+        assertEquals(DFLT_HOST, args.host());
+        assertEquals(DFLT_PORT, args.port());
+        assertEquals(autoConfirm, args.autoConfirmation());
     }
 
     /**
@@ -471,7 +446,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
+            if (skipCommand(cmd))
                 continue; // --cache subcommand requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
@@ -489,32 +464,9 @@ public class CommandHandlerParsingTest {
             assertEquals(5000, args.pingInterval());
             assertEquals(40000, args.pingTimeout());
 
-            try {
-                parseArgs(asList("--port", "wrong-port", cmd.text()));
-
-                fail("expected exception: Invalid value for port:");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--ping-interval", "-10", cmd.text()));
-
-                fail("expected exception: Ping interval must be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--ping-timeout", "-20", cmd.text()));
-
-                fail("expected exception: Ping timeout must be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Invalid value for port: wrong-port", "--port", "wrong-port", cmd.text());
+            assertParseArgsThrows("Invalid value for ping interval: -10", "--ping-interval", "-10", cmd.text());
+            assertParseArgsThrows("Invalid value for ping timeout: -20", "--ping-timeout", "-20", cmd.text());
         }
     }
 
@@ -527,61 +479,13 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tx"));
 
-        try {
-            parseArgs(asList("--tx", "minDuration"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minDuration", "-1"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minSize"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minSize", "-1"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "label"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "label", "tx123["));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "servers", "nodes", "1,2,3"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
+        assertParseArgsThrows("Expecting --min-duration", "--tx", "--min-duration");
+        assertParseArgsThrows("Invalid value for --min-duration: -1", "--tx", "--min-duration", "-1");
+        assertParseArgsThrows("Expecting --min-size", "--tx", "--min-size");
+        assertParseArgsThrows("Invalid value for --min-size: -1", "--tx", "--min-size", "-1");
+        assertParseArgsThrows("--label", "--tx", "--label");
+        assertParseArgsThrows("Illegal regex syntax", "--tx", "--label", "tx123[");
+        assertParseArgsThrows("Projection can't be used together with list of consistent ids.", "--tx", "--servers", "--nodes", "1,2,3");
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
@@ -609,7 +513,7 @@ public class CommandHandlerParsingTest {
         arg = ((TxCommands)args.command()).arg();
 
         assertNull(arg.getProjection());
-        assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+        assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
     /**
@@ -617,7 +521,32 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        return new CommonArgParser(new CommandLogger()).
+        return new CommonArgParser(setupTestLogger()).
             parseAndValidate(args.iterator());
+    }
+
+    /**
+     * @return logger for tests.
+     */
+    private Logger setupTestLogger() {
+        Logger result;
+
+        result = Logger.getLogger(getClass().getName());
+        result.setLevel(Level.INFO);
+        result.setUseParentHandlers(false);
+
+        result.addHandler(CommandHandler.setupStreamHandler());
+
+        return result;
+    }
+
+    /**
+     * Checks that parse arguments fails with {@link IllegalArgumentException} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
     }
 }

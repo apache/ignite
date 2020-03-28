@@ -47,9 +47,6 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
     private static final int ITERATIONS = 3;
 
     /** */
-    private boolean client;
-
-    /** */
     private ThreadLocal<Integer> staticCaches = new ThreadLocal<>();
 
     /** */
@@ -86,8 +83,6 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
         testSpi.setJoinTimeout(60_000);
 
         cfg.setDiscoverySpi(testSpi);
-
-        cfg.setClientMode(client);
 
         Integer caches = staticCaches.get();
 
@@ -202,6 +197,7 @@ public class CacheDiscoveryDataConcurrentJoinTest extends GridCommonAbstractTest
 
         return ccfg;
     }
+
     /**
      * @param node Node.
      * @param cacheName Cache name.

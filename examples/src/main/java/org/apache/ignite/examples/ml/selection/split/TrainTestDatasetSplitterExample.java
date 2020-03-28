@@ -17,11 +17,15 @@
 
 package org.apache.ignite.examples.ml.selection.split;
 
+import java.io.IOException;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -29,19 +33,14 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
-
-import javax.cache.Cache;
-import java.io.FileNotFoundException;
 
 /**
  * Run linear regression model over dataset split on train and test subsets ({@link TrainTestDatasetSplitter}).
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it creates dataset splitter and trains the linear regression model based on the specified data using
- * this splitter.</p>
+ * After that it creates dataset splitter and trains the linear regression model based on the specified data using this
+ * splitter.</p>
  * <p>
  * Finally, this example loops over the test set of data points, applies the trained model to predict the target value
  * and compares prediction to expected outcome (ground truth).</p>
@@ -50,8 +49,10 @@ import java.io.FileNotFoundException;
  * further.</p>
  */
 public class TrainTestDatasetSplitterExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Linear regression model over cache based dataset usage example started.");
         // Start ignite grid.
@@ -97,9 +98,14 @@ public class TrainTestDatasetSplitterExample {
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

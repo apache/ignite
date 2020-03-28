@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains connection health-checkers for TCP/IP-based implementation of communication SPI.
  */
+
 package org.apache.ignite.spi.communication.tcp.internal;

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,24 +18,26 @@
 -->
 
 <igniteClientConfiguration host="test1" port="345" socketReceiveBufferSize="222" socketSendBufferSize="333"
-                           tcpNoDelay="false" socketTimeout="0:0:15">
-  <binaryConfiguration compactFooter="false" keepDeserialized="false">
-    <types>
-      <string>foo</string>
-      <string>bar</string>
-    </types>
-  </binaryConfiguration>
+                           tcpNoDelay="false" socketTimeout="0:0:15" enablePartitionAwareness="true">
+    <binaryConfiguration compactFooter="false" keepDeserialized="false">
+        <types>
+            <string>foo</string>
+            <string>bar</string>
+        </types>
+    </binaryConfiguration>
 
-  <sslStreamFactory type="Apache.Ignite.Core.Client.SslStreamFactory"
-                    certificatePath="abc.pfx"
-                    certificatePassword="foo"
-                    checkCertificateRevocation="true"
-                    skipServerCertificateValidation="true"
-                    sslProtocols="None" />
+    <sslStreamFactory type="Apache.Ignite.Core.Client.SslStreamFactory"
+                      certificatePath="abc.pfx"
+                      certificatePassword="foo"
+                      checkCertificateRevocation="true"
+                      skipServerCertificateValidation="true"
+                      sslProtocols="None" />
 
-  <endpoints>
-    <string>foo</string>
-    <string>bar:123</string>
-    <string>baz:100..103</string>
-  </endpoints>
+    <endpoints>
+        <string>foo</string>
+        <string>bar:123</string>
+        <string>baz:100..103</string>
+    </endpoints>
+
+    <logger type="Apache.Ignite.Core.Log.ConsoleLogger" minLevel="Debug"  />
 </igniteClientConfiguration>

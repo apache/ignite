@@ -42,9 +42,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  */
 public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static CountDownLatch stopLatch = new CountDownLatch(1);
 
     /** {@inheritDoc} */
@@ -68,8 +65,6 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
         commSpi.setSocketWriteTimeout(600000);
         commSpi.setAckSendThreshold(100);
 
-        cfg.setClientMode(client);
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
@@ -89,9 +84,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
     public void testNodeStop() throws Exception {
         Ignite srv = startGrid(0);
 
-        client = true;
-
-        final Ignite c = startGrid(1);
+        final Ignite c = startClientGrid(1);
 
         ClusterGroup grp = srv.cluster().forClients();
 
@@ -157,7 +150,6 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
 
         assertTrue("Failed to get excpected error", err);
     }
-
 
     /**
      *

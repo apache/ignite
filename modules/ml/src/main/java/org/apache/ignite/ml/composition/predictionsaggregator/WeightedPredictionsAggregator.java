@@ -23,9 +23,10 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Predictions aggregator returning weighted plus of predictions.
  * result(p1, ..., pn) = bias + p1*w1 + ... + pn*wn
  */
-public class WeightedPredictionsAggregator implements PredictionsAggregator {
+public final class WeightedPredictionsAggregator implements PredictionsAggregator {
     /** Weights for predictions. */
     private final double[] weights;
+
     /** Bias. */
     private final double bias;
 

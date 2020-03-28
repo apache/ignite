@@ -21,12 +21,14 @@ import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexi
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultithreadedLoadContinuousRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingWalRestoreTest;
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest;
 import org.apache.ignite.internal.processors.database.IgnitePersistentStoreSchemaLoadTest;
 import org.apache.ignite.internal.processors.database.IgniteTwoRegionsRebuildIndexTest;
+import org.apache.ignite.internal.processors.database.RebuildIndexWithHistoricalRebalanceTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -42,7 +44,9 @@ import org.junit.runners.Suite;
     IgnitePersistentStoreQueryWithMultipleClassesPerCacheTest.class,
     IgniteTwoRegionsRebuildIndexTest.class,
     IgniteTcBotInitNewPageTest.class,
-    IndexingMultithreadedLoadContinuousRestartTest.class
+    RebuildIndexWithHistoricalRebalanceTest.class,
+    IndexingMultithreadedLoadContinuousRestartTest.class,
+    LongDestroyDurableBackgroundTaskTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

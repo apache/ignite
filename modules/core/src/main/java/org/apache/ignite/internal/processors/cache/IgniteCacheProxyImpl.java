@@ -365,6 +365,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withReadRepair() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
         GridCacheContext<K, V> ctx = getContextSafe();
 
@@ -496,7 +501,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), scanQry.isDataPageScanEnabled());
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -515,13 +520,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @param filter Filter.
+     * @param query Query.
      * @param grp Optional cluster group.
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
+    private QueryCursor<Cache.Entry<K, V>> query(final Query query, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
         GridCacheContext<K, V> ctx = getContextSafe();
 
@@ -533,44 +538,44 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         final CacheQueryFuture fut;
 
-        if (filter instanceof TextQuery) {
-            TextQuery p = (TextQuery)filter;
-            //modify@byron
-            //-qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), ((TextQuery) filter).getFilter(), isKeepBinary);            
-            if (p.getPageSize() > 0)
-                qry.pageSize(p.getPageSize());
-            
-            //end@
+        if (query instanceof TextQuery) {
+            TextQuery q = (TextQuery)query;
+          //modify@byron
+            qry = ctx.queries().createFullTextQuery(q.getType(), q.getText(), q.getLimit(), q.getFilter(),isKeepBinary);
+				
+			if (q.getPageSize() > 0)
+                qry.pageSize(q.getPageSize());
+				
+			//end@
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, p.getText(), ctx,
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.TEXT, q.getText(), ctx,
                 new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
                         return qry.execute();
                     }
                 }, false);
         }
-        else if (filter instanceof SpiQuery) {
+        else if (query instanceof SpiQuery) {
             qry = ctx.queries().createSpiQuery(isKeepBinary);
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, filter.getClass().getSimpleName(),
+            fut = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SPI, query.getClass().getSimpleName(),
                 ctx, new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
                     @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() {
-                        return qry.execute(((SpiQuery)filter).getArgs());
+                        return qry.execute(((SpiQuery)query).getArgs());
                     }
                 }, false);
         }
         else {
-            if (filter instanceof SqlFieldsQuery)
+            if (query instanceof SqlFieldsQuery)
                 throw new CacheException("Use methods 'queryFields' and 'localQueryFields' for " +
                     SqlFieldsQuery.class.getSimpleName() + ".");
 
-            throw new CacheException("Unsupported query type: " + filter);
+            throw new CacheException("Unsupported query type: " + query);
         }
 
         return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
@@ -623,11 +628,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private ClusterGroup projection(boolean loc) {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        if (loc || ctx.isLocal() || ctx.isReplicatedAffinityNode())
+        if (loc || ctx.isLocal())
             return ctx.kernalContext().grid().cluster().forLocal();
-
-        if (ctx.isReplicated())
-            return ctx.kernalContext().grid().cluster().forDataNodes(cacheName).forRandom();
 
         return null;
     }

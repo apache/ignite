@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -28,47 +27,17 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.RootPage;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.ColumnInformation;
+import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.util.GridAtomicLong;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.internal.processors.query.TableInformation;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -117,7 +86,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid("server");
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */
@@ -145,11 +114,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
             cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
         }
-        else {
+        else
             GridQueryProcessor.idxCls = FailedIndexing.class;
-
-            cfg.setClientMode(true);
-        }
 
         return cfg;
     }
@@ -268,192 +234,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
     /**
      * To fail on cache start.
      */
-    private static class FailedIndexing implements GridQueryIndexing {
-        /** {@inheritDoc} */
-        @Override public void onClientDisconnect() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
-            String schemaName,
-            SqlFieldsQuery qry,
-            SqlClientContext cliCtx,
-            boolean keepBinary,
-            boolean failOnMultipleStmts,
-            GridQueryCancel cancel
-        ) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
-            SqlClientContext cliCtx) throws IgniteCheckedException {
-            return Collections.emptyList();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
-            IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String spaceName,
-            String cacheName, TextQuery qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicIndexCreate(String spaceName, String tblName, QueryIndexDescriptorImpl idxDesc,
-            boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicIndexDrop(String spaceName, String idxName,
-            boolean ifExists) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void destroyOrphanIndex(RootPage page, String indexName, int grpId, PageMemory pageMemory,
-            GridAtomicLong removeId, ReuseList reuseList, boolean mvccEnabled) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-                                               boolean ifTblExists, boolean ifColNotExists)
-            throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicDropColumn(String schemaName, String tblName, List<String> cols,
-            boolean ifTblExists, boolean ifColExists) throws IgniteCheckedException {
-            // No-op
-        }
-
+    private static class FailedIndexing extends DummyQueryIndexing {
         /** {@inheritDoc} */
         @Override public void registerCache(String cacheName, String schemaName,
             GridCacheContextInfo<?, ?> cacheInfo) throws IgniteCheckedException {
             if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.cacheContext().kernalContext().clientNode())
                 throw new IgniteCheckedException("Test query exception " + cacheInfo.name() + " " + new Random().nextInt());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unregisterCache(GridCacheContextInfo cacheInfo,
-            boolean rmvIdx) throws IgniteCheckedException {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public UpdateSourceIterator<?> executeUpdateOnDataNodeTransactional(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
-            String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
-            AffinityTopologyVersion topVer,
-            MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
-            return null;
-        }
-
-        @Override public boolean registerType(GridCacheContextInfo cacheInfo,
-            GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
-            return false;
-        }
-
-        @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery sql) {
-            return null;
-        }
-
-        @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow val) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void markAsRebuildNeeded(GridCacheContext cctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer, int[] parts) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cancelQueries(Collection<Long> queries) {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onKernalStop() {
-            // No-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public String schema(String cacheName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Set<String> schemasNames() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) {
-            // No-op.
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
-            return null;
         }
 
         /** {@inheritDoc} */
@@ -465,8 +251,15 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
-            // No-op.
+        @Override public Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn,
+            String[] tblTypes) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
+            String colNamePtrn){
+            return null;
         }
     }
 }

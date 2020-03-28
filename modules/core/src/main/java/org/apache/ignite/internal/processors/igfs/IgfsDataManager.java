@@ -465,7 +465,6 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-
     /**
      * Registers write future in igfs data manager.
      *

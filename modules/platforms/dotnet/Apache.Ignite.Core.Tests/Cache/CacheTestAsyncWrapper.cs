@@ -78,8 +78,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsAllowAtomicOpsInTx {
-            get { return _cache.IsAllowAtomicOpsInTx; }
+        public bool IsAllowAtomicOpsInTx
+        {
+            get { return false; }
         }
 
         /** <inheritDoc /> */
@@ -103,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
-            return _cache.WithAllowAtomicOpsInTx().WrapAsync();
+            return this;
         }
 
         /** <inheritDoc /> */
@@ -583,6 +584,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICacheMetrics GetLocalMetrics()
         {
             return _cache.GetLocalMetrics();
+        }
+
+        /** <inheritDoc /> */
+        public void EnableStatistics(bool enabled)
+        {
+            _cache.EnableStatistics(enabled);
+        }
+
+        /** <inheritDoc /> */
+        public void ClearStatistics()
+        {
+            _cache.ClearStatistics();
         }
 
         /** <inheritDoc /> */

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.ml.multiclass;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import javax.cache.Cache;
 import org.apache.commons.math3.util.Precision;
@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.multiclass.MultiClassModel;
@@ -34,8 +36,6 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearClassificationTrainer;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run One-vs-Rest multi-class classification trainer ({@link OneVsRestTrainer}) parametrized by binary SVM classifier
@@ -56,8 +56,10 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  * smallest 3rd class could not be classified via linear SVM here.
  */
 public class OneVsRestClassificationExample {
-    /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    /**
+     * Run example.
+     */
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> One-vs-Rest SVM Multi-class classification model over cached dataset usage example started.");
         // Start ignite grid.
@@ -158,9 +160,14 @@ public class OneVsRestClassificationExample {
 
                     System.out.println(">>> One-vs-Rest SVM model over cache based dataset usage example completed.");
                 }
-            } finally {
-                dataCache.destroy();
             }
+            finally {
+                if (dataCache != null)
+                    dataCache.destroy();
+            }
+        }
+        finally {
+            System.out.flush();
         }
     }
 }

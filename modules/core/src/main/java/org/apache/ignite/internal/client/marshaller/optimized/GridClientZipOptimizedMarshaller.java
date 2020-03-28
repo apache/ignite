@@ -124,6 +124,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
 
         return baos.toByteArray();
     }
+
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {

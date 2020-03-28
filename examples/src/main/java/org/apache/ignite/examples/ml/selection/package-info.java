@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML model selection examples.
+ * <!-- Package description. --> ML model selection examples.
  */
 package org.apache.ignite.examples.ml.selection;

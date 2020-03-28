@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
@@ -71,13 +70,14 @@ class GridDhtPartitionSupplier {
     /** */
     private GridDhtPartitionTopology top;
 
-    /** Preload predicate. */
-    private IgnitePredicate<GridCacheEntryInfo> preloadPred;
-
     /** Supply context map. T3: nodeId, topicId, topVer. */
     private final Map<T3<UUID, Integer, AffinityTopologyVersion>, SupplyContext> scMap = new HashMap<>();
 
-    /** Override for rebalance throttle. */
+    /**
+     * Override for rebalance throttle.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
+     */
+    @Deprecated
     private long rebalanceThrottleOverride =
         IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_REBALANCE_THROTTLE_OVERRIDE, 0);
 
@@ -162,19 +162,10 @@ class GridDhtPartitionSupplier {
     }
 
     /**
-     * Sets preload predicate for this supplier.
-     *
-     * @param preloadPred Preload predicate.
-     */
-    void preloadPredicate(IgnitePredicate<GridCacheEntryInfo> preloadPred) {
-        this.preloadPred = preloadPred;
-    }
-
-    /**
      * For each demand message method lookups (or creates new) supply context and starts to iterate entries across requested partitions.
      * Each entry in iterator is placed to prepared supply message.
      *
-     * If supply message size in bytes becomes greater than {@link CacheConfiguration#getRebalanceBatchSize()}
+     * If supply message size in bytes becomes greater than {@link IgniteConfiguration#getRebalanceBatchSize()}
      * method sends this message to demand node and saves partial state of iterated entries to supply context,
      * then restores the context again after new demand message with the same context id is arrived.
      *
@@ -254,7 +245,8 @@ class GridDhtPartitionSupplier {
 
             assert !(sctx != null && !demandMsg.partitions().isEmpty());
 
-            long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
+            long maxBatchesCnt = /* Each thread should gain prefetched batches. */
+                grp.preloader().batchesPrefetchCount() * grp.shared().gridConfig().getRebalanceThreadPoolSize();
 
             if (sctx == null) {
                 if (log.isDebugEnabled())
@@ -266,10 +258,10 @@ class GridDhtPartitionSupplier {
                 maxBatchesCnt = 1;
 
             GridDhtPartitionSupplyMessage supplyMsg = new GridDhtPartitionSupplyMessage(
-                    demandMsg.rebalanceId(),
-                    grp.groupId(),
-                    demandMsg.topologyVersion(),
-                    grp.deploymentEnabled()
+                demandMsg.rebalanceId(),
+                grp.groupId(),
+                demandMsg.topologyVersion(),
+                grp.deploymentEnabled()
             );
 
             Set<Integer> remainingParts;
@@ -314,7 +306,7 @@ class GridDhtPartitionSupplier {
                 remainingParts = sctx.remainingParts;
             }
 
-            final int msgMaxSize = grp.config().getRebalanceBatchSize();
+            final int msgMaxSize = grp.preloader().batchSize();
 
             long batchesCnt = 0;
 
@@ -385,13 +377,7 @@ class GridDhtPartitionSupplier {
                 if (info == null)
                     continue;
 
-                if (preloadPred == null || preloadPred.apply(info))
-                    supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
-                else {
-                    if (log.isTraceEnabled())
-                        log.trace("Rebalance predicate evaluated to false (will not send " +
-                            "cache entry): " + info);
-                }
+                supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
 
                 if (iter.isPartitionDone(part)) {
                     supplyMsg.last(part, loc.updateCounter());
@@ -445,6 +431,15 @@ class GridDhtPartitionSupplier {
                 log.info("Finished supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]");
         }
         catch (Throwable t) {
+            if (iter != null && !iter.isClosed()) {
+                try {
+                    iter.close();
+                }
+                catch (IgniteCheckedException e) {
+                    t.addSuppressed(e);
+                }
+            }
+
             if (grp.shared().kernalContext().isStopping())
                 return;
 
@@ -501,6 +496,7 @@ class GridDhtPartitionSupplier {
 
     /**
      * Extracts entry info from row.
+     *
      * @param row Cache data row.
      * @return Entry info.
      */
@@ -561,8 +557,8 @@ class GridDhtPartitionSupplier {
             // Throttle preloading.
             if (rebalanceThrottleOverride > 0)
                 U.sleep(rebalanceThrottleOverride);
-            else if (grp.config().getRebalanceThrottle() > 0)
-                U.sleep(grp.config().getRebalanceThrottle());
+            else if (grp.preloader().throttle() > 0)
+                U.sleep(grp.preloader().throttle());
 
             return true;
         }

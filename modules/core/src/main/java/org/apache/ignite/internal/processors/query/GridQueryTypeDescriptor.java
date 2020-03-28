@@ -83,6 +83,11 @@ public interface GridQueryTypeDescriptor {
     public GridQueryProperty property(String name);
 
     /**
+     * @return All properties.
+     */
+    public Map<String, GridQueryProperty> properties();
+
+    /**
      * Gets indexes for this type.
      *
      * @return Indexes for this type.

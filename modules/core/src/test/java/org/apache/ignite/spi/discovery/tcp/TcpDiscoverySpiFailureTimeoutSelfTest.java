@@ -220,7 +220,6 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         return (TestTcpDiscoverySpi)spis.get(0);
     }
 
-
     /**
      * Returns the second spi with failure detection timeout enabled.
      *

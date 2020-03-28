@@ -246,7 +246,6 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
             tx.commit();
         }
 
-
         qryStr = "DELETE FROM Integer WHERE _key >= " + KEYS_CNT / 2;
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

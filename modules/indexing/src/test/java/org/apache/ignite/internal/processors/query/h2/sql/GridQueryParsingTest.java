@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -340,7 +342,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
             "where exists(select 1 from sch2.Address a where a.id = p1.addrId)");
 
-        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
+        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false, log).parse(prepared);
 
         GridSqlJoin join = (GridSqlJoin)select.from();
 
@@ -376,53 +378,6 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         assertEquals("ADDRID", p1AddrIdCol.column().getName());
 
         assertSame(tbl2Alias, p1AddrIdColExists.expressionInFrom());
-    }
-
-    /** */
-    @Test
-    public void testParseMerge() throws Exception {
-        /* Plain rows w/functions, operators, defaults, and placeholders. */
-        checkQuery("merge into Person(old, name) values(5, 'John')");
-        checkQuery("merge into Person(name) values(null)");
-        checkQuery("merge into Person(name) values(null), (null)");
-        checkQuery("merge into Person(name, parentName) values(null, null), (?, ?)");
-        checkQuery("merge into Person(old, name) values(5, 'John',), (6, 'Jack')");
-        checkQuery("merge into Person(old, name) values(5 * 3, null,)");
-        checkQuery("merge into Person(old, name) values(ABS(-8), 'Max')");
-        checkQuery("merge into Person(old, name) values(5, 'Jane'), (null, null), (6, 'Jill')");
-        checkQuery("merge into Person(old, name, parentName) values(8 * 7, null, 'Unknown')");
-        checkQuery("merge into Person(old, name, parentName) values" +
-            "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
-            "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null)");
-        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
-        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
-        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, NULL, NULL)");
-        checkQuery("merge into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
-            "Person where date='2011-03-12'");
-
-        /* KEY clause. */
-        checkQuery("merge into Person(_key, old, name) key(_key) values('a', 5, 'John')");
-        checkQuery("merge into SCH3.Person(id, old, name) key(id) values(1, 5, 'John')");
-        checkQuery("merge into SCH3.Person(_key, old, name) key(_key) values(?, 5, 'John')");
-        checkQuery("merge into SCH3.Person(_key, id, old, name) key(_key, id) values(?, ?, 5, 'John')");
-        assertParseThrows("merge into Person(old, name) key(name) values(5, 'John')", IgniteSQLException.class,
-            "Invalid column name in KEYS clause of MERGE - it may include only key and/or affinity columns: NAME");
-        assertParseThrows("merge into SCH3.Person(id, stuff, old, name) key(stuff) values(1, 'x', 5, 'John')",
-            IgniteSQLException.class, "Invalid column name in KEYS clause of MERGE - it may include only key and/or " +
-                "affinity columns: STUFF");
-
-        /* Subqueries. */
-        checkQuery("merge into Person(old, name) select old, parentName from Person");
-        checkQuery("merge into Person(old, name) select old, parentName from Person where old > 5");
-        checkQuery("merge into Person(old, name) select 5, 'John'");
-        checkQuery("merge into Person(old, name) select p1.old, 'Name' from person p1 join person p2 on " +
-            "p2.name = p1.parentName where p2.old > 30");
-        checkQuery("merge into Person(old) select 5 from Person UNION select street from sch2.Address limit ? " +
-            "offset ?");
     }
 
     /** */
@@ -725,7 +680,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
             @Override public Object call() throws Exception {
                 Prepared p = parse(sql);
 
-                return new GridSqlQueryParser(false).parse(p);
+                return new GridSqlQueryParser(false, log).parse(p);
             }
         }, exCls, msg);
     }
@@ -736,7 +691,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private void assertCreateIndexEquals(GridSqlCreateIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
@@ -749,7 +704,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private void assertDropIndexEquals(GridSqlDropIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 
@@ -784,7 +739,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private void assertCreateTableEquals(GridSqlCreateTable exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlCreateTable);
 
@@ -846,7 +801,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private void assertAlterTableAddColumnEquals(GridSqlAlterTableAddColumn exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlAlterTableAddColumn);
 
@@ -922,7 +877,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private void assertDropTableEquals(GridSqlDropTable exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlDropTable);
 
@@ -1041,7 +996,46 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private <T extends Prepared> T parse(String sql) throws Exception {
         Session ses = (Session)connection().getSession();
 
-        return (T)ses.prepare(sql);
+        setQueryContext();
+
+        try {
+            return (T)ses.prepare(sql);
+        }
+        finally {
+            clearQueryContext();
+        }
+    }
+
+    /**
+     * Sets thread local query context.
+     */
+    private void setQueryContext() {
+        QueryContextRegistry qryCtxRegistry = indexing().queryContextRegistry();
+
+        QueryContext qctx = new QueryContext(
+            0,
+            null,
+            null,
+            null,
+            null,
+            true
+        );
+
+        qryCtxRegistry.setThreadLocal(qctx);
+    }
+
+    /**
+     * Clears thread local query context.
+     */
+    private void clearQueryContext() {
+        indexing().queryContextRegistry().clearThreadLocal();
+    }
+
+    /**
+     * @return H2 indexing manager.
+     */
+    private IgniteH2Indexing indexing() {
+        return (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
     }
 
     /**
@@ -1074,7 +1068,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlStatement gQry = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement gQry = new GridSqlQueryParser(false, log).parse(prepared);
 
         String res = gQry.getSQL();
 

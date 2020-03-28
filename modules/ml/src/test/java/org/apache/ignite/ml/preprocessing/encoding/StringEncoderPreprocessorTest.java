@@ -36,7 +36,7 @@ public class StringEncoderPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
-        Vector[] data = new Vector[]{
+        Vector[] data = new Vector[] {
             new DenseVector(new Serializable[] {"1", "Moscow", "A"}),
             new DenseVector(new Serializable[] {"2", "Moscow", "B"}),
             new DenseVector(new Serializable[] {"2", "Moscow", "B"}),
@@ -45,12 +45,13 @@ public class StringEncoderPreprocessorTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2);
 
         StringEncoderPreprocessor<Integer, Vector> preprocessor = new StringEncoderPreprocessor<Integer, Vector>(
-            new HashMap[]{new HashMap() {
-                {
-                    put("1", 1);
-                    put("2", 0);
-                }
-            }, new HashMap() {
+            new HashMap[] {
+                new HashMap() {
+                    {
+                        put("1", 1);
+                        put("2", 0);
+                    }
+                }, new HashMap() {
                 {
                     put("Moscow", 0);
                 }
@@ -69,7 +70,7 @@ public class StringEncoderPreprocessorTest {
                 }
             });
 
-        double[][] postProcessedData = new double[][]{
+        double[][] postProcessedData = new double[][] {
             {1.0, 0.0, 1.0},
             {0.0, 0.0, 0.0},
             {0.0, 0.0, 0.0},

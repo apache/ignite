@@ -33,9 +33,8 @@ public interface DistributedMetastorageLifecycleListener {
     default void onReadyForRead(ReadableDistributedMetaStorage metastorage) {}
 
     /**
-     * Called when global metastorage is available for writing. Given instance guaranteed to be
-     * valid until cluster deactivation. In such case this method will be invoked once cluster
-     * is reactivated.
+     * Called when global metastorage is available for writing. In persistent mode this method will be invoked every
+     * time cluster is reactivated.
      *
      * @param metastorage Global metastorage instance.
      */

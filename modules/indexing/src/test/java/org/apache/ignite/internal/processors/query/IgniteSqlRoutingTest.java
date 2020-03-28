@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -53,22 +54,22 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 /** Tests for query partitions derivation. */
 public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
     /** */
-    private static String NODE_CLIENT = "client";
+    private static final String NODE_CLIENT = "client";
 
     /** */
-    private static String CACHE_PERSON = "Person";
+    private static final String CACHE_PERSON = "Person";
 
     /** */
-    private static String CACHE_CALL = "Call";
+    private static final String CACHE_CALL = "Call";
 
     /** */
-    private static int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 4;
 
     /** Broadcast query to ensure events came from all nodes. */
-    private static String FINAL_QRY = "select count(1) from {0} where name=?";
+    private static final String FINAL_QRY = "select count(1) from {0} where name=?";
 
     /** Param to distinguish the final query event. */
-    private static String FINAL_QRY_PARAM = "Abracadabra";
+    private static final String FINAL_QRY_PARAM = "Abracadabra";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -87,11 +88,8 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
         ccfgs.add(buildCacheConfiguration(CACHE_CALL));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
-
         c.setCacheKeyConfiguration(new CacheKeyConfiguration(CallKey.class));
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -102,7 +100,7 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
 
         startGrids(NODE_COUNT);
 
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
 
         awaitPartitionMapExchange();
 

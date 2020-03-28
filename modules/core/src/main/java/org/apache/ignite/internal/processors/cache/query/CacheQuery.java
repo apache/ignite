@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.Query;
-import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -125,7 +124,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * Then you can create and execute queries that check various salary ranges like so:
  * <pre name="code" class="java">
- * Cache&lt;Long, Person&gt; cache = G.grid().cache();
+ * Cache&lt;Long, Person&gt; cache = Ignition.ignite().cache();
  * ...
  * // Create query which selects salaries based on range for all employees
  * // that work for a certain company.
@@ -206,6 +205,14 @@ public interface CacheQuery<T> {
     public CacheQuery<T> timeout(long timeout);
 
     /**
+     * Sets limit of returned records. {@code 0} means there is no limit
+     *
+     * @param limit Records limit.
+     * @return {@code this} query instance for chaining.
+     */
+    public CacheQuery<T> limit(int limit);
+
+    /**
      * Sets whether or not to include backup entries into query result. This flag
      * is {@code false} by default.
      *
@@ -257,18 +264,6 @@ public interface CacheQuery<T> {
      * @return Future for the query result.
      */
     public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
-
-    /**
-     * Gets metrics for this query.
-     *
-     * @return Query metrics.
-     */
-    public QueryMetrics metrics();
-
-    /**
-     * Resets metrics for this query.
-     */
-    public void resetMetrics();
 
     /**
      * @return Scan query iterator.

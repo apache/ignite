@@ -61,8 +61,8 @@ public class ExchangeLatchManager {
     private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /**
-     * Exchange latch V2 protocol introduces following optimization:
-     * Joining nodes are explicitly excluded from possible latch participants.
+     * Exchange latch V2 protocol introduces following optimization: Joining nodes are explicitly excluded from possible
+     * latch participants.
      */
     public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.5.3");
 
@@ -95,7 +95,10 @@ public class ExchangeLatchManager {
     @GridToStringInclude
     private final ConcurrentMap<CompletableLatchUid, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
-    /** Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch participants. */
+    /**
+     * Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch
+     * participants.
+     */
     @GridToStringExclude
     private final ConcurrentMap<AffinityTopologyVersion, ClusterNode> joinedNodes = new ConcurrentHashMap<>();
 
@@ -116,7 +119,7 @@ public class ExchangeLatchManager {
         if (!ctx.clientNode() && !ctx.isDaemon()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
                 if (msg instanceof LatchAckMessage)
-                    processAck(nodeId, (LatchAckMessage) msg);
+                    processAck(nodeId, (LatchAckMessage)msg);
             });
 
             // First coordinator initialization.
@@ -144,8 +147,7 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Creates server latch with given {@code id} and {@code topVer}.
-     * Adds corresponding pending acks to it.
+     * Creates server latch with given {@code id} and {@code topVer}. Adds corresponding pending acks to it.
      *
      * @param latchUid Latch uid.
      * @param participants Participant nodes.
@@ -175,15 +177,16 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Creates client latch.
-     * If there is final ack corresponds to given {@code id} and {@code topVer}, latch will be completed immediately.
+     * Creates client latch. If there is final ack corresponds to given {@code id} and {@code topVer}, latch will be
+     * completed immediately.
      *
      * @param latchUid Latch uid.
      * @param coordinator Coordinator node.
      * @param participants Participant nodes.
      * @return Client latch instance.
      */
-    private Latch createClientLatch(CompletableLatchUid latchUid, ClusterNode coordinator, Collection<ClusterNode> participants) {
+    private Latch createClientLatch(CompletableLatchUid latchUid, ClusterNode coordinator,
+        Collection<ClusterNode> participants) {
         assert !serverLatches.containsKey(latchUid);
         assert !clientLatches.containsKey(latchUid);
 
@@ -202,8 +205,8 @@ public class ExchangeLatchManager {
     /**
      * Creates new latch with specified {@code id} and {@code topVer} or returns existing latch.
      *
-     * Participants of latch are calculated from given {@code topVer} as alive server nodes.
-     * If local node is coordinator {@code ServerLatch} instance will be created, otherwise {@code ClientLatch} instance.
+     * Participants of latch are calculated from given {@code topVer} as alive server nodes. If local node is
+     * coordinator {@code ServerLatch} instance will be created, otherwise {@code ClientLatch} instance.
      *
      * @param id Latch id.
      * @param topVer Latch topology version.
@@ -272,6 +275,7 @@ public class ExchangeLatchManager {
      *
      * @param topVer Topology version.
      * @return Collection of nodes with at least one cache configured.
+     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
      */
     private Collection<ClusterNode> aliveNodesForTopologyVer(AffinityTopologyVersion topVer) {
         if (topVer == AffinityTopologyVersion.NONE)
@@ -281,10 +285,10 @@ public class ExchangeLatchManager {
 
             if (histNodes != null)
                 return histNodes.stream().filter(n -> !n.isClient() && !n.isDaemon() && discovery.alive(n))
-                        .collect(Collectors.toList());
+                    .collect(Collectors.toList());
             else
-                throw new IgniteException("Topology " + topVer + " not found in discovery history "
-                        + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
+                throw new IgniteException("Topology " + topVer + " not found in discovery history. "
+                        + "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
                         + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
         }
     }
@@ -297,9 +301,9 @@ public class ExchangeLatchManager {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         List<ClusterNode> participantNodes = aliveNodes
-                .stream()
-                .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
-                .collect(Collectors.toList());
+            .stream()
+            .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
+            .collect(Collectors.toList());
 
         if (canSkipJoiningNodes(topVer))
             return excludeJoinedNodes(participantNodes, topVer);
@@ -348,11 +352,10 @@ public class ExchangeLatchManager {
      * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
      *
      * @param topVer Topology version.
+     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
      */
     public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> applicableNodes = topVer.equals(AffinityTopologyVersion.NONE)
-            ? discovery.aliveServerNodes()
-            : discovery.topology(topVer.topologyVersion());
+        Collection<ClusterNode> applicableNodes = aliveNodesForTopologyVer(topVer);
 
         return applicableNodes.stream()
             .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
@@ -417,8 +420,7 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Changes coordinator to current local node.
-     * Restores all server latches from pending acks and own client latches.
+     * Changes coordinator to current local node. Restores all server latches from pending acks and own client latches.
      */
     private void becomeNewCoordinator() {
         if (log.isInfoEnabled())
@@ -596,8 +598,7 @@ public class ExchangeLatchManager {
         }
 
         /**
-         * Receives ack from given node.
-         * Count downs latch if ack was not already processed.
+         * Receives ack from given node. Count downs latch if ack was not already processed.
          *
          * @param from Node.
          */
@@ -609,8 +610,7 @@ public class ExchangeLatchManager {
         }
 
         /**
-         * Count down latch from ack of given node.
-         * Completes latch if all acks are received.
+         * Count down latch from ack of given node. Completes latch if all acks are received.
          *
          * @param node Node.
          */
@@ -639,14 +639,13 @@ public class ExchangeLatchManager {
             Set<UUID> pendingAcks = participants.stream().filter(ack -> !acks.contains(ack)).collect(Collectors.toSet());
 
             return S.toString(ServerLatch.class, this,
-                    "pendingAcks", pendingAcks,
-                    "super", super.toString());
+                "pendingAcks", pendingAcks,
+                "super", super.toString());
         }
     }
 
     /**
-     * Latch creating on non-coordinator node.
-     * Latch completes when final ack from coordinator is received.
+     * Latch creating on non-coordinator node. Latch completes when final ack from coordinator is received.
      */
     class ClientLatch extends CompletableLatch {
         /** Latch coordinator node. Can be changed if coordinator is left from topology. */
@@ -698,8 +697,8 @@ public class ExchangeLatchManager {
         }
 
         /**
-         * Sends ack to coordinator node.
-         * There is ack deduplication on coordinator. So it's fine to send same ack twice.
+         * Sends ack to coordinator node. There is ack deduplication on coordinator. So it's fine to send same ack
+         * twice.
          */
         private void sendAck() {
             ackSent = true;
@@ -721,7 +720,7 @@ public class ExchangeLatchManager {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ClientLatch.class, this,
-                    "super", super.toString());
+                "super", super.toString());
         }
     }
 

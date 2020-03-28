@@ -63,6 +63,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.Compactab
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,6 +104,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -116,6 +117,7 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -520,7 +522,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ig2
             .context().cache().context().database();
 
-        IgniteInternalFuture<?> cpFinishFut = dbMgr.forceCheckpoint("force checkpoint").finishFuture();
+        IgniteInternalFuture<?> cpFinishFut = dbMgr.forceCheckpoint("force checkpoint").futureFor(FINISHED);
 
         // Delete checkpoint END file to emulate node stopped at the middle of checkpoint.
         cpFinishFut.listen(new IgniteInClosureX<IgniteInternalFuture>() {
@@ -636,14 +638,14 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("cache-" + i);
 
                 // We can get 'too many open files' with default number of partitions.
-                ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+                ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
                 IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg);
 
                 cache.put(i, i);
             }
 
-            final long endTime = System.currentTimeMillis() + 30_000;
+            final long endTime = System.currentTimeMillis() + SF.applyLB(30_000, 5_000);
 
             IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() {
@@ -666,6 +668,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             fut.get();
+
+            ignite.context().cache().context().database().wakeupForCheckpoint("final-test-checkpoint").get();
         }
         finally {
             customFailureDetectionTimeout = prevFDTimeout;
@@ -678,7 +682,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private void checkWalRolloverMultithreaded() throws Exception {
         walSegmentSize = 2 * 1024 * 1024;
 
-        final long endTime = System.currentTimeMillis() + 60 * 1000;
+        final long endTime = System.currentTimeMillis() + SF.apply(50 * 1000);
 
         IgniteEx ignite = startGrid(1);
 
@@ -690,7 +694,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             @Override public Void call() {
                 Random rnd = ThreadLocalRandom.current();
 
-                while (U.currentTimeMillis() < endTime)
+                while (System.currentTimeMillis() < endTime)
                     cache.put(rnd.nextInt(50_000), rnd.nextInt());
 
                 return null;

@@ -39,18 +39,33 @@ import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator
 public class ChangeTopologyWatcher implements GridLocalEventListener {
     /** */
     private final IgniteLogger log;
+
     /** */
     private final IgniteClusterImpl cluster;
+
     /** */
     private final GridCachePartitionExchangeManager<?, ?> exchangeManager;
+
     /** Configuration of baseline. */
     private final DistributedBaselineConfiguration baselineConfiguration;
+
     /** Discovery manager. */
     private final GridDiscoveryManager discoveryMgr;
+
     /** */
     private final GridClusterStateProcessor stateProcessor;
+
     /** Scheduler of specific task of baseline changing. */
     private final BaselineAutoAdjustScheduler baselineAutoAdjustScheduler;
+
+    /** */
+    private final boolean isPersistenceEnabled;
+
+    /**
+     * {@code true} if {@link ChangeTopologyWatcher} makes sense for local node or {@code false} otherwise(eg. local
+     * node is client).
+     */
+    private final boolean isSupportedByLocalNode;
 
     /** Last data for set new baseline. */
     private BaselineAutoAdjustData lastBaselineData = NULL_BASELINE_DATA;
@@ -71,6 +86,8 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
             this::isTopologyWatcherEnabled
         ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
+        this.isSupportedByLocalNode = !ctx.clientNode() && !ctx.isDaemon();
+        this.isPersistenceEnabled = CU.isPersistenceEnabled(cluster.ignite().configuration());
     }
 
     /** {@inheritDoc} */
@@ -118,8 +135,10 @@ public class ChangeTopologyWatcher implements GridLocalEventListener {
      * @return {@code true} if auto-adjust baseline enabled.
      */
     private boolean isTopologyWatcherEnabled() {
-        return stateProcessor.clusterState().active() && baselineConfiguration.isBaselineAutoAdjustEnabled()
-            && (CU.isPersistenceEnabled(cluster.ignite().configuration()) || cluster.baselineAutoAdjustTimeout() != 0L);
+        return isSupportedByLocalNode
+            && stateProcessor.clusterState().active()
+            && baselineConfiguration.isBaselineAutoAdjustEnabled()
+            && (isPersistenceEnabled || cluster.baselineAutoAdjustTimeout() != 0L);
     }
 
     /**

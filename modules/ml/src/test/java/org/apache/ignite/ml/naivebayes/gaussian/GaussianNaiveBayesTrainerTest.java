@@ -35,16 +35,20 @@ import org.junit.Test;
 public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
-    /** */
+
+    /** Label. */
     private static final double LABEL_1 = 1.;
-    /** */
+
+    /** Label. */
     private static final double LABEL_2 = 2.;
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
-    /** */
+
+    /** {@code LABEL_1} data. */
     private static final Map<Integer, double[]> singleLabeldata1 = new HashMap<>();
-    /** */
+
+    /** {@code LABEL_2} data. */
     private static final Map<Integer, double[]> singleLabeldata2 = new HashMap<>();
 
     static {
@@ -71,7 +75,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         trainer = new GaussianNaiveBayesTrainer();
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testWithLinearlySeparableData() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
@@ -88,22 +92,22 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
-    public void testReturnsCorrectLabelProbalities() {
+    public void testReturnsCorrectLabelProbabilities() {
 
-        GaussianNaiveBayesModel model = trainer.fit(
+        GaussianNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertEquals(3. / data.size(), model.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(2. / data.size(), model.getClassProbabilities()[1], PRECISION);
+        Assert.assertEquals(3. / data.size(), mdl.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(2. / data.size(), mdl.getClassProbabilities()[1], PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
-    public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
+    public void testReturnsEquivalentProbabilitiesWhenSetEquitableClasses_() {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
             .withEquiprobableClasses();
 
@@ -116,23 +120,23 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertEquals(.5, model.getClassProbabilities()[1], PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
-    public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
+    public void testReturnsPresetProbabilitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer()
             .setPriorProbabilities(priorProbabilities);
 
-        GaussianNaiveBayesModel model = trainer.fit(
+        GaussianNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertEquals(priorProbabilities[0], model.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(priorProbabilities[1], model.getClassProbabilities()[1], PRECISION);
+        Assert.assertEquals(priorProbabilities[0], mdl.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(priorProbabilities[1], mdl.getClassProbabilities()[1], PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectMeans() {
 
@@ -144,7 +148,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(new double[] {2.0, 2. / 3.}, model.getMeans()[0], PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
     public void testReturnsCorrectVariances() {
 
@@ -157,21 +161,22 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Assert.assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
     }
 
-    /** */
+    /** Test. */
     @Test
-    public void testUpdatigModel() {
+    public void testUpdatingModel() {
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
-        GaussianNaiveBayesModel model = trainer.fit(
+
+        GaussianNaiveBayesModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(singleLabeldata1, parts),
             vectorizer
         );
 
-        GaussianNaiveBayesModel updatedModel = trainer.updateModel(model,
+        GaussianNaiveBayesModel updatedMdl = trainer.updateModel(mdl,
             new LocalDatasetBuilder<>(singleLabeldata2, parts),
             vectorizer
         );
 
-        Assert.assertEquals(3. / data.size(), updatedModel.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(2. / data.size(), updatedModel.getClassProbabilities()[1], PRECISION);
+        Assert.assertEquals(3. / data.size(), updatedMdl.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(2. / data.size(), updatedMdl.getClassProbabilities()[1], PRECISION);
     }
 }

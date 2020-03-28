@@ -37,36 +37,28 @@ public interface TransactionsMXBean {
      * @param kill Kill.
      */
     @MXBeanDescription("Returns or kills transactions matching the filter conditions.")
-    @MXBeanParametersNames(
-        {
-            "minDuration",
-            "minSize",
-            "prj",
-            "consistentIds",
-            "xid",
-            "lbRegex",
-            "limit",
-            "order",
-            "detailed",
-            "kill"
-        }
-    )
-    @MXBeanParametersDescriptions(
-        {
-            "Minimum duration (seconds).",
-            "Minimum size.",
-            "Projection (servers|clients).",
-            "Consistent ids (separated by comma).",
-            "Transaction XID.",
-            "Label regexp.",
-            "Limit a number of transactions collected on each node.",
-            "Order by DURATION|SIZE.",
-            "Show detailed description, otherwise only count.",
-            "Kill matching transactions (be careful)."
-        }
-    )
-    public String getActiveTransactions(Long minDuration, Integer minSize, String prj,
-        String consistentIds, String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill);
+    public String getActiveTransactions(
+        @MXBeanParameter(name = "minDuration", description = "Minimum duration (seconds).")
+            Long minDuration,
+        @MXBeanParameter(name = "minSize", description = "Minimum size.")
+            Integer minSize,
+        @MXBeanParameter(name = "prj", description = "Projection (servers|clients).")
+            String prj,
+        @MXBeanParameter(name = "consistentIds", description = "Consistent ids (separated by comma).")
+            String consistentIds,
+        @MXBeanParameter(name = "xid", description = "Transaction XID.")
+            String xid,
+        @MXBeanParameter(name = "lbRegex", description = "Label regexp.")
+            String lbRegex,
+        @MXBeanParameter(name = "limit", description = "Limit a number of transactions collected on each node.")
+            Integer limit,
+        @MXBeanParameter(name = "order", description = "Order by DURATION|SIZE.")
+            String order,
+        @MXBeanParameter(name = "detailed", description = "Show detailed description, otherwise only count.")
+            boolean detailed,
+        @MXBeanParameter(name = "kill", description = "Kill matching transactions (be careful).")
+            boolean kill
+    );
 
     /**
      * Gets transaction timeout on partition map exchange.
@@ -89,13 +81,10 @@ public interface TransactionsMXBean {
      * @param timeout Transaction timeout on partition map exchange in milliseconds.
      */
     @MXBeanDescription("Sets transaction timeout on partition map exchange in milliseconds.")
-    @MXBeanParametersNames(
-        "timeout"
-    )
-    @MXBeanParametersDescriptions(
-        "Transaction timeout on partition map exchange in milliseconds."
-    )
-    public void setTxTimeoutOnPartitionMapExchange(long timeout);
+    public void setTxTimeoutOnPartitionMapExchange(
+        @MXBeanParameter(name = "timeout",
+            description = "Transaction timeout on partition map exchange in milliseconds.") long timeout
+    );
 
     /**
      * Shows if dump requests from local node to near node are allowed, when long running transaction
@@ -123,9 +112,125 @@ public interface TransactionsMXBean {
         "when long running transaction  is found. If allowed, the compute request to near " +
         "node will be made to get thread dump of transaction owner thread."
     )
-    @MXBeanParametersNames("allowed")
-    @MXBeanParametersDescriptions(
-        "whether to allow"
+    public void setTxOwnerDumpRequestsAllowed(
+        @MXBeanParameter(name = "allowed", description = "Whether to allow.") boolean allowed
+    );
+
+    /**
+     * Returns threshold timeout in milliseconds for long transactions, if transaction exceeds it,
+     * it will be dumped in log with information about how much time did
+     * it spent in system time (time while aquiring locks, preparing, commiting, etc.)
+     * and user time (time when client node runs some code while holding transaction).
+     * Returns 0 if not set. No transactions are dumped in log if this parameter is not set.
+     *
+     * @return Threshold.
+     */
+    @MXBeanDescription(
+        "Returns threshold timeout in milliseconds for long transactions, if transaction exceeds it, " +
+        "it will be dumped in log with information about how much time did " +
+        "it spent in system time (time while aquiring locks, preparing, commiting, etc.)" +
+        "and user time (time when client node runs some code while holding transaction). " +
+        "Returns 0 if not set. No transactions are dumped in log if this parameter is not set."
     )
-    public void setTxOwnerDumpRequestsAllowed(boolean allowed);
+    public long getLongTransactionTimeDumpThreshold();
+
+    /**
+     * Sets threshold timeout in milliseconds for long transactions, if transaction exceeds it,
+     * it will be dumped in log with information about how much time did
+     * it spent in system time (time while aquiring locks, preparing, commiting, etc.)
+     * and user time (time when client node runs some code while holding transaction).
+     * Can be set to 0 - no transactions will be dumped in log in this case.
+     *
+     * @param threshold Threshold.
+     */
+    @MXBeanDescription(
+        "Sets threshold timeout in milliseconds for long transactions, if transaction exceeds it, " +
+        "it will be dumped in log with information about how much time did " +
+        "it spent in system time (time while aquiring locks, preparing, commiting, etc.) " +
+        "and user time (time when client node runs some code while holding transaction). " +
+        "Can be set to 0 - no transactions will be dumped in log in this case."
+    )
+    public void setLongTransactionTimeDumpThreshold(
+        @MXBeanParameter(name = "threshold", description = "Threshold timeout.") long threshold
+    );
+
+    /**
+     * Returns the coefficient for samples of completed transactions that will be dumped in log.
+     *
+     * @return Coefficient current value.
+     */
+    @MXBeanDescription(
+        "Returns the coefficient for samples of completed transactions that will be dumped in log."
+    )
+    public double getTransactionTimeDumpSamplesCoefficient();
+
+    /**
+     * Sets the coefficient for samples of completed transactions that will be dumped in log.
+     *
+     * @param coefficient Coefficient.
+     */
+    @MXBeanDescription(
+        "Sets the coefficient for samples of completed transactions that will be dumped in log."
+    )
+    public void setTransactionTimeDumpSamplesCoefficient(
+        @MXBeanParameter(name = "coefficient", description = "Samples coefficient.") double coefficient
+    );
+
+    /**
+     * Returns the limit of samples of completed transactions that will be dumped in log per second,
+     * if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>.
+     * Must be integer value greater than <code>0</code>.
+     *
+     * @return Limit value.
+     */
+    @MXBeanDescription(
+        "Returns the limit of samples of completed transactions that will be dumped in log per second, " +
+        "if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. " +
+        "Must be integer value greater than <code>0</code>."
+    )
+    public int getTransactionTimeDumpSamplesPerSecondLimit();
+
+    /**
+     * Sets the limit of samples of completed transactions that will be dumped in log per second,
+     * if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>.
+     * Must be integer value greater than <code>0</code>.
+     *
+     * @param limit Limit value.
+     */
+    @MXBeanDescription(
+        "Sets the limit of samples of completed transactions that will be dumped in log per second, " +
+        "if {@link #getTransactionTimeDumpSamplesCoefficient} is above <code>0.0</code>. " +
+        "Must be integer value greater than <code>0</code>."
+    )
+    public void setTransactionTimeDumpSamplesPerSecondLimit(
+        @MXBeanParameter(name = "limit", description = "Samples per second limit.") int limit
+    );
+
+    /**
+     * Setting a timeout (in millis) for printing long-running transactions as
+     * well as transactions that cannot receive locks for all their keys for a
+     * long time. Set less than or equal {@code 0} to disable.
+     *
+     * @param timeout Timeout.
+     */
+    @MXBeanDescription(
+        "Setting a timeout (in millis) for printing long-running transactions as well as transactions that cannot " +
+            "receive locks for all their keys for a long time. Set less than or equal {@code 0} to disable."
+    )
+    void setLongOperationsDumpTimeout(
+        @MXBeanParameter(name = "timeout", description = "Long operations dump timeout.") long timeout
+    );
+
+    /**
+     * Returns a timeout (in millis) for printing long-running transactions as
+     * well as transactions that cannot receive locks for all their keys for a
+     * long time. Returns {@code 0} or less if not set.
+     *
+     * @return Timeout.
+     */
+    @MXBeanDescription(
+        "Returns a timeout (in millis) for printing long-running transactions as well as transactions that cannot " +
+            "receive locks for all their keys for a long time. Returns {@code 0} or less if not set."
+    )
+    long getLongOperationsDumpTimeout();
 }

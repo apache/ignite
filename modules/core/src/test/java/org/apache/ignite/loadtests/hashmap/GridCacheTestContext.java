@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.CacheCompressionManager;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.CacheOsConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -84,7 +85,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new CacheNoopJtaManager(),
                 null,
                 null,
-                null
+                null,
+                new CacheDiagnosticManager()
             ),
             defaultCacheConfiguration(),
             null,

@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteSystemProperties;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,8 +35,11 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
@@ -51,7 +54,7 @@ public class WalCommands implements Command<T2<String, String>> {
     static final String WAL_DELETE = "delete";
 
     /** */
-    private CommandLogger logger;
+    private Logger logger;
 
     /**
      * Wal action.
@@ -63,13 +66,15 @@ public class WalCommands implements Command<T2<String, String>> {
      */
     private String walArgs;
 
-    @Override public void printUsage(CommandLogger logger) {
-        if (IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false)) {
-            Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
-                WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-            Command.usage(logger,"Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
-                "[consistentId1,consistentId2,....,consistentIdN]", optional(CMD_AUTO_CONFIRMATION));
-        }
+    /** {@inheritDoc} */
+    @Override public void printUsage(Logger logger) {
+        if (!experimentalEnabled())
+            return;
+
+        Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
+            WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+        Command.usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
+            "[consistentId1,consistentId2,....,consistentIdN]", optional(CMD_AUTO_CONFIRMATION));
     }
 
     /**
@@ -78,22 +83,27 @@ public class WalCommands implements Command<T2<String, String>> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute wal action.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        this.logger = logger;
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+        if (experimentalEnabled()) {
+            this.logger = logger;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
-            switch (walAct) {
-                case WAL_DELETE:
-                    deleteUnusedWalSegments(client, walArgs, clientCfg);
+            try (GridClient client = Command.startClient(clientCfg)) {
+                switch (walAct) {
+                    case WAL_DELETE:
+                        deleteUnusedWalSegments(client, walArgs, clientCfg);
 
-                    break;
+                        break;
 
-                case WAL_PRINT:
-                default:
-                    printUnusedWalSegments(client, walArgs, clientCfg);
+                    case WAL_PRINT:
+                    default:
+                        printUnusedWalSegments(client, walArgs, clientCfg);
 
-                    break;
+                        break;
+                }
             }
+        } else {
+            logger.warning(String.format("For use experimental command add %s=true to JVM_OPTS in %s",
+                IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME));
         }
 
         return null;
@@ -118,8 +128,10 @@ public class WalCommands implements Command<T2<String, String>> {
                 ? argIter.nextArg("Unexpected argument for " + WAL.text() + ": " + walAct)
                 : "";
 
-            this.walAct = walAct;
-            this.walArgs = walArgs;
+            if (experimentalEnabled()) {
+                this.walAct = walAct;
+                this.walArgs = walArgs;
+            }
         }
         else
             throw new IllegalArgumentException("Unexpected action " + walAct + " for " + WAL.text());
@@ -198,8 +210,8 @@ public class WalCommands implements Command<T2<String, String>> {
      * @param taskRes Task result with baseline topology.
      */
     private void printUnusedWalSegments0(VisorWalTaskResult taskRes) {
-        logger.log("Unused wal segments per node:");
-        logger.nl();
+        logger.info("Unused wal segments per node:");
+        logger.info("");
 
         Map<String, Collection<String>> res = taskRes.results();
         Map<String, Exception> failRes = taskRes.exceptions();
@@ -208,22 +220,22 @@ public class WalCommands implements Command<T2<String, String>> {
         for (Map.Entry<String, Collection<String>> entry : res.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
-            logger.log("Node=" + node.getConsistentId());
-            logger.logWithIndent("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()), 2);
+            logger.info("Node=" + node.getConsistentId());
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
 
             for (String fileName : entry.getValue())
-                logger.logWithIndent(fileName);
+                logger.info(INDENT + fileName);
 
-            logger.nl();
+            logger.info("");
         }
 
         for (Map.Entry<String, Exception> entry : failRes.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
-            logger.log("Node=" + node.getConsistentId());
-            logger.logWithIndent("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()), 2);
-            logger.logWithIndent("failed with error: " + entry.getValue().getMessage());
-            logger.nl();
+            logger.info("Node=" + node.getConsistentId());
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info(INDENT + "failed with error: " + entry.getValue().getMessage());
+            logger.info("");
         }
     }
 
@@ -233,8 +245,8 @@ public class WalCommands implements Command<T2<String, String>> {
      * @param taskRes Task result with baseline topology.
      */
     private void printDeleteWalSegments0(VisorWalTaskResult taskRes) {
-        logger.log("WAL segments deleted for nodes:");
-        logger.nl();
+        logger.info("WAL segments deleted for nodes:");
+        logger.info("");
 
         Map<String, Collection<String>> res = taskRes.results();
         Map<String, Exception> errors = taskRes.exceptions();
@@ -243,18 +255,28 @@ public class WalCommands implements Command<T2<String, String>> {
         for (Map.Entry<String, Collection<String>> entry : res.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
-            logger.log("Node=" + node.getConsistentId());
-            logger.logWithIndent("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()), 2);
-            logger.nl();
+            logger.info("Node=" + node.getConsistentId());
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info("");
         }
 
         for (Map.Entry<String, Exception> entry : errors.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
-            logger.log("Node=" + node.getConsistentId());
-            logger.logWithIndent("addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()), 2);
-            logger.logWithIndent("failed with error: " + entry.getValue().getMessage());
-            logger.nl();
+            logger.info("Node=" + node.getConsistentId());
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info(INDENT + "failed with error: " + entry.getValue().getMessage());
+            logger.info("");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return WAL.toCommandName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean experimental() {
+        return true;
     }
 }

@@ -17,25 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridStringLogger;
-import org.apache.ignite.testframework.config.GridTestProperties;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
@@ -44,6 +50,9 @@ import org.junit.Test;
 public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridCommonAbstractTest {
     /** URL of classes. */
     private static final URL[] URLS;
+
+    /** */
+    public static final String EXT_FILTER_CLASS = "org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter";
 
     static {
         try {
@@ -55,16 +64,16 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     }
 
     /** */
-    private GridStringLogger log;
-
-    /** */
-    private boolean clientMode;
+    private IgniteLogger log;
 
     /** */
     private boolean setExternalLoader;
 
     /** */
-    private ClassLoader ldr;
+    private final ClassLoader extLdr = new URLClassLoader(URLS, getClass().getClassLoader());
+
+    /** */
+    private boolean setFilterAttr;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -77,20 +86,22 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
-
-        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cacheCfg.setName("simple");
+        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+
+        cacheCfg.setNodeFilter(node -> node.attribute("filter") == null);
 
         cfg.setCacheConfiguration(cacheCfg);
 
         if (setExternalLoader)
-            cfg.setClassLoader(ldr);
-        else
+            cfg.setClassLoader(extLdr);
+
+        if (log != null)
             cfg.setGridLogger(log);
+
+        if (setFilterAttr)
+            cfg.setUserAttributes(U.map("filter", 1));
 
         return cfg;
     }
@@ -99,20 +110,16 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      * @throws Exception If fail.
      */
     @Test
-    public void testWarningMessageOnClientNode() throws Exception {
-        ldr = new URLClassLoader(URLS, getClass().getClassLoader());
-
-        clientMode = false;
+    public void testClientJoinsMissingClassWarning() throws Exception {
         setExternalLoader = true;
-        final Ignite ignite0 = startGrid(1);
+        Ignite ignite0 = startGrid(1);
 
-        executeContinuousQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
         log = new GridStringLogger();
-        clientMode = true;
         setExternalLoader = false;
 
-        startGrid(2);
+        startClientGrid(2);
 
         String logStr = log.toString();
 
@@ -124,20 +131,16 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      * @throws Exception If fail.
      */
     @Test
-    public void testNoWarningMessageOnClientNode() throws Exception {
-        ldr = new URLClassLoader(URLS, getClass().getClassLoader());
-
+    public void testClientJoinsExtClassLoaderNoWarning() throws Exception {
         setExternalLoader = true;
 
-        clientMode = false;
-        final Ignite ignite0 = startGrid(1);
+        Ignite ignite0 = startGrid(1);
 
-        executeContinuousQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
         log = new GridStringLogger();
-        clientMode = true;
 
-        startGrid(2);
+        startClientGrid(2);
 
         assertTrue(!log.toString().contains("Failed to unmarshal continuous query remote filter on client node. " +
             "Can be ignored."));
@@ -147,41 +150,40 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
      * @throws Exception If fail.
      */
     @Test
-    public void testExceptionOnServerNode() throws Exception {
-        ldr = new URLClassLoader(URLS, getClass().getClassLoader());
-
-        clientMode = false;
-
+    public void testServerJoinsMissingClassException() throws Exception {
         setExternalLoader = true;
-        final Ignite ignite0 = startGrid(1);
+        Ignite ignite0 = startGrid(1);
 
-        executeContinuousQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
-        log = new GridStringLogger();
+        ListeningTestLogger listeningLogger = new ListeningTestLogger();
+
+        log = listeningLogger;
+
+        LogListener lsnr = LogListener.matches(logStr ->
+            logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
+                "Failed to find class with given class loader for unmarshalling")
+                || logStr.contains("Failed to unmarshal continuous routine handler"
+            )).build();
+
+        listeningLogger.registerListener(lsnr);
+
         setExternalLoader = false;
 
-        startGrid(2);
+        GridTestUtils.assertThrows(log, () -> startGrid(2), IgniteCheckedException.class, "Failed to start");
 
-        String logStr = log.toString();
-
-        assertTrue(logStr.contains("class org.apache.ignite.IgniteCheckedException: " +
-            "Failed to find class with given class loader for unmarshalling")
-            || logStr.contains("Failed to unmarshal continuous routine handler"));
+        assertTrue(lsnr.check());
     }
 
     /**
      * @throws Exception If fail.
      */
     @Test
-    public void testNoExceptionOnServerNode() throws Exception {
-        ldr = new URLClassLoader(URLS, getClass().getClassLoader());
-
-        clientMode = false;
-
+    public void testServerJoinsExtClassLoaderNoException() throws Exception {
         setExternalLoader = true;
-        final Ignite ignite0 = startGrid(1);
+        Ignite ignite0 = startGrid(1);
 
-        executeContinuousQuery(ignite0.cache("simple"));
+        executeContinuousQuery(ignite0.cache(DEFAULT_CACHE_NAME));
 
         log = new GridStringLogger();
 
@@ -192,10 +194,67 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
     }
 
     /**
+     * @throws Exception If fail.
+     */
+    @Test
+    public void testServerMissingClassFailsRegistration() throws Exception {
+        setExternalLoader = true;
+
+        Ignite ign1 = startGrid(1);
+
+        setExternalLoader = false;
+
+        startGrid(2);
+
+        try {
+            executeContinuousQuery(ign1.cache(DEFAULT_CACHE_NAME));
+
+            fail("Exception is expected");
+        }
+        catch (Exception e) {
+            assertTrue(X.hasCause(e, EXT_FILTER_CLASS, ClassNotFoundException.class));
+        }
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    @Test
+    public void testClientMissingClassDoesNotFailRegistration() throws Exception {
+        setExternalLoader = true;
+
+        Ignite ign1 = startGrid(1);
+
+        setExternalLoader = false;
+
+        startClientGrid(2);
+
+        executeContinuousQuery(ign1.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    @Test
+    public void testNodeFilterServerMissingClassDoesNotFailRegistration() throws Exception {
+        setExternalLoader = true;
+
+        Ignite ign1 = startGrid(1);
+
+        setExternalLoader = false;
+
+        setFilterAttr = true;
+
+        startGrid(2);
+
+        executeContinuousQuery(ign1.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /**
      * @param cache Ignite cache.
      * @throws Exception If fail.
      */
-    private void executeContinuousQuery(IgniteCache cache) throws Exception {
+    private void executeContinuousQuery(IgniteCache<Object, Object> cache) throws Exception {
         ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
         qry.setLocalListener(
@@ -208,10 +267,10 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
             }
         );
 
-        final Class<CacheEntryEventSerializableFilter> remoteFilterClass = (Class<CacheEntryEventSerializableFilter>)
-            ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
+        Class<CacheEntryEventSerializableFilter> remoteFilterCls = (Class<CacheEntryEventSerializableFilter>)
+            extLdr.loadClass(EXT_FILTER_CLASS);
 
-        qry.setRemoteFilterFactory(new ClassFilterFactory(remoteFilterClass));
+        qry.setRemoteFilterFactory(new ClassFilterFactory(remoteFilterCls));
 
         cache.query(qry);
 
@@ -236,7 +295,7 @@ public class ContinuousQueryRemoteFilterMissingInClassPathSelfTest extends GridC
         /** {@inheritDoc} */
         @Override public CacheEntryEventSerializableFilter<Integer, String> create() {
             try {
-                return cls.newInstance();
+                return (CacheEntryEventSerializableFilter<Integer, String>)cls.newInstance();
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

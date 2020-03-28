@@ -44,7 +44,6 @@ public class TrackingPageIOTest {
     /** Page size. */
     public static final int PAGE_SIZE = 4096;
 
-
     /** */
     private final TrackingPageIO io = TrackingPageIO.VERSIONS.latest();
 

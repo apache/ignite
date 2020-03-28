@@ -17,26 +17,45 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
+import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 
 /**
  * Command to deactivate cluster.
+ * @deprecated Use {@link ClusterStateChangeCommand} instead.
  */
+@Deprecated
 public class DeactivateCommand implements Command<Void> {
+    /** Cluster name. */
+    private String clusterName;
+
+    /** If {@code true}, cluster deactivation will be forced. */
+    private boolean forceDeactivation;
+
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
-        Command.usage(logger, "Deactivate cluster:", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
+            optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+        try (GridClient client = Command.startClient(clientCfg)) {
+            clusterName = client.state().clusterName();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return "Warning: the command will deactivate a cluster.";
+        return "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
     }
 
     /**
@@ -45,16 +64,16 @@ public class DeactivateCommand implements Command<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to deactivate.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+
         try (GridClient client = Command.startClient(clientCfg)) {
-            GridClientClusterState state = client.state();
+            client.state().state(ClusterState.INACTIVE, forceDeactivation);
 
-            state.active(false);
-
-            logger.log("Cluster deactivated");
+            logger.info("Cluster deactivated");
         }
         catch (Exception e) {
-            logger.log("Failed to deactivate cluster.");
+            logger.severe("Failed to deactivate cluster.");
 
             throw e;
         }
@@ -63,7 +82,27 @@ public class DeactivateCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        forceDeactivation = false;
+
+        if (argIter.hasNextArg()) {
+            String arg = argIter.peekNextArg();
+
+            if (FORCE_COMMAND.equalsIgnoreCase(arg)) {
+                forceDeactivation = true;
+
+                argIter.nextArg("");
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return DEACTIVATE.toCommandName();
     }
 }

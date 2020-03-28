@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.preprocessing.developer;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
@@ -29,9 +32,9 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * @param <L0> Type of original label.
  * @param <L1> Type of mapped label.
  */
-public class MappedPreprocessor<K, V, L0, L1> implements Preprocessor<K, V> {
+public final class MappedPreprocessor<K, V, L0, L1> implements Preprocessor<K, V>, DeployableObject {
     /** Original preprocessor. */
-    protected final Preprocessor<K, V> original;
+    private final Preprocessor<K, V> original;
 
     /** Vectors mapping. */
     private final IgniteFunction<LabeledVector<L0>, LabeledVector<L1>> mapping;
@@ -50,5 +53,10 @@ public class MappedPreprocessor<K, V, L0, L1> implements Preprocessor<K, V> {
     @Override public LabeledVector<L1> apply(K key, V value) {
         LabeledVector<L0> origVec = original.apply(key, value);
         return mapping.apply(origVec);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(original);
     }
 }

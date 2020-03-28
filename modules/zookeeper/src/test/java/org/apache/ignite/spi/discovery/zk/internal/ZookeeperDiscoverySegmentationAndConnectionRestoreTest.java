@@ -24,6 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -83,9 +83,7 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
 
         node0.cluster().active(true);
 
-        helper.clientMode(true);
-
-        final IgniteEx client = startGrid(2);
+        final IgniteEx client = startClientGrid(2);
 
         //first transaction
         client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 0);

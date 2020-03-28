@@ -85,6 +85,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         cfg.setCacheConfiguration(cacheCfg);
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

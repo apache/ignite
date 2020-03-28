@@ -261,11 +261,6 @@ public class GridClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientData data() throws GridClientException {
-        return data(null);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientData data(@Nullable final String cacheName) throws GridClientException {
         checkClosed();
 

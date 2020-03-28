@@ -61,6 +61,9 @@ public class GridIoPolicy {
     /** Schema pool.  */
     public static final byte SCHEMA_POOL = 12;
 
+    /** Caller thread.  */
+    public static final byte CALLER_THREAD = 13;
+
     /**
      * Defines the range of reserved pools that are not available for plugins.
      * @param key The key.

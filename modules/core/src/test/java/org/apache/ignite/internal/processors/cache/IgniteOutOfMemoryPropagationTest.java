@@ -161,22 +161,16 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
         this.backupsCnt = backupsCnt;
         this.writeSyncMode = writeSyncMode;
 
-        Ignition.setClientMode(false);
-
         for (int i = 0; i < NODES; i++)
             startGrid(i);
 
-        Ignition.setClientMode(true);
-
-        client = startGrid(NODES + 1);
+        client = startClientGrid(NODES + 1);
 
         // it is required to start first node in test jvm, but we can not start client node,
         // because client will fail to connect and test will fail too.
         // as workaround start first server node in test jvm and then stop it.
         stopGrid(0);
     }
-
-
 
     /**
      * @param useStreamer Use streamer.

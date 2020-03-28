@@ -28,33 +28,20 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
  * Command line handler test with SSL.
  */
-public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
+public class GridCommandHandlerSslTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     private volatile String[] cipherSuites;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        cleanPersistenceDir();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
 
     /**
      * @return SSL factory.
@@ -98,18 +85,17 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
         final CommandHandler cmd = new CommandHandler();
 
         List<String> params = new ArrayList<>();
-        params.add("--activate");
-        params.add("--keystore");
-        params.add(GridTestUtils.keyStorePath("node01"));
-        params.add("--keystore-password");
-        params.add(GridTestUtils.keyStorePassword());
+
+        addSslParams(params);
 
         if (!F.isEmpty(utilityCipherSuite)) {
             params.add("--ssl-cipher-suites");
             params.add(utilityCipherSuite);
         }
 
-        assertEquals(expRes, cmd.execute(params));
+        params.add("--activate");
+
+        assertEquals(expRes, execute(params));
 
         if (expRes == EXIT_CODE_OK)
             assertTrue(ignite.cluster().active());
@@ -117,6 +103,30 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
             assertFalse(ignite.cluster().active());
 
         assertEquals(EXIT_CODE_CONNECTION_FAILED, cmd.execute(Arrays.asList("--deactivate", "--yes")));
+    }
+
+    /**
+     * Verifies that when client without SSL tries to connect to SSL-enabled cluster,
+     * it fails and prints clear message with possible causes to output.
+     *
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testClientWithoutSslConnectsToSslEnabledCluster() throws Exception {
+        startGrid(0);
+
+        List<String> params = new ArrayList<>();
+
+        params.add("--activate");
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_CONNECTION_FAILED, execute(params));
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "firewall settings");
+        assertContains(log, out, "SSL configuration");
     }
 
     /**
@@ -165,6 +175,10 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
         String utilityCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
             "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
 
+        injectTestSystemOut();
+
         activate(nodeCipherSuites, utilityCipherSuites, EXIT_CODE_CONNECTION_FAILED);
+
+        assertContains(log, testOut.toString(), "SSL handshake failed (connection closed).");
     }
 }

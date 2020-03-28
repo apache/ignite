@@ -61,6 +61,10 @@ public class MatrixUtil {
         return res;
     }
 
+    /**
+     * Creates the identity matrix with the given size.
+     * @param n N.
+     */
     public static Matrix identity(int n) {
         DenseMatrix res = new DenseMatrix(n, n);
         for (int i = 0; i < n; i++)

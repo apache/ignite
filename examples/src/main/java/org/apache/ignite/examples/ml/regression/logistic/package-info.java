@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML logistic regression examples.
+ * <!-- Package description. --> ML logistic regression examples.
  */
 package org.apache.ignite.examples.ml.regression.logistic;

@@ -44,7 +44,7 @@ public class RingsDataStream implements DataStreamGenerator {
     private long seed;
 
     /**
-     * Create an intance of RingsDataStream.
+     * Create an instance of RingsDataStream.
      *
      * @param cntOfRings Count of circles.
      * @param minRadius Min radius.
@@ -55,7 +55,7 @@ public class RingsDataStream implements DataStreamGenerator {
     }
 
     /**
-     * Create an intance of RingsDataStream.
+     * Create an instance of RingsDataStream.
      *
      * @param cntOfRings Count of circles.
      * @param minRadius Min radius.

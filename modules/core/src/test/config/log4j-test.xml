@@ -97,6 +97,32 @@
         </category>
     -->
 
+    <!--
+        Uncomment to enable debugging of partition counters.
+    -->
+    <!--
+        <category name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper">
+            <level value="DEBUG"/>
+        </category>
+    -->
+
+    <!--
+        Uncomment to enable transactions debugging.
+    -->
+    <!--
+         <category name="org.apache.ignite.cache.msg.tx.prepare">
+             <level value="DEBUG"/>
+         </category>
+
+         <category name="org.apache.ignite.cache.msg.tx.finish">
+             <level value="DEBUG"/>
+         </category>
+
+         <category name="org.apache.ignite.cache.msg.tx.recovery">
+             <level value="DEBUG"/>
+         </category>
+    -->
+
     <!-- Disable all open source debugging. -->
     <category name="org">
         <level value="INFO"/>

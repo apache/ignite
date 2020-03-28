@@ -19,21 +19,21 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  *
  */
 class QueryHistoryTracker {
-    /** Query metrics. */
-    private final ConcurrentHashMap<QueryHistoryMetricsKey, QueryHistoryMetrics> qryMetrics;
+    /** Query history. */
+    private final ConcurrentHashMap<QueryHistoryKey, QueryHistory> qryHist;
 
     /** Queue. */
-    private final ConcurrentLinkedDeque8<QueryHistoryMetrics> evictionQueue = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque8<QueryHistory> evictionQueue = new ConcurrentLinkedDeque8<>();
 
     /** History size. */
     private final int histSz;
@@ -44,13 +44,13 @@ class QueryHistoryTracker {
     QueryHistoryTracker(int histSz) {
         this.histSz = histSz;
 
-        qryMetrics = histSz > 0 ? new ConcurrentHashMap<>(histSz) : null;
+        qryHist = histSz > 0 ? new ConcurrentHashMap<>(histSz) : null;
     }
 
     /**
      * @param failed {@code True} if query execution failed.
      */
-    void collectMetrics(GridRunningQueryInfo runningQryInfo, boolean failed) {
+    void collectHistory(GridRunningQueryInfo runningQryInfo, boolean failed) {
         if (histSz <= 0)
             return;
 
@@ -60,11 +60,11 @@ class QueryHistoryTracker {
         long startTime = runningQryInfo.startTime();
         long duration = System.currentTimeMillis() - startTime;
 
-        QueryHistoryMetrics m = new QueryHistoryMetrics(qry, schema, loc, startTime, duration, failed);
+        QueryHistory hist = new QueryHistory(qry, schema, loc, startTime, duration, failed);
 
-        QueryHistoryMetrics mergedMetrics = qryMetrics.merge(m.key(), m, QueryHistoryMetrics::aggregateWithNew);
+        QueryHistory mergedHist = qryHist.merge(hist.key(), hist, QueryHistory::aggregateWithNew);
 
-        if (touch(mergedMetrics) && qryMetrics.size() > histSz)
+        if (touch(mergedHist) && qryHist.size() > histSz)
             shrink();
     }
 
@@ -72,8 +72,8 @@ class QueryHistoryTracker {
      * @param entry Entry Which was updated
      * @return {@code true} In case entry is new and has been added, {@code false} otherwise.
      */
-    private boolean touch(QueryHistoryMetrics entry) {
-        ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> node = entry.link();
+    private boolean touch(QueryHistory entry) {
+        Node<QueryHistory> node = entry.link();
 
         // Entry has not been enqueued yet.
         if (node == null) {
@@ -97,7 +97,7 @@ class QueryHistoryTracker {
         }
         else if (removeLink(node)) {
             // Move node to tail.
-            ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> newNode = evictionQueue.offerLastx(entry);
+            Node<QueryHistory> newNode = evictionQueue.offerLastx(entry);
 
             if (!entry.replaceLink(node, newNode)) {
                 // Was concurrently added, need to clear it from queue.
@@ -114,37 +114,37 @@ class QueryHistoryTracker {
      */
     private void shrink() {
         while (true) {
-            QueryHistoryMetrics entry = evictionQueue.poll();
+            QueryHistory entry = evictionQueue.poll();
 
             if (entry == null)
                 return;
 
-            // Metrics has been changed if we can't remove metric entry.
+            // History has been changed if we can't remove history entry.
             // In this case eviction queue already offered by the entry and we don't put it back. Just try to do new
             // attempt to remove oldest entry.
-            if (qryMetrics.remove(entry.key(), entry))
+            if (qryHist.remove(entry.key(), entry))
                 return;
         }
     }
 
     /**
-     * @param node Node wchi should be unlinked from eviction queue.
+     * @param node Node which should be unlinked from eviction queue.
      * @return {@code true} If node was unlinked.
      */
-    private boolean removeLink(ConcurrentLinkedDeque8.Node<QueryHistoryMetrics> node) {
+    private boolean removeLink(Node<QueryHistory> node) {
         return evictionQueue.unlinkx(node);
     }
 
     /**
-     * Gets SQL query history. Size of history could be configured via {@link
-     * IgniteConfiguration#setSqlQueryHistorySize(int)}
+     * Gets SQL query history. Size of history could be configured via
+     * {@link IgniteConfiguration#setSqlQueryHistorySize(int)}.
      *
      * @return SQL queries history aggregated by query text, schema and local flag.
      */
-    Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
+    Map<QueryHistoryKey, QueryHistory> queryHistory() {
         if (histSz <= 0)
             return Collections.emptyMap();
 
-        return new HashMap<>(qryMetrics);
+        return qryHist;
     }
 }

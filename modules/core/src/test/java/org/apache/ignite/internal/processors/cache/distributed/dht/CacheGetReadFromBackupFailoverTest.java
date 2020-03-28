@@ -58,12 +58,16 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     /** Tx cache name. */
     private static final String TX_CACHE = "txCache";
+
     /** Atomic cache name. */
     private static final String ATOMIC_CACHE = "atomicCache";
+
     /** Keys count. */
     private static final int KEYS_CNT = 50000;
+
     /** Stop load flag. */
     private static final AtomicBoolean stop = new AtomicBoolean();
+
     /** Error. */
     private static final AtomicReference<Throwable> err = new AtomicReference<>();
 

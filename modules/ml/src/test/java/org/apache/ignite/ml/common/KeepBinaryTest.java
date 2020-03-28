@@ -39,8 +39,10 @@ import java.util.UUID;
 public class KeepBinaryTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 2;
+
     /** Number of samples. */
     public static final int NUMBER_OF_SAMPLES = 1000;
+
     /** Half of samples. */
     public static final int HALF = NUMBER_OF_SAMPLES / 2;
 
@@ -78,11 +80,11 @@ public class KeepBinaryTest extends GridCommonAbstractTest {
         CacheBasedDatasetBuilder<Integer, BinaryObject> datasetBuilder =
             new CacheBasedDatasetBuilder<>(ignite, dataCache).withKeepBinary(true);
 
-        KMeansModel kmdl = trainer.fit(datasetBuilder, new BinaryObjectVectorizer<Integer>("feature1").labeled("label"));
+        KMeansModel mdl = trainer.fit(datasetBuilder, new BinaryObjectVectorizer<Integer>("feature1").labeled("label"));
 
-        Integer zeroCentre = kmdl.predict(VectorUtils.num2Vec(0.0));
+        Integer zeroCentre = mdl.predict(VectorUtils.num2Vec(0.0));
 
-        assertTrue(kmdl.getCenters()[zeroCentre].get(0) == 0);
+        assertTrue(mdl.getCenters()[zeroCentre].get(0) == 0);
     }
 
     /**

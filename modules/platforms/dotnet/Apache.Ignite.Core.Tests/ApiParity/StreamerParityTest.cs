@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// <summary>
     /// Tests that <see cref="IDataStreamer{TK,TV}"/> has all APIs from Java Ignite interface.
     /// </summary>
+    [Ignore(ParityTest.IgnoreReason)]
     public class StreamerParityTest
     {
         /** Members that are not needed on .NET side. */
