@@ -131,7 +131,8 @@ namespace Apache.Ignite.Core.Configuration
             {
                 ThinClientConfiguration = new ThinClientConfiguration
                 {
-                    MaxActiveTxPerConnection = reader.ReadInt()
+                    MaxActiveTxPerConnection = reader.ReadInt(),
+                    ComputeEnabled = reader.ReadBoolean()
                 };
             }
         }
@@ -164,6 +165,7 @@ namespace Apache.Ignite.Core.Configuration
             {
                 writer.WriteBoolean(true);
                 writer.WriteInt(ThinClientConfiguration.MaxActiveTxPerConnection);
+                writer.WriteBoolean(ThinClientConfiguration.ComputeEnabled);
             }
             else
             {
