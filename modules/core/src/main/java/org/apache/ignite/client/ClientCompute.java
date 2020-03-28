@@ -18,7 +18,6 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
