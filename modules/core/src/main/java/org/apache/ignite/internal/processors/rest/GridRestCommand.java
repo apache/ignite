@@ -250,7 +250,7 @@ public enum GridRestCommand {
     /** Index of task name wrapped by VisorGatewayTask */
     private static final int WRAPPED_TASK_IDX = 1;
 
-    /** Name suplier. */
+    /** Name extractor. */
     private final Function<GridRestRequest, String> nameExtractor;
 
     /**
@@ -315,7 +315,7 @@ public enum GridRestCommand {
     public String name(GridRestRequest req) {
         return nameExtractor.apply(req);
     }
-    
+
     /** */
     private static class AuthorizeNameExtractor {
         /** */
