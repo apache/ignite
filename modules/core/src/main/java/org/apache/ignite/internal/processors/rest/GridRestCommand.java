@@ -309,6 +309,13 @@ public enum GridRestCommand {
         return perms.clone();
     }
 
+    /**
+     * @param req GridRestRequest.
+     */
+    public String name(GridRestRequest req) {
+        return nameExtractor.apply(req);
+    }
+    
     /** */
     private static class AuthorizeNameExtractor {
         /** */
@@ -332,12 +339,5 @@ public enum GridRestCommand {
 
                 return name;
             };
-    }
-
-    /**
-     * @param req GridRestRequest.
-     */
-    public String name(GridRestRequest req) {
-        return nameExtractor.apply(req);
     }
 }
