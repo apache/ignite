@@ -86,7 +86,6 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
-import static java.util.Arrays.*;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
@@ -851,30 +850,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 }
             }
         }
-    }
-
-
-    /**
-     * Maintaining compatibility SecurityPermission.ADMIN_CACHE.
-     *
-     * @param name name.
-     * @param perm SecurityPermission.
-     */
-
-    private static List forAdminCache = asList(SecurityPermission.CACHE_CREATE, SecurityPermission.CACHE_DESTROY);
-
-    private void withPermissionAdminCacheCompatibility(String name, SecurityPermission perm) {
-        if (forAdminCache.contains(perm)) {
-            try {
-                ctx.security().authorize(name, SecurityPermission.ADMIN_CACHE);
-                return;
-            }
-            catch (SecurityException ignored) {
-                // No-op.
-            }
-        }
-
-        ctx.security().authorize(name, perm);
     }
 
     /**
