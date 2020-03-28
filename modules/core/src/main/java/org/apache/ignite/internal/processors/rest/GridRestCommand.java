@@ -54,7 +54,8 @@ public enum GridRestCommand {
     CACHE_GET_AND_PUT("getput", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Store value in cache and return previous value. */
-    CACHE_GET_AND_PUT_IF_ABSENT("getputifabs", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
+    CACHE_GET_AND_PUT_IF_ABSENT("getputifabs", AuthorizeNameExtractor.FROM_CACHE_REQ,
+        SecurityPermission.CACHE_PUT),
 
     /** Store value in cache. */
     CACHE_PUT("put", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
@@ -147,12 +148,12 @@ public enum GridRestCommand {
     QUIT("quit"),
 
     /** Get or create cache. */
-    GET_OR_CREATE_CACHE("getorcreate", AuthorizeNameExtractor.FROM_CACHE_REQ,
-        SecurityPermission.ADMIN_CACHE, SecurityPermission.CACHE_CREATE),
+    GET_OR_CREATE_CACHE("getorcreate", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.ADMIN_CACHE,
+        SecurityPermission.CACHE_CREATE),
 
     /** Stops dynamically started cache. */
-    DESTROY_CACHE("destcache", AuthorizeNameExtractor.FROM_CACHE_REQ,
-        SecurityPermission.ADMIN_CACHE, SecurityPermission.CACHE_DESTROY),
+    DESTROY_CACHE("destcache", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.ADMIN_CACHE,
+        SecurityPermission.CACHE_DESTROY),
 
     /** Execute sql query. */
     EXECUTE_SQL_QUERY("qryexe", AuthorizeNameExtractor.FROM_QUERY_REQ, SecurityPermission.CACHE_READ),
