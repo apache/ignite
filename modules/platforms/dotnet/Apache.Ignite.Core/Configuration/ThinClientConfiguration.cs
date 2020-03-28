@@ -52,6 +52,6 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets compute enabled flag.
         /// </summary>
         [DefaultValue(DefaultComputeEnabled)]
-        public int ComputeEnabled { get; set; }
+        public bool ComputeEnabled { get; set; }
     }
 }

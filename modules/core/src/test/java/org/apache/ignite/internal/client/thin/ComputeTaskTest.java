@@ -446,6 +446,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
                     }
                     
                 }, threadsCnt, "run-task-async");
+
+            assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
         }
     }
 
